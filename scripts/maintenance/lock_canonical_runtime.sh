@@ -61,7 +61,7 @@ if [[ "$parity_ok" != "1" ]]; then
   exit 1
 fi
 
-bot_start_payload="$(curl -sS -X POST "$BASE_URL/api/start" -H 'Content-Type: application/json')"
+bot_start_payload="$(curl -sS -X POST "$BASE_URL/api/start-direct" -H 'Content-Type: application/json')"
 echo "bot_start=$bot_start_payload"
 if ! printf '%s' "$bot_start_payload" | python3 -c 'import json,sys; raise SystemExit(0 if json.load(sys.stdin).get("status") == "success" else 1)'; then
   echo "ERROR: bot did not start after canonical runtime lock"

@@ -83,6 +83,7 @@ fi
 
 GO_LIVE_URL="${CANONICAL_URL%/}/api/go-live"
 STATUS_URL="${CANONICAL_URL%/}/api/status"
+START_URL="${CANONICAL_URL%/}/api/start"
 
 echo "ship_trigger_golive=url:$GO_LIVE_URL"
 HTTP_CODE="$(curl -ksS -o /tmp/mcleod_golive_response.json -w '%{http_code}' -X POST "$GO_LIVE_URL" || true)"
@@ -104,7 +105,27 @@ print("go_live_message=" + str(payload.get("message") or ""))
 PY
 else
   echo "ship_trigger_golive=failed http_code=$HTTP_CODE"
-  echo "ship_note=desktop watcher will still deploy on next poll if canonical autodeploy is running"
+  echo "ship_trigger_fallback=url:$START_URL"
+  START_HTTP_CODE="$(curl -ksS -o /tmp/mcleod_start_response.json -w '%{http_code}' -X POST "$START_URL" || true)"
+  if [[ "$START_HTTP_CODE" == "200" ]]; then
+    echo "ship_trigger_fallback=start_api_accepted"
+    python3 - <<'PY' /tmp/mcleod_start_response.json
+import json
+import sys
+
+path = sys.argv[1]
+try:
+    payload = json.loads(open(path, "r", encoding="utf-8").read())
+except Exception:
+    payload = {}
+
+print("start_api_status=" + str(payload.get("status") or "unknown"))
+print("start_api_message=" + str(payload.get("message") or ""))
+PY
+  else
+    echo "ship_trigger_fallback=failed http_code=$START_HTTP_CODE"
+    echo "ship_note=desktop watcher will still deploy on next poll if canonical autodeploy is running"
+  fi
 fi
 
 echo "ship_status_probe=url:$STATUS_URL"
