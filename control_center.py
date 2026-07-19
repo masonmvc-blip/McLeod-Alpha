@@ -6725,7 +6725,7 @@ HTML_DASHBOARD = """
         .header h1 {
             color: #333;
             font-size: 28px;
-            margin-bottom: 3px;
+            margin-bottom: 0;
         }
 
         .title-rockets {
@@ -7030,12 +7030,20 @@ HTML_DASHBOARD = """
             color: #0b4ea2;
         }
         
-        .controls {
+        .trades-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.25fr) minmax(150px, 1fr);
             gap: 8px;
+            align-items: stretch;
             margin-bottom: 14px;
         }
+
+        .trades-actions .trade-summary-card {
+            margin: 0;
+        }
+
+        .bot-toggle.running { background: #dc3545; color: white; }
+        .bot-toggle.stopped { background: #28a745; color: white; }
 
         button {
             padding: 9px 14px;
@@ -7565,7 +7573,7 @@ HTML_DASHBOARD = """
                 grid-template-columns: 1fr;
             }
 
-            .controls {
+            .trades-actions {
                 grid-template-columns: 1fr;
             }
 
@@ -7652,7 +7660,7 @@ HTML_DASHBOARD = """
             .connectivity-summary-meta,
             .connectivity-summary-strip .connectivity-main {
                 width: 100%;
-                text-align: left;
+                text-align: center;
                 white-space: normal;
             }
 
@@ -7780,10 +7788,10 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <div class="controls">
-            <button class="btn-primary" id="startBtn" onclick="startBot()">▶ Start Bot</button>
+        <div class="trades-actions">
+            <button class="bot-toggle stopped" id="botToggleBtn" onclick="toggleBot()">▶ Start Bot</button>
+            <div class="trade-summary-card neutral" id="todayPnlCard"><h4>Today's P&L</h4><div class="trade-summary-value" id="todayPnl">Loading...</div></div>
             <button class="btn-info" id="exitTradeBtn" onclick="exitTrade()" disabled>⏏ Exit Trade</button>
-            <button class="btn-danger" id="stopBtn" onclick="stopBot()" disabled>⏹ Stop Bot</button>
         </div>
         
         <div style="margin-bottom: 14px;">
@@ -8169,11 +8177,23 @@ HTML_DASHBOARD = """
             const timeText = d.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
-                second: '2-digit',
                 hour12: true,
                 timeZone: 'America/New_York',
             });
             // Keep standard 12-hour clock style but remove AM/PM label for a cleaner table.
+            return String(timeText).replace(/\\s?[AP]M$/i, '');
+        }
+
+        function formatEntryTimeAMPM(dateValue) {
+            const d = new Date(dateValue);
+            if (Number.isNaN(d.getTime())) return '-';
+            const timeText = d.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true,
+                timeZone: 'America/New_York',
+            });
             return String(timeText).replace(/\\s?[AP]M$/i, '');
         }
 
@@ -8237,25 +8257,27 @@ HTML_DASHBOARD = """
             setTimeout(() => msgEl.classList.remove('show'), 5000);
         }
         
-        async function startBot() {
-            const btn = document.getElementById('startBtn');
+        async function toggleBot() {
+            const btn = document.getElementById('botToggleBtn');
+            const running = !!(lastStatusSnapshot && lastStatusSnapshot.bot_running);
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Syncing...';
+            btn.innerHTML = running ? '<span class="spinner"></span> Stopping...' : '<span class="spinner"></span> Syncing...';
             
             try {
-                const res = await fetch('/api/go-live', { method: 'POST' });
+                const res = await fetch(running ? '/api/stop' : '/api/go-live', { method: 'POST' });
                 const data = await res.json();
                 
                 showMessage(data.message, data.status === 'success' ? 'success' : 'error');
                 
-                if (data.status === 'success') {
+                if (!running && data.status === 'success') {
                     clearInterval(statusRefreshInterval);
                     await waitForControlCenterReturn(data.canonical_url || window.location.origin);
+                } else {
+                    setTimeout(refreshStatus, 500);
                 }
             } catch (err) {
                 showMessage(`Error: ${err.message}`, 'error');
                 btn.disabled = false;
-                btn.innerHTML = '▶ Start Bot';
                 refreshStatus();
                 return;
             }
@@ -8280,29 +8302,9 @@ HTML_DASHBOARD = """
             }
 
             showMessage('Go-live was triggered, but the dashboard did not come back within 90 seconds. Refresh the page and check logs/go_live_from_control_center.log.', 'error');
-            const btn = document.getElementById('startBtn');
+            const btn = document.getElementById('botToggleBtn');
             btn.disabled = false;
             btn.innerHTML = '▶ Start Bot';
-        }
-        
-        async function stopBot() {
-            const btn = document.getElementById('stopBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Stopping...';
-            
-            try {
-                const res = await fetch('/api/stop', { method: 'POST' });
-                const data = await res.json();
-                
-                showMessage(data.message, data.status === 'success' ? 'success' : 'error');
-                clearInterval(statusRefreshInterval);
-            } catch (err) {
-                showMessage(`Error: ${err.message}`, 'error');
-            }
-            
-            btn.disabled = false;
-            btn.innerHTML = '⏹ Stop Bot';
-            setTimeout(refreshStatus, 500);
         }
 
         async function exitTrade() {
@@ -8343,8 +8345,11 @@ HTML_DASHBOARD = """
                 const parityState = String(status.parity_state || 'UNKNOWN').toUpperCase();
                 const parityEnforced = status.parity_enforce_on_start !== false;
                 const parityBlockStart = !!status.parity_block_start;
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = !status.bot_running;
+                const botToggleBtn = document.getElementById('botToggleBtn');
+                const botRunning = !!status.bot_running;
+                botToggleBtn.disabled = false;
+                botToggleBtn.className = `bot-toggle ${botRunning ? 'running' : 'stopped'}`;
+                botToggleBtn.innerHTML = botRunning ? '⏹ Stop Bot' : '▶ Start Bot';
 
                 const canManualExit = !!(status.bot_running && status.mode === 'LIVE TRADING' && status.has_open_position);
                 document.getElementById('exitTradeBtn').disabled = !canManualExit;
@@ -8825,11 +8830,6 @@ HTML_DASHBOARD = """
                 const internet = snapshot.internet_quality || {};
                 const history = snapshot.internet_quality_history || {};
                 const internetQuality = String(internet.quality || 'UNKNOWN').toUpperCase();
-                const avgLatency = history.recent_avg_latency_ms ?? internet.avg_latency_ms;
-                const allTimeLatency = history.all_time_avg_latency_ms;
-                const onEthernet = snapshot.on_ethernet === true;
-                const onWifi = snapshot.on_ethernet === false;
-                const connectionSource = onEthernet ? 'Ethernet' : (onWifi ? 'Wi-Fi' : 'Unknown');
 
                 function goalCompare(actual, goal, direction = 'lte') {
                     const actualNum = Number(actual);
@@ -8879,17 +8879,12 @@ HTML_DASHBOARD = """
                 const internetTitle = internetQuality === 'EXCELLENT'
                     ? `${internetIcon} ${safeEscape(internetQuality)} ${internetIcon}`
                     : (internetIcon ? `${internetIcon} ${safeEscape(internetQuality)}` : safeEscape(internetQuality));
-                const latencyDetail = avgLatency !== null && avgLatency !== undefined
-                    ? `30m avg ${safeEscape(Number(avgLatency).toFixed(0))} MS${allTimeLatency !== null && allTimeLatency !== undefined ? ` · all-time ${safeEscape(Number(allTimeLatency).toFixed(0))} MS` : ''}`
-                    : 'Latency unavailable';
-                const connectionText = connectionSource;
-
                 const pointsRaw = Array.isArray(history.recent_points_ms) ? history.recent_points_ms : [];
                 const pointTimestampsRaw = Array.isArray(history.recent_point_timestamps) ? history.recent_point_timestamps : [];
                 const points = [...pointsRaw].reverse();
                 const pointTimestamps = [...pointTimestampsRaw].reverse();
                 html += '<div class="exec-quality-trend-box">';
-                html += `<div class="connectivity-summary-strip"><div class="connectivity-summary-meta left" title="${safeEscape(latencyDetail)}">${safeEscape(latencyDetail)}</div><div class="connectivity-main ${internetTone}">${internetTitle}</div><div class="connectivity-summary-meta right">${safeEscape(connectionText)}</div></div>`;
+                html += `<div class="connectivity-summary-strip"><div class="connectivity-main ${internetTone}">${internetTitle}</div></div>`;
                 if (snapshot.internet_market_warning) {
                     html += `<div class="connectivity-alert warn">${safeEscape(String(snapshot.internet_market_warning_message || 'Market-hours internet warning'))}</div>`;
                 }
@@ -9065,34 +9060,35 @@ HTML_DASHBOARD = """
                 }
                 
                 if (!data.trades || data.trades.length === 0) {
+                    const todayPnlCard = document.getElementById('todayPnlCard');
+                    const todayPnl = document.getElementById('todayPnl');
+                    todayPnlCard.className = 'trade-summary-card neutral';
+                    todayPnl.className = 'trade-summary-value total-pnl-neutral';
+                    todayPnl.textContent = '$0.00 (+0.0%)';
                     container.innerHTML = '<div class="no-trades">📭 No trades in database</div>';
                     return;
                 }
                 
                 const summary = data.summary || {};
                 let html = '';
-                if (data.is_fallback_day) {
-                    html += '<div class="no-trades-today-banner">No trades yet today - showing most recent trading day</div>';
-                }
-                html += '<div class="trades-summary">';
                 const totalPnl = Number(summary.total_pnl || 0);
                 const pnlClass = totalPnl > 0 ? 'winning' : totalPnl < 0 ? 'losing' : 'neutral';
                 const totalReturnPct = Number(summary.total_return_pct || 0);
                 const totalReturnPctText = `${totalReturnPct >= 0 ? '+' : '-'}${formatNumber(Math.abs(totalReturnPct), 1)}%`;
                 const summaryColorClass = totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'neutral';
-                html += `<div class="trade-summary-card neutral"><h4>Wins</h4><div class="trade-summary-value">${formatNumber(summary.win_count || 0)}</div></div>`;
-                html += `<div class="trade-summary-card ${pnlClass}"><h4>Today's P&L</h4><div class="trade-summary-value total-pnl-${summaryColorClass}">${formatMoney(totalPnl)} (${totalReturnPctText})</div></div>`;
-                
-                html += `<div class="trade-summary-card neutral"><h4>Losses</h4><div class="trade-summary-value">${formatNumber(summary.loss_count || 0)}</div></div>`;
-                html += '</div>';
+                const todayPnlCard = document.getElementById('todayPnlCard');
+                const todayPnl = document.getElementById('todayPnl');
+                todayPnlCard.className = `trade-summary-card ${pnlClass}`;
+                todayPnl.className = `trade-summary-value total-pnl-${summaryColorClass}`;
+                todayPnl.textContent = `${formatMoney(totalPnl)} (${totalReturnPctText})`;
                 
                 html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
-                html += '<th>Time</th><th>OPTION</th><th>Contracts</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit Reason</th>';
+                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
                     // Use shared AM/PM formatter so trade time stays in regular time format.
-                    const entryTime = trade.entry_time ? formatTimeAMPM(trade.entry_time) : '-';
+                    const entryTime = trade.entry_time ? formatEntryTimeAMPM(trade.entry_time) : '-';
                     const exitTime = trade.exit_time ? formatTimeAMPM(trade.exit_time) : '-';
                     const timeRange = `${entryTime} - ${exitTime}`;
                     const pnl = trade.pnl || 0;
@@ -9101,7 +9097,7 @@ HTML_DASHBOARD = """
                     html += '<tr>';
                     html += `<td data-label="Time">${timeRange}</td>`;
                     html += `<td data-label="Option"><span class="trade-direction ${trade.direction || ''}">${trade.direction || '-'}</span></td>`;
-                    html += `<td data-label="Contracts">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
+                    html += `<td data-label="#">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
                     html += `<td data-label="Entry">${formatMoney(trade.entry_price || 0)}</td>`;
                     html += `<td data-label="Exit">${formatMoney(trade.exit_price || 0)}</td>`;
                     const stage = (trade.trend_stage === null || trade.trend_stage === undefined) ? '-' : String(trade.trend_stage);
@@ -9168,7 +9164,7 @@ HTML_DASHBOARD = """
                         const exitReasonRaw = rawReason.replaceAll('_', ' ').toLowerCase();
                         exitReason = exitReasonRaw.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                     }
-                    html += `<td data-label="Exit Reason">${trade.manual_label ? 'Mason' : exitReason}</td>`;
+                    html += `<td data-label="Exit">${trade.manual_label ? 'Mason' : exitReason}</td>`;
                     html += '</tr>';
                 });
                 
