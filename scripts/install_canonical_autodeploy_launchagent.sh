@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-AGENT_ID="com.mcleod.alpha.canonical-autodeploy-hot-v2"
+AGENT_ID="com.mcleod.alpha.canonical-autodeploy-hot-v3"
 PLIST_PATH="$HOME/Library/LaunchAgents/$AGENT_ID.plist"
 LOG_PATH="$ROOT_DIR/logs/canonical_autodeploy_launchd.log"
 WATCH_SCRIPT="$ROOT_DIR/scripts/maintenance/canonical_autodeploy_watch.sh"
@@ -55,11 +55,8 @@ cat > "$PLIST_PATH" <<PLIST
     <key>Label</key>
     <string>$AGENT_ID</string>
 
-    <key>ProgramArguments</key>
-    <array>
-      <string>/bin/zsh</string>
-      <string>$RUNNER_PATH</string>
-    </array>
+    <key>Program</key>
+    <string>$RUNNER_PATH</string>
 
     <key>WorkingDirectory</key>
     <string>$ROOT_DIR</string>
