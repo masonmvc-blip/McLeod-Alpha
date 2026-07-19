@@ -3,7 +3,10 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from pathlib import Path
+import sys
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from engine.factors.library import core_factors
 from engine.research_lab.experiment import canonical_bytes, content_hash
