@@ -7171,7 +7171,7 @@ HTML_DASHBOARD = """
         </div>
         
         <div style="margin-bottom: 30px;">
-            <h2 id="tradesHeading" style="color: #333; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; text-align: center;">Today's Trades</h2>
+            <h2 id="tradesHeading" style="color: #333; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; text-align: center;">📊 Today's Trades 📊</h2>
             <div id="tradesContainer">
                 <div style="text-align: center; color: #999; padding: 20px;">Loading trades...</div>
             </div>
@@ -7744,6 +7744,7 @@ HTML_DASHBOARD = """
                 const explicitReconFailure = reconState === 'FAILED' || reconState === 'SAFE MODE';
                 const inferredBrokerOk = !explicitReconFailure && !!status.account_verified && liveTradingOk;
                 const reconOk = reconState === 'SUCCESS' || inferredBrokerOk;
+                const parityOk = parityState === 'MATCH' && !parityBlockStart;
                 const runtimeFingerprint = status.runtime_fingerprint || {};
                 const runtimeHost = String(runtimeFingerprint.hostname || '').trim();
                 const runtimeHostLower = runtimeHost.toLowerCase();
@@ -7753,7 +7754,7 @@ HTML_DASHBOARD = """
                 } else if (runtimeHostLower.includes('macbook') || runtimeHostLower.includes('laptop')) {
                     runtimeBadge = '✅ 💻 laptop';
                 }
-                const checklistText = `${runtimeBadge} | ${modeOk ? '✅' : '☐'} ${modeLabel} | ${reconOk ? '✅' : '☐'} Broker | ${accountOk ? '✅' : '☐'} ${accountDisplayLabel}`;
+                const checklistText = `${runtimeBadge} | ${modeOk ? '✅' : '☐'} ${modeLabel} | ${reconOk ? '✅' : '☐'} Broker | ${parityOk ? '✅' : '☐'} Parity | ${accountOk ? '✅' : '☐'} ${accountDisplayLabel}`;
 
                 // Trade entry readiness (fast and visible)
                 const tradeEntryEnabled = !!status.trade_entry_enabled;
@@ -8356,9 +8357,9 @@ HTML_DASHBOARD = """
 
                 const tradingDate = formatTradingDate(data.trading_date);
                 if (data.is_fallback_day) {
-                    heading.textContent = `${tradingDate} 📊 Most Recent Trading Day`;
+                    heading.textContent = `📊 Most Recent Trading Day - ${tradingDate} 📊`;
                 } else {
-                    heading.textContent = `${tradingDate} 📊 Today's Trades`;
+                    heading.textContent = `📊 Today's Trades - ${tradingDate} 📊`;
                 }
                 
                 if (!data.trades || data.trades.length === 0) {
