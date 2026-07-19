@@ -129,14 +129,35 @@ PY
 fi
 
 echo "ship_status_probe=url:$STATUS_URL"
-curl -ksS "$STATUS_URL" | python3 - <<'PY'
+status_payload=""
+for _ in {1..30}; do
+  status_payload="$(curl -ksS "$STATUS_URL" || true)"
+  if [[ -n "$status_payload" ]] && echo "$status_payload" | python3 - <<'PY' >/dev/null 2>&1
+import json
+import sys
+json.load(sys.stdin)
+PY
+  then
+    break
+  fi
+  sleep 1
+done
+
+if [[ -z "$status_payload" ]]; then
+  echo "ship_status_probe=unavailable"
+  echo "ship_complete=1"
+  exit 0
+fi
+
+echo "$status_payload" | python3 - <<'PY'
 import json
 import sys
 
 try:
     payload = json.load(sys.stdin)
 except Exception:
-    payload = {}
+    print("ship_status_probe=invalid_json")
+    raise SystemExit(0)
 
 fp = payload.get("runtime_fingerprint") or {}
 print("runtime_host=" + str(fp.get("hostname") or "unknown"))
