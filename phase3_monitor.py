@@ -1,4 +1,4 @@
-from execution.option_selector import select_option_from_chain, find_option_mark
+from execution.option_selector import select_option_from_chain, find_option_mark, find_option_bid
 from execution.equity_stream import SchwabEquityQuoteStream
 from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
@@ -9,6 +9,7 @@ from strategy.live_candle_builder import LiveMinuteCandleBuilder
 import os
 import sys
 import time
+import json
 import importlib
 import requests
 from datetime import datetime, timedelta
@@ -36,6 +37,59 @@ LAST_QUOTE_SOURCE = "none"
 LIVE_CANDLE_BUILDER = LiveMinuteCandleBuilder(symbol=SYMBOL, max_candles=5)
 SCHWAB_QUOTE_FRESHNESS_SECONDS = int(os.getenv("SCHWAB_QUOTE_FRESHNESS_SECONDS", "180"))
 SCHWAB_AUTH_RETRY_SECONDS = max(5, int(os.getenv("SCHWAB_AUTH_RETRY_SECONDS", "20")))
+CANDLE_HISTORY_REFRESH_SECONDS = max(30, int(os.getenv("CANDLE_HISTORY_REFRESH_SECONDS", "180")))
+_LAST_HISTORY_REFRESH_EPOCH = 0.0
+LATENCY_METRICS_ENABLED = str(os.getenv("LATENCY_METRICS_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
+LATENCY_METRICS_PATH = Path(os.getenv("LATENCY_METRICS_PATH", "data/reports/latency_cycle_history.jsonl"))
+LAST_ENTRY_EXECUTION_METRICS = {
+    "attempted": False,
+    "opened": False,
+    "open_trade_ms": None,
+    "block_reason": None,
+}
+
+
+def _perf_ms_now():
+    return time.perf_counter() * 1000.0
+
+
+def _elapsed_ms(start_ms):
+    return round(max(0.0, _perf_ms_now() - float(start_ms or 0.0)), 2)
+
+
+def _append_latency_event(payload):
+    if not LATENCY_METRICS_ENABLED:
+        return
+    try:
+        LATENCY_METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with LATENCY_METRICS_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, separators=(",", ":"), default=str) + "\n")
+    except Exception as exc:
+        print(f"Latency metrics write error: {exc}")
+
+
+def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None, indicators_ms=None):
+    cycle_total_ms = _elapsed_ms(cycle_start_ms)
+    _append_latency_event({
+        "ts_utc": datetime.now(UTC_TZ).isoformat(),
+        "ts_et": datetime.now(EASTERN_TZ).isoformat(),
+        "symbol": SYMBOL,
+        "candle_source": LAST_CANDLE_SOURCE,
+        "regime": None,
+        "candles_count": None,
+        "candles_fetch_ms": candles_fetch_ms,
+        "indicators_ms": indicators_ms,
+        "manage_trade_ms": None,
+        "entry_attempted": False,
+        "entry_opened": False,
+        "entry_decision_reason": reason,
+        "entry_eval_ms": None,
+        "chain_fetch_ms": None,
+        "option_select_ms": None,
+        "open_trade_ms": None,
+        "report_ms": None,
+        "cycle_total_ms": cycle_total_ms,
+    })
 
 
 def _resolve_schwab_callback_url() -> str:
@@ -256,7 +310,7 @@ def _quote_continuity_candles(history_df, source_label):
 
 
 def get_candles():
-    global LAST_NONEMPTY_CANDLES, LAST_CANDLE_SOURCE
+    global LAST_NONEMPTY_CANDLES, LAST_CANDLE_SOURCE, _LAST_HISTORY_REFRESH_EPOCH
 
     def _fetch_window(start=None, end=None, include_previous_close=False):
         request_kwargs = {
@@ -286,17 +340,29 @@ def get_candles():
 
     end = datetime.now(EASTERN_TZ)
 
+    # Fast path: when we already have a non-empty candle set, use direct quote
+    # continuity between scheduled REST refreshes to avoid repeated heavy
+    # historical pulls each loop.
+    now_epoch = time.time()
+    refresh_due = (now_epoch - float(_LAST_HISTORY_REFRESH_EPOCH or 0.0)) >= float(CANDLE_HISTORY_REFRESH_SECONDS)
+    if not refresh_due and LAST_NONEMPTY_CANDLES is not None and not LAST_NONEMPTY_CANDLES.empty:
+        quote_continuity = _quote_continuity_candles(LAST_NONEMPTY_CANDLES.tail(390).copy(), "fast_path")
+        if not quote_continuity.empty:
+            return quote_continuity
+
     # Primary window for live/extended market activity.
     df = _fetch_window(end - timedelta(hours=4), end)
     if not df.empty:
         LAST_CANDLE_SOURCE = "live_window"
         LAST_NONEMPTY_CANDLES = df.tail(390).copy()
+        _LAST_HISTORY_REFRESH_EPOCH = now_epoch
         _persist_cached_candles(LAST_NONEMPTY_CANDLES)
         return LAST_NONEMPTY_CANDLES
 
     # Fallback window for weekends/holidays/API gaps.
     fallback = _fetch_window(end - timedelta(days=5), end, include_previous_close=True)
     if not fallback.empty:
+        _LAST_HISTORY_REFRESH_EPOCH = now_epoch
         quote_continuity = _quote_continuity_candles(fallback.tail(390).copy(), "recent_history")
         if not quote_continuity.empty:
             return quote_continuity
@@ -308,6 +374,7 @@ def get_candles():
 
     session_fallback = _fetch_window(include_previous_close=True)
     if not session_fallback.empty:
+        _LAST_HISTORY_REFRESH_EPOCH = now_epoch
         quote_continuity = _quote_continuity_candles(session_fallback.tail(390).copy(), "previous_close")
         if not quote_continuity.empty:
             return quote_continuity
@@ -560,23 +627,48 @@ startup_entry_attempts = 0
 original_open_trade = open_trade
 
 def open_trade(*args, **kwargs):
-    global startup_entry_attempts
+    global startup_entry_attempts, LAST_ENTRY_EXECUTION_METRICS
+
+    start_ms = _perf_ms_now()
 
     if startup_entry_attempts < 5:
         startup_entry_attempts += 1
         print(f"STARTUP GUARD: blocked open_trade {startup_entry_attempts}/5")
+        LAST_ENTRY_EXECUTION_METRICS = {
+            "attempted": True,
+            "opened": False,
+            "open_trade_ms": _elapsed_ms(start_ms),
+            "block_reason": "startup_guard",
+        }
         return False
 
-    return original_open_trade(*args, **kwargs)
+    opened = bool(original_open_trade(*args, **kwargs))
+    LAST_ENTRY_EXECUTION_METRICS = {
+        "attempted": True,
+        "opened": opened,
+        "open_trade_ms": _elapsed_ms(start_ms),
+        "block_reason": None if opened else "engine_block_or_reject",
+    }
+    return opened
 
 print("McLeod Alpha Phase 3 monitor started.")
 print("Mode: LIVE TRADING" if USE_LIVE_ENGINE else "Mode: PAPER TRADING")
 
 
 def maybe_enter_trade(last, prev, regime):
+    cycle_entry_start_ms = _perf_ms_now()
+
     if in_trade():
         print("Entry skipped: already in trade")
-        return
+        return {
+            "attempted": False,
+            "opened": False,
+            "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+            "decision_reason": "already_in_trade",
+            "chain_fetch_ms": None,
+            "option_select_ms": None,
+            "open_trade_ms": None,
+        }
 
     call_score, call_reasons = score_call(last, prev)
     put_score, put_reasons = score_put(last, prev)
@@ -612,29 +704,77 @@ def maybe_enter_trade(last, prev, regime):
         stop = entry - 0.75
         target = entry + 1.50
         quantity = calculate_quantity(entry, stop)
-        chain = get_option_chain()
-        option = select_option_from_chain(chain, "CALL", entry)
 
-        open_trade("CALL", entry, stop, target, quantity, "PHASE2_BULL_CALL", option)
+        chain_start_ms = _perf_ms_now()
+        chain = get_option_chain()
+        chain_fetch_ms = _elapsed_ms(chain_start_ms)
+
+        select_start_ms = _perf_ms_now()
+        option = select_option_from_chain(chain, "CALL", entry)
+        option_select_ms = _elapsed_ms(select_start_ms)
+
+        open_start_ms = _perf_ms_now()
+        opened = bool(open_trade("CALL", entry, stop, target, quantity, "PHASE2_BULL_CALL", option))
+        open_trade_call_ms = _elapsed_ms(open_start_ms)
+        return {
+            "attempted": True,
+            "opened": opened,
+            "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+            "decision_reason": "bull_call_signal",
+            "chain_fetch_ms": chain_fetch_ms,
+            "option_select_ms": option_select_ms,
+            "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
+        }
 
     elif regime == "BEAR_TREND" and put_score >= 5:
         entry = float(last.close)
         stop = entry + 0.75
         target = entry - 1.50
         quantity = calculate_quantity(entry, stop)
-        chain = get_option_chain()
-        option = select_option_from_chain(chain, "PUT", entry)
 
-        open_trade("PUT", entry, stop, target, quantity, "PHASE2_BEAR_PUT", option)
+        chain_start_ms = _perf_ms_now()
+        chain = get_option_chain()
+        chain_fetch_ms = _elapsed_ms(chain_start_ms)
+
+        select_start_ms = _perf_ms_now()
+        option = select_option_from_chain(chain, "PUT", entry)
+        option_select_ms = _elapsed_ms(select_start_ms)
+
+        open_start_ms = _perf_ms_now()
+        opened = bool(open_trade("PUT", entry, stop, target, quantity, "PHASE2_BEAR_PUT", option))
+        open_trade_call_ms = _elapsed_ms(open_start_ms)
+        return {
+            "attempted": True,
+            "opened": opened,
+            "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+            "decision_reason": "bear_put_signal",
+            "chain_fetch_ms": chain_fetch_ms,
+            "option_select_ms": option_select_ms,
+            "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
+        }
+
+    return {
+        "attempted": False,
+        "opened": False,
+        "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+        "decision_reason": "no_entry_signal",
+        "chain_fetch_ms": None,
+        "option_select_ms": None,
+        "open_trade_ms": None,
+    }
 
 
 last_processed_candle_time = None
 
 while True:
+        cycle_start_ms = _perf_ms_now()
         try:
+            candles_fetch_start_ms = _perf_ms_now()
             df = get_candles()
+            candles_fetch_ms = _elapsed_ms(candles_fetch_start_ms)
         except Exception as e:
             print(f"Candle fetch error: {e}")
+            _append_latency_skip_event(reason="candle_fetch_error", cycle_start_ms=cycle_start_ms)
             time.sleep(SLEEP_SECONDS)
             continue
         latest_candle_time = df.iloc[-1].name if not df.empty else None
@@ -642,13 +782,26 @@ while True:
         print(f"Candles received: {len(df)} | source={LAST_CANDLE_SOURCE} | latest={latest_candle_text}")
         if len(df) < 15:
             print("Waiting for enough candle data...")
+            _append_latency_skip_event(
+                reason="insufficient_candles",
+                cycle_start_ms=cycle_start_ms,
+                candles_fetch_ms=candles_fetch_ms,
+            )
             time.sleep(SLEEP_SECONDS)
             continue
 
+        indicators_start_ms = _perf_ms_now()
         df = add_indicators(df)
+        indicators_ms = _elapsed_ms(indicators_start_ms)
         ready, reason = _indicators_ready(df)
         if not ready:
             print(f"Indicator guard: {reason}; skipping cycle")
+            _append_latency_skip_event(
+                reason=f"indicator_guard:{reason}",
+                cycle_start_ms=cycle_start_ms,
+                candles_fetch_ms=candles_fetch_ms,
+                indicators_ms=indicators_ms,
+            )
             time.sleep(SLEEP_SECONDS)
             continue
 
@@ -673,17 +826,21 @@ while True:
         print(f"\n{datetime.now(EASTERN_TZ).strftime('%H:%M:%S')} ET | {SYMBOL} {last.close:.2f} | {regime}")
 
         option_mark = None
+        option_bid = None
 
         try:
             current_position = getattr(ENGINE_MODULE, "current_position", None)
             if current_position and getattr(current_position, "option_symbol", None):
                 chain = get_option_chain()
                 option_mark = find_option_mark(chain, current_position.option_symbol)
+                option_bid = find_option_bid(chain, current_position.option_symbol)
 
         except Exception as e:
             print(f"Option mark error: {e}")
-        print(f"DEBUG option_mark before manage_trade = {option_mark}")
-        manage_trade(float(last.close), option_mark)
+        print(f"DEBUG option_mark before manage_trade = {option_mark} | option_bid = {option_bid}")
+        manage_start_ms = _perf_ms_now()
+        manage_trade(float(last.close), option_mark, option_bid)
+        manage_trade_ms = _elapsed_ms(manage_start_ms)
         if last.name <= last_processed_candle_time:
             if LAST_CANDLE_SOURCE == "live_window":
                 print("Ignoring duplicate live candle")
@@ -692,6 +849,12 @@ while True:
                     "Waiting for next live candle: "
                     f"latest cached candle is {last.name} from {LAST_CANDLE_SOURCE}"
                 )
+            _append_latency_skip_event(
+                reason="duplicate_or_stale_candle",
+                cycle_start_ms=cycle_start_ms,
+                candles_fetch_ms=candles_fetch_ms,
+                indicators_ms=indicators_ms,
+            )
             time.sleep(SLEEP_SECONDS)
             continue
 
@@ -700,12 +863,54 @@ while True:
                 "Off-hours candle heartbeat active; skipping new entry evaluation until regular market hours"
             )
             last_processed_candle_time = last.name
+            _append_latency_skip_event(
+                reason="off_hours_skip",
+                cycle_start_ms=cycle_start_ms,
+                candles_fetch_ms=candles_fetch_ms,
+                indicators_ms=indicators_ms,
+            )
             time.sleep(SLEEP_SECONDS)
             continue
 
-        maybe_enter_trade(last, prev, regime)
-        maybe_enter_trade(last, prev, regime)
+        entry_metrics = maybe_enter_trade(last, prev, regime)
+
+        report_start_ms = _perf_ms_now()
         maybe_generate_daily_strategy_effectiveness_report()
+        report_ms = _elapsed_ms(report_start_ms)
+
+        cycle_total_ms = _elapsed_ms(cycle_start_ms)
+        print(
+            "LATENCY(ms): "
+            f"candles={candles_fetch_ms:.2f} "
+            f"indicators={indicators_ms:.2f} "
+            f"manage={manage_trade_ms:.2f} "
+            f"entry_eval={float(entry_metrics.get('entry_eval_ms') or 0.0):.2f} "
+            f"open_trade={float(entry_metrics.get('open_trade_ms') or 0.0):.2f} "
+            f"report={report_ms:.2f} "
+            f"cycle_total={cycle_total_ms:.2f}"
+        )
+
+        _append_latency_event({
+            "ts_utc": datetime.now(UTC_TZ).isoformat(),
+            "ts_et": datetime.now(EASTERN_TZ).isoformat(),
+            "symbol": SYMBOL,
+            "candle_source": LAST_CANDLE_SOURCE,
+            "regime": regime,
+            "candles_count": int(len(df)),
+            "candles_fetch_ms": candles_fetch_ms,
+            "indicators_ms": indicators_ms,
+            "manage_trade_ms": manage_trade_ms,
+            "entry_attempted": bool(entry_metrics.get("attempted")),
+            "entry_opened": bool(entry_metrics.get("opened")),
+            "entry_decision_reason": entry_metrics.get("decision_reason"),
+            "entry_eval_ms": entry_metrics.get("entry_eval_ms"),
+            "chain_fetch_ms": entry_metrics.get("chain_fetch_ms"),
+            "option_select_ms": entry_metrics.get("option_select_ms"),
+            "open_trade_ms": entry_metrics.get("open_trade_ms"),
+            "report_ms": report_ms,
+            "cycle_total_ms": cycle_total_ms,
+        })
+
         last_processed_candle_time = last.name
 
         time.sleep(SLEEP_SECONDS)

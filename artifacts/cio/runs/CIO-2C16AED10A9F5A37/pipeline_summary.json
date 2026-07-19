@@ -1,0 +1,38 @@
+{
+  "artifact_directory": "artifacts/cio/runs/CIO-2C16AED10A9F5A37",
+  "as_of_date": "2026-07-19",
+  "content_hash": "3ac62b68828a0427dcb7f920b4ebd1480b00ea2f263cbaeced876a543011c63e",
+  "created_artifacts": [
+    "daily_cio_brief.md",
+    "decision_records.json",
+    "performance_report.md",
+    "pipeline_manifest.json",
+    "pipeline_summary.json",
+    "portfolio_plan.md"
+  ],
+  "first_blocker": "",
+  "overall_status": "success",
+  "run_id": "CIO-2C16AED10A9F5A37",
+  "stage_statuses": [
+    {
+      "blocker": "",
+      "stage": "decision_engine",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "decision_journal",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "portfolio_os",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "performance_lab",
+      "status": "completed"
+    }
+  ]
+}

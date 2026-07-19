@@ -1,0 +1,18 @@
+{
+  "content_hash": "eb647b561994d7f1f5b82c1664dfee8994aa863524837b3e8003c82a34d4ec9e",
+  "evidence_by_symbol": {
+    "XYZ": 1
+  },
+  "evidence_ids": [
+    "EVD-AD2C67E2C1858C16D721"
+  ],
+  "lineage_by_target": {
+    "DecisionRecord:DEC-1FF8BB33455E27119556": 1,
+    "PortfolioPlan:PLAN-2026-07-19": 1,
+    "RealizedOutcome:DEC-1FF8BB33455E27119556": 1,
+    "ThesisEvaluation:TH-XYZ-2026-07-19": 1
+  },
+  "superseded_pairs": [],
+  "total_evidence": 1,
+  "total_lineage": 4
+}

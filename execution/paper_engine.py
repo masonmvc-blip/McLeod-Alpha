@@ -379,9 +379,12 @@ def manage_trade(price, option_mark=None, option_bid=None):
     Trailing Stop Loss Strategy (based on option value, not SPY):
     - Entry (0% profit):     Stop = 5% below entry price
     - Up 2% profit:          Stop = 3% below entry price
+    - Up 3% profit:          Stop = 1% below entry price
     - Up 4% profit:          Stop = Trails 3% below current price
-    - Up 5% profit:          Stop = Trails 2% below current price
-    - Up 6% profit:          Stop = Trails 1% below current price
+    - Up 5% profit:          Stop = Trails 2.5% below current price
+    - Up 6% profit:          Stop = Trails 2% below current price
+    - Up 7% profit:          Stop = Trails 1.5% below current price
+    - Up 8% profit:          Stop = Trails 1% below current price
     
     Args:
         price: Current SPY price
@@ -465,11 +468,11 @@ def manage_trade(price, option_mark=None, option_bid=None):
     elif option_pnl_pct >= THREE_PCT_TRIGGER_PCT:  # Up 3%
         # Set stop to 1% below entry
         new_stop = option_entry * (1 - (THREE_PCT_ENTRY_STOP_PCT / 100))
-        stop_type = "3% Entry Lock"
+        stop_type = "3% Stop"
     elif option_pnl_pct >= TWO_PCT_TRIGGER_PCT:  # Up 2%
         # Set stop to 3% below entry
         new_stop = option_entry * (1 - (TWO_PCT_ENTRY_STOP_PCT / 100))
-        stop_type = "2% Entry Lock"
+        stop_type = "2% Stop"
     else:
         # Below 2%: Keep 5% initial stop
         new_stop = current_position.option_initial_stop

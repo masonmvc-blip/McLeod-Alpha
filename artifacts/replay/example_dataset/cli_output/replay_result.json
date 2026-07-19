@@ -1,0 +1,307 @@
+{
+  "artifact_paths": [],
+  "content_hash": "df8971cd94701c0ae1bd2c1d57a1c5e8dc3f3f6fa740aaa2dc916b2c71015308",
+  "day_results": [
+    {
+      "day_hash": "d3987d0ba4dcdbf9bdd9a679205b4ba6edb2ef6d7e1164c14cf2a41d18483c52",
+      "snapshot_date": "2026-01-01",
+      "snapshot_hash": "a397fbb074efea5da897fbcdfa134b99133370481c0f091d211c341c071dac4c",
+      "snapshot_id": "S-001",
+      "stages": {
+        "decision": {
+          "content_hash": "fe013c2fb3372ea2dec2ed7f40c63f63f811f2a46dc1f06829fe2189a725df41",
+          "detail": "decision executed",
+          "payload": {
+            "confidence": 0.7557,
+            "recommendation": "HOLD",
+            "thesis_health": 65.1,
+            "valuation_signal": 0.1
+          },
+          "stage": "decision",
+          "status": "PASS"
+        },
+        "performance": {
+          "content_hash": "aec2f634bde1ca34eea58b8cd4998c4889fe3c795c523888ff412dc2b07ff794",
+          "detail": "performance executed",
+          "payload": {
+            "alpha": 0.01,
+            "realized_direction": 1.0,
+            "replacement_quality": 0.7
+          },
+          "stage": "performance",
+          "status": "PASS"
+        },
+        "portfolio": {
+          "content_hash": "e96b2c00b6b8998aeb22bf6b9bf3842d23e1e94b58c74838eacdebc48769da11",
+          "detail": "portfolio executed",
+          "payload": {
+            "cash_weight": 0.1,
+            "holdings_count": 8,
+            "target_action": "HOLD",
+            "turnover": 0.02
+          },
+          "stage": "portfolio",
+          "status": "PASS"
+        },
+        "thesis": {
+          "content_hash": "c2d5fdb8ef936f4d28a5fcbd2ae7f4f2b636616cff030e23e8787be11e443aeb",
+          "detail": "thesis executed",
+          "payload": {
+            "evidence_count": 1,
+            "health_score": 65.1,
+            "state_hash": "a65c21bd6aae5d36b3ba4bfec2900856550054603dabbd0fcb5027e822f45c90",
+            "status": "ACTIVE"
+          },
+          "stage": "thesis",
+          "status": "PASS"
+        }
+      }
+    },
+    {
+      "day_hash": "baf77abaa20ecf92ca97f366f44c265e314babf29b1ba7c02f660a55624d7ea2",
+      "snapshot_date": "2026-01-02",
+      "snapshot_hash": "50a88c3df042930d0021f2ffaaead8aecd43ca9b8a6527030e6dbee135f28bb2",
+      "snapshot_id": "S-002",
+      "stages": {
+        "decision": {
+          "content_hash": "e127d593ac1330b4789bb4827ad436996b268a1a7914ed53271df95fe93519c3",
+          "detail": "decision executed",
+          "payload": {
+            "confidence": 0.7564,
+            "recommendation": "BUY",
+            "thesis_health": 65.2,
+            "valuation_signal": 0.3
+          },
+          "stage": "decision",
+          "status": "PASS"
+        },
+        "performance": {
+          "content_hash": "4a3e2b2b0411cac5456cd5de93c1bf2b03e4d5826bd388b4c60003014e934a2b",
+          "detail": "performance executed",
+          "payload": {
+            "alpha": 0.02,
+            "realized_direction": 1.0,
+            "replacement_quality": 0.7
+          },
+          "stage": "performance",
+          "status": "PASS"
+        },
+        "portfolio": {
+          "content_hash": "7bfaea5cfdd388278ad67bc79c6c4eaf9e716b97512343b790cb8257e1226288",
+          "detail": "portfolio executed",
+          "payload": {
+            "cash_weight": 0.1,
+            "holdings_count": 8,
+            "target_action": "BUY",
+            "turnover": 0.06
+          },
+          "stage": "portfolio",
+          "status": "PASS"
+        },
+        "thesis": {
+          "content_hash": "736faf7063ae60d72dad5854cc68f281180210f6ac78458147d31478ed853687",
+          "detail": "thesis executed",
+          "payload": {
+            "evidence_count": 1,
+            "health_score": 65.2,
+            "state_hash": "74d5d7bd42a255f720f651fe2864d0aa60e890ef7def40350911ea8583f02775",
+            "status": "ACTIVE"
+          },
+          "stage": "thesis",
+          "status": "PASS"
+        }
+      }
+    },
+    {
+      "day_hash": "630e8e3ac101d261efba1a1abd4e56755a068d05690d2e71186e67d9f3a0da90",
+      "snapshot_date": "2026-01-03",
+      "snapshot_hash": "754ad6b90d1e58a3213cbba5d7bf4168d0ba6e91d78a7c66b771c4d5706bc416",
+      "snapshot_id": "S-003",
+      "stages": {
+        "decision": {
+          "content_hash": "d698d8dbe8b9e699403da1a284a6de41dba0c277324798cb12742fe7bcdd0503",
+          "detail": "decision executed",
+          "payload": {
+            "confidence": 0.7543,
+            "recommendation": "TRIM",
+            "thesis_health": 64.9,
+            "valuation_signal": -0.3
+          },
+          "stage": "decision",
+          "status": "PASS"
+        },
+        "performance": {
+          "content_hash": "ebe2c3c8209235b8c82926cff026aa178f03577171df2beb87a762595eab8213",
+          "detail": "performance executed",
+          "payload": {
+            "alpha": -0.01,
+            "realized_direction": 1.0,
+            "replacement_quality": 0.7
+          },
+          "stage": "performance",
+          "status": "PASS"
+        },
+        "portfolio": {
+          "content_hash": "94446725c3ea942835418583cb93f8ac5fcdc48fbe3e4e2d6a182191ea0e9c14",
+          "detail": "portfolio executed",
+          "payload": {
+            "cash_weight": 0.1,
+            "holdings_count": 8,
+            "target_action": "TRIM",
+            "turnover": 0.06
+          },
+          "stage": "portfolio",
+          "status": "PASS"
+        },
+        "thesis": {
+          "content_hash": "636f22646bbbc5f1a0233c645b1c456c1da6dfd488063f739ecc3d41014dfeec",
+          "detail": "thesis executed",
+          "payload": {
+            "evidence_count": 1,
+            "health_score": 64.9,
+            "state_hash": "7c2f05fc01681a39aca41e3798bf9a35bb32b406ca65e75b9c9b2a293bf3a1e2",
+            "status": "ACTIVE"
+          },
+          "stage": "thesis",
+          "status": "PASS"
+        }
+      }
+    }
+  ],
+  "metrics": {
+    "alpha_over_time": [
+      [
+        "2026-01-01",
+        0.01
+      ],
+      [
+        "2026-01-02",
+        0.03
+      ],
+      [
+        "2026-01-03",
+        0.02
+      ]
+    ],
+    "confidence_calibration": 0.755467,
+    "decision_stability": 0.0,
+    "max_drawdown": 0.01,
+    "portfolio_turnover": 0.046667,
+    "recommendation_changes": 2,
+    "replacement_quality": 0.7,
+    "thesis_health_evolution": [
+      [
+        "2026-01-01",
+        65.1
+      ],
+      [
+        "2026-01-02",
+        65.2
+      ],
+      [
+        "2026-01-03",
+        64.9
+      ]
+    ]
+  },
+  "replay_id": "REPLAY-41A45FF2B5F8BE02A50E",
+  "snapshot_count": 3,
+  "timeline": [
+    {
+      "content_hash": "fe013c2fb3372ea2dec2ed7f40c63f63f811f2a46dc1f06829fe2189a725df41",
+      "detail": "decision executed",
+      "snapshot_date": "2026-01-01",
+      "snapshot_id": "S-001",
+      "stage": "decision",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "aec2f634bde1ca34eea58b8cd4998c4889fe3c795c523888ff412dc2b07ff794",
+      "detail": "performance executed",
+      "snapshot_date": "2026-01-01",
+      "snapshot_id": "S-001",
+      "stage": "performance",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "e96b2c00b6b8998aeb22bf6b9bf3842d23e1e94b58c74838eacdebc48769da11",
+      "detail": "portfolio executed",
+      "snapshot_date": "2026-01-01",
+      "snapshot_id": "S-001",
+      "stage": "portfolio",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "c2d5fdb8ef936f4d28a5fcbd2ae7f4f2b636616cff030e23e8787be11e443aeb",
+      "detail": "thesis executed",
+      "snapshot_date": "2026-01-01",
+      "snapshot_id": "S-001",
+      "stage": "thesis",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "e127d593ac1330b4789bb4827ad436996b268a1a7914ed53271df95fe93519c3",
+      "detail": "decision executed",
+      "snapshot_date": "2026-01-02",
+      "snapshot_id": "S-002",
+      "stage": "decision",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "4a3e2b2b0411cac5456cd5de93c1bf2b03e4d5826bd388b4c60003014e934a2b",
+      "detail": "performance executed",
+      "snapshot_date": "2026-01-02",
+      "snapshot_id": "S-002",
+      "stage": "performance",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "7bfaea5cfdd388278ad67bc79c6c4eaf9e716b97512343b790cb8257e1226288",
+      "detail": "portfolio executed",
+      "snapshot_date": "2026-01-02",
+      "snapshot_id": "S-002",
+      "stage": "portfolio",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "736faf7063ae60d72dad5854cc68f281180210f6ac78458147d31478ed853687",
+      "detail": "thesis executed",
+      "snapshot_date": "2026-01-02",
+      "snapshot_id": "S-002",
+      "stage": "thesis",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "d698d8dbe8b9e699403da1a284a6de41dba0c277324798cb12742fe7bcdd0503",
+      "detail": "decision executed",
+      "snapshot_date": "2026-01-03",
+      "snapshot_id": "S-003",
+      "stage": "decision",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "ebe2c3c8209235b8c82926cff026aa178f03577171df2beb87a762595eab8213",
+      "detail": "performance executed",
+      "snapshot_date": "2026-01-03",
+      "snapshot_id": "S-003",
+      "stage": "performance",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "94446725c3ea942835418583cb93f8ac5fcdc48fbe3e4e2d6a182191ea0e9c14",
+      "detail": "portfolio executed",
+      "snapshot_date": "2026-01-03",
+      "snapshot_id": "S-003",
+      "stage": "portfolio",
+      "status": "PASS"
+    },
+    {
+      "content_hash": "636f22646bbbc5f1a0233c645b1c456c1da6dfd488063f739ecc3d41014dfeec",
+      "detail": "thesis executed",
+      "snapshot_date": "2026-01-03",
+      "snapshot_id": "S-003",
+      "stage": "thesis",
+      "status": "PASS"
+    }
+  ]
+}

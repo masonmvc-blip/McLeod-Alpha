@@ -16,7 +16,7 @@ KEY DIFFERENCES FROM STUB:
 from execution.position_store import save_position, load_position, clear_position
 from execution.sms_alerts import send_trade_entry_alert, send_trade_exit_alert, send_emergency_alert
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, time as dt_time
+from datetime import datetime, timedelta, time as dt_time, timezone
 from zoneinfo import ZoneInfo
 from execution.risk_manager import can_open_trade, record_trade, record_stop
 from execution.trade_logger import log_trade, log_bot_order, log_trade_diagnostic_event
@@ -38,6 +38,8 @@ _last_protective_stop_check_epoch = 0.0
 _last_protective_stop_check_ok = True
 BROKER_RECONCILE_MAX_ATTEMPTS = max(1, int(os.getenv("BROKER_RECONCILE_MAX_ATTEMPTS", "3")))
 BROKER_RECONCILE_RETRY_DELAY_SECONDS = max(1.0, float(os.getenv("BROKER_RECONCILE_RETRY_DELAY_SECONDS", "6")))
+OPTION_QUOTE_MAX_STALE_SECONDS_OPEN = max(1.0, float(os.getenv("OPTION_QUOTE_MAX_STALE_SECONDS_OPEN", "8")))
+OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SPREAD_PCT_OPEN", "15")))
 
 
 def set_schwab_client(client, account_number, account_hash):
@@ -102,6 +104,44 @@ def _audit_bot_order(order_id, intent):
         log_bot_order(order_id, intent)
     except Exception as exc:
         print(f"WARNING: Could not audit bot order {order_id} ({intent}): {exc}")
+
+
+def _coerce_epoch_seconds(value):
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    if numeric <= 0:
+        return None
+
+    if numeric > 1_000_000_000_000:
+        return numeric / 1000.0
+
+    if numeric > 1_000_000_000:
+        return numeric
+
+    return None
+
+
+def _extract_quote_epoch_seconds(*payloads):
+    candidate_keys = (
+        "quoteTimeInLong",
+        "tradeTimeInLong",
+        "regularMarketTradeTimeInLong",
+        "lastTradeTimeInLong",
+        "timestamp",
+        "lastTradeTimestamp",
+    )
+
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        for key in candidate_keys:
+            epoch = _coerce_epoch_seconds(payload.get(key))
+            if epoch is not None:
+                return epoch
+    return None
 
 
 def sanitize_for_logging(text):
@@ -1859,8 +1899,8 @@ def _submit_option_exit_limit_order(option_symbol, quantity, limit_price):
         return None
 
 
-def _fetch_option_quote_levels(option_symbol):
-    """Return best-effort option quote levels for exit pricing."""
+def _fetch_option_quote_snapshot(option_symbol):
+    """Return best-effort option quote levels plus freshness metadata."""
     if not _schwab_client or not option_symbol:
         return {}
     try:
@@ -1883,10 +1923,40 @@ def _fetch_option_quote_levels(option_symbol):
                     out[key] = float(value)
             except (TypeError, ValueError):
                 continue
+
+        quote_epoch_seconds = _extract_quote_epoch_seconds(payload, symbol_blob, quote, regular, extended)
+        quote_age_seconds = None
+        quote_as_of = None
+        if quote_epoch_seconds is not None:
+            quote_age_seconds = max(0.0, time.time() - quote_epoch_seconds)
+            quote_as_of = datetime.fromtimestamp(quote_epoch_seconds, tz=timezone.utc).isoformat()
+
+        bid = float(out.get("bid", 0.0) or 0.0)
+        ask = float(out.get("ask", 0.0) or 0.0)
+        spread = None
+        spread_pct = None
+        mid = None
+        if bid > 0 and ask > 0 and ask >= bid:
+            spread = round(ask - bid, 4)
+            mid = round((ask + bid) / 2.0, 4)
+            if mid > 0:
+                spread_pct = round(((ask - bid) / mid) * 100.0, 2)
+
+        out["quote_age_seconds"] = round(float(quote_age_seconds), 1) if quote_age_seconds is not None else None
+        out["quote_as_of"] = quote_as_of
+        out["quote_spread"] = spread
+        out["quote_spread_pct"] = spread_pct
+        out["quote_mid"] = mid
         return out
     except Exception as e:
         print(f"WARNING: Could not fetch option quote levels: {e}")
         return {}
+
+
+def _fetch_option_quote_levels(option_symbol):
+    """Return best-effort option quote levels for exit pricing."""
+    snapshot = _fetch_option_quote_snapshot(option_symbol)
+    return {key: value for key, value in snapshot.items() if key in {"bid", "ask", "mark", "last"}}
 
 
 def _compute_fast_exit_limit_price(option_symbol, fallback_price):
@@ -1917,7 +1987,7 @@ def _compute_fast_exit_limit_price(option_symbol, fallback_price):
 
 def _compute_fast_entry_limit_price(option_symbol, fallback_mark):
     """Compute an aggressive buy-to-open limit price to reduce missed moves."""
-    levels = _fetch_option_quote_levels(option_symbol)
+    levels = _fetch_option_quote_snapshot(option_symbol)
     bid = float(levels.get("bid", 0.0) or 0.0)
     ask = float(levels.get("ask", 0.0) or 0.0)
     mark = float(levels.get("mark", 0.0) or 0.0)
@@ -1938,6 +2008,27 @@ def _compute_fast_entry_limit_price(option_symbol, fallback_mark):
 
     normalized = normalize_option_tick(float(target)) if target and target > 0 else 0.0
     return normalized, levels
+
+
+def _validate_entry_quote_snapshot(quote_snapshot):
+    """Fail closed when the option quote looks stale or unusually wide."""
+    issues = []
+
+    quote_age_seconds = quote_snapshot.get("quote_age_seconds")
+    if quote_age_seconds is not None and float(quote_age_seconds) > OPTION_QUOTE_MAX_STALE_SECONDS_OPEN:
+        issues.append(
+            f"stale quote ({float(quote_age_seconds):.1f}s old > {OPTION_QUOTE_MAX_STALE_SECONDS_OPEN:.1f}s max)"
+        )
+
+    quote_spread_pct = quote_snapshot.get("quote_spread_pct")
+    if quote_spread_pct is not None and float(quote_spread_pct) > OPTION_QUOTE_MAX_SPREAD_PCT_OPEN:
+        issues.append(
+            f"wide quote spread ({float(quote_spread_pct):.2f}% > {OPTION_QUOTE_MAX_SPREAD_PCT_OPEN:.2f}% max)"
+        )
+
+    if issues:
+        return False, "; ".join(issues)
+    return True, None
 
 
 def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_SUBMISSION_TIMEOUT_SECONDS):
@@ -2157,6 +2248,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     option_symbol = option.get("symbol")
     option_mark = float(option.get("mark", 0.0))
     limit_price, quote_levels = _compute_fast_entry_limit_price(option_symbol, option_mark)
+    quote_ok, quote_block_reason = _validate_entry_quote_snapshot(quote_levels)
     
     print(f"\n{'='*70}")
     print(f"🔴 LIVE TRADE ENTRY: {direction}")
@@ -2169,8 +2261,19 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         f"Option Quote Levels: bid={quote_levels.get('bid')} ask={quote_levels.get('ask')} "
         f"mark={quote_levels.get('mark')} last={quote_levels.get('last')}"
     )
+    if quote_levels.get("quote_age_seconds") is not None:
+        print(
+            f"Quote Freshness: age={float(quote_levels.get('quote_age_seconds') or 0.0):.1f}s "
+            f"spread={quote_levels.get('quote_spread_pct') or '-'}% as_of={quote_levels.get('quote_as_of') or 'unknown'}"
+        )
     print(f"Option Mark: {option_mark:.2f} → Entry Limit: {limit_price:.2f}")
     print(f"Quantity: {quantity}")
+
+    if not quote_ok:
+        print(f"\n🔒 ENTRY BLOCKED: option quote is not fresh enough to trust")
+        print(f"   Reason: {quote_block_reason}")
+        print("   No order submitted; bot remains flat")
+        return False
     
     # STEP 1: Submit order to Schwab
     print("\n[STEP 1] Submitting order to Schwab...")

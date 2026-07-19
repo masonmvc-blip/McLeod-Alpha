@@ -52,18 +52,46 @@ def t_test_independent(a: Sequence[float], b: Sequence[float]) -> tuple[float, f
 def mann_whitney_u(a: Sequence[float], b: Sequence[float]) -> tuple[float, float]:
     if not a or not b:
         return 0.0, 1.0
+
     combined = [(float(x), 0) for x in a] + [(float(x), 1) for x in b]
     combined.sort(key=lambda row: row[0])
+
+    # Assign average ranks across ties to match trusted statistical conventions.
+    ranks = [0.0 for _ in combined]
+    tie_counts: list[int] = []
+    i = 0
+    while i < len(combined):
+        j = i
+        while j + 1 < len(combined) and combined[j + 1][0] == combined[i][0]:
+            j += 1
+        rank_avg = (i + 1 + j + 1) / 2.0
+        tie_size = j - i + 1
+        tie_counts.append(tie_size)
+        for k in range(i, j + 1):
+            ranks[k] = rank_avg
+        i = j + 1
+
     rank_sum_a = 0.0
-    for idx, (_, grp) in enumerate(combined, start=1):
+    for rank, (_, grp) in zip(ranks, combined):
         if grp == 0:
-            rank_sum_a += idx
+            rank_sum_a += rank
+
     n1 = len(a)
     n2 = len(b)
     u1 = rank_sum_a - (n1 * (n1 + 1) / 2.0)
+    u2 = n1 * n2 - u1
+
     mean_u = n1 * n2 / 2.0
-    sd_u = math.sqrt(max(1e-12, n1 * n2 * (n1 + n2 + 1) / 12.0))
-    z = (u1 - mean_u) / sd_u
+    n = n1 + n2
+    tie_term = sum((t ** 3) - t for t in tie_counts if t > 1)
+    tie_correction = tie_term / (n * (n - 1)) if n > 1 else 0.0
+    variance_u = (n1 * n2 / 12.0) * ((n + 1.0) - tie_correction)
+    if variance_u <= 0.0:
+        return float(u1), 1.0
+
+    # Two-sided asymptotic p-value with continuity correction.
+    u = min(u1, u2)
+    z = (abs(u - mean_u) - 0.5) / math.sqrt(variance_u)
     p = 2.0 * (1.0 - NormalDist().cdf(abs(z)))
     return u1, max(0.0, min(1.0, p))
 

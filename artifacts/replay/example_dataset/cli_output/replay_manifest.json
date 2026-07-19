@@ -1,0 +1,11 @@
+{
+  "artifact_hashes": {
+    "replay_report.md": "9f07a21f76274111db0f2cbf91b4a7c3bc8d7f4e059e36a84801605c93e6d453",
+    "replay_result.json": "a086a9e6b09e951725dbb07861701debae679cd06f1b2b763cfbbc1d852f9a42",
+    "replay_timeline.json": "7c107b47033d2b8720eed9e2b983cda7d63973098d9931aca133070186ac739d"
+  },
+  "replay_content_hash": "df8971cd94701c0ae1bd2c1d57a1c5e8dc3f3f6fa740aaa2dc916b2c71015308",
+  "replay_id": "REPLAY-41A45FF2B5F8BE02A50E",
+  "schema_version": "1.0.0",
+  "snapshot_count": 3
+}

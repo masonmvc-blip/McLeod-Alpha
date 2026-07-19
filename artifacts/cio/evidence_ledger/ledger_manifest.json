@@ -1,0 +1,16 @@
+{
+  "file_hashes": {
+    "evidence.jsonl": "5b28e27eaa44a2bc4680a7fcf54142c548f94d3b10a2957755611480ac415769",
+    "index.json": "4038705c11765e5b96be32acece00acc1a36394fbb4cbd2fef7c16edd0fa9b17",
+    "lineage.jsonl": "32e2d51c1ac6ff55885bbdc8ba6bd2b547b2724990357c538579f994032aeb55"
+  },
+  "files": [
+    "evidence.jsonl",
+    "lineage.jsonl",
+    "index.json",
+    "ledger_manifest.json"
+  ],
+  "ledger_root": "artifacts/cio/evidence_ledger",
+  "manifest_content_hash": "8f19ced198a4c65fa2b8909883dd46587b0c82bbe3e2ea0a43b0f72912313c7a",
+  "schema_version": "1.0.0"
+}

@@ -18,9 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
     import requests
-except ImportError:
-    print("ERROR: requests library required. Install: pip install requests")
-    sys.exit(1)
+except ImportError as exc:
+    requests = None
+    _REQUESTS_IMPORT_ERROR = exc
+else:
+    _REQUESTS_IMPORT_ERROR = None
 
 try:
     from dotenv import load_dotenv
@@ -95,6 +97,11 @@ class SECDataSource:
     
     def __init__(self, cache_dir: Optional[Path] = None):
         """Initialize SEC data source."""
+        if requests is None:
+            raise RuntimeError(
+                "SECDataSource requires the 'requests' package. Install it with: pip install requests"
+            ) from _REQUESTS_IMPORT_ERROR
+
         self.cache_dir = cache_dir or Path.home() / ".sec_cache"
         self.cache_dir.mkdir(exist_ok=True, parents=True)
         self.session = requests.Session()

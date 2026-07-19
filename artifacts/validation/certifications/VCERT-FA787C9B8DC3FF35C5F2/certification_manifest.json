@@ -1,0 +1,13 @@
+{
+  "artifact_hashes": {
+    "validation_certification.json": "0a7dc50c3bf6ac5f2f4645cf7bde21879731381ad53d9073a56a0bee7dcb0fc2",
+    "validation_certification.md": "ecb71425cd9dc47d961e240227eb03d759963614068bd0afd2e075310dfc0608"
+  },
+  "certification_id": "VCERT-FA787C9B8DC3FF35C5F2",
+  "policy_hash": "f0bb93b40f172b3a8a020758dcb8f65352362e5c5106e6735b3331e696645e52",
+  "policy_version": "2026.07.v1",
+  "schema_version": "1.0.0",
+  "status": "PASS",
+  "system_version": "v1",
+  "validation_report_hash": "6094576e7a8134d6994f90a3863877ed9f3bc0ad638901d3714eae769f19da15"
+}

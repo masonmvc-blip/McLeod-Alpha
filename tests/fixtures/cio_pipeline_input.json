@@ -1,0 +1,128 @@
+{
+  "decision_engine_inputs": {
+    "cash_balance": 12000,
+    "constraints": {
+      "max_portfolio_risk": 60.0,
+      "max_sector_weight": 0.4,
+      "max_single_name_weight": 0.25,
+      "min_cash_weight": 0.1,
+      "min_diversification_score": 55.0,
+      "min_liquidity_score": 50.0,
+      "target_cash_weight": 0.15
+    },
+    "conviction_scores": {
+      "AAPL": 80,
+      "MSFT": 76,
+      "SNOW": 88,
+      "TSM": 83,
+      "XOM": 37
+    },
+    "date": "2026-07-19",
+    "holdings": [
+      {
+        "conviction_score": 80,
+        "liquidity_score": 94,
+        "market_value": 42000,
+        "quantity": 120,
+        "risk_score": 28,
+        "sector": "Technology",
+        "symbol": "AAPL",
+        "thesis_health_score": 78,
+        "valuation_score": 72
+      },
+      {
+        "conviction_score": 76,
+        "liquidity_score": 96,
+        "market_value": 36000,
+        "quantity": 80,
+        "risk_score": 30,
+        "sector": "Technology",
+        "symbol": "MSFT",
+        "thesis_health_score": 75,
+        "valuation_score": 68
+      },
+      {
+        "conviction_score": 37,
+        "liquidity_score": 70,
+        "market_value": 25000,
+        "quantity": 140,
+        "risk_score": 74,
+        "sector": "Energy",
+        "symbol": "XOM",
+        "thesis_health_score": 41,
+        "valuation_score": 44
+      }
+    ],
+    "recent_material_news": [
+      {
+        "headline": "Refining margins compress",
+        "impact": "negative",
+        "materiality_score": 78,
+        "published_at": "2026-07-19T08:15:00-05:00",
+        "source": "Reuters",
+        "summary": "Margins weakened on lower crack spreads.",
+        "symbol": "XOM"
+      },
+      {
+        "headline": "Cloud spend normalization shows signs of reversal",
+        "impact": "positive",
+        "materiality_score": 74,
+        "published_at": "2026-07-19T08:30:00-05:00",
+        "source": "Bloomberg",
+        "summary": "Enterprise spend recovery appears to be broadening.",
+        "symbol": "SNOW"
+      }
+    ],
+    "risk_scores": {
+      "AAPL": 28,
+      "MSFT": 30,
+      "SNOW": 22,
+      "TSM": 27,
+      "XOM": 74
+    },
+    "thesis_health_scores": {
+      "AAPL": 78,
+      "MSFT": 75,
+      "SNOW": 82,
+      "TSM": 76,
+      "XOM": 41
+    },
+    "valuation_scores": {
+      "AAPL": 72,
+      "MSFT": 68,
+      "SNOW": 84,
+      "TSM": 80,
+      "XOM": 44
+    },
+    "watchlist": [
+      {
+        "conviction_score": 88,
+        "risk_score": 22,
+        "sector": "Software",
+        "symbol": "SNOW",
+        "thesis": "Strong revenue reacceleration",
+        "valuation_score": 84
+      },
+      {
+        "conviction_score": 83,
+        "risk_score": 27,
+        "sector": "Semiconductors",
+        "symbol": "TSM",
+        "thesis": "Foundry leadership intact",
+        "valuation_score": 80
+      }
+    ]
+  },
+  "journal_root": "artifacts/cio/decision_journal",
+  "output_root": ".",
+  "portfolio_os_settings": {
+    "margin_settings": {
+      "buying_power": 100000.0,
+      "maintenance_requirement": 12000.0
+    },
+    "max_cash_allocation": 0.25,
+    "max_position_size": 0.2,
+    "min_position_size": 0.02
+  },
+  "realized_outcomes": []
+}

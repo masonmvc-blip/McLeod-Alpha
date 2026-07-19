@@ -148,6 +148,13 @@ def _reference_metrics(fixture: _MetricFixture) -> dict[str, float]:
         if scipy_stats is not None:
             skew = float(scipy_stats.skew(s, bias=False)) if len(s) > 2 else 0.0
             kurtosis = float(scipy_stats.kurtosis(s, fisher=False, bias=False)) if len(s) > 3 else 0.0
+            # SciPy yields NaN for undefined zero-variance moments; McLeod Lab's
+            # deterministic contract uses finite fallback 0.0, so normalize only
+            # non-finite degenerate outputs here to align reference parity.
+            if not math.isfinite(skew):
+                skew = 0.0
+            if not math.isfinite(kurtosis):
+                kurtosis = 0.0
         else:
             centered = ((s - mean_s) / vol_s) if vol_s > 1e-12 else np.zeros_like(s)
             skew = float(np.mean(centered ** 3)) if len(s) else 0.0

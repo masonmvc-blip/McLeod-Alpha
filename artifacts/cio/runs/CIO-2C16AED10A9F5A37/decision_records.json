@@ -1,0 +1,168 @@
+[
+  {
+    "action_type": "trim",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "XOM remains concentrated or risk elevated relative to portfolio constraints.",
+      "The brief still prefers de-risking over adding exposure."
+    ],
+    "confidence": 75.3,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-0AD2B4F5A1D4607E358A",
+    "expected_benefit": "Reduce exposure and improve risk-adjusted health by 58.0/100.",
+    "expected_risk": "XOM may continue to appreciate after de-risking.",
+    "invalidation_conditions": [
+      "XOM risk normalizes or concentration drops below target.",
+      "Material news materially improves the holding thesis."
+    ],
+    "priority": 1,
+    "realized_outcome": null,
+    "recommendation": "Trim XOM: XOM is carrying risk 74.0 with thesis 23.8, valuation 44.0, and 21.7% sector weight.",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Refining margins compress",
+      "Refining margins compress (negative)",
+      "Thesis 41.0->23.8 (-17.2)"
+    ],
+    "symbol": "XOM"
+  },
+  {
+    "action_type": "trim",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "MSFT remains concentrated or risk elevated relative to portfolio constraints.",
+      "The brief still prefers de-risking over adding exposure."
+    ],
+    "confidence": 64.1,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-A2041ADD63A5E47F016A",
+    "expected_benefit": "Reduce exposure and improve risk-adjusted health by 26.0/100.",
+    "expected_risk": "MSFT may continue to appreciate after de-risking.",
+    "invalidation_conditions": [
+      "MSFT risk normalizes or concentration drops below target.",
+      "Material news materially improves the holding thesis."
+    ],
+    "priority": 2,
+    "realized_outcome": null,
+    "recommendation": "Trim MSFT: MSFT is carrying risk 30.0 with thesis 75.0, valuation 68.0, and 67.8% sector weight.",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Holding risk 30.0"
+    ],
+    "symbol": "MSFT"
+  },
+  {
+    "action_type": "trim",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "AAPL remains concentrated or risk elevated relative to portfolio constraints.",
+      "The brief still prefers de-risking over adding exposure."
+    ],
+    "confidence": 63.4,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-2D8EC8C8A4300A8B8369",
+    "expected_benefit": "Reduce exposure and improve risk-adjusted health by 23.9/100.",
+    "expected_risk": "AAPL may continue to appreciate after de-risking.",
+    "invalidation_conditions": [
+      "AAPL risk normalizes or concentration drops below target.",
+      "Material news materially improves the holding thesis."
+    ],
+    "priority": 3,
+    "realized_outcome": null,
+    "recommendation": "Trim AAPL: AAPL is carrying risk 28.0 with thesis 78.0, valuation 72.0, and 67.8% sector weight.",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Holding risk 28.0"
+    ],
+    "symbol": "AAPL"
+  },
+  {
+    "action_type": "buy",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "SNOW remains supported by current valuation and conviction scores.",
+      "SNOW material news remains net supportive or neutral."
+    ],
+    "confidence": 68.3,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-ED9F458AD5811BD80514",
+    "expected_benefit": "Capture a higher-conviction entry with an estimated edge score of 87.2/100.",
+    "expected_risk": "SNOW could underperform if the catalyst stalls or the thesis weakens.",
+    "invalidation_conditions": [
+      "SNOW thesis deteriorates materially.",
+      "New negative material news undercuts the buy case."
+    ],
+    "priority": 4,
+    "realized_outcome": null,
+    "recommendation": "Buy SNOW: SNOW combines thesis 95.3, valuation 84.0, conviction 88.0, and risk 22.0. Strong revenue reacceleration Recent material news supports the setup.",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Cloud spend normalization shows signs of reversal",
+      "Cloud spend normalization shows signs of reversal (positive)",
+      "Thesis 82.0->95.3 (+13.3)"
+    ],
+    "symbol": "SNOW"
+  },
+  {
+    "action_type": "buy",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "TSM remains supported by current valuation and conviction scores.",
+      "TSM material news remains net supportive or neutral."
+    ],
+    "confidence": 61.7,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-33B41742A1AC9D2B9FE9",
+    "expected_benefit": "Capture a higher-conviction entry with an estimated edge score of 76.2/100.",
+    "expected_risk": "TSM could underperform if the catalyst stalls or the thesis weakens.",
+    "invalidation_conditions": [
+      "TSM thesis deteriorates materially.",
+      "New negative material news undercuts the buy case."
+    ],
+    "priority": 5,
+    "realized_outcome": null,
+    "recommendation": "Buy TSM: TSM combines thesis 76.0, valuation 80.0, conviction 83.0, and risk 27.0. Foundry leadership intact",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Foundry leadership intact"
+    ],
+    "symbol": "TSM"
+  },
+  {
+    "action_type": "cash",
+    "as_of_date": "2026-07-19",
+    "assumptions": [
+      "Cash deployment should preserve optionality.",
+      "The current brief prefers capital preservation before redeployment."
+    ],
+    "confidence": 68.07,
+    "conflicting_evidence": [],
+    "created_at": "2026-07-19T00:00:00+00:00",
+    "decision_id": "DEC-4B53029001000C465D7C",
+    "expected_benefit": "Deploy up to 10.0% of portfolio value into SNOW while preserving the cash floor.",
+    "expected_risk": "Idle cash can lag if the market advances while risk remains contained.",
+    "invalidation_conditions": [
+      "A higher-conviction deployment opportunity appears.",
+      "Portfolio risk falls enough to justify redeployment."
+    ],
+    "priority": 6,
+    "realized_outcome": null,
+    "recommendation": "Deploy up to 10.0% of portfolio value into SNOW while preserving the cash floor.",
+    "source_brief_id": "BRIEF-962E691E5C70452C6F69",
+    "status": "OPEN",
+    "supporting_evidence": [
+      "Portfolio health is 70.8/100 with MODERATE risk. Top actions: Trim XOM; Trim MSFT; Trim AAPL. Thesis changes tracked: 2. Material news items reviewed: 2. Cash view: Deploy up to 10.0% of portfolio value into SNOW while preserving the cash floor."
+    ],
+    "symbol": "CASH"
+  }
+]

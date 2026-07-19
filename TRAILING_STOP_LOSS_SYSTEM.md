@@ -14,9 +14,13 @@ Use this as the quick-reference source of truth for live stops.
 | Condition | Local Stop Rule | Broker Order Action | Exit Trigger | Exit Reason |
 |---|---|---|---|---|
 | New fill (0% profit) | Stop = Entry x 0.95 | Submit SELL_TO_CLOSE STOP_LIMIT at stop (limit = stop x 0.99) | N/A at entry | N/A |
-| Profit >= 3% and < 5% | Move stop to breakeven (Entry) | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 5% and < 7% | Stop = Current option quote x 0.98 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 7% | Stop = Current option quote x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 2% and < 3% | Stop = Entry x 0.97 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 3% and < 4% | Stop = Entry x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 4% and < 5% | Stop = Current option quote x 0.97 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 5% and < 6% | Stop = Current option quote x 0.975 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 6% and < 7% | Stop = Current option quote x 0.98 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 7% and < 8% | Stop = Current option quote x 0.985 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Profit >= 8% | Stop = Current option quote x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
 
 ### Quick Math
 
@@ -34,14 +38,18 @@ Use this as the quick-reference source of truth for live stops.
 
 ## Stop Loss Strategy
 
-The system uses **4-tier progressive trailing stops** based on option value:
+The system uses **8-tier progressive trailing stops** based on option value:
 
 | Profit Level | Stop Placement | Purpose |
 |---|---|---|
 | **Entry (0%)** | 5% below entry | Initial capital protection |
-| **Up 3%** | Move to breakeven | Risk-free trading point |
-| **Up 5%** | Trail 2% below current | Lock in gains while capturing more upside |
-| **Up 7%+** | Trail 1% below current | Maximize winning trades |
+| **Up 2%** | 3% below entry | Tighten risk early |
+| **Up 3%** | 1% below entry | Lock in near-breakeven protection |
+| **Up 4%** | Trail 3% below current | Begin profit-based trailing |
+| **Up 5%** | Trail 2.5% below current | Keep trailing as winner develops |
+| **Up 6%** | Trail 2% below current | Lock in more of the move |
+| **Up 7%** | Trail 1.5% below current | Tighten again as strength continues |
+| **Up 8%+** | Trail 1% below current | Maximize winning trades |
 
 ### Example
 
@@ -50,11 +58,13 @@ The system uses **4-tier progressive trailing stops** based on option value:
 | Option Price | Profit | Stop Placement | Reason |
 |---|---|---|---|
 | $2.00 | 0% | $1.90 | Initial 5% stop |
-| $2.02 | 1% | $1.90 | Still at initial stop |
-| $2.06 | 3% | $2.00 | Move to breakeven |
-| $2.10 | 5% | $2.06 | Trail 2% ($2.10 × 0.98) |
-| $2.14 | 7% | $2.12 | Trail 1% ($2.14 × 0.99) |
-| $2.20 | 10% | $2.18 | Continue trailing 1% |
+| $2.04 | 2% | $1.94 | Stop = entry x 0.97 |
+| $2.06 | 3% | $1.98 | Stop = entry x 0.99 |
+| $2.08 | 4% | $2.02 | Trail 3% ($2.08 × 0.97) |
+| $2.10 | 5% | $2.05 | Trail 2.5% ($2.10 × 0.975) |
+| $2.12 | 6% | $2.08 | Trail 2% ($2.12 × 0.98) |
+| $2.14 | 7% | $2.11 | Trail 1.5% ($2.14 × 0.985) |
+| $2.16 | 8% | $2.14 | Trail 1% ($2.16 × 0.99) |
 
 ## Key Features
 

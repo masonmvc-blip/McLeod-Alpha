@@ -1,0 +1,43 @@
+{
+  "analyst_estimates": {
+    "eps_next_q": 1.23
+  },
+  "company_fundamentals": {
+    "revenue_growth": 0.12,
+    "symbol": "ABC"
+  },
+  "content_hash": "754ad6b90d1e58a3213cbba5d7bf4168d0ba6e91d78a7c66b771c4d5706bc416",
+  "evidence": [
+    {
+      "date": "2026-01-03",
+      "detail": "news",
+      "evidence_id": "E-S-003"
+    }
+  ],
+  "macro_data": {
+    "cpi": 3.1,
+    "rates": 4.5
+  },
+  "portfolio_state": {
+    "cash_weight": 0.1,
+    "holdings_count": 8,
+    "replacement_quality": 0.7,
+    "turnover": 0.06
+  },
+  "sec_filings": [
+    {
+      "filing_date": "2026-01-03",
+      "filing_type": "10-Q"
+    }
+  ],
+  "snapshot_date": "2026-01-03",
+  "snapshot_id": "S-003",
+  "thesis_state": {
+    "health_score": 64.9,
+    "status": "ACTIVE"
+  },
+  "valuation": {
+    "realized_alpha": -0.01,
+    "signal": -0.3
+  }
+}

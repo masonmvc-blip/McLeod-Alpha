@@ -89,12 +89,28 @@ def run_backtest(
     hit_rate = len(wins) / len(strat)
     turnover = min(1.0, abs(_safe_mean(active)) * 10.0)
 
+    # Match trusted-reference moment conventions while preserving deterministic
+    # finite fallback for degenerate/non-finite outputs.
     skew = 0.0
     kurtosis = 0.0
-    if vol > 1e-12:
-        centered = [(x - avg) / vol for x in strat]
-        skew = _safe_mean([x ** 3 for x in centered])
-        kurtosis = _safe_mean([x ** 4 for x in centered])
+    n = len(strat)
+    if vol > 1e-12 and n > 2:
+        centered_raw = [x - avg for x in strat]
+        m2 = _safe_mean([x * x for x in centered_raw])
+        if m2 > 0.0:
+            m3 = _safe_mean([x ** 3 for x in centered_raw])
+            g1 = m3 / (m2 ** 1.5)
+            skew_candidate = math.sqrt(n * (n - 1)) / (n - 2) * g1
+            skew = skew_candidate if math.isfinite(skew_candidate) else 0.0
+    if vol > 1e-12 and n > 3:
+        centered_raw = [x - avg for x in strat]
+        m2 = _safe_mean([x * x for x in centered_raw])
+        if m2 > 0.0:
+            m4 = _safe_mean([x ** 4 for x in centered_raw])
+            g2 = (m4 / (m2 * m2)) - 3.0
+            g2_unbiased = ((n - 1) / ((n - 2) * (n - 3))) * ((n + 1) * g2 + 6.0)
+            kurtosis_candidate = g2_unbiased + 3.0
+            kurtosis = kurtosis_candidate if math.isfinite(kurtosis_candidate) else 0.0
 
     metrics = PerformanceMetrics(
         cagr=cagr,

@@ -70,6 +70,9 @@ INTERNET_QUALITY_HISTORY_FILE = PROJECT_ROOT / "data" / "reports" / "internet_qu
 DAILY_TRADES_CHART_DIR = PROJECT_ROOT / "data" / "reports" / "daily_trades_charts"
 DAILY_TRADES_CHART_LOG = PROJECT_ROOT / "data" / "reports" / "daily_trades_charts.jsonl"
 PARITY_BASELINE_FILE = PROJECT_ROOT / "data" / "parity_baseline.json"
+DAILY_TRADE_LEARNING_LATEST_FILE = PROJECT_ROOT / "reports" / "daily_trade_learning" / "latest_daily_trade_learning.json"
+GO_LIVE_SCRIPT = PROJECT_ROOT / "scripts" / "maintenance" / "go_live.sh"
+GO_LIVE_LOG_FILE = PROJECT_ROOT / "logs" / "go_live_from_control_center.log"
 HEARTBEAT_STALE_SECONDS = int(os.getenv("BOT_HEARTBEAT_STALE_SECONDS", "180"))
 HEARTBEAT_BANNER_STOP_SECONDS = int(os.getenv("BOT_HEARTBEAT_BANNER_STOP_SECONDS", "120"))
 BOT_STOP_EMAIL_CONFIRMATION_SECONDS = int(os.getenv("BOT_STOP_EMAIL_CONFIRMATION_SECONDS", "20"))
@@ -112,11 +115,17 @@ _INTERNET_QUALITY_CACHE = {
     "payload": None,
 }
 
+_DAILY_LEARNING_INSIGHTS_CACHE = {
+    "timestamp": 0.0,
+    "payload": None,
+}
+
 INTERNET_QUALITY_CACHE_SECONDS = int(os.getenv("INTERNET_QUALITY_CACHE_SECONDS", "30"))
 INTERNET_QUALITY_TIMEOUT_SECONDS = float(os.getenv("INTERNET_QUALITY_TIMEOUT_SECONDS", "3.5"))
 INTERNET_TREND_BAR_POINTS = max(10, int(os.getenv("INTERNET_TREND_BAR_POINTS", "60")))
 STATUS_SNAPSHOT_CACHE_SECONDS = float(os.getenv("STATUS_SNAPSHOT_CACHE_SECONDS", "1.5"))
 BROKER_PNL_REFRESH_SECONDS = float(os.getenv("BROKER_PNL_REFRESH_SECONDS", "15"))
+DAILY_LEARNING_CACHE_SECONDS = float(os.getenv("DAILY_LEARNING_CACHE_SECONDS", "30"))
 CANONICAL_RUNTIME_HOST = os.getenv("MCLEOD_CANONICAL_RUNTIME_HOST", "Masons-iMac.local").strip()
 CANONICAL_CONTROL_CENTER_URL = os.getenv(
     "MCLEOD_CANONICAL_CONTROL_CENTER_URL",
@@ -565,6 +574,11 @@ _SPY_TRACKER_STATE = {
     "stale": True,
     "state": "UNAVAILABLE",
     "last_rest_attempt_ts": 0.0,
+    "last_schwab_source": None,
+    "last_schwab_price": None,
+    "last_schwab_change": None,
+    "last_schwab_change_pct": None,
+    "last_schwab_quote_as_of": None,
 }
 EASTERN_TZ = ZoneInfo("America/New_York")
 CENTRAL_TZ = ZoneInfo("America/Chicago")
@@ -877,6 +891,13 @@ def _observed_fixed_holiday(d: date) -> date:
     if d.weekday() == 6:  # Sunday
         return d + timedelta(days=1)
     return d
+
+
+def _monday_to_sunday_week_bounds(d: date) -> tuple[date, date]:
+    """Return the calendar-week bounds for Monday-through-Sunday reporting."""
+    week_start = d - timedelta(days=d.weekday())
+    week_end = week_start + timedelta(days=6)
+    return week_start, week_end
 
 
 def _easter_sunday(year: int) -> date:
@@ -1343,6 +1364,12 @@ def _spy_tracker_apply_quote(quote_fields: dict, source: str, now_ts: float, now
         _SPY_TRACKER_STATE["quote_as_of"] = quote_as_of_iso
         _SPY_TRACKER_STATE["stale"] = bool(stale)
         _SPY_TRACKER_STATE["state"] = state_label
+        if str(source).startswith("SCHWAB"):
+            _SPY_TRACKER_STATE["last_schwab_source"] = source
+            _SPY_TRACKER_STATE["last_schwab_price"] = round(float(spy_price), 2)
+            _SPY_TRACKER_STATE["last_schwab_change"] = round(float(spy_change), 2) if spy_change is not None else None
+            _SPY_TRACKER_STATE["last_schwab_change_pct"] = round(float(spy_change_pct), 2) if spy_change_pct is not None else None
+            _SPY_TRACKER_STATE["last_schwab_quote_as_of"] = quote_as_of_iso
 
     # Keep cache in sync for existing downstream compatibility.
     _SPY_QUOTE_CACHE["timestamp"] = quote_ts
@@ -1353,7 +1380,57 @@ def _spy_tracker_apply_quote(quote_fields: dict, source: str, now_ts: float, now
     _SPY_QUOTE_CACHE["source"] = source
 
 
+def _spy_tracker_restore_last_schwab(now_ts: float) -> bool:
+    with _SPY_TRACKER_LOCK:
+        quote_as_of_iso = str(_SPY_TRACKER_STATE.get("last_schwab_quote_as_of") or "").strip()
+        price = _SPY_TRACKER_STATE.get("last_schwab_price")
+        change = _SPY_TRACKER_STATE.get("last_schwab_change")
+        change_pct = _SPY_TRACKER_STATE.get("last_schwab_change_pct")
+        source = str(_SPY_TRACKER_STATE.get("last_schwab_source") or "SCHWAB_REST")
+
+    if price is None or not quote_as_of_iso:
+        return False
+
+    try:
+        quote_dt = datetime.fromisoformat(quote_as_of_iso.replace("Z", "+00:00"))
+        if quote_dt.tzinfo is None:
+            quote_dt = quote_dt.replace(tzinfo=timezone.utc)
+        quote_ts = quote_dt.timestamp()
+    except Exception:
+        return False
+
+    age_seconds = max(0.0, now_ts - quote_ts)
+    state_label = quote_state_from_age(
+        age_seconds,
+        max_stale_seconds=SPY_QUOTE_MAX_STALE_SECONDS,
+        refresh_seconds=SPY_TRACKER_REFRESH_SECONDS,
+    )
+    stale = age_seconds > float(SPY_TRACKER_MAX_STALE_SECONDS)
+
+    with _SPY_TRACKER_LOCK:
+        _SPY_TRACKER_STATE["updated_at"] = datetime.now(timezone.utc).isoformat()
+        _SPY_TRACKER_STATE["source"] = source
+        _SPY_TRACKER_STATE["price"] = price
+        _SPY_TRACKER_STATE["change"] = change
+        _SPY_TRACKER_STATE["change_pct"] = change_pct
+        _SPY_TRACKER_STATE["quote_age_seconds"] = round(age_seconds, 2)
+        _SPY_TRACKER_STATE["quote_as_of"] = quote_as_of_iso
+        _SPY_TRACKER_STATE["stale"] = bool(stale)
+        _SPY_TRACKER_STATE["state"] = state_label
+
+    _SPY_QUOTE_CACHE["timestamp"] = quote_ts
+    _SPY_QUOTE_CACHE["price"] = float(price)
+    _SPY_QUOTE_CACHE["change"] = float(change) if change is not None else None
+    _SPY_QUOTE_CACHE["change_pct"] = float(change_pct) if change_pct is not None else None
+    _SPY_QUOTE_CACHE["as_of"] = quote_as_of_iso
+    _SPY_QUOTE_CACHE["source"] = source
+    return True
+
+
 def _spy_tracker_mark_unavailable(now_ts: float):
+    if _spy_tracker_restore_last_schwab(now_ts):
+        return
+
     with _SPY_TRACKER_LOCK:
         _SPY_TRACKER_STATE["updated_at"] = datetime.now(timezone.utc).isoformat()
         _SPY_TRACKER_STATE["source"] = "UNAVAILABLE"
@@ -1905,6 +1982,7 @@ def _summarize_internet_quality_history(samples):
             "trend": "INSUFFICIENT_DATA",
             "stability": "UNKNOWN",
             "recent_avg_latency_ms": None,
+            "all_time_avg_latency_ms": None,
             "recent_best_latency_ms": None,
             "recent_worst_latency_ms": None,
             "latest_latency_ms": None,
@@ -1924,29 +2002,59 @@ def _summarize_internet_quality_history(samples):
         except (TypeError, ValueError, AttributeError):
             return None
 
-    successful = [s for s in samples if _sample_latency(s) is not None]
-    records = []
-    for s in successful:
-        latency = _sample_latency(s)
-        checked_at = str(s.get("checked_at") or "").strip()
-        records.append({"latency": latency, "checked_at": checked_at})
+    def _sample_checked_at(sample):
+        try:
+            return str(sample.get("checked_at") or "").strip()
+        except Exception:
+            return ""
 
-    latencies = [r["latency"] for r in records if r.get("latency") is not None]
-    latest_latency = _sample_latency(samples[-1])
-    recent = latencies[-10:]
-    previous = latencies[-20:-10]
+    def _parse_checked_at(value):
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except Exception:
+            return None
+
+    successful = [s for s in samples if _sample_latency(s) is not None]
+    records = [
+        {
+            "latency": _sample_latency(sample),
+            "checked_at": _sample_checked_at(sample),
+        }
+        for sample in successful
+    ]
+
+    latencies = [record["latency"] for record in records if record.get("latency") is not None]
+    latest_latency = latencies[-1] if latencies else None
+    all_time_avg = round(sum(latencies) / len(latencies), 1) if latencies else None
+    latest_checked_at = records[-1]["checked_at"] if records else ""
+
+    recent = []
+    latest_dt = _parse_checked_at(latest_checked_at)
+    chart_records = []
+    if latest_dt is not None:
+        cutoff_dt = latest_dt - timedelta(minutes=30)
+        for record in records:
+            record_dt = _parse_checked_at(record.get("checked_at"))
+            if record_dt is not None and record_dt >= cutoff_dt:
+                recent.append(record["latency"])
+                chart_records.append(record)
+    if not recent:
+        recent = latencies[-10:]
+    if not chart_records:
+        chart_records = records[-INTERNET_TREND_BAR_POINTS:]
+
     recent_avg = round(sum(recent) / len(recent), 1) if recent else None
-    prev_avg = round(sum(previous) / len(previous), 1) if previous else None
     best = round(min(recent), 1) if recent else None
     worst = round(max(recent), 1) if recent else None
-    recent_records = records[-INTERNET_TREND_BAR_POINTS:]
-    recent_points = [round(float(r.get("latency") or 0.0), 1) for r in recent_records]
-    recent_point_timestamps = [str(r.get("checked_at") or "") for r in recent_records]
+    recent_points = [round(float(record.get("latency") or 0.0), 1) for record in chart_records]
+    recent_point_timestamps = [str(record.get("checked_at") or "") for record in chart_records]
 
-    if recent_avg is None or prev_avg is None:
+    if recent_avg is None or all_time_avg is None:
         trend = "INSUFFICIENT_DATA"
     else:
-        delta = recent_avg - prev_avg
+        delta = recent_avg - all_time_avg
         if delta <= -40:
             trend = "IMPROVING"
         elif delta >= 40:
@@ -1967,8 +2075,8 @@ def _summarize_internet_quality_history(samples):
         else:
             stability = "CHOPPY"
 
-    first_ts = str(samples[0].get("checked_at") or "").strip()
-    last_ts = str(samples[-1].get("checked_at") or "").strip()
+    first_ts = str(chart_records[0].get("checked_at") or "").strip() if chart_records else ""
+    last_ts = latest_checked_at
     window_minutes = None
     try:
         if first_ts and last_ts:
@@ -1984,7 +2092,7 @@ def _summarize_internet_quality_history(samples):
         latency = _sample_latency(sample)
         if latency is None:
             continue
-        ts = str(sample.get("checked_at") or "").strip()
+        ts = _sample_checked_at(sample)
         if not ts:
             continue
         try:
@@ -2004,6 +2112,7 @@ def _summarize_internet_quality_history(samples):
         "trend": trend,
         "stability": stability,
         "recent_avg_latency_ms": recent_avg,
+        "all_time_avg_latency_ms": all_time_avg,
         "recent_best_latency_ms": best,
         "recent_worst_latency_ms": worst,
         "latest_latency_ms": round(latest_latency, 1) if latest_latency is not None else None,
@@ -2575,6 +2684,57 @@ def stop_bot():
         return {"status": "success", "message": f"Bot stop cleanup completed ({str(e)})"}
 
 
+def trigger_go_live() -> dict:
+    """Launch the canonical go-live sync/restart workflow in the background."""
+    repo_allowed, current_repo, expected_repo = _runtime_repo_path_allows_start()
+    if not repo_allowed:
+        return {
+            "status": "error",
+            "message": f"Go-live blocked in repo {current_repo}; canonical repo is {expected_repo}",
+        }
+
+    host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
+    if not host_allowed:
+        return {
+            "status": "error",
+            "message": f"Go-live blocked on host {current_host}; canonical runtime host is {allowed_host}",
+        }
+
+    if not GO_LIVE_SCRIPT.exists():
+        return {
+            "status": "error",
+            "message": f"Go-live script missing: {GO_LIVE_SCRIPT}",
+        }
+
+    try:
+        GO_LIVE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        env = os.environ.copy()
+        env.setdefault("MCLEOD_ROOT", str(PROJECT_ROOT))
+        with open(GO_LIVE_LOG_FILE, "a", buffering=1, encoding="utf-8") as log_fp:
+            log_fp.write(
+                f"\n===== go-live requested {datetime.now(timezone.utc).isoformat()} from control center =====\n"
+            )
+            subprocess.Popen(
+                [str(GO_LIVE_SCRIPT)],
+                cwd=str(PROJECT_ROOT),
+                stdout=log_fp,
+                stderr=subprocess.STDOUT,
+                env=env,
+                preexec_fn=os.setsid,
+            )
+        return {
+            "status": "success",
+            "message": "Go-live started. Syncing latest runtime, restarting Control Center, then restarting bot.",
+            "canonical_url": CANONICAL_CONTROL_CENTER_URL,
+            "log_file": str(GO_LIVE_LOG_FILE),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to launch go-live: {e}",
+        }
+
+
 def queue_exit_trade_command():
     """Queue a manual exit command for the running monitor process."""
     command = {
@@ -2911,7 +3071,12 @@ def parse_bot_status():
         year_start_dt = now_et.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         month_start_dt = now_et.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         day_start_dt = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
-        week_start_dt = day_start_dt - timedelta(days=day_start_dt.weekday())
+        week_start_date, week_end_date = _monday_to_sunday_week_bounds(today_date)
+        week_start_dt = day_start_dt.replace(
+            year=week_start_date.year,
+            month=week_start_date.month,
+            day=week_start_date.day,
+        )
 
         closed_trade_signature = _closed_trade_signature()
         if (
@@ -2928,7 +3093,11 @@ def parse_bot_status():
 
         # Baseline from local completed trades so dashboard always reflects actual filled exits.
         local_today = _realized_spy_option_pnl_for_period(today_key, today_key)
-        local_wtd = _realized_spy_option_pnl_for_period(week_start_dt.date().isoformat(), today_key)
+        local_wtd_end = min(today_date, week_end_date)
+        local_wtd = _realized_spy_option_pnl_for_period(
+            week_start_date.isoformat(),
+            local_wtd_end.isoformat(),
+        )
         local_mtd = _realized_spy_option_pnl_for_period(month_start_dt.date().isoformat(), today_key)
         local_ytd = _realized_spy_option_pnl_for_period(year_start_dt.date().isoformat(), today_key)
 
@@ -3745,7 +3914,7 @@ def _period_pnl_from_export_payload(payload, today_date):
         return None
 
     month_start = today_date.replace(day=1)
-    week_start = today_date - timedelta(days=today_date.weekday())
+    week_start, week_end = _monday_to_sunday_week_bounds(today_date)
     year_start = today_date.replace(month=1, day=1)
     max_row_date = None
     today_total = 0.0
@@ -3770,7 +3939,7 @@ def _period_pnl_from_export_payload(payload, today_date):
 
         amount = _parse_money_text((row or {}).get("Amount"))
         ytd_total += amount
-        if row_date >= week_start:
+        if week_start <= row_date <= week_end:
             wtd_total += amount
         if row_date >= month_start:
             mtd_total += amount
@@ -3797,6 +3966,99 @@ def _load_json_file(path: Path):
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return None
+
+
+def _derive_daily_learning_lessons(summary: dict) -> list[dict]:
+    lessons = []
+    overall = (summary or {}).get("overall") or {}
+    broker = (summary or {}).get("broker_backed") or {}
+    by_exit = (summary or {}).get("by_exit_reason") or {}
+
+    broker_trades = int(broker.get("trades") or 0)
+    broker_pnl = float(broker.get("pnl") or 0.0)
+    overall_trades = int(overall.get("trades") or 0)
+    overall_win_rate = float(overall.get("win_rate") or 0.0)
+
+    if broker_trades > 0 and broker_pnl < 0:
+        lessons.append({
+            "priority": "high",
+            "title": "Broker-backed day finished negative",
+            "signal": f"broker_pnl={broker_pnl:.2f} on {broker_trades} trades",
+            "action": "Tighten early-session entry selectivity and review first-loss pattern.",
+        })
+
+    worst_exit = None
+    for reason, stats in by_exit.items():
+        pnl = float((stats or {}).get("pnl") or 0.0)
+        trades = int((stats or {}).get("trades") or 0)
+        if trades <= 0:
+            continue
+        if worst_exit is None or pnl < worst_exit[1]:
+            worst_exit = (str(reason), pnl, trades)
+
+    if worst_exit is not None and worst_exit[1] < 0:
+        lessons.append({
+            "priority": "medium",
+            "title": "Largest drag concentrated in one exit reason",
+            "signal": f"{worst_exit[0]} pnl={worst_exit[1]:.2f} ({worst_exit[2]} trades)",
+            "action": "Replay this exit bucket first and tighten invalidation/stop handling.",
+        })
+
+    if overall_trades >= 4 and overall_win_rate < 0.45:
+        lessons.append({
+            "priority": "medium",
+            "title": "Win rate below target band",
+            "signal": f"win_rate={overall_win_rate:.1%} on {overall_trades} trades",
+            "action": "Require cleaner momentum alignment before new entries.",
+        })
+
+    if not lessons:
+        lessons.append({
+            "priority": "low",
+            "title": "No major red flags detected",
+            "signal": "Daily profile appears stable",
+            "action": "Keep risk process unchanged and continue monitoring drift.",
+        })
+
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+    return sorted(lessons, key=lambda x: priority_order.get(str(x.get("priority", "low")), 3))
+
+
+def _daily_learning_insights_payload(force_refresh: bool = False):
+    now_ts = time.time()
+    cached = _DAILY_LEARNING_INSIGHTS_CACHE.get("payload")
+    cached_ts = float(_DAILY_LEARNING_INSIGHTS_CACHE.get("timestamp") or 0.0)
+    if not force_refresh and cached is not None and (now_ts - cached_ts) < max(5.0, DAILY_LEARNING_CACHE_SECONDS):
+        return cached
+
+    payload = {
+        "available": False,
+        "trading_date": None,
+        "generated_at": None,
+        "summary": {},
+        "actionable_lessons": [],
+        "source_file": str(DAILY_TRADE_LEARNING_LATEST_FILE),
+    }
+
+    raw = _load_json_file(DAILY_TRADE_LEARNING_LATEST_FILE)
+    if isinstance(raw, dict):
+        summary = raw.get("summary") if isinstance(raw.get("summary"), dict) else {}
+        lessons = raw.get("actionable_lessons")
+        if not isinstance(lessons, list) or not lessons:
+            lessons = _derive_daily_learning_lessons(summary)
+
+        payload = {
+            "available": True,
+            "trading_date": raw.get("trading_date"),
+            "generated_at": raw.get("generated_at"),
+            "summary": summary,
+            "actionable_lessons": lessons[:3],
+            "source_file": str(DAILY_TRADE_LEARNING_LATEST_FILE),
+        }
+
+    _DAILY_LEARNING_INSIGHTS_CACHE["timestamp"] = now_ts
+    _DAILY_LEARNING_INSIGHTS_CACHE["payload"] = payload
+    return payload
 
 
 def _parse_money_text(value):
@@ -5095,6 +5357,23 @@ def api_execution_quality_summary():
         })
 
 
+@app.route('/api/daily-learning-insights', methods=['GET'])
+def api_daily_learning_insights():
+    """Return latest daily trade-learning lessons for dashboard display."""
+    try:
+        force_refresh = str(request.args.get("refresh") or "").strip().lower() in {"1", "true", "yes"}
+        return jsonify(_daily_learning_insights_payload(force_refresh=force_refresh))
+    except Exception as e:
+        return jsonify({
+            "available": False,
+            "trading_date": None,
+            "generated_at": None,
+            "summary": {},
+            "actionable_lessons": [],
+            "error": str(e),
+        })
+
+
 def _bot_order_ids_from_audit():
     """Return broker order IDs known to be submitted by the bot.
 
@@ -5482,6 +5761,14 @@ def api_start():
     """Start the bot"""
     result = start_bot()
     return jsonify(result)
+
+
+@app.route('/api/go-live', methods=['POST'])
+def api_go_live():
+    """Run the canonical sync/restart workflow used for live deployment."""
+    result = trigger_go_live()
+    status_code = 200 if result.get("status") == "success" else 400
+    return jsonify(result), status_code
 
 
 @app.route('/api/stop', methods=['POST'])
@@ -6350,35 +6637,36 @@ HTML_DASHBOARD = """
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 12px;
         }
         
         .container {
+            --hero-stack-gap: 12px;
             background: white;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 1000px;
             width: 100%;
-            padding: 30px;
+            padding: var(--hero-stack-gap) 18px 18px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
+            margin-bottom: var(--hero-stack-gap);
+            padding-bottom: 0;
         }
         
         .header h1 {
             color: #333;
-            font-size: 32px;
-            margin-bottom: 5px;
+            font-size: 28px;
+            margin-bottom: 3px;
         }
 
         .title-rockets {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
         }
         
@@ -6388,12 +6676,12 @@ HTML_DASHBOARD = """
         }
 
         .canonical-banner {
-            margin: 14px auto 0;
-            padding: 10px 12px;
+            margin: 8px auto 0;
+            padding: 8px 10px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            line-height: 1.45;
+            line-height: 1.35;
             max-width: 860px;
         }
 
@@ -6417,8 +6705,8 @@ HTML_DASHBOARD = """
         .status-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 12px;
+            margin-bottom: 14px;
         }
 
         .primary-status-grid {
@@ -6433,7 +6721,7 @@ HTML_DASHBOARD = """
             background: #f8f9fa;
             border: 1px solid #ddd;
             border-radius: 8px;
-            padding: 20px;
+            padding: 12px;
         }
 
         .status-card.position-call {
@@ -6477,7 +6765,7 @@ HTML_DASHBOARD = """
         }
 
         .position-summary-main {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
         }
@@ -6488,9 +6776,9 @@ HTML_DASHBOARD = """
         .position-summary-main.info { color: #0066cc; }
 
         .position-summary-pnl {
-            margin-top: 8px;
-            font-size: 13px;
-            line-height: 1.3;
+            margin-top: 5px;
+            font-size: 12px;
+            line-height: 1.2;
             font-weight: 600;
         }
 
@@ -6499,9 +6787,9 @@ HTML_DASHBOARD = """
         .position-summary-pnl.info { color: #0066cc; }
 
         .position-summary-stop {
-            margin-top: 8px;
-            font-size: 12px;
-            line-height: 1.3;
+            margin-top: 5px;
+            font-size: 11px;
+            line-height: 1.2;
             font-weight: 600;
             color: #495057;
         }
@@ -6510,22 +6798,22 @@ HTML_DASHBOARD = """
         
         .status-card h3 {
             color: #666;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
+            margin-bottom: 6px;
+            letter-spacing: 0.7px;
         }
         
         .status-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
         }
 
         .status-value.compound-check {
             display: grid;
-            gap: 4px;
-            font-size: 14px;
+            gap: 2px;
+            font-size: 13px;
             line-height: 1.2;
         }
         
@@ -6552,17 +6840,17 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner {
             border-radius: 10px;
-            padding: 14px 16px;
-            margin-bottom: 18px;
+            padding: 10px 12px;
+            margin-bottom: var(--hero-stack-gap);
             border: 1px solid transparent;
             text-align: center;
         }
 
         .trade-entry-banner .banner-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
+            letter-spacing: 0.6px;
+            margin-bottom: 2px;
         }
 
         .trade-entry-banner .banner-price {
@@ -6604,11 +6892,11 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner .banner-meta {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.2px;
             opacity: 0.95;
-            line-height: 1.35;
+            line-height: 1.2;
         }
 
         .trade-entry-banner .banner-meta-left {
@@ -6679,13 +6967,13 @@ HTML_DASHBOARD = """
         .controls {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 30px;
+            gap: 8px;
+            margin-bottom: 14px;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 14px;
+            padding: 9px 14px;
+            font-size: 13px;
             font-weight: 600;
             border: none;
             border-radius: 6px;
@@ -6740,9 +7028,9 @@ HTML_DASHBOARD = """
         }
         
         .message {
-            padding: 15px;
+            padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             display: none;
         }
         
@@ -6754,24 +7042,29 @@ HTML_DASHBOARD = """
             background: #1e1e1e;
             color: #00ff00;
             font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-            padding: 15px;
+            font-size: 11px;
+            padding: 10px;
             border-radius: 6px;
-            max-height: 300px;
+            max-height: 240px;
             overflow-y: auto;
-            margin-top: 20px;
+            margin-top: 12px;
+        }
+
+        .logs pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
         }
         
         .logs-title {
             color: #999;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .logs-meta {
             color: #aaa;
-            font-size: 11px;
-            margin-left: 8px;
+            font-size: 10px;
+            margin-left: 6px;
             font-weight: 400;
         }
         
@@ -6779,7 +7072,13 @@ HTML_DASHBOARD = """
             width: 100%;
             border-collapse: collapse;
             background: white;
-            font-size: 13px;
+            font-size: 12px;
+        }
+
+        .trades-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .trades-table thead {
@@ -6788,16 +7087,16 @@ HTML_DASHBOARD = """
         }
         
         .trades-table th {
-            padding: 12px;
+            padding: 8px;
             text-align: center;
             font-weight: 600;
             color: #666;
             text-transform: uppercase;
-            font-size: 11px;
+            font-size: 10px;
         }
         
         .trades-table td {
-            padding: 12px;
+            padding: 8px;
             text-align: center;
             border-bottom: 1px solid #eee;
         }
@@ -6816,27 +7115,28 @@ HTML_DASHBOARD = """
         .trades-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 8px;
         }
         
         .trade-summary-card {
             background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
         }
         
         .trade-summary-card h4 {
             color: #666;
             font-size: 11px;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            letter-spacing: 0.7px;
         }
         
         .trade-summary-value {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
         }
@@ -6847,36 +7147,36 @@ HTML_DASHBOARD = """
         }
 
         .exec-quality-wrap {
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .exec-quality-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
+            gap: 8px;
         }
 
         .exec-quality-card {
             background: #f8f9fa;
             border-left: 4px solid #007bff;
-            padding: 12px;
+            padding: 9px;
             border-radius: 4px;
         }
 
         .exec-quality-card h4 {
             color: #666;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             letter-spacing: 0.4px;
         }
 
         .exec-quality-goal {
             display: inline-block;
-            margin-top: 4px;
-            padding: 2px 8px;
+            margin-top: 3px;
+            padding: 1px 7px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.2px;
         }
@@ -6892,16 +7192,16 @@ HTML_DASHBOARD = """
         }
 
         .exec-quality-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #333;
         }
 
         .exec-quality-sub {
-            margin-top: 4px;
-            font-size: 12px;
+            margin-top: 2px;
+            font-size: 11px;
             color: #666;
-            line-height: 1.35;
+            line-height: 1.25;
             white-space: pre-line;
         }
 
@@ -6910,7 +7210,7 @@ HTML_DASHBOARD = """
         
         .no-trades {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             color: #999;
         }
 
@@ -6919,9 +7219,9 @@ HTML_DASHBOARD = """
             border: 1px solid #ffe69c;
             color: #856404;
             border-radius: 6px;
-            padding: 10px 12px;
-            margin-bottom: 12px;
-            font-size: 13px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
             font-weight: 600;
             text-align: center;
         }
@@ -6944,8 +7244,8 @@ HTML_DASHBOARD = """
         .last-update {
             text-align: right;
             color: #999;
-            font-size: 12px;
-            margin-top: 20px;
+            font-size: 11px;
+            margin-top: 12px;
         }
 
         .connectivity-card {
@@ -6953,7 +7253,7 @@ HTML_DASHBOARD = """
         }
 
         .connectivity-main {
-            font-size: 20px;
+            font-size: 17px;
             font-weight: 700;
             line-height: 1.2;
         }
@@ -6967,13 +7267,13 @@ HTML_DASHBOARD = """
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: nowrap;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .connectivity-summary-strip .connectivity-main {
-            font-size: 18px;
+            font-size: 16px;
             margin: 0;
             white-space: nowrap;
             text-align: center;
@@ -6982,8 +7282,8 @@ HTML_DASHBOARD = """
 
         .connectivity-summary-meta {
             flex: 0 0 auto;
-            font-size: 11px;
-            line-height: 1.35;
+            font-size: 10px;
+            line-height: 1.25;
             color: #56616b;
             white-space: nowrap;
         }
@@ -6997,19 +7297,19 @@ HTML_DASHBOARD = """
         }
 
         .connectivity-sub {
-            margin-top: 8px;
-            font-size: 12px;
-            line-height: 1.45;
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.3;
             color: #555;
         }
 
         .connectivity-alert {
-            margin-top: 8px;
-            padding: 6px 8px;
+            margin-top: 6px;
+            padding: 5px 7px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
-            line-height: 1.35;
+            line-height: 1.25;
             display: none;
         }
 
@@ -7021,12 +7321,12 @@ HTML_DASHBOARD = """
         }
 
         .connectivity-chart {
-            margin-top: 8px;
-            height: 34px;
+            margin-top: 6px;
+            height: 30px;
             border: 1px solid #e2e6ea;
             border-radius: 6px;
             background: #fff;
-            padding: 4px;
+            padding: 3px;
             display: flex;
             align-items: flex-end;
             gap: 2px;
@@ -7035,7 +7335,7 @@ HTML_DASHBOARD = """
         }
 
         .connectivity-chart-large {
-            height: 54px;
+            height: 46px;
             margin-top: 0;
         }
 
@@ -7053,44 +7353,44 @@ HTML_DASHBOARD = """
         .connectivity-bar.warn { background: #4b7bec; }
 
         .connectivity-time-axis {
-            margin-top: 6px;
+            margin-top: 4px;
             display: flex;
             justify-content: space-between;
-            font-size: 10px;
+            font-size: 9px;
             color: #6c757d;
             letter-spacing: 0.2px;
         }
 
         .connectivity-time-tick {
             flex: 0 0 auto;
-            min-width: 34px;
+            min-width: 30px;
             text-align: center;
             font-weight: 700;
             color: #495057;
         }
 
         .problem-list {
-            margin-top: 8px;
-            font-size: 11px;
+            margin-top: 6px;
+            font-size: 10px;
             color: #777;
-            line-height: 1.4;
+            line-height: 1.25;
         }
 
         .problem-item.bad { color: #b71c1c; }
 
         .exec-quality-trend-box {
-            margin-top: 12px;
+            margin-top: 8px;
             background: #f8f9fa;
-            border-left: 4px solid #007bff;
-            padding: 12px;
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            padding: 8px;
+            border-radius: 8px;
         }
 
         .exec-quality-trend-box h4 {
             color: #666;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             letter-spacing: 0.4px;
         }
 
@@ -7121,12 +7421,12 @@ HTML_DASHBOARD = """
         .problem-item.ok { color: #1e7e34; }
 
         .parity-warning {
-            margin-top: 8px;
-            padding: 6px 8px;
+            margin-top: 6px;
+            padding: 5px 7px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            line-height: 1.35;
+            line-height: 1.25;
             display: none;
         }
 
@@ -7150,6 +7450,208 @@ HTML_DASHBOARD = """
             background: #f8f9fa;
             border: 1px solid #e2e6ea;
             color: #495057;
+        }
+
+        .daily-learning-meta {
+            color: #4a5568;
+            font-size: 12px;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .daily-learning-lessons {
+            margin: 0;
+            padding-left: 15px;
+            color: #1f2937;
+            line-height: 1.28;
+            font-size: 12px;
+        }
+
+        .daily-learning-lessons li {
+            margin: 3px 0;
+        }
+
+        @media (max-width: 820px) {
+            body {
+                align-items: flex-start;
+                padding: 8px;
+            }
+
+            .container {
+                padding: var(--hero-stack-gap) 14px 14px;
+                border-radius: 8px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+                line-height: 1.2;
+            }
+
+            .title-rockets {
+                gap: 4px;
+            }
+
+            .primary-status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            button {
+                min-height: 44px;
+                font-size: 14px;
+            }
+
+            .trade-entry-banner {
+                padding: 10px;
+            }
+
+            .trade-entry-banner .banner-title {
+                font-size: 15px;
+                line-height: 1.25;
+            }
+
+            .trade-entry-banner .banner-meta {
+                font-size: 10px;
+            }
+
+            .trades-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .last-update {
+                text-align: center;
+                line-height: 1.5;
+            }
+
+            .last-update span {
+                display: block;
+                margin-left: 0 !important;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .container {
+                padding: var(--hero-stack-gap) 12px 12px;
+            }
+
+            .header h1 {
+                font-size: 19px;
+            }
+
+            .title-rockets {
+                align-items: flex-start;
+            }
+
+            .canonical-banner {
+                font-size: 10px;
+                padding: 7px 8px;
+            }
+
+            .status-card,
+            .trade-summary-card,
+            .exec-quality-card,
+            .exec-quality-trend-box {
+                padding: 10px;
+            }
+
+            .status-value,
+            .position-summary-main,
+            .trade-summary-value,
+            .exec-quality-value,
+            .connectivity-main {
+                font-size: 15px;
+            }
+
+            .trade-entry-banner .banner-meta-left,
+            .trade-entry-banner .banner-meta-right {
+                display: block;
+            }
+
+            .trade-entry-banner .banner-meta-divider,
+            .trade-entry-banner .banner-meta-divider.show {
+                display: none;
+            }
+
+            .connectivity-summary-strip {
+                gap: 4px;
+            }
+
+            .connectivity-summary-meta,
+            .connectivity-summary-strip .connectivity-main {
+                width: 100%;
+                text-align: left;
+                white-space: normal;
+            }
+
+            .connectivity-time-axis {
+                font-size: 8px;
+            }
+
+            .logs {
+                font-size: 10px;
+                max-height: 200px;
+            }
+
+            .trades-table-wrap {
+                overflow-x: visible;
+            }
+
+            .trades-table {
+                border-collapse: separate;
+                font-size: 11px;
+            }
+
+            .trades-table thead {
+                display: none;
+            }
+
+            .trades-table tbody,
+            .trades-table tr,
+            .trades-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .trades-table tr {
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                padding: 8px 10px;
+                margin-bottom: 10px;
+                background: #fff;
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            }
+
+            .trades-table td {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 6px 0;
+                text-align: right;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .trades-table td:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+            .trades-table td::before {
+                content: attr(data-label);
+                flex: 0 0 46%;
+                text-align: left;
+                color: #666;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+            }
         }
 
     </style>
@@ -7202,14 +7704,24 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
+        <div class="status-grid">
+            <div class="status-card" id="dailyLearningCard">
+                <h3>Daily Learning Insights</h3>
+                <div class="daily-learning-meta" id="dailyLearningMeta">Loading latest learning summary...</div>
+                <ul class="daily-learning-lessons" id="dailyLearningLessons">
+                    <li>Loading actionable lessons...</li>
+                </ul>
+            </div>
+        </div>
+
         <div class="controls">
             <button class="btn-primary" id="startBtn" onclick="startBot()">▶ Start Bot</button>
             <button class="btn-info" id="exitTradeBtn" onclick="exitTrade()" disabled>⏏ Exit Trade</button>
             <button class="btn-danger" id="stopBtn" onclick="stopBot()" disabled>⏹ Stop Bot</button>
         </div>
         
-        <div style="margin-bottom: 30px;">
-            <h2 id="tradesHeading" style="color: #333; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; text-align: center;">📊 Today's Trades 📊</h2>
+        <div style="margin-bottom: 14px;">
+            <h2 id="tradesHeading" style="color: #333; font-size: 16px; margin-bottom: 8px; padding-bottom: 6px; text-align: center;">📊 Today's Trades 📊</h2>
             <div id="tradesContainer">
                 <div style="text-align: center; color: #999; padding: 20px;">Loading trades...</div>
             </div>
@@ -7225,11 +7737,6 @@ HTML_DASHBOARD = """
             <div class="logs-title">📋 Recent Logs <span id="logsLastUpdated" class="logs-meta">(log updated: loading...)</span></div>
             <pre id="logsContent">Loading logs...</pre>
         </div>
-        
-        <div class="last-update">
-            <span id="lastUpdate">Last updated: never</span>
-            <span id="marketBellStatus" style="margin-left: 12px;">Bell status: waiting</span>
-        </div>
     </div>
     
     <script>
@@ -7238,12 +7745,15 @@ HTML_DASHBOARD = """
         let logsRefreshInFlight = false;
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
+        let dailyLearningRefreshInFlight = false;
         let lastLogsRefreshMs = 0;
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
+        let lastDailyLearningRefreshMs = 0;
         const LOGS_REFRESH_INTERVAL_MS = 5000;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
+        const DAILY_LEARNING_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1500;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
@@ -7416,7 +7926,6 @@ HTML_DASHBOARD = """
             // Market bells always use the uploaded NYSE bell sample.
             const bellKind = isOpenBell ? 'open' : 'close';
             const contextLabel = String(options && options.context ? options.context : 'manual test');
-            const bellStatusEl = document.getElementById('marketBellStatus');
             const statusStamp = new Date().toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
@@ -7458,19 +7967,10 @@ HTML_DASHBOARD = """
                 if (playAttempt && typeof playAttempt.then === 'function') {
                     playAttempt.catch(() => {
                         finalizePlayback();
-                        if (bellStatusEl) {
-                            bellStatusEl.textContent = `Bell status: ${bellKind} bell blocked (${contextLabel}) ${statusStamp} ET`;
-                        }
                     });
-                }
-                if (bellStatusEl) {
-                    bellStatusEl.textContent = `Bell status: ${bellKind} bell played (NYSE bell, ${contextLabel}) ${statusStamp} ET`;
                 }
                 return { played: true, source: 'NYSE bell' };
             } catch (_) {
-                if (bellStatusEl) {
-                    bellStatusEl.textContent = `Bell status: ${bellKind} bell error (${contextLabel}) ${statusStamp} ET`;
-                }
                 return { played: false, source: 'NYSE bell' };
             }
         }
@@ -7537,7 +8037,6 @@ HTML_DASHBOARD = """
 
             const openSeenKey = `marketBellOpen:${dateKey}`;
             const closeSeenKey = `marketBellClose:${dateKey}`;
-            const bellStatusEl = document.getElementById('marketBellStatus');
 
             const inOpenWindow = (
                 hh === openHour &&
@@ -7554,11 +8053,6 @@ HTML_DASHBOARD = """
                 if (localStorage.getItem(openSeenKey) !== '1') {
                     const bellResult = playMarketBell(true, { context: 'schedule' });
                     localStorage.setItem(openSeenKey, '1');
-                    if (bellStatusEl) {
-                        bellStatusEl.textContent = bellResult.played
-                            ? `Bell status: open bell played (${bellResult.source}) ${dateKey}`
-                            : `Bell status: open bell blocked ${dateKey}`;
-                    }
                 }
             }
 
@@ -7566,11 +8060,6 @@ HTML_DASHBOARD = """
                 if (localStorage.getItem(closeSeenKey) !== '1') {
                     const bellResult = playMarketBell(false, { context: 'schedule' });
                     localStorage.setItem(closeSeenKey, '1');
-                    if (bellStatusEl) {
-                        bellStatusEl.textContent = bellResult.played
-                            ? `Bell status: close bell played (${bellResult.source}) ${dateKey}`
-                            : `Bell status: close bell blocked ${dateKey}`;
-                    }
                 }
             }
         }
@@ -7685,26 +8174,49 @@ HTML_DASHBOARD = """
         async function startBot() {
             const btn = document.getElementById('startBtn');
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Starting...';
+            btn.innerHTML = '<span class="spinner"></span> Syncing...';
             
             try {
-                const res = await fetch('/api/start', { method: 'POST' });
+                const res = await fetch('/api/go-live', { method: 'POST' });
                 const data = await res.json();
                 
                 showMessage(data.message, data.status === 'success' ? 'success' : 'error');
                 
                 if (data.status === 'success') {
-                    // Start polling status
                     clearInterval(statusRefreshInterval);
-                    statusRefreshInterval = setInterval(refreshStatus, 1000);
+                    await waitForControlCenterReturn(data.canonical_url || window.location.origin);
                 }
             } catch (err) {
                 showMessage(`Error: ${err.message}`, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '▶ Start Bot';
+                refreshStatus();
+                return;
             }
-            
+        }
+
+        async function waitForControlCenterReturn(targetUrl) {
+            const baseUrl = String(targetUrl || window.location.origin || '').replace(/\\/$/, '');
+            const statusUrl = `${baseUrl}/api/status`;
+            const deadlineMs = Date.now() + 90000;
+
+            while (Date.now() < deadlineMs) {
+                try {
+                    const res = await fetch(statusUrl, { cache: 'no-store' });
+                    if (res.ok) {
+                        window.location.href = baseUrl || window.location.href;
+                        return;
+                    }
+                } catch (_) {
+                    // Control center is still restarting.
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            showMessage('Go-live was triggered, but the dashboard did not come back within 90 seconds. Refresh the page and check logs/go_live_from_control_center.log.', 'error');
+            const btn = document.getElementById('startBtn');
             btn.disabled = false;
             btn.innerHTML = '▶ Start Bot';
-            refreshStatus();
         }
         
         async function stopBot() {
@@ -7765,7 +8277,7 @@ HTML_DASHBOARD = """
                 const parityState = String(status.parity_state || 'UNKNOWN').toUpperCase();
                 const parityEnforced = status.parity_enforce_on_start !== false;
                 const parityBlockStart = !!status.parity_block_start;
-                document.getElementById('startBtn').disabled = !!status.bot_running || parityBlockStart;
+                document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = !status.bot_running;
 
                 const canManualExit = !!(status.bot_running && status.mode === 'LIVE TRADING' && status.has_open_position);
@@ -7833,6 +8345,10 @@ HTML_DASHBOARD = """
                 const spyQuoteStateRaw = String(status.spy_quote_state || 'UNAVAILABLE').toUpperCase();
                 const tradeEntryReasonRaw = String(status.trade_entry_reason || '').toLowerCase();
                 const tradeEntryReasonCodeRaw = String(status.trade_entry_reason_code || '').toUpperCase();
+                const marketClosed = status.nyse_is_trading_day === false
+                    || tradeEntryReasonRaw.includes('market closed')
+                    || tradeEntryReasonRaw.includes('outside regular market hours')
+                    || tradeEntryReasonRaw.includes('marked closed');
                 const candleDataStale =
                     tradeEntryReasonRaw.includes('stale candle')
                     || (tradeEntryReasonCodeRaw === 'STARTUP_GUARD' && tradeEntryReasonRaw.includes('candle'));
@@ -7859,8 +8375,24 @@ HTML_DASHBOARD = """
                 const spySourceTone = spySourceToneClass(spyQuoteStateRaw);
                 let priceBannerHtml = '--';
                 const quoteNotLive = spyQuoteStale || ['STALE', 'DELAYED', 'UNAVAILABLE'].includes(spyQuoteStateRaw);
+                const useRecentClosedQuote = marketClosed && Number.isFinite(spyPrice) && spyPrice > 0;
                 if (candleDataStale) {
                     priceBannerHtml = '<span class="banner-price banner-tone-down">ERROR: STALE CANDLES</span>';
+                } else if (useRecentClosedQuote) {
+                    let pctText = null;
+                    let toneClass = 'banner-tone-flat';
+                    if (Number.isFinite(spyChangePct)) {
+                        const pctRaw = `${Math.abs(spyChangePct).toFixed(2)}%`;
+                        pctText = spyChangePct < 0 ? `(${pctRaw})` : pctRaw;
+                        if (spyChangePct > 0) {
+                            toneClass = 'banner-tone-up';
+                        } else if (spyChangePct < 0) {
+                            toneClass = 'banner-tone-down';
+                        }
+                    }
+                    priceBannerHtml = pctText
+                        ? `<span class="banner-price ${toneClass}">$${spyPrice.toFixed(2)}</span> <span class="banner-pct ${toneClass}">${pctText}</span>`
+                        : `<span class="banner-price banner-tone-flat">$${spyPrice.toFixed(2)}</span>`;
                 } else if (quoteNotLive) {
                     const ageSuffix = Number.isFinite(spyQuoteAgeSeconds)
                         ? ` (${Math.max(0, Math.round(spyQuoteAgeSeconds))}s old)`
@@ -8141,11 +8673,9 @@ HTML_DASHBOARD = """
                 if ((nowMs - lastTradesRefreshMs) >= TRADES_REFRESH_INTERVAL_MS) {
                     updateTodaysTrades();
                 }
-                
-                // Update timestamp
-                document.getElementById('lastUpdate').textContent = 
-                    'Last updated: ' + formatTimeAMPM(new Date());
-                
+                if ((nowMs - lastDailyLearningRefreshMs) >= DAILY_LEARNING_REFRESH_INTERVAL_MS) {
+                    updateDailyLearningInsights();
+                }
             } catch (err) {
                 console.error('Error refreshing status:', err);
             }
@@ -8229,7 +8759,8 @@ HTML_DASHBOARD = """
                 const internet = snapshot.internet_quality || {};
                 const history = snapshot.internet_quality_history || {};
                 const internetQuality = String(internet.quality || 'UNKNOWN').toUpperCase();
-                const avgLatency = internet.avg_latency_ms;
+                const avgLatency = history.recent_avg_latency_ms ?? internet.avg_latency_ms;
+                const allTimeLatency = history.all_time_avg_latency_ms;
                 const onEthernet = snapshot.on_ethernet === true;
                 const onWifi = snapshot.on_ethernet === false;
                 const connectionSource = onEthernet ? 'Ethernet' : (onWifi ? 'Wi-Fi' : 'Unknown');
@@ -8282,8 +8813,8 @@ HTML_DASHBOARD = """
                 const internetTitle = internetQuality === 'EXCELLENT'
                     ? `${internetIcon} ${safeEscape(internetQuality)} ${internetIcon}`
                     : (internetIcon ? `${internetIcon} ${safeEscape(internetQuality)}` : safeEscape(internetQuality));
-                const latencyText = avgLatency !== null && avgLatency !== undefined
-                    ? `${safeEscape(Number(avgLatency).toFixed(0))} MS`
+                const latencyDetail = avgLatency !== null && avgLatency !== undefined
+                    ? `30m avg ${safeEscape(Number(avgLatency).toFixed(0))} MS${allTimeLatency !== null && allTimeLatency !== undefined ? ` · all-time ${safeEscape(Number(allTimeLatency).toFixed(0))} MS` : ''}`
                     : 'Latency unavailable';
                 const connectionText = connectionSource;
 
@@ -8292,7 +8823,7 @@ HTML_DASHBOARD = """
                 const points = [...pointsRaw].reverse();
                 const pointTimestamps = [...pointTimestampsRaw].reverse();
                 html += '<div class="exec-quality-trend-box">';
-                html += `<div class="connectivity-summary-strip"><div class="connectivity-summary-meta left">${latencyText}</div><div class="connectivity-main ${internetTone}">${internetTitle}</div><div class="connectivity-summary-meta right">${safeEscape(connectionText)}</div></div>`;
+                html += `<div class="connectivity-summary-strip"><div class="connectivity-summary-meta left" title="${safeEscape(latencyDetail)}">${safeEscape(latencyDetail)}</div><div class="connectivity-main ${internetTone}">${internetTitle}</div><div class="connectivity-summary-meta right">${safeEscape(connectionText)}</div></div>`;
                 if (snapshot.internet_market_warning) {
                     html += `<div class="connectivity-alert warn">${safeEscape(String(snapshot.internet_market_warning_message || 'Market-hours internet warning'))}</div>`;
                 }
@@ -8352,6 +8883,73 @@ HTML_DASHBOARD = """
         }
         
         
+        async function updateDailyLearningInsights() {
+            if (dailyLearningRefreshInFlight) {
+                return;
+            }
+
+            dailyLearningRefreshInFlight = true;
+            try {
+                const res = await fetch('/api/daily-learning-insights');
+                const data = await res.json();
+                const metaEl = document.getElementById('dailyLearningMeta');
+                const listEl = document.getElementById('dailyLearningLessons');
+
+                if (!data || data.available !== true) {
+                    if (metaEl) {
+                        metaEl.textContent = 'No daily learning report found yet. Run daily learner after market close.';
+                    }
+                    if (listEl) {
+                        listEl.innerHTML = '<li>Waiting for first learning run.</li>';
+                    }
+                    lastDailyLearningRefreshMs = Date.now();
+                    return;
+                }
+
+                const tradingDate = String(data.trading_date || 'unknown');
+                const summary = data.summary || {};
+                const broker = summary.broker_backed || {};
+                const overall = summary.overall || {};
+                const lessons = Array.isArray(data.actionable_lessons) ? data.actionable_lessons : [];
+
+                const brokerPnlText = Number.isFinite(Number(broker.pnl))
+                    ? formatMoney(Number(broker.pnl))
+                    : '-';
+                const brokerTradesText = Number.isFinite(Number(broker.trades))
+                    ? formatNumber(Number(broker.trades))
+                    : '-';
+                const winRateText = Number.isFinite(Number(overall.win_rate))
+                    ? `${formatNumber(Number(overall.win_rate) * 100, 1)}%`
+                    : '-';
+                const generatedText = data.generated_at ? formatDateTimeAMPM(data.generated_at) : 'unknown';
+
+                if (metaEl) {
+                    metaEl.textContent = `Date ${tradingDate} | Broker PnL ${brokerPnlText} on ${brokerTradesText} trades | Win Rate ${winRateText} | Updated ${generatedText}`;
+                }
+
+                if (listEl) {
+                    if (lessons.length === 0) {
+                        listEl.innerHTML = '<li>No actionable lessons for latest run.</li>';
+                    } else {
+                        const items = lessons.map((lesson) => {
+                            const priority = safeEscape(String(lesson.priority || 'low').toUpperCase());
+                            const title = safeEscape(String(lesson.title || 'Untitled lesson'));
+                            const signal = safeEscape(String(lesson.signal || ''));
+                            const action = safeEscape(String(lesson.action || ''));
+                            return `<li><strong>[${priority}] ${title}</strong><br><span>${signal}</span><br><span>${action}</span></li>`;
+                        }).join('');
+                        listEl.innerHTML = items;
+                    }
+                }
+
+                lastDailyLearningRefreshMs = Date.now();
+            } catch (err) {
+                console.error('Error loading daily learning insights:', err);
+            } finally {
+                dailyLearningRefreshInFlight = false;
+            }
+        }
+
         async function updateTodaysTrades() {
             if (tradesRefreshInFlight) {
                 return;
@@ -8416,14 +9014,14 @@ HTML_DASHBOARD = """
                 const totalReturnPct = Number(summary.total_return_pct || 0);
                 const totalReturnPctText = `${totalReturnPct >= 0 ? '+' : '-'}${formatNumber(Math.abs(totalReturnPct), 1)}%`;
                 const summaryColorClass = totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'neutral';
-                html += `<div class="trade-summary-card neutral"><h4>Total Trades</h4><div class="trade-summary-value">${formatNumber(summary.total_trades || 0)} Trades (${formatNumber(summary.win_rate || 0, 1)}%)</div></div>`;
+                html += `<div class="trade-summary-card neutral"><h4>Wins</h4><div class="trade-summary-value">${formatNumber(summary.win_count || 0)}</div></div>`;
                 html += `<div class="trade-summary-card ${pnlClass}"><h4>Today's P&L</h4><div class="trade-summary-value total-pnl-${summaryColorClass}">${formatMoney(totalPnl)} (${totalReturnPctText})</div></div>`;
                 
-                html += `<div class="trade-summary-card neutral"><h4>Wins & Losses</h4><div class="trade-summary-value">${formatNumber(summary.win_count || 0)} & ${formatNumber(summary.loss_count || 0)}</div></div>`;
+                html += `<div class="trade-summary-card neutral"><h4>Losses</h4><div class="trade-summary-value">${formatNumber(summary.loss_count || 0)}</div></div>`;
                 html += '</div>';
                 
-                html += '<table class="trades-table"><thead><tr>';
-                html += '<th>Time</th><th>OPTION</th><th>Contracts</th><th>Entry</th><th>Exit</th><th>Entry Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit Reason</th>';
+                html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
+                html += '<th>Time</th><th>OPTION</th><th>Contracts</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit Reason</th>';
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
@@ -8435,11 +9033,11 @@ HTML_DASHBOARD = """
                     const pnlClass = pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'neutral';
                     
                     html += '<tr>';
-                    html += `<td>${timeRange}</td>`;
-                    html += `<td><span class="trade-direction ${trade.direction || ''}">${trade.direction || '-'}</span></td>`;
-                    html += `<td>${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
-                    html += `<td>${formatMoney(trade.entry_price || 0)}</td>`;
-                    html += `<td>${formatMoney(trade.exit_price || 0)}</td>`;
+                    html += `<td data-label="Time">${timeRange}</td>`;
+                    html += `<td data-label="Option"><span class="trade-direction ${trade.direction || ''}">${trade.direction || '-'}</span></td>`;
+                    html += `<td data-label="Contracts">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
+                    html += `<td data-label="Entry">${formatMoney(trade.entry_price || 0)}</td>`;
+                    html += `<td data-label="Exit">${formatMoney(trade.exit_price || 0)}</td>`;
                     const stage = (trade.trend_stage === null || trade.trend_stage === undefined) ? '-' : String(trade.trend_stage);
                     const entryGateRaw = trade.entry_gate_score;
                     const indicatorCountRaw = trade.indicator_count;
@@ -8458,12 +9056,12 @@ HTML_DASHBOARD = """
                     const mas = (trade.momentum_acceleration_score === null || trade.momentum_acceleration_score === undefined) ? '-' : formatNumber(trade.momentum_acceleration_score, 2);
                     const abs = (trade.absorption_score === null || trade.absorption_score === undefined) ? '-' : formatNumber(trade.absorption_score, 2);
                     const conf = (trade.confidence_score === null || trade.confidence_score === undefined) ? '-' : formatNumber(trade.confidence_score, 2);
-                    html += `<td>${indicators}</td>`;
-                    html += `<td>${stage}</td>`;
-                    html += `<td>${cq}</td>`;
-                    html += `<td>${mas}</td>`;
-                    html += `<td>${abs}</td>`;
-                    html += `<td>${conf}</td>`;
+                    html += `<td data-label="Checklist">${indicators}</td>`;
+                    html += `<td data-label="Stage">${stage}</td>`;
+                    html += `<td data-label="CQ">${cq}</td>`;
+                    html += `<td data-label="MAS">${mas}</td>`;
+                    html += `<td data-label="ABS">${abs}</td>`;
+                    html += `<td data-label="Conf">${conf}</td>`;
                     const pnlPct = (trade.pnl_pct === null || trade.pnl_pct === undefined) ? null : Number(trade.pnl_pct);
                     let pnlPctText = '';
                     if (pnlPct !== null && !Number.isNaN(pnlPct)) {
@@ -8473,7 +9071,7 @@ HTML_DASHBOARD = """
                             pnlPctText = ` - ${formatNumber(pnlPct, 1)}%`;
                         }
                     }
-                    html += `<td><span class="trade-pnl ${pnlClass}">${formatMoney(pnl)}${pnlPctText}</span></td>`;
+                    html += `<td data-label="P&L"><span class="trade-pnl ${pnlClass}">${formatMoney(pnl)}${pnlPctText}</span></td>`;
                     const rawReason = String(trade.exit_reason || '').toUpperCase();
                     let exitReason = '-';
                     const reasonMap = {
@@ -8504,11 +9102,11 @@ HTML_DASHBOARD = """
                         const exitReasonRaw = rawReason.replaceAll('_', ' ').toLowerCase();
                         exitReason = exitReasonRaw.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                     }
-                    html += `<td>${trade.manual_label ? 'Mason' : exitReason}</td>`;
+                    html += `<td data-label="Exit Reason">${trade.manual_label ? 'Mason' : exitReason}</td>`;
                     html += '</tr>';
                 });
                 
-                html += '</tbody></table>';
+                html += '</tbody></table></div>';
                 container.innerHTML = html;
                 lastTradesRefreshMs = Date.now();
             } catch (err) {
@@ -8528,6 +9126,7 @@ HTML_DASHBOARD = """
             refreshLogs();
             updateTodaysTrades();
             updateExecutionQuality(lastStatusSnapshot);
+            updateDailyLearningInsights();
         });
 
         document.addEventListener('visibilitychange', () => {
@@ -8546,6 +9145,7 @@ HTML_DASHBOARD = """
             lastLogsRefreshMs = 0;
             lastTradesRefreshMs = 0;
             lastExecutionQualityRefreshMs = 0;
+            lastDailyLearningRefreshMs = 0;
             refreshStatus();
         });
 

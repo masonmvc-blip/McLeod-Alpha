@@ -61,6 +61,13 @@ if [[ "$parity_ok" != "1" ]]; then
   exit 1
 fi
 
+bot_start_payload="$(curl -sS -X POST "$BASE_URL/api/start" -H 'Content-Type: application/json')"
+echo "bot_start=$bot_start_payload"
+if ! printf '%s' "$bot_start_payload" | python3 -c 'import json,sys; raise SystemExit(0 if json.load(sys.stdin).get("status") == "success" else 1)'; then
+  echo "ERROR: bot did not start after canonical runtime lock"
+  exit 1
+fi
+
 LOCAL_SCHEMA="$(curl -sS "$BASE_URL/api/status" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("status_schema_version") or "unknown")')"
 echo "local_schema=$LOCAL_SCHEMA"
 

@@ -1,0 +1,98 @@
+[
+  {
+    "content_hash": "fe013c2fb3372ea2dec2ed7f40c63f63f811f2a46dc1f06829fe2189a725df41",
+    "detail": "decision executed",
+    "snapshot_date": "2026-01-01",
+    "snapshot_id": "S-001",
+    "stage": "decision",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "aec2f634bde1ca34eea58b8cd4998c4889fe3c795c523888ff412dc2b07ff794",
+    "detail": "performance executed",
+    "snapshot_date": "2026-01-01",
+    "snapshot_id": "S-001",
+    "stage": "performance",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "e96b2c00b6b8998aeb22bf6b9bf3842d23e1e94b58c74838eacdebc48769da11",
+    "detail": "portfolio executed",
+    "snapshot_date": "2026-01-01",
+    "snapshot_id": "S-001",
+    "stage": "portfolio",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "c2d5fdb8ef936f4d28a5fcbd2ae7f4f2b636616cff030e23e8787be11e443aeb",
+    "detail": "thesis executed",
+    "snapshot_date": "2026-01-01",
+    "snapshot_id": "S-001",
+    "stage": "thesis",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "e127d593ac1330b4789bb4827ad436996b268a1a7914ed53271df95fe93519c3",
+    "detail": "decision executed",
+    "snapshot_date": "2026-01-02",
+    "snapshot_id": "S-002",
+    "stage": "decision",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "4a3e2b2b0411cac5456cd5de93c1bf2b03e4d5826bd388b4c60003014e934a2b",
+    "detail": "performance executed",
+    "snapshot_date": "2026-01-02",
+    "snapshot_id": "S-002",
+    "stage": "performance",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "7bfaea5cfdd388278ad67bc79c6c4eaf9e716b97512343b790cb8257e1226288",
+    "detail": "portfolio executed",
+    "snapshot_date": "2026-01-02",
+    "snapshot_id": "S-002",
+    "stage": "portfolio",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "736faf7063ae60d72dad5854cc68f281180210f6ac78458147d31478ed853687",
+    "detail": "thesis executed",
+    "snapshot_date": "2026-01-02",
+    "snapshot_id": "S-002",
+    "stage": "thesis",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "d698d8dbe8b9e699403da1a284a6de41dba0c277324798cb12742fe7bcdd0503",
+    "detail": "decision executed",
+    "snapshot_date": "2026-01-03",
+    "snapshot_id": "S-003",
+    "stage": "decision",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "ebe2c3c8209235b8c82926cff026aa178f03577171df2beb87a762595eab8213",
+    "detail": "performance executed",
+    "snapshot_date": "2026-01-03",
+    "snapshot_id": "S-003",
+    "stage": "performance",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "94446725c3ea942835418583cb93f8ac5fcdc48fbe3e4e2d6a182191ea0e9c14",
+    "detail": "portfolio executed",
+    "snapshot_date": "2026-01-03",
+    "snapshot_id": "S-003",
+    "stage": "portfolio",
+    "status": "PASS"
+  },
+  {
+    "content_hash": "636f22646bbbc5f1a0233c645b1c456c1da6dfd488063f739ecc3d41014dfeec",
+    "detail": "thesis executed",
+    "snapshot_date": "2026-01-03",
+    "snapshot_id": "S-003",
+    "stage": "thesis",
+    "status": "PASS"
+  }
+]

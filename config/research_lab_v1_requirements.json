@@ -165,7 +165,9 @@
       "status": "VERIFIED",
       "verification_rationale": "Trusted-reference parity fixtures validate core metrics and statistical procedures with deterministic seeds and tolerances.",
       "verified_hash_references": {
-        "engine/phase4/research_lab/scientific_parity.py": "4eb0994f85fe5bfcee28562317feae3bdce1e6d867ad68e408c2ea55d82920f1"
+        "engine/phase4/research_lab/scientific_parity.py": "132f4a10a10df852e60e0df0724dd503cdd962a3e0313e142690cb6930c08d8a",
+        "engine/phase4/research_lab/backtest.py": "3cca3ddf0cf3ab0e0a8b59302eb88d3868e53ab3572b8e4c60e16fae56fc1880",
+        "engine/phase4/research_lab/statistics.py": "7e5f8ee96983f1c5c52a3eab7071000ccd6f6403d090befba9c060a7480c0748"
       }
     },
     {

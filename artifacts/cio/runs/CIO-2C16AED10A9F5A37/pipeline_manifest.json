@@ -1,0 +1,43 @@
+{
+  "as_of_date": "2026-07-19",
+  "created_artifacts": [
+    "daily_cio_brief.md",
+    "decision_records.json",
+    "performance_report.md",
+    "pipeline_manifest.json",
+    "pipeline_summary.json",
+    "portfolio_plan.md"
+  ],
+  "input_hash": "2c16aed10a9f5a37dac3b24b2f9c64b1604aacd6cdbbb5d3ffa889a1d6adf6e6",
+  "output_hashes": {
+    "daily_cio_brief.md": "5c90713c8937a0d25f41dc7accaca5056eda829ca60761504a6e0336f429c79d",
+    "decision_records.json": "76f48541e66ef969f7d401ad942fba408391e892184a73116a1cd8a5b1b839bc",
+    "performance_report.md": "7f915a6ed21b79f667e8db9c016556f299bc62b02e7a678b548b2846376b2f29",
+    "pipeline_summary.json": "b0f437b188a076f6906024504040352a8a28a64abb7b8c25fce54d9cdf3c5a62",
+    "portfolio_plan.md": "5eaad93598759a1d1b99e85c1f3c3e4a8841eaec059497d236a108d37a65540b"
+  },
+  "run_id": "CIO-2C16AED10A9F5A37",
+  "schema_version": "1.0.0",
+  "stage_statuses": [
+    {
+      "blocker": "",
+      "stage": "decision_engine",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "decision_journal",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "portfolio_os",
+      "status": "completed"
+    },
+    {
+      "blocker": "",
+      "stage": "performance_lab",
+      "status": "completed"
+    }
+  ]
+}

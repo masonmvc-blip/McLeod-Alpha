@@ -6,6 +6,22 @@
 - Stop stack: `ops/stack_stop.sh`
 - Control Center direct launch: `ops/run_control_center_waitress.sh`
 
+### Standard Go-Live Command (Desktop)
+
+Use this single command before/after edits to deploy and verify live runtime:
+
+```bash
+cd ~/Documents/GitHub/McLeod-Alpha-New
+./scripts/maintenance/go_live.sh
+```
+
+This command enforces:
+- Desktop-only live runtime execution.
+- Parity state `MATCH` and `parity_block_start=False`.
+- Bot effective running state after restart/start.
+
+Do not use direct `python3 control_center.py` for live operations.
+
 Desktop-only runtime rule:
 - Canonical bot host is `Masons-iMac.local` unless `MCLEOD_CANONICAL_RUNTIME_HOST` is explicitly changed.
 - Do not run the trading bot from the laptop; non-canonical hosts should be treated as read-only dashboards.
