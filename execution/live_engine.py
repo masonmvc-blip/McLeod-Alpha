@@ -36,6 +36,8 @@ BROKER_SYNC_MIN_INTERVAL_SECONDS = float(os.getenv("BROKER_SYNC_MIN_INTERVAL_SEC
 PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS = float(os.getenv("PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS", "1.0"))
 _last_protective_stop_check_epoch = 0.0
 _last_protective_stop_check_ok = True
+BROKER_RECONCILE_MAX_ATTEMPTS = max(1, int(os.getenv("BROKER_RECONCILE_MAX_ATTEMPTS", "3")))
+BROKER_RECONCILE_RETRY_DELAY_SECONDS = max(1.0, float(os.getenv("BROKER_RECONCILE_RETRY_DELAY_SECONDS", "6")))
 
 
 def set_schwab_client(client, account_number, account_hash):
@@ -207,6 +209,30 @@ def get_schwab_positions():
         return None, None, status_code, response_text
 
 
+def _is_retryable_broker_error(status_code, error_text):
+    """Return True when a startup reconciliation failure is likely transient."""
+    try:
+        code = int(status_code) if status_code is not None else None
+    except (TypeError, ValueError):
+        code = None
+
+    if code is not None and 500 <= code < 600:
+        return True
+
+    text = str(error_text or "").lower()
+    transient_markers = (
+        "timed out",
+        "timeout",
+        "temporarily unavailable",
+        "connection reset",
+        "connection aborted",
+        "service unavailable",
+        "unexpected error",
+        "internal server error",
+    )
+    return any(marker in text for marker in transient_markers)
+
+
 def check_spy_option_exposure():
     """
     Check Schwab for existing SPY option positions or active pending orders.
@@ -314,6 +340,21 @@ def reconcile_startup():
     print("="*70)
     
     positions, orders, status_code, error_text = get_schwab_positions()
+
+    attempt = 1
+    while (
+        (positions is None or orders is None)
+        and attempt < BROKER_RECONCILE_MAX_ATTEMPTS
+        and _is_retryable_broker_error(status_code, error_text)
+    ):
+        attempt += 1
+        print(
+            "[RECONCILIATION] Broker query failed "
+            f"(attempt {attempt - 1}/{BROKER_RECONCILE_MAX_ATTEMPTS}, status={status_code}). "
+            f"Retrying in {BROKER_RECONCILE_RETRY_DELAY_SECONDS:.1f}s..."
+        )
+        time.sleep(BROKER_RECONCILE_RETRY_DELAY_SECONDS)
+        positions, orders, status_code, error_text = get_schwab_positions()
     
     # CRITICAL: If broker query fails, ENTER SAFE MODE
     if positions is None or orders is None:
@@ -342,7 +383,7 @@ def reconcile_startup():
         print("="*70 + "\n")
         
         _safe_mode = True
-        _safe_mode_reason = f"HTTP {status_code}: {error_text}"
+        _safe_mode_reason = f"HTTP {status_code}: {error_text} (attempts={attempt})"
         return False
     
     # Broker query successful - continue with position checks

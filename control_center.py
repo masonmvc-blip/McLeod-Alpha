@@ -148,6 +148,32 @@ INTERNET_QUALITY_TARGETS = [
 ]
 
 
+def _resolve_schwab_token_path() -> str:
+    configured = str(os.getenv("SCHWAB_TOKEN_PATH", "")).strip()
+    candidates = []
+    if configured:
+        candidates.append(Path(configured).expanduser())
+
+    candidates.extend(
+        [
+            PROJECT_ROOT / "token.json",
+            Path.cwd() / "token.json",
+            Path.home() / "token.json",
+            Path.home() / "Documents" / "GitHub" / "McLeod-Alpha" / "token.json",
+            Path.home() / "Documents" / "GitHub" / "McLeod-Alpha-New" / "token.json",
+        ]
+    )
+
+    for candidate in candidates:
+        try:
+            if candidate.exists() and candidate.is_file():
+                return str(candidate.resolve())
+        except Exception:
+            continue
+
+    return str((PROJECT_ROOT / "token.json").resolve())
+
+
 def _internet_ssl_context():
     """Create a CA-verified SSL context, preferring certifi on macOS Python builds."""
     try:
@@ -930,7 +956,7 @@ def _get_broker_client():
         api_key=os.getenv("SCHWAB_APP_KEY"),
         app_secret=os.getenv("SCHWAB_APP_SECRET"),
         callback_url=os.getenv("SCHWAB_CALLBACK_URL"),
-        token_path=str(PROJECT_ROOT / "token.json"),
+        token_path=_resolve_schwab_token_path(),
         enforce_enums=False,
     )
     return _BROKER_CLIENT
@@ -2566,9 +2592,111 @@ def _active_stop_category(option_entry, current_mark=None, stop_price=None):
 
     return "Stop"
 
+
+def _compute_candle_indicator_snapshot():
+    """Compute CALL/PUT indicator counts directly from recent candle history."""
+    history_path = PROJECT_ROOT / "data" / "spy_1min_history.csv"
+    if not history_path.exists():
+        return None
+
+    candles = []
+    try:
+        with history_path.open("r", encoding="utf-8", errors="ignore") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    candles.append(
+                        {
+                            "datetime": str(row.get("datetime") or "").strip(),
+                            "open": float(row.get("open")),
+                            "high": float(row.get("high")),
+                            "low": float(row.get("low")),
+                            "close": float(row.get("close")),
+                            "volume": float(row.get("volume") or 0.0),
+                        }
+                    )
+                except (TypeError, ValueError):
+                    continue
+    except Exception:
+        return None
+
+    if len(candles) < 2:
+        return None
+
+    closes = [c["close"] for c in candles]
+    highs = [c["high"] for c in candles]
+    lows = [c["low"] for c in candles]
+    volumes = [max(0.0, c["volume"]) for c in candles]
+
+    def _ema(values, span):
+        alpha = 2.0 / (float(span) + 1.0)
+        out = [float(values[0])]
+        for value in values[1:]:
+            out.append((float(value) * alpha) + (out[-1] * (1.0 - alpha)))
+        return out
+
+    ema10 = _ema(closes, 10)
+    ema20 = _ema(closes, 20)
+    ema50 = _ema(closes, 50)
+    ema12 = _ema(closes, 12)
+    ema26 = _ema(closes, 26)
+    macd = [a - b for a, b in zip(ema12, ema26)]
+    signal = _ema(macd, 9)
+    macd_hist = [m - s for m, s in zip(macd, signal)]
+
+    vwap = []
+    cumulative_pv = 0.0
+    cumulative_volume = 0.0
+    for i in range(len(candles)):
+        typical = (highs[i] + lows[i] + closes[i]) / 3.0
+        cumulative_pv += typical * volumes[i]
+        cumulative_volume += volumes[i]
+        vwap.append((cumulative_pv / cumulative_volume) if cumulative_volume > 0 else closes[i])
+
+    i_last = len(candles) - 1
+    i_prev = i_last - 1
+
+    call_score = 0
+    if closes[i_last] > vwap[i_last]:
+        call_score += 1
+    if ema10[i_last] > ema20[i_last] > ema50[i_last]:
+        call_score += 2
+    if ema10[i_last] > ema10[i_prev]:
+        call_score += 1
+    if macd_hist[i_last] > macd_hist[i_prev]:
+        call_score += 1
+    if closes[i_last] > highs[i_prev]:
+        call_score += 1
+
+    put_score = 0
+    if closes[i_last] < vwap[i_last]:
+        put_score += 1
+    if ema10[i_last] < ema20[i_last] < ema50[i_last]:
+        put_score += 2
+    if ema10[i_last] < ema10[i_prev]:
+        put_score += 1
+    if macd_hist[i_last] < macd_hist[i_prev]:
+        put_score += 1
+    if closes[i_last] < lows[i_prev]:
+        put_score += 1
+
+    raw_total = 6
+    indicator_total = 5
+    call_score = int(round((max(0, min(raw_total, int(call_score))) / raw_total) * indicator_total))
+    put_score = int(round((max(0, min(raw_total, int(put_score))) / raw_total) * indicator_total))
+
+    latest_ts = str(candles[i_last].get("datetime") or "").strip() or None
+    return {
+        "call_passed": call_score,
+        "put_passed": put_score,
+        "total": indicator_total,
+        "timestamp": latest_ts,
+    }
+
 def parse_bot_status():
     """Parse bot status from logs and position file"""
     active_log = _resolve_active_bot_log_file()
+    candle_indicator_snapshot = _compute_candle_indicator_snapshot()
 
     def calculate_broker_period_pnl() -> tuple[float, float, float, float]:
         """Compute realized Today/WTD/MTD/YTD P&L, reconciling with completed local trades."""
@@ -2765,7 +2893,7 @@ def parse_bot_status():
                     api_key=app_key,
                     app_secret=app_secret,
                     callback_url=callback,
-                    token_path="token.json",
+                    token_path=_resolve_schwab_token_path(),
                     enforce_enums=False,
                 )
 
@@ -2872,7 +3000,7 @@ def parse_bot_status():
     nyse_is_trading_day = _is_nyse_trading_day(nyse_today)
 
     status = {
-        "status_schema_version": "2026-07-17.2",
+        "status_schema_version": "2026-07-18.1",
         "bot_running": is_bot_running(),
         "bot_running_effective": False,
         "bot_stale": None,
@@ -2970,6 +3098,12 @@ def parse_bot_status():
         "bell_broadcast_at": _BELL_BROADCAST.get("triggered_at"),
         "bell_broadcast_source": _BELL_BROADCAST.get("source"),
     }
+
+    if candle_indicator_snapshot:
+        status["continuation_call_passed"] = int(candle_indicator_snapshot.get("call_passed") or 0)
+        status["continuation_put_passed"] = int(candle_indicator_snapshot.get("put_passed") or 0)
+        status["continuation_indicators_total"] = int(candle_indicator_snapshot.get("total") or 5)
+        status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
 
     try:
         parity = _parity_status_snapshot()
@@ -3134,8 +3268,9 @@ def parse_bot_status():
         pass
 
     # Load latest continuation cheat-sheet snapshot from strategy monitor.
+    # Use as fallback only when candle-derived scoring is unavailable.
     try:
-        if CONTINUATION_STATUS_FILE.exists():
+        if (not candle_indicator_snapshot) and CONTINUATION_STATUS_FILE.exists():
             snap = json.loads(CONTINUATION_STATUS_FILE.read_text())
             status["continuation_call_passed"] = int(((snap.get("call") or {}).get("passed") or 0))
             status["continuation_put_passed"] = int(((snap.get("put") or {}).get("passed") or 0))
@@ -3202,27 +3337,29 @@ def parse_bot_status():
         
         log_text = ''.join(lines)
 
-        # Keep continuation indicator cards in sync with the latest decision logs.
-        current_indicator_section = None
-        for raw_line in lines:
-            line_text = str(raw_line or "").strip()
-            upper_line = line_text.upper()
-            if "CALL" in upper_line and "════" in line_text:
-                current_indicator_section = "CALL"
-                continue
-            if "PUT" in upper_line and "════" in line_text:
-                current_indicator_section = "PUT"
-                continue
+        # Keep continuation indicator cards in sync with decision logs only when
+        # candle-derived scoring is unavailable.
+        if not candle_indicator_snapshot:
+            current_indicator_section = None
+            for raw_line in lines:
+                line_text = str(raw_line or "").strip()
+                upper_line = line_text.upper()
+                if "CALL" in upper_line and "════" in line_text:
+                    current_indicator_section = "CALL"
+                    continue
+                if "PUT" in upper_line and "════" in line_text:
+                    current_indicator_section = "PUT"
+                    continue
 
-            score_match = re.search(r"Score:\s*(\d+)\s*/\s*(\d+)", line_text)
-            if score_match and current_indicator_section in {"CALL", "PUT"}:
-                passed = int(score_match.group(1))
-                total = int(score_match.group(2))
-                status["continuation_indicators_total"] = total
-                if current_indicator_section == "CALL":
-                    status["continuation_call_passed"] = passed
-                else:
-                    status["continuation_put_passed"] = passed
+                score_match = re.search(r"Score:\s*(\d+)\s*/\s*(\d+)", line_text)
+                if score_match and current_indicator_section in {"CALL", "PUT"}:
+                    passed = int(score_match.group(1))
+                    total = int(score_match.group(2))
+                    status["continuation_indicators_total"] = total
+                    if current_indicator_section == "CALL":
+                        status["continuation_call_passed"] = passed
+                    else:
+                        status["continuation_put_passed"] = passed
         
         # Parse status indicators - startup messages that appear early, check entire file
         file_all_upper = file_all.upper()
@@ -6993,7 +7130,7 @@ HTML_DASHBOARD = """
         </div>
         
         <div style="margin-bottom: 30px;">
-            <h2 id="tradesHeading" style="color: #333; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; text-align: center;">📊 Today's Trades 📈</h2>
+            <h2 id="tradesHeading" style="color: #333; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; text-align: center;">Today's Trades</h2>
             <div id="tradesContainer">
                 <div style="text-align: center; color: #999; padding: 20px;">Loading trades...</div>
             </div>
@@ -7860,9 +7997,11 @@ HTML_DASHBOARD = """
 
                 const callIndEl = document.getElementById('callIndicators');
                 callIndEl.innerHTML = renderIndicatorText(callPassed, 'CALL');
-                if (callPassed >= 5) {
+                const strongThreshold = Math.max(1, indicatorTotal);
+                const midThreshold = Math.max(0, indicatorTotal - 1);
+                if (callPassed >= strongThreshold) {
                     callIndEl.className = 'status-value success';
-                } else if (callPassed === 4) {
+                } else if (callPassed >= midThreshold) {
                     callIndEl.className = 'status-value info';
                 } else {
                     callIndEl.className = 'status-value error';
@@ -7870,9 +8009,9 @@ HTML_DASHBOARD = """
 
                 const putIndEl = document.getElementById('putIndicators');
                 putIndEl.innerHTML = renderIndicatorText(putPassed, 'PUT');
-                if (putPassed >= 5) {
+                if (putPassed >= strongThreshold) {
                     putIndEl.className = 'status-value success';
-                } else if (putPassed === 4) {
+                } else if (putPassed >= midThreshold) {
                     putIndEl.className = 'status-value info';
                 } else {
                     putIndEl.className = 'status-value error';
@@ -8175,9 +8314,11 @@ HTML_DASHBOARD = """
                 }
 
                 const tradingDate = formatTradingDate(data.trading_date);
-                const headingPrefix = data.is_fallback_day ? '📊 Most Recent Trading Day' : "📊 Today's Trades 📈";
-                const headingSuffix = data.is_fallback_day ? ' 📊' : '';
-                heading.textContent = `${headingPrefix} - ${tradingDate}${headingSuffix}`;
+                if (data.is_fallback_day) {
+                    heading.textContent = `${tradingDate} 📊 Most Recent Trading Day`;
+                } else {
+                    heading.textContent = `${tradingDate} 📊 Today's Trades`;
+                }
                 
                 if (!data.trades || data.trades.length === 0) {
                     container.innerHTML = '<div class="no-trades">📭 No trades in database</div>';

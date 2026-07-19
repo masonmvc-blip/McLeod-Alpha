@@ -13,6 +13,7 @@ import importlib
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -34,14 +35,77 @@ LAST_CANDLE_SOURCE = "empty"
 LAST_QUOTE_SOURCE = "none"
 LIVE_CANDLE_BUILDER = LiveMinuteCandleBuilder(symbol=SYMBOL, max_candles=5)
 SCHWAB_QUOTE_FRESHNESS_SECONDS = int(os.getenv("SCHWAB_QUOTE_FRESHNESS_SECONDS", "180"))
+SCHWAB_AUTH_RETRY_SECONDS = max(5, int(os.getenv("SCHWAB_AUTH_RETRY_SECONDS", "20")))
 
-client = easy_client(
-    api_key=os.getenv("SCHWAB_APP_KEY"),
-    app_secret=os.getenv("SCHWAB_APP_SECRET"),
-    callback_url=os.getenv("SCHWAB_CALLBACK_URL"),
-    token_path=TOKEN_PATH,
-    enforce_enums=False,
-)
+
+def _resolve_schwab_callback_url() -> str:
+    """Return a Schwab callback URL with an allowed localhost hostname."""
+    raw = str(os.getenv("SCHWAB_CALLBACK_URL", "")).strip()
+    if raw:
+        parsed = urlparse(raw)
+        # schwab-py login flow only allows callback hostname 127.0.0.1.
+        if parsed.hostname == "127.0.0.1":
+            return raw
+        print(
+            "SCHWAB_CALLBACK_URL is missing 127.0.0.1 hostname; "
+            "falling back to https://127.0.0.1"
+        )
+    else:
+        print("SCHWAB_CALLBACK_URL not set; falling back to https://127.0.0.1")
+    return "https://127.0.0.1"
+
+
+def _resolve_token_path() -> str:
+    configured = str(os.getenv("SCHWAB_TOKEN_PATH", "")).strip()
+    candidates = []
+    if configured:
+        candidates.append(Path(configured).expanduser())
+
+    project_root = Path(__file__).resolve().parent
+    candidates.extend(
+        [
+            project_root / TOKEN_PATH,
+            Path.cwd() / TOKEN_PATH,
+            Path.home() / TOKEN_PATH,
+            Path.home() / "Documents" / "GitHub" / "McLeod-Alpha" / TOKEN_PATH,
+            Path.home() / "Documents" / "GitHub" / "McLeod-Alpha-New" / TOKEN_PATH,
+        ]
+    )
+
+    for candidate in candidates:
+        try:
+            if candidate.exists() and candidate.is_file():
+                return str(candidate.resolve())
+        except Exception:
+            continue
+
+    return str((project_root / TOKEN_PATH).resolve())
+
+
+def _build_schwab_client():
+    callback_url = _resolve_schwab_callback_url()
+    token_path = _resolve_token_path()
+
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            return easy_client(
+                api_key=os.getenv("SCHWAB_APP_KEY"),
+                app_secret=os.getenv("SCHWAB_APP_SECRET"),
+                callback_url=callback_url,
+                token_path=token_path,
+                enforce_enums=False,
+            )
+        except Exception as exc:
+            print(
+                "Schwab auth bootstrap failed "
+                f"(attempt {attempt}, token_path={token_path}): {exc}"
+            )
+            print(f"Retrying Schwab auth in {SCHWAB_AUTH_RETRY_SECONDS}s...")
+            time.sleep(SCHWAB_AUTH_RETRY_SECONDS)
+
+client = _build_schwab_client()
 
 EQUITY_STREAM = SchwabEquityQuoteStream(client, SYMBOL)
 try:
