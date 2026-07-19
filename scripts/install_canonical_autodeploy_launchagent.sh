@@ -13,7 +13,7 @@ RUNNER_PATH="$LOCAL_RUNNER_DIR/canonical_autodeploy_watch.sh"
 MODE="${1:-normal}"
 case "$MODE" in
   normal)
-    MODE_POLL_SECONDS="15"
+    MODE_POLL_SECONDS="2"
     ;;
   market-hot)
     MODE_POLL_SECONDS="5"
