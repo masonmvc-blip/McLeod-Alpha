@@ -6,7 +6,9 @@ ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 AGENT_ID="com.mcleod.alpha.canonical-autodeploy"
 PLIST_PATH="$HOME/Library/LaunchAgents/$AGENT_ID.plist"
 LOG_PATH="$ROOT_DIR/logs/canonical_autodeploy_launchd.log"
-RUNNER_PATH="$ROOT_DIR/scripts/maintenance/canonical_autodeploy_watch.sh"
+WATCH_SCRIPT="$ROOT_DIR/scripts/maintenance/canonical_autodeploy_watch.sh"
+LOCAL_RUNNER_DIR="$HOME/Library/Application Support/McLeod Alpha"
+RUNNER_PATH="$LOCAL_RUNNER_DIR/canonical_autodeploy_watch.sh"
 
 MODE="${1:-normal}"
 case "$MODE" in
@@ -30,8 +32,15 @@ esac
 
 POLL_SECONDS="${MCLEOD_AUTODEPLOY_POLL_SECONDS:-$MODE_POLL_SECONDS}"
 
-mkdir -p "$HOME/Library/LaunchAgents"
+if [[ ! -x "$WATCH_SCRIPT" ]]; then
+  echo "ERROR: autodeploy watcher is not executable: $WATCH_SCRIPT"
+  exit 1
+fi
+
+mkdir -p "$HOME/Library/LaunchAgents" "$LOCAL_RUNNER_DIR"
 mkdir -p "$ROOT_DIR/logs"
+cp "$WATCH_SCRIPT" "$RUNNER_PATH"
+chmod 755 "$RUNNER_PATH"
 
 cat > "$PLIST_PATH" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
