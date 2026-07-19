@@ -8,6 +8,28 @@ PLIST_PATH="$HOME/Library/LaunchAgents/$AGENT_ID.plist"
 LOG_PATH="$ROOT_DIR/logs/canonical_autodeploy_launchd.log"
 RUNNER_PATH="$ROOT_DIR/scripts/maintenance/canonical_autodeploy_watch.sh"
 
+MODE="${1:-normal}"
+case "$MODE" in
+  normal)
+    MODE_POLL_SECONDS="15"
+    ;;
+  market-hot)
+    MODE_POLL_SECONDS="5"
+    ;;
+  custom)
+    MODE_POLL_SECONDS="${MCLEOD_AUTODEPLOY_POLL_SECONDS:-15}"
+    ;;
+  *)
+    echo "Usage: $0 [normal|market-hot|custom]"
+    echo "  normal     -> 15s poll (default)"
+    echo "  market-hot -> 5s poll"
+    echo "  custom     -> uses MCLEOD_AUTODEPLOY_POLL_SECONDS env"
+    exit 1
+    ;;
+esac
+
+POLL_SECONDS="${MCLEOD_AUTODEPLOY_POLL_SECONDS:-$MODE_POLL_SECONDS}"
+
 mkdir -p "$HOME/Library/LaunchAgents"
 mkdir -p "$ROOT_DIR/logs"
 
@@ -39,7 +61,7 @@ cat > "$PLIST_PATH" <<PLIST
       <key>MCLEOD_CANONICAL_RUNTIME_HOST</key>
       <string>${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}</string>
       <key>MCLEOD_AUTODEPLOY_POLL_SECONDS</key>
-      <string>${MCLEOD_AUTODEPLOY_POLL_SECONDS:-15}</string>
+      <string>$POLL_SECONDS</string>
       <key>PYTHONUNBUFFERED</key>
       <string>1</string>
     </dict>
@@ -61,3 +83,5 @@ launchctl kickstart -k "gui/$(id -u)/$AGENT_ID"
 echo "Installed LaunchAgent: $AGENT_ID"
 echo "Plist: $PLIST_PATH"
 echo "Log: $LOG_PATH"
+echo "Mode: $MODE"
+echo "Poll seconds: $POLL_SECONDS"
