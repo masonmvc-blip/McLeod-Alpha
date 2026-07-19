@@ -8419,8 +8419,7 @@ HTML_DASHBOARD = """
                 html += `<div class="trade-summary-card neutral"><h4>Total Trades</h4><div class="trade-summary-value">${formatNumber(summary.total_trades || 0)} Trades (${formatNumber(summary.win_rate || 0, 1)}%)</div></div>`;
                 html += `<div class="trade-summary-card ${pnlClass}"><h4>Today's P&L</h4><div class="trade-summary-value total-pnl-${summaryColorClass}">${formatMoney(totalPnl)} (${totalReturnPctText})</div></div>`;
                 
-                html += `<div class="trade-summary-card neutral"><h4>Wins</h4><div class="trade-summary-value">${formatNumber(summary.win_count || 0)}</div></div>`;
-                html += `<div class="trade-summary-card neutral"><h4>Losses</h4><div class="trade-summary-value">${formatNumber(summary.loss_count || 0)}</div></div>`;
+                html += `<div class="trade-summary-card neutral"><h4>Wins & Losses</h4><div class="trade-summary-value">${formatNumber(summary.win_count || 0)} & ${formatNumber(summary.loss_count || 0)}</div></div>`;
                 html += '</div>';
                 
                 html += '<table class="trades-table"><thead><tr>';
