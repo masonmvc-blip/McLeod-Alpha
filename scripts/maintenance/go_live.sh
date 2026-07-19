@@ -48,7 +48,7 @@ else
   curl -sS -X POST "$BASE_URL/api/parity/baseline" >/dev/null
 fi
 
-curl -sS -X POST "$BASE_URL/api/start" >/dev/null
+curl -sS -X POST "$BASE_URL/api/start-direct" >/dev/null
 
 python3 - <<'PY' "$CANONICAL_URL"
 import json
