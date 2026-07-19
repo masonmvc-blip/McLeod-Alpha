@@ -20,8 +20,8 @@ publish_changes() {
   after="$(git status --porcelain --untracked-files=all)"
   [[ "$before" == "$after" ]] || return 0
 
-  git rm --cached --ignore-unmatch .bot_pid >/dev/null 2>&1 || true
   git add -A -- . ':(exclude)artifacts/test_reports/**'
+  git rm --cached --ignore-unmatch .bot_pid >/dev/null 2>&1 || true
   if git diff --cached --quiet; then
     return 0
   fi
