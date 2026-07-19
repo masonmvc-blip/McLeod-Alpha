@@ -5620,16 +5620,28 @@ def api_today_trades():
     try:
         import sqlite3
         from datetime import date
+        from execution.trade_logger import init_trade_log
         
         db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
-        if not db_path.exists():
-            return jsonify({"trades": [], "summary": {"total_trades": 0, "total_pnl": 0, "win_count": 0, "loss_count": 0}, "trading_date": None})
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        if not db_path.exists() or db_path.stat().st_size == 0:
+            # Bootstrap an empty-but-valid schema so the endpoint never hard-fails
+            # on a missing/zero-byte DB file.
+            init_trade_log()
         
         con = sqlite3.connect(str(db_path))
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         is_fallback_day = False
         trade_log_columns = {row[1] for row in cur.execute("PRAGMA table_info(trade_log)").fetchall()}
+        if not trade_log_columns:
+            # Self-heal schema drift: recreate table and continue with empty set.
+            con.close()
+            init_trade_log()
+            con = sqlite3.connect(str(db_path))
+            con.row_factory = sqlite3.Row
+            cur = con.cursor()
+            trade_log_columns = {row[1] for row in cur.execute("PRAGMA table_info(trade_log)").fetchall()}
         absorption_select = "absorption_score" if "absorption_score" in trade_log_columns else "NULL AS absorption_score"
         
         # First try today's date
