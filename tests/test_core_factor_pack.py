@@ -78,6 +78,21 @@ def test_future_dated_observations_reject_and_directionality_is_economic() -> No
     assert _factor("balance_sheet.net_debt_to_fcf").evaluate(high_debt) < _factor("balance_sheet.net_debt_to_fcf").evaluate(low_debt)
 
 
+@pytest.mark.parametrize(("factor_id", "field", "is_series"), [
+    ("quality.roic_persistence", "roic_history", True), ("quality.gross_margin_stability", "gross_margin_history", True),
+    ("quality.free_cash_flow_conversion", "free_cash_flow_history", True), ("growth.revenue_acceleration", "revenue_growth_history", True),
+    ("growth.earnings_acceleration", "operating_income_growth_history", True), ("value.free_cash_flow_yield", "free_cash_flow", False),
+    ("value.earnings_yield", "operating_earnings", False), ("capital_allocation.share_count_reduction", "diluted_share_count_history", True),
+    ("capital_allocation.reinvestment_efficiency", "operating_profit_history", True), ("balance_sheet.net_debt_to_fcf", "net_debt", False),
+])
+def test_every_factor_rejects_future_dated_required_observation(factor_id: str, field: str, is_series: bool) -> None:
+    snapshot = _snapshot()
+    observation = {"value": 1.0, "publication_date": "2026-07-20"}
+    snapshot["company_fundamentals"][field] = [observation] if is_series else observation
+    with pytest.raises(ValueError, match="future-dated observation rejected"):
+        _factor(factor_id).evaluate(snapshot)
+
+
 def test_registry_artifacts_are_byte_identical(tmp_path: Path) -> None:
     registry = FactorRegistry()
     for item in core_factors(): registry.register(item)
