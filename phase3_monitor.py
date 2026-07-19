@@ -40,6 +40,8 @@ CANDLE_HISTORY_REFRESH_SECONDS = max(30, int(os.getenv("CANDLE_HISTORY_REFRESH_S
 _LAST_HISTORY_REFRESH_EPOCH = 0.0
 LATENCY_METRICS_ENABLED = str(os.getenv("LATENCY_METRICS_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 LATENCY_METRICS_PATH = Path(os.getenv("LATENCY_METRICS_PATH", "data/reports/latency_cycle_history.jsonl"))
+DECISION_AUDIT_ENABLED = str(os.getenv("DECISION_AUDIT_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
+DECISION_AUDIT_PATH = Path(os.getenv("DECISION_AUDIT_PATH", "data/reports/decision_audit_history.jsonl"))
 LAST_ENTRY_EXECUTION_METRICS = {
     "attempted": False,
     "opened": False,
@@ -67,11 +69,24 @@ def _append_latency_event(payload):
         print(f"Latency metrics write error: {exc}")
 
 
+def _append_decision_audit_event(payload):
+    if not DECISION_AUDIT_ENABLED:
+        return
+    try:
+        DECISION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with DECISION_AUDIT_PATH.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, separators=(",", ":"), default=str) + "\n")
+    except Exception as exc:
+        print(f"Decision audit write error: {exc}")
+
+
 def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None, indicators_ms=None):
     cycle_total_ms = _elapsed_ms(cycle_start_ms)
+    ts_utc = datetime.now(UTC_TZ).isoformat()
+    ts_et = datetime.now(EASTERN_TZ).isoformat()
     _append_latency_event({
-        "ts_utc": datetime.now(UTC_TZ).isoformat(),
-        "ts_et": datetime.now(EASTERN_TZ).isoformat(),
+        "ts_utc": ts_utc,
+        "ts_et": ts_et,
         "symbol": SYMBOL,
         "candle_source": LAST_CANDLE_SOURCE,
         "regime": None,
@@ -97,6 +112,21 @@ def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None,
         "entry_filled_via": None,
         "open_trade_ms": None,
         "report_ms": None,
+        "cycle_total_ms": cycle_total_ms,
+    })
+    _append_decision_audit_event({
+        "ts_utc": ts_utc,
+        "ts_et": ts_et,
+        "symbol": SYMBOL,
+        "event_type": "cycle_skip",
+        "skip_reason": reason,
+        "candle_source": LAST_CANDLE_SOURCE,
+        "entry_attempted": False,
+        "entry_opened": False,
+        "entry_decision_reason": reason,
+        "entry_block_reason": reason,
+        "candles_fetch_ms": candles_fetch_ms,
+        "indicators_ms": indicators_ms,
         "cycle_total_ms": cycle_total_ms,
     })
 
@@ -589,7 +619,23 @@ def get_option_chain():
     resp.raise_for_status()
     return resp.json()
 
-    log_signal(float(last.close), regime, call_score, put_score)
+    log_signal(
+        float(last.close),
+        regime,
+        call_score,
+        put_score,
+        feature_payload={
+            "call_reasons": call_reasons,
+            "put_reasons": put_reasons,
+            "volume_trend": vol.get("trend"),
+            "signal_threshold": min_score_threshold,
+            "ema10": float(getattr(last, "ema10", 0.0)),
+            "ema20": float(getattr(last, "ema20", 0.0)),
+            "ema50": float(getattr(last, "ema50", 0.0)),
+            "vwap": float(getattr(last, "vwap", 0.0)),
+            "macd_hist": float(getattr(last, "macd_hist", 0.0)),
+        },
+    )
 
     if regime == "BULL_TREND" and call_score >= 5:
         entry = float(last.close)
@@ -686,6 +732,7 @@ def open_trade(*args, **kwargs):
 
 def maybe_enter_trade(last, prev, regime):
     cycle_entry_start_ms = _perf_ms_now()
+    min_score_threshold = 5
 
     if in_trade():
         print("Entry skipped: already in trade")
@@ -694,6 +741,19 @@ def maybe_enter_trade(last, prev, regime):
             "opened": False,
             "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
             "decision_reason": "already_in_trade",
+            "regime": regime,
+            "call_score": None,
+            "put_score": None,
+            "call_reasons": [],
+            "put_reasons": [],
+            "volume_trend": None,
+            "signal_threshold": min_score_threshold,
+            "candidate_direction": None,
+            "candidate_entry": None,
+            "candidate_stop": None,
+            "candidate_target": None,
+            "candidate_quantity": None,
+            "candidate_option_symbol": None,
             "chain_fetch_ms": None,
             "option_select_ms": None,
             "open_trade_ms": None,
@@ -760,6 +820,19 @@ def maybe_enter_trade(last, prev, regime):
             "opened": opened,
             "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
             "decision_reason": "bull_call_signal",
+            "regime": regime,
+            "call_score": call_score,
+            "put_score": put_score,
+            "call_reasons": call_reasons,
+            "put_reasons": put_reasons,
+            "volume_trend": vol.get("trend"),
+            "signal_threshold": min_score_threshold,
+            "candidate_direction": "CALL",
+            "candidate_entry": entry,
+            "candidate_stop": stop,
+            "candidate_target": target,
+            "candidate_quantity": quantity,
+            "candidate_option_symbol": option.get("symbol") if isinstance(option, dict) else None,
             "chain_fetch_ms": chain_fetch_ms,
             "option_select_ms": option_select_ms,
             "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
@@ -797,6 +870,19 @@ def maybe_enter_trade(last, prev, regime):
             "opened": opened,
             "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
             "decision_reason": "bear_put_signal",
+            "regime": regime,
+            "call_score": call_score,
+            "put_score": put_score,
+            "call_reasons": call_reasons,
+            "put_reasons": put_reasons,
+            "volume_trend": vol.get("trend"),
+            "signal_threshold": min_score_threshold,
+            "candidate_direction": "PUT",
+            "candidate_entry": entry,
+            "candidate_stop": stop,
+            "candidate_target": target,
+            "candidate_quantity": quantity,
+            "candidate_option_symbol": option.get("symbol") if isinstance(option, dict) else None,
             "chain_fetch_ms": chain_fetch_ms,
             "option_select_ms": option_select_ms,
             "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
@@ -817,6 +903,19 @@ def maybe_enter_trade(last, prev, regime):
         "opened": False,
         "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
         "decision_reason": "no_entry_signal",
+        "regime": regime,
+        "call_score": call_score,
+        "put_score": put_score,
+        "call_reasons": call_reasons,
+        "put_reasons": put_reasons,
+        "volume_trend": vol.get("trend"),
+        "signal_threshold": min_score_threshold,
+        "candidate_direction": None,
+        "candidate_entry": float(last.close),
+        "candidate_stop": None,
+        "candidate_target": None,
+        "candidate_quantity": None,
+        "candidate_option_symbol": None,
         "chain_fetch_ms": None,
         "option_select_ms": None,
         "open_trade_ms": None,
@@ -1000,6 +1099,53 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             "entry_persist_ms": entry_metrics.get("persist_ms"),
             "entry_block_reason": entry_metrics.get("entry_block_reason"),
             "entry_filled_via": entry_metrics.get("filled_via"),
+            "open_trade_ms": entry_metrics.get("open_trade_ms"),
+            "report_ms": report_ms,
+            "cycle_total_ms": cycle_total_ms,
+        })
+
+        _append_decision_audit_event({
+            "ts_utc": datetime.now(UTC_TZ).isoformat(),
+            "ts_et": datetime.now(EASTERN_TZ).isoformat(),
+            "symbol": SYMBOL,
+            "event_type": "entry_evaluation",
+            "candle_source": LAST_CANDLE_SOURCE,
+            "candle_time": str(last.name),
+            "spy_open": float(last.open),
+            "spy_high": float(last.high),
+            "spy_low": float(last.low),
+            "spy_close": float(last.close),
+            "spy_volume": float(last.volume),
+            "regime": regime,
+            "entry_attempted": bool(entry_metrics.get("attempted")),
+            "entry_opened": bool(entry_metrics.get("opened")),
+            "entry_decision_reason": entry_metrics.get("decision_reason"),
+            "entry_block_reason": entry_metrics.get("entry_block_reason"),
+            "entry_filled_via": entry_metrics.get("filled_via"),
+            "call_score": entry_metrics.get("call_score"),
+            "put_score": entry_metrics.get("put_score"),
+            "call_reasons": entry_metrics.get("call_reasons") or [],
+            "put_reasons": entry_metrics.get("put_reasons") or [],
+            "volume_trend": entry_metrics.get("volume_trend"),
+            "signal_threshold": entry_metrics.get("signal_threshold"),
+            "candidate_direction": entry_metrics.get("candidate_direction"),
+            "candidate_entry": entry_metrics.get("candidate_entry"),
+            "candidate_stop": entry_metrics.get("candidate_stop"),
+            "candidate_target": entry_metrics.get("candidate_target"),
+            "candidate_quantity": entry_metrics.get("candidate_quantity"),
+            "candidate_option_symbol": entry_metrics.get("candidate_option_symbol"),
+            "candles_fetch_ms": candles_fetch_ms,
+            "indicators_ms": indicators_ms,
+            "manage_trade_ms": manage_trade_ms,
+            "entry_eval_ms": entry_metrics.get("entry_eval_ms"),
+            "entry_precheck_ms": entry_metrics.get("precheck_ms"),
+            "entry_quote_compute_ms": entry_metrics.get("quote_compute_ms"),
+            "entry_submit_order_ms": entry_metrics.get("submit_order_ms"),
+            "entry_wait_fill_ms": entry_metrics.get("wait_fill_ms"),
+            "entry_market_fallback_submit_ms": entry_metrics.get("market_fallback_submit_ms"),
+            "entry_market_fallback_wait_ms": entry_metrics.get("market_fallback_wait_ms"),
+            "entry_protective_stop_ms": entry_metrics.get("protective_stop_ms"),
+            "entry_persist_ms": entry_metrics.get("persist_ms"),
             "open_trade_ms": entry_metrics.get("open_trade_ms"),
             "report_ms": report_ms,
             "cycle_total_ms": cycle_total_ms,
