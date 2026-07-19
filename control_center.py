@@ -122,6 +122,10 @@ CANONICAL_CONTROL_CENTER_URL = os.getenv(
     "MCLEOD_CANONICAL_CONTROL_CENTER_URL",
     "https://masons-imac.tailb88bd7.ts.net/",
 ).strip()
+CANONICAL_REPO_BASENAME = os.getenv("MCLEOD_CANONICAL_REPO_BASENAME", "McLeod-Alpha-New").strip()
+ENFORCE_CANONICAL_REPO_PATH = str(
+    os.getenv("MCLEOD_ENFORCE_CANONICAL_REPO_PATH", "1")
+).strip().lower() in {"1", "true", "yes", "on"}
 REDIRECT_NONCANONICAL_CONTROL_CENTER = str(
     os.getenv("MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER", "1")
 ).strip().lower() not in {"0", "false", "no", "off", ""}
@@ -2367,6 +2371,15 @@ def _runtime_host_allows_bot_start() -> tuple[bool, str, str]:
     return allowed, current_host, allowed_host
 
 
+def _runtime_repo_path_allows_start() -> tuple[bool, str, str]:
+    current_repo = PROJECT_ROOT.name.strip()
+    expected_repo = CANONICAL_REPO_BASENAME.strip()
+    if not ENFORCE_CANONICAL_REPO_PATH or not expected_repo:
+        return True, current_repo, expected_repo
+    allowed = current_repo.lower() == expected_repo.lower()
+    return allowed, current_repo, expected_repo
+
+
 def _git_dirty_summary() -> tuple[bool, list[str]]:
     """Return (is_dirty, sample_lines) from git porcelain status."""
     try:
@@ -2385,6 +2398,13 @@ def _git_dirty_summary() -> tuple[bool, list[str]]:
 def start_bot():
     """Start the trading bot"""
     global _RUNNING_BOT_SCRIPT_SHA256
+
+    repo_allowed, current_repo, expected_repo = _runtime_repo_path_allows_start()
+    if not repo_allowed:
+        return {
+            "status": "error",
+            "message": f"Bot start blocked in repo {current_repo}; canonical repo is {expected_repo}",
+        }
 
     host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
     if not host_allowed:
@@ -3040,6 +3060,8 @@ def parse_bot_status():
     nyse_today = now_et.date()
     nyse_is_trading_day = _is_nyse_trading_day(nyse_today)
 
+    repo_path_ok, current_repo, expected_repo = _runtime_repo_path_allows_start()
+
     status = {
         "status_schema_version": "2026-07-18.1",
         "bot_running": is_bot_running(),
@@ -3133,6 +3155,10 @@ def parse_bot_status():
         "canonical_runtime_host": CANONICAL_RUNTIME_HOST,
         "canonical_control_center_url": CANONICAL_CONTROL_CENTER_URL,
         "runtime_host_is_canonical": False,
+        "runtime_repo_basename": current_repo,
+        "canonical_repo_basename": expected_repo,
+        "runtime_repo_path_ok": bool(repo_path_ok),
+        "enforce_canonical_repo_path": bool(ENFORCE_CANONICAL_REPO_PATH),
         "redirect_noncanonical_control_center": REDIRECT_NONCANONICAL_CONTROL_CENTER,
         "bell_broadcast_id": int(_BELL_BROADCAST.get("id") or 0),
         "bell_broadcast_kind": str(_BELL_BROADCAST.get("kind") or "open"),
@@ -8588,6 +8614,15 @@ def check_dependencies():
 
 
 if __name__ == '__main__':
+    repo_path_ok, current_repo, expected_repo = _runtime_repo_path_allows_start()
+    if not repo_path_ok:
+        print("❌ CANONICAL REPO PATH CHECK FAILED")
+        print(f"   current repo: {current_repo}")
+        print(f"   required repo: {expected_repo}")
+        print(f"   project root: {PROJECT_ROOT}")
+        print("   Refusing to start control center from non-canonical repository.")
+        sys.exit(2)
+
     # Check dependencies
     missing = check_dependencies()
     if missing:
