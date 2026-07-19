@@ -1,0 +1,1 @@
+"""Capital-allocation research factors."""

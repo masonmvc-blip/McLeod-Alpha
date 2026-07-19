@@ -1,0 +1,1 @@
+"""Growth research factors."""
