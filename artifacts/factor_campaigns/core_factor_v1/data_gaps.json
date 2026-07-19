@@ -1,0 +1,127 @@
+[
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "quality.roic_persistence",
+    "missing_fields": [
+      "roic_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "quality.gross_margin_stability",
+    "missing_fields": [
+      "gross_margin_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "quality.free_cash_flow_conversion",
+    "missing_fields": [
+      "free_cash_flow_history",
+      "net_income_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "growth.revenue_acceleration",
+    "missing_fields": [
+      "revenue_growth_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "growth.earnings_acceleration",
+    "missing_fields": [
+      "operating_income_growth_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "value.free_cash_flow_yield",
+    "missing_fields": [
+      "enterprise_value",
+      "free_cash_flow"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "value.earnings_yield",
+    "missing_fields": [
+      "enterprise_value",
+      "operating_earnings"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "capital_allocation.share_count_reduction",
+    "missing_fields": [
+      "diluted_share_count_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "missing_fields": [
+      "invested_capital_history",
+      "operating_profit_history"
+    ]
+  },
+  {
+    "blockers": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "missing_fields": [
+      "free_cash_flow",
+      "net_debt"
+    ]
+  }
+]

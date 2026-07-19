@@ -1,0 +1,162 @@
+[
+  {
+    "factor_id": "quality.roic_persistence",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "quality.roic_persistence",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "quality.roic_persistence",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "quality.roic_persistence",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "quality.gross_margin_stability",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "quality.gross_margin_stability",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "quality.gross_margin_stability",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "quality.gross_margin_stability",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "quality.free_cash_flow_conversion",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "quality.free_cash_flow_conversion",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "quality.free_cash_flow_conversion",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "quality.free_cash_flow_conversion",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "growth.revenue_acceleration",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "growth.revenue_acceleration",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "growth.revenue_acceleration",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "growth.revenue_acceleration",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "growth.earnings_acceleration",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "growth.earnings_acceleration",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "growth.earnings_acceleration",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "growth.earnings_acceleration",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "value.free_cash_flow_yield",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "value.free_cash_flow_yield",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "value.free_cash_flow_yield",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "value.free_cash_flow_yield",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "value.earnings_yield",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "value.earnings_yield",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "value.earnings_yield",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "value.earnings_yield",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "capital_allocation.share_count_reduction",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "capital_allocation.share_count_reduction",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "capital_allocation.share_count_reduction",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "capital_allocation.share_count_reduction",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  },
+  {
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "rejection_reason": "no canonical historical universe membership"
+  },
+  {
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "rejection_reason": "no verified availability timestamp coverage"
+  },
+  {
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "rejection_reason": "required factor fields unavailable"
+  },
+  {
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "rejection_reason": "survivorship bias cannot be controlled"
+  }
+]

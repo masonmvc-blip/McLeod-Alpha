@@ -1,0 +1,282 @@
+[
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "quality.roic_persistence",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "roic_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "roic_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "quality.gross_margin_stability",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "gross_margin_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "gross_margin_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "quality.free_cash_flow_conversion",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "free_cash_flow_history",
+      "net_income_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "free_cash_flow_history",
+      "net_income_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "growth.revenue_acceleration",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "revenue_growth_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "revenue_growth_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "growth.earnings_acceleration",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "operating_income_growth_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "operating_income_growth_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "value.free_cash_flow_yield",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "enterprise_value",
+      "free_cash_flow"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "enterprise_value",
+      "free_cash_flow"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "value.earnings_yield",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "enterprise_value",
+      "operating_earnings"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "enterprise_value",
+      "operating_earnings"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "capital_allocation.share_count_reduction",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "diluted_share_count_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "diluted_share_count_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "capital_allocation.reinvestment_efficiency",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "invested_capital_history",
+      "operating_profit_history"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "invested_capital_history",
+      "operating_profit_history"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  },
+  {
+    "available_date_range": null,
+    "available_fields": [
+      "revenue_growth",
+      "symbol"
+    ],
+    "experiment_readiness": "NOT_READY",
+    "factor_id": "balance_sheet.net_debt_to_fcf",
+    "lookahead_risk_status": "NOT_ESTABLISHED",
+    "missing_fields": [
+      "free_cash_flow",
+      "net_debt"
+    ],
+    "observation_count": 0,
+    "point_in_time_timestamp_coverage": false,
+    "reasons": [
+      "no canonical historical universe membership",
+      "no verified availability timestamp coverage",
+      "required factor fields unavailable",
+      "survivorship bias cannot be controlled"
+    ],
+    "required_fields": [
+      "free_cash_flow",
+      "net_debt"
+    ],
+    "survivorship_bias_risk": "UNCONTROLLED",
+    "symbol_count": 0,
+    "version": "1.0.0"
+  }
+]

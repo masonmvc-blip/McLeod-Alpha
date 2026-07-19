@@ -1,0 +1,12 @@
+{
+  "artifact_hashes": {
+    "campaign_summary.json": "51667ac0022d7d6d4614ee00bdf32f58c99799fe065cdf278658e7d942e5531a",
+    "campaign_summary.md": "aa8320b6546950097c0c4b66c0cd1953ad3c9355c36b3eabd605cb9411078c9f",
+    "data_gaps.json": "b7d2183af6cae93955af296080477979343eab78ed5f5f87485a1b36578294c3",
+    "data_readiness.json": "1f613a1d1d45c67b8d531cd000953b76931b2022a67a0946bd771d9dccd76006",
+    "data_readiness.md": "4238c975a3088239d4e0dae4fe4d185e1e84f3c5423547f178b9544d76431c30",
+    "factor_results.json": "044d6959de2b1910e5ebcccd18bfe9de2cf5904a2571ba5ce58656c6c268eae5",
+    "observation_rejections.json": "b17c6ae61a9ef7cc77f68961d88fb0d3417e77a8b2ec0183895a3f1167f277f5"
+  },
+  "campaign_id": "core_factor_v1"
+}

@@ -1,0 +1,27 @@
+{
+  "campaign_hash": "2397f5ced7c38ca7c4410b7817dc89430e896d19b5dec711d9533d20bf76bbb7",
+  "campaign_id": "core_factor_v1",
+  "canonical_snapshot_count": 0,
+  "certifications_completed": 0,
+  "experiments_completed": 0,
+  "not_ready_factors": [
+    "quality.roic_persistence",
+    "quality.gross_margin_stability",
+    "quality.free_cash_flow_conversion",
+    "growth.revenue_acceleration",
+    "growth.earnings_acceleration",
+    "value.free_cash_flow_yield",
+    "value.earnings_yield",
+    "capital_allocation.share_count_reduction",
+    "capital_allocation.reinvestment_efficiency",
+    "balance_sheet.net_debt_to_fcf"
+  ],
+  "partial_factors": [],
+  "ready_factors": [],
+  "result_hashes": {
+    "data_gaps.json": "b7d2183af6cae93955af296080477979343eab78ed5f5f87485a1b36578294c3",
+    "data_readiness.json": "1f613a1d1d45c67b8d531cd000953b76931b2022a67a0946bd771d9dccd76006",
+    "factor_results.json": "044d6959de2b1910e5ebcccd18bfe9de2cf5904a2571ba5ce58656c6c268eae5",
+    "observation_rejections.json": "b17c6ae61a9ef7cc77f68961d88fb0d3417e77a8b2ec0183895a3f1167f277f5"
+  }
+}
