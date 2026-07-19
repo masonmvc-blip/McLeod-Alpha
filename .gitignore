@@ -33,6 +33,7 @@ ENV/
 *.log
 logs/
 *.pid
+.bot_pid
 artifacts/test_reports/
 
 # Local databases
