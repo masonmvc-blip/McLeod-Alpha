@@ -7,6 +7,8 @@ REMOTE="${MCLEOD_GIT_REMOTE:-origin}"
 BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
 CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}"
+PARITY_VERIFY_ATTEMPTS="${MCLEOD_PARITY_VERIFY_ATTEMPTS:-12}"
+PARITY_VERIFY_SLEEP_SECONDS="${MCLEOD_PARITY_VERIFY_SLEEP_SECONDS:-2}"
 
 cd "$ROOT"
 "$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
@@ -36,6 +38,28 @@ for _ in {1..30}; do
   fi
   sleep 1
 done
+
+# Refresh parity baseline after each lock cycle, then require MATCH before success.
+curl -sS -X POST "$BASE_URL/api/parity/baseline" >/dev/null || true
+
+parity_ok=0
+for ((i=1; i<=PARITY_VERIFY_ATTEMPTS; i++)); do
+  parity_state="$(curl -sS "$BASE_URL/api/status" | python3 -c 'import sys,json; d=json.load(sys.stdin); print(str(d.get("parity_state") or "UNKNOWN"))' 2>/dev/null || echo UNKNOWN)"
+  parity_block_start="$(curl -sS "$BASE_URL/api/status" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("1" if d.get("parity_block_start") else "0")' 2>/dev/null || echo 1)"
+  if [[ "$parity_state" == "MATCH" && "$parity_block_start" == "0" ]]; then
+    parity_ok=1
+    echo "parity_check=OK attempt=$i state=$parity_state block_start=$parity_block_start"
+    break
+  fi
+  echo "parity_check=retry attempt=$i state=$parity_state block_start=$parity_block_start"
+  sleep "$PARITY_VERIFY_SLEEP_SECONDS"
+done
+
+if [[ "$parity_ok" != "1" ]]; then
+  echo "ERROR: parity did not converge to MATCH after lock cycle"
+  curl -sS "$BASE_URL/api/status" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("parity_state=" + str(d.get("parity_state"))); print("parity_block_start=" + str(d.get("parity_block_start"))); print("parity_issues=" + str(d.get("parity_issues")));'
+  exit 1
+fi
 
 LOCAL_SCHEMA="$(curl -sS "$BASE_URL/api/status" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("status_schema_version") or "unknown")')"
 echo "local_schema=$LOCAL_SCHEMA"

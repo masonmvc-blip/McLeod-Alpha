@@ -9,6 +9,8 @@ INTERVAL_SECONDS="${MCLEOD_AUTODEPLOY_POLL_SECONDS:-15}"
 STATE_FILE="${MCLEOD_AUTODEPLOY_STATE_FILE:-$ROOT/data/autodeploy_last_sha.txt}"
 LOCK_SCRIPT="$ROOT/scripts/maintenance/lock_canonical_runtime.sh"
 CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
+LOCK_RETRY_ATTEMPTS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_ATTEMPTS:-3}"
+LOCK_RETRY_SLEEP_SECONDS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_SLEEP_SECONDS:-8}"
 
 cd "$ROOT"
 "$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
@@ -30,6 +32,7 @@ touch "$STATE_FILE"
 echo "canonical_autodeploy_watch=starting"
 echo "root=$ROOT"
 echo "remote=$REMOTE branch=$BRANCH poll_seconds=$INTERVAL_SECONDS"
+echo "lock_retry_attempts=$LOCK_RETRY_ATTEMPTS lock_retry_sleep_seconds=$LOCK_RETRY_SLEEP_SECONDS"
 
 last_seen_sha="$(cat "$STATE_FILE" 2>/dev/null || true)"
 
@@ -45,7 +48,17 @@ while true; do
 
   if [[ "$remote_sha" != "$last_seen_sha" || "$remote_sha" != "$local_sha" ]]; then
     echo "autodeploy_detected_change local=$local_sha remote=$remote_sha at $(date '+%Y-%m-%d %H:%M:%S')"
-    if "$LOCK_SCRIPT"; then
+    applied=0
+    for ((attempt=1; attempt<=LOCK_RETRY_ATTEMPTS; attempt++)); do
+      if "$LOCK_SCRIPT"; then
+        applied=1
+        break
+      fi
+      echo "autodeploy_apply_retry attempt=$attempt remote=$remote_sha"
+      sleep "$LOCK_RETRY_SLEEP_SECONDS"
+    done
+
+    if [[ "$applied" == "1" ]]; then
       last_seen_sha="$remote_sha"
       printf '%s\n' "$last_seen_sha" > "$STATE_FILE"
       echo "autodeploy_applied sha=$last_seen_sha"
