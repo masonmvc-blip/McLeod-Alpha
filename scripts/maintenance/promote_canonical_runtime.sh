@@ -14,9 +14,16 @@ echo "Promote canonical runtime"
 echo "root=$ROOT"
 echo "remote=$REMOTE branch=$BRANCH"
 
+# Preserve any local edits, then hard-sync to remote branch to prevent stale deploys.
+if [[ -n "$(git status --porcelain)" ]]; then
+	STASH_NAME="auto-promote-$(date +%Y%m%d-%H%M%S)"
+	git stash push -u -m "$STASH_NAME" || true
+	echo "stashed_local_changes=$STASH_NAME"
+fi
+
 git fetch "$REMOTE"
 git checkout "$BRANCH"
-git pull --ff-only "$REMOTE" "$BRANCH"
+git reset --hard "$REMOTE/$BRANCH"
 
 RUN_BACKGROUND=1 "$ROOT/scripts/maintenance/start_control_center_guarded.sh"
 
