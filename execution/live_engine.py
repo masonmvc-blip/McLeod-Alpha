@@ -42,6 +42,14 @@ OPTION_QUOTE_MAX_STALE_SECONDS_OPEN = max(1.0, float(os.getenv("OPTION_QUOTE_MAX
 OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SPREAD_PCT_OPEN", "15")))
 
 
+def _perf_ms_now():
+    return time.perf_counter() * 1000.0
+
+
+def _elapsed_ms(start_ms):
+    return round(max(0.0, _perf_ms_now() - float(start_ms or 0.0)), 2)
+
+
 def set_schwab_client(client, account_number, account_hash):
     """
     Configure Schwab client for live order execution.
@@ -56,6 +64,7 @@ def set_schwab_client(client, account_number, account_hash):
     global _entry_pending, _pending_order_id, _max_quantity_exceeded, _excess_quantity_details
     global _safe_mode, _safe_mode_reason, _protective_stop_failed, _protective_stop_failure_reason
     global _last_broker_sync_epoch, _last_protective_stop_check_epoch, _last_protective_stop_check_ok
+    global LAST_OPEN_TRADE_METRICS
     
     _schwab_client = client
     _schwab_account_number = account_number
@@ -75,6 +84,21 @@ def set_schwab_client(client, account_number, account_hash):
     _last_broker_sync_epoch = 0.0
     _last_protective_stop_check_epoch = 0.0
     _last_protective_stop_check_ok = True
+    LAST_OPEN_TRADE_METRICS = {
+        "attempted": False,
+        "opened": False,
+        "block_reason": None,
+        "precheck_ms": None,
+        "quote_compute_ms": None,
+        "submit_order_ms": None,
+        "wait_fill_ms": None,
+        "market_fallback_submit_ms": None,
+        "market_fallback_wait_ms": None,
+        "protective_stop_ms": None,
+        "persist_ms": None,
+        "total_open_trade_ms": None,
+        "filled_via": None,
+    }
 
 
 def safe_log_trade(**kwargs):
@@ -607,8 +631,8 @@ ORDER_SUBMISSION_TIMEOUT_SECONDS = 30  # Wait up to 30 seconds for fill
 ORDER_CHECK_INTERVAL_SECONDS = float(os.getenv("ORDER_CHECK_INTERVAL_SECONDS", "0.08"))  # Check fill status every 80ms
 ORDER_QUANTITY = 3                      # Target 3 contracts per trade
 MAX_OPEN_CONTRACTS = 4                  # Safety cap for existing broker exposure
-ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "2.5"))
-ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "2.0"))
+ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "1.25"))
+ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "1.0"))
 ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -716,6 +740,30 @@ _protective_stop_failed = False
 _protective_stop_failure_reason = None
 _last_unprotected_alert_ts = None
 UNPROTECTED_ALERT_COOLDOWN_SECONDS = 120
+LAST_OPEN_TRADE_METRICS = {
+    "attempted": False,
+    "opened": False,
+    "block_reason": None,
+    "precheck_ms": None,
+    "quote_compute_ms": None,
+    "submit_order_ms": None,
+    "wait_fill_ms": None,
+    "market_fallback_submit_ms": None,
+    "market_fallback_wait_ms": None,
+    "protective_stop_ms": None,
+    "persist_ms": None,
+    "total_open_trade_ms": None,
+    "filled_via": None,
+}
+
+
+def _set_last_open_trade_metrics(metrics):
+    global LAST_OPEN_TRADE_METRICS
+    LAST_OPEN_TRADE_METRICS = dict(metrics or {})
+
+
+def get_last_open_trade_metrics():
+    return dict(LAST_OPEN_TRADE_METRICS or {})
 
 ALLOWED_EXIT_REASONS = {
     "STOP",
@@ -2189,27 +2237,56 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     global current_position, _submission_rejected, _entry_pending, _pending_order_id, _max_quantity_exceeded
     global _safe_mode, _safe_mode_reason, _protective_stop_failed, _protective_stop_failure_reason
 
+    open_trade_start_ms = _perf_ms_now()
+    metrics = {
+        "attempted": True,
+        "opened": False,
+        "block_reason": None,
+        "precheck_ms": None,
+        "quote_compute_ms": None,
+        "submit_order_ms": None,
+        "wait_fill_ms": None,
+        "market_fallback_submit_ms": None,
+        "market_fallback_wait_ms": None,
+        "protective_stop_ms": None,
+        "persist_ms": None,
+        "total_open_trade_ms": None,
+        "filled_via": None,
+    }
+
+    def _finalize(opened, block_reason=None):
+        metrics["opened"] = bool(opened)
+        metrics["block_reason"] = block_reason
+        metrics["total_open_trade_ms"] = _elapsed_ms(open_trade_start_ms)
+        _set_last_open_trade_metrics(metrics)
+        return bool(opened)
+
+    precheck_start_ms = _perf_ms_now()
+
     # CHECK SAFE MODE FIRST (highest priority)
     if _safe_mode:
         print(f"\n🔒 LIVE ENTRY DISABLED - SAFE MODE ACTIVE")
         print(f"   Broker reconciliation failed at startup")
         print(f"   Reason: {_safe_mode_reason}")
         print(f"   Restart bot after fixing the connection")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "safe_mode")
 
     # Check submission lock (HTTP 400 rejection)
     if _submission_rejected:
         print(f"\n🔒 LIVE ENTRY DISABLED - Previous submission was rejected")
         print(f"   Restart bot to clear lock")
-        return False
-    
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "submission_rejected_lock")
+
     # Check max quantity lock
     if _max_quantity_exceeded:
         print(f"\n🔒 LIVE ENTRY DISABLED - Quantity exceeded maximum")
         print(f"   {_excess_quantity_details}")
         print(f"   Restart bot and manually reconcile position")
-        return False
-    
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "max_quantity_exceeded_lock")
+
     # Check protective stop failure lock
     if _protective_stop_failed:
         print(f"\n🔒 LIVE ENTRY DISABLED - POSITION UNPROTECTED")
@@ -2217,39 +2294,50 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         print(f"   Reason: {_protective_stop_failure_reason}")
         print(f"   Manual action required to resolve the existing position")
         print(f"   Restart bot after protective stop is placed or position is closed")
-        return False
-    
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "protective_stop_failed_lock")
+
     # Check entry pending lock (order already submitted, waiting for fill)
     if _entry_pending:
         print(f"\n🔒 LIVE ENTRY BLOCKED - Entry already pending (Order {_pending_order_id})")
         print(f"   Waiting for fill confirmation before allowing new entries")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "entry_pending_lock")
 
     if in_trade():
         print("Trade skipped: already in a position.")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "already_in_trade")
 
     # CHECK SCHWAB FOR EXISTING SPY OPTION EXPOSURE (prevent duplicates)
     has_exposure, exposure_details = check_spy_option_exposure()
     if has_exposure:
         print(f"Trade blocked: SPY option already exists on Schwab")
         print(f"  {exposure_details}")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "existing_schwab_spy_option_exposure")
 
     allowed, block_reason = can_open_trade()
     if not allowed:
         print(f"Trade blocked: {block_reason}")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, f"risk_block:{block_reason}")
 
     if not option or not option.get("symbol"):
         print("ERROR: Option symbol required for live order submission")
-        return False
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "missing_option_symbol")
+
+    metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
 
     option_symbol = option.get("symbol")
     option_mark = float(option.get("mark", 0.0))
+
+    quote_compute_start_ms = _perf_ms_now()
     limit_price, quote_levels = _compute_fast_entry_limit_price(option_symbol, option_mark)
+    metrics["quote_compute_ms"] = _elapsed_ms(quote_compute_start_ms)
     quote_ok, quote_block_reason = _validate_entry_quote_snapshot(quote_levels)
-    
+
     print(f"\n{'='*70}")
     print(f"🔴 LIVE TRADE ENTRY: {direction}")
     print(f"{'='*70}")
@@ -2273,44 +2361,57 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         print(f"\n🔒 ENTRY BLOCKED: option quote is not fresh enough to trust")
         print(f"   Reason: {quote_block_reason}")
         print("   No order submitted; bot remains flat")
-        return False
-    
+        return _finalize(False, f"quote_guard:{quote_block_reason}")
+
     # STEP 1: Submit order to Schwab
     print("\n[STEP 1] Submitting order to Schwab...")
+    submit_start_ms = _perf_ms_now()
     order_id = _submit_option_order(option_symbol, direction, limit_price, quantity)
-    
+    metrics["submit_order_ms"] = _elapsed_ms(submit_start_ms)
+
     if not order_id:
         print("✗ FAILED: Order not submitted to Schwab")
         print("✓ No position created (kept bot flat)")
-        return False
-    
+        return _finalize(False, "submit_order_failed")
+
     # SET ENTRY_PENDING LOCK (prevent duplicate entries while fill is pending)
     _entry_pending = True
     _pending_order_id = order_id
     print(f"\n🔒 ENTRY_PENDING LOCK ACTIVATED (Order: {order_id})")
     print(f"   Blocking all additional entries until fill confirmed or timeout")
-    
+
     # STEP 2: Wait for fill confirmation
     print("\n[STEP 2] Waiting for fill confirmation...")
+    wait_start_ms = _perf_ms_now()
     filled, fill_price = _wait_for_fill(
         order_id,
         option_symbol,
         limit_price,
         max_wait_seconds=max(1.0, float(ENTRY_LIMIT_MAX_WAIT_SECONDS or 4.0)),
     )
-    
+    metrics["wait_fill_ms"] = _elapsed_ms(wait_start_ms)
+
+    if filled:
+        metrics["filled_via"] = "limit"
+
     if not filled:
         if ENTRY_MARKET_FALLBACK_ENABLED:
             print("⚠ LIMIT ENTRY MISSED: attempting market fallback for fast participation...")
+            fallback_submit_start_ms = _perf_ms_now()
             market_order_id = _submit_option_entry_market_order(option_symbol, quantity)
+            metrics["market_fallback_submit_ms"] = _elapsed_ms(fallback_submit_start_ms)
             if market_order_id:
                 _pending_order_id = market_order_id
+                fallback_wait_start_ms = _perf_ms_now()
                 filled, fill_price = _wait_for_fill(
                     market_order_id,
                     option_symbol,
                     limit_price,
                     max_wait_seconds=max(1.0, float(ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS or 4.0)),
                 )
+                metrics["market_fallback_wait_ms"] = _elapsed_ms(fallback_wait_start_ms)
+                if filled:
+                    metrics["filled_via"] = "market_fallback"
 
         if not filled:
             print("✗ FAILED: Entry did not fill after limit + market fallback")
@@ -2318,23 +2419,25 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
             # Clear entry pending lock - next attempt can try again
             _entry_pending = False
             _pending_order_id = None
-            return False
+            return _finalize(False, "entry_not_filled_after_limit_and_fallback")
 
     if fill_price is None or float(fill_price) <= 0:
         print("✗ FAILED: Filled order missing valid broker execution price")
         _entry_pending = False
         _pending_order_id = None
-        return False
-    
+        return _finalize(False, "filled_without_valid_price")
+
     # STEP 3: Only NOW create the position after fill confirmation
     print("\n[STEP 3] Creating position in system...")
-    
+
     fill_timestamp = datetime.now().isoformat()
-    
+
     # STEP 4: Submit protective stop immediately after entry fill confirmed
     print("\n[STEP 4] Submitting broker-held protective stop...")
+    protective_stop_start_ms = _perf_ms_now()
     protective_stop_id, protective_stop_price = _submit_protective_stop(option_symbol, float(fill_price), quantity)
-    
+    metrics["protective_stop_ms"] = _elapsed_ms(protective_stop_start_ms)
+
     if not protective_stop_id:
         print("\n❌ PROTECTIVE STOP SUBMISSION FAILED - POSITION UNPROTECTED")
         print("   The entry filled but protective stop was rejected")
@@ -2354,7 +2457,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
                 _protective_stop_failure_reason = None
                 _entry_pending = False
                 _pending_order_id = None
-                return False
+                return _finalize(False, "protective_stop_failed_emergency_close_filled")
 
         print("   Manual action required to protect/close this position")
         # Activate protective stop failure lock
@@ -2365,7 +2468,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_price = 0.0
     else:
         print(f"\n✓ Position protection established")
-    
+
     current_position = Position(
         direction=direction,
         entry_price=price,
@@ -2387,23 +2490,26 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_status="PLACED" if protective_stop_id else "FAILED",
     )
 
+    persist_start_ms = _perf_ms_now()
     try:
         save_position(current_position)
+        metrics["persist_ms"] = _elapsed_ms(persist_start_ms)
         print(f"✓ Position saved to disk (Order ID: {order_id})")
     except Exception as exc:
+        metrics["persist_ms"] = _elapsed_ms(persist_start_ms)
         print(f"ERROR: position file save failed: {exc}")
         print("✗ Position not persisted - trade is NOT in recovery list")
         # Clear entry pending lock before returning
         _entry_pending = False
         _pending_order_id = None
-        return False
+        return _finalize(False, "position_persist_failed")
 
     print(f"\n✓✓✓ TRADE OPENED SUCCESSFULLY ✓✓✓")
     print(f"  Order ID: {order_id}")
     print(f"  Fill Price: {float(fill_price):.2f}")
     print(f"  Timestamp: {fill_timestamp}")
     print(f"{'='*70}\n")
-    
+
     # Clear entry pending lock (fill confirmed)
     _entry_pending = False
     _pending_order_id = None
@@ -2428,8 +2534,8 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         )
     except Exception as e:
         print(f"WARNING: Could not persist live ENTRY diagnostic snapshot: {e}")
-    
-    return True
+
+    return _finalize(True, None)
 
 
 def close_trade(price, reason, option_mark=None, execution_mode="market", limit_price=None, fallback_to_market=True):

@@ -86,6 +86,16 @@ def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None,
         "entry_eval_ms": None,
         "chain_fetch_ms": None,
         "option_select_ms": None,
+        "entry_precheck_ms": None,
+        "entry_quote_compute_ms": None,
+        "entry_submit_order_ms": None,
+        "entry_wait_fill_ms": None,
+        "entry_market_fallback_submit_ms": None,
+        "entry_market_fallback_wait_ms": None,
+        "entry_protective_stop_ms": None,
+        "entry_persist_ms": None,
+        "entry_block_reason": reason,
+        "entry_filled_via": None,
         "open_trade_ms": None,
         "report_ms": None,
         "cycle_total_ms": cycle_total_ms,
@@ -639,15 +649,39 @@ def open_trade(*args, **kwargs):
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
             "block_reason": "startup_guard",
+            "precheck_ms": None,
+            "quote_compute_ms": None,
+            "submit_order_ms": None,
+            "wait_fill_ms": None,
+            "market_fallback_submit_ms": None,
+            "market_fallback_wait_ms": None,
+            "protective_stop_ms": None,
+            "persist_ms": None,
+            "filled_via": None,
         }
         return False
 
     opened = bool(original_open_trade(*args, **kwargs))
+    engine_metrics = {}
+    if hasattr(ENGINE_MODULE, "get_last_open_trade_metrics"):
+        try:
+            engine_metrics = ENGINE_MODULE.get_last_open_trade_metrics() or {}
+        except Exception:
+            engine_metrics = {}
     LAST_ENTRY_EXECUTION_METRICS = {
         "attempted": True,
         "opened": opened,
-        "open_trade_ms": _elapsed_ms(start_ms),
-        "block_reason": None if opened else "engine_block_or_reject",
+        "open_trade_ms": float(engine_metrics.get("total_open_trade_ms") or _elapsed_ms(start_ms)),
+        "block_reason": engine_metrics.get("block_reason") or (None if opened else "engine_block_or_reject"),
+        "precheck_ms": engine_metrics.get("precheck_ms"),
+        "quote_compute_ms": engine_metrics.get("quote_compute_ms"),
+        "submit_order_ms": engine_metrics.get("submit_order_ms"),
+        "wait_fill_ms": engine_metrics.get("wait_fill_ms"),
+        "market_fallback_submit_ms": engine_metrics.get("market_fallback_submit_ms"),
+        "market_fallback_wait_ms": engine_metrics.get("market_fallback_wait_ms"),
+        "protective_stop_ms": engine_metrics.get("protective_stop_ms"),
+        "persist_ms": engine_metrics.get("persist_ms"),
+        "filled_via": engine_metrics.get("filled_via"),
     }
     return opened
 
@@ -668,6 +702,16 @@ def maybe_enter_trade(last, prev, regime):
             "chain_fetch_ms": None,
             "option_select_ms": None,
             "open_trade_ms": None,
+            "precheck_ms": None,
+            "quote_compute_ms": None,
+            "submit_order_ms": None,
+            "wait_fill_ms": None,
+            "market_fallback_submit_ms": None,
+            "market_fallback_wait_ms": None,
+            "protective_stop_ms": None,
+            "persist_ms": None,
+            "entry_block_reason": None,
+            "filled_via": None,
         }
 
     call_score, call_reasons = score_call(last, prev)
@@ -724,6 +768,16 @@ def maybe_enter_trade(last, prev, regime):
             "chain_fetch_ms": chain_fetch_ms,
             "option_select_ms": option_select_ms,
             "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
+            "precheck_ms": LAST_ENTRY_EXECUTION_METRICS.get("precheck_ms"),
+            "quote_compute_ms": LAST_ENTRY_EXECUTION_METRICS.get("quote_compute_ms"),
+            "submit_order_ms": LAST_ENTRY_EXECUTION_METRICS.get("submit_order_ms"),
+            "wait_fill_ms": LAST_ENTRY_EXECUTION_METRICS.get("wait_fill_ms"),
+            "market_fallback_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_submit_ms"),
+            "market_fallback_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_wait_ms"),
+            "protective_stop_ms": LAST_ENTRY_EXECUTION_METRICS.get("protective_stop_ms"),
+            "persist_ms": LAST_ENTRY_EXECUTION_METRICS.get("persist_ms"),
+            "entry_block_reason": LAST_ENTRY_EXECUTION_METRICS.get("block_reason"),
+            "filled_via": LAST_ENTRY_EXECUTION_METRICS.get("filled_via"),
         }
 
     elif regime == "BEAR_TREND" and put_score >= 5:
@@ -751,6 +805,16 @@ def maybe_enter_trade(last, prev, regime):
             "chain_fetch_ms": chain_fetch_ms,
             "option_select_ms": option_select_ms,
             "open_trade_ms": LAST_ENTRY_EXECUTION_METRICS.get("open_trade_ms") or open_trade_call_ms,
+            "precheck_ms": LAST_ENTRY_EXECUTION_METRICS.get("precheck_ms"),
+            "quote_compute_ms": LAST_ENTRY_EXECUTION_METRICS.get("quote_compute_ms"),
+            "submit_order_ms": LAST_ENTRY_EXECUTION_METRICS.get("submit_order_ms"),
+            "wait_fill_ms": LAST_ENTRY_EXECUTION_METRICS.get("wait_fill_ms"),
+            "market_fallback_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_submit_ms"),
+            "market_fallback_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_wait_ms"),
+            "protective_stop_ms": LAST_ENTRY_EXECUTION_METRICS.get("protective_stop_ms"),
+            "persist_ms": LAST_ENTRY_EXECUTION_METRICS.get("persist_ms"),
+            "entry_block_reason": LAST_ENTRY_EXECUTION_METRICS.get("block_reason"),
+            "filled_via": LAST_ENTRY_EXECUTION_METRICS.get("filled_via"),
         }
 
     return {
@@ -761,6 +825,16 @@ def maybe_enter_trade(last, prev, regime):
         "chain_fetch_ms": None,
         "option_select_ms": None,
         "open_trade_ms": None,
+        "precheck_ms": None,
+        "quote_compute_ms": None,
+        "submit_order_ms": None,
+        "wait_fill_ms": None,
+        "market_fallback_submit_ms": None,
+        "market_fallback_wait_ms": None,
+        "protective_stop_ms": None,
+        "persist_ms": None,
+        "entry_block_reason": None,
+        "filled_via": None,
     }
 
 
@@ -885,6 +959,14 @@ while True:
             f"indicators={indicators_ms:.2f} "
             f"manage={manage_trade_ms:.2f} "
             f"entry_eval={float(entry_metrics.get('entry_eval_ms') or 0.0):.2f} "
+            f"entry_precheck={float(entry_metrics.get('precheck_ms') or 0.0):.2f} "
+            f"entry_quote={float(entry_metrics.get('quote_compute_ms') or 0.0):.2f} "
+            f"entry_submit={float(entry_metrics.get('submit_order_ms') or 0.0):.2f} "
+            f"entry_wait={float(entry_metrics.get('wait_fill_ms') or 0.0):.2f} "
+            f"entry_fallback_submit={float(entry_metrics.get('market_fallback_submit_ms') or 0.0):.2f} "
+            f"entry_fallback_wait={float(entry_metrics.get('market_fallback_wait_ms') or 0.0):.2f} "
+            f"entry_stop={float(entry_metrics.get('protective_stop_ms') or 0.0):.2f} "
+            f"entry_persist={float(entry_metrics.get('persist_ms') or 0.0):.2f} "
             f"open_trade={float(entry_metrics.get('open_trade_ms') or 0.0):.2f} "
             f"report={report_ms:.2f} "
             f"cycle_total={cycle_total_ms:.2f}"
@@ -906,6 +988,16 @@ while True:
             "entry_eval_ms": entry_metrics.get("entry_eval_ms"),
             "chain_fetch_ms": entry_metrics.get("chain_fetch_ms"),
             "option_select_ms": entry_metrics.get("option_select_ms"),
+            "entry_precheck_ms": entry_metrics.get("precheck_ms"),
+            "entry_quote_compute_ms": entry_metrics.get("quote_compute_ms"),
+            "entry_submit_order_ms": entry_metrics.get("submit_order_ms"),
+            "entry_wait_fill_ms": entry_metrics.get("wait_fill_ms"),
+            "entry_market_fallback_submit_ms": entry_metrics.get("market_fallback_submit_ms"),
+            "entry_market_fallback_wait_ms": entry_metrics.get("market_fallback_wait_ms"),
+            "entry_protective_stop_ms": entry_metrics.get("protective_stop_ms"),
+            "entry_persist_ms": entry_metrics.get("persist_ms"),
+            "entry_block_reason": entry_metrics.get("entry_block_reason"),
+            "entry_filled_via": entry_metrics.get("filled_via"),
             "open_trade_ms": entry_metrics.get("open_trade_ms"),
             "report_ms": report_ms,
             "cycle_total_ms": cycle_total_ms,
