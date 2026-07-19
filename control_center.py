@@ -141,6 +141,12 @@ AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE = str(
 AUTO_RESTART_BOT_ON_SCRIPT_CHANGE = str(
     os.getenv("AUTO_RESTART_BOT_ON_SCRIPT_CHANGE", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
+ENFORCE_RUNTIME_CONFIG_ON_START = str(
+    os.getenv("ENFORCE_RUNTIME_CONFIG_ON_START", "1")
+).strip().lower() in {"1", "true", "yes", "on"}
+ENFORCE_CLEAN_GIT_ON_START = str(
+    os.getenv("ENFORCE_CLEAN_GIT_ON_START", "0")
+).strip().lower() in {"1", "true", "yes", "on"}
 INTERNET_QUALITY_TARGETS = [
     ("Google 204", "https://www.google.com/generate_204"),
     ("Schwab", "https://client.schwab.com/"),
@@ -2361,6 +2367,21 @@ def _runtime_host_allows_bot_start() -> tuple[bool, str, str]:
     return allowed, current_host, allowed_host
 
 
+def _git_dirty_summary() -> tuple[bool, list[str]]:
+    """Return (is_dirty, sample_lines) from git porcelain status."""
+    try:
+        output = subprocess.check_output(
+            ["git", "-C", str(PROJECT_ROOT), "status", "--porcelain"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return False, []
+
+    lines = [ln.strip() for ln in str(output or "").splitlines() if ln.strip()]
+    return (len(lines) > 0), lines[:8]
+
+
 def start_bot():
     """Start the trading bot"""
     global _RUNNING_BOT_SCRIPT_SHA256
@@ -2380,6 +2401,26 @@ def start_bot():
 
     if _is_bot_process_running():
         return {"status": "error", "message": "Bot is already running"}
+
+    if ENFORCE_RUNTIME_CONFIG_ON_START:
+        cfg = _validate_runtime_config()
+        cfg_errors = list(cfg.get("errors") or [])
+        if cfg_errors:
+            joined = "; ".join(cfg_errors[:6])
+            return {
+                "status": "error",
+                "message": f"Start blocked by runtime config preflight: {joined}",
+                "config_errors": cfg_errors,
+            }
+
+    if ENFORCE_CLEAN_GIT_ON_START:
+        is_dirty, dirty_sample = _git_dirty_summary()
+        if is_dirty:
+            return {
+                "status": "error",
+                "message": "Start blocked: repository has uncommitted changes (enable override with ENFORCE_CLEAN_GIT_ON_START=0)",
+                "git_dirty_sample": dirty_sample,
+            }
 
     parity_guard = _parity_start_guard_payload()
     if parity_guard is not None:
