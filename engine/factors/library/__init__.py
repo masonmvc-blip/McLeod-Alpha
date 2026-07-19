@@ -65,7 +65,7 @@ def _assert_point_in_time(snapshot: Mapping[str, Any], observation: Mapping[str,
 
 
 def factor(*, factor_id: str, name: str, category: str, rationale: str, fields: tuple[str, ...], evaluator: Callable[[Mapping[str, Any]], float]) -> FactorContract:
-    metadata = FactorMetadata(factor_id, name, "1.0.0", "McLeod Alpha Research", "2026-07-19T00:00:00Z", name, rationale, "POSITIVE", category, ("core", category.lower().replace("_", "-")), ("company_fundamentals", "snapshot_date"), True, True, "EXPERIMENTAL", True, False, required_snapshot_fields=("company_fundamentals", "snapshot_date"))
+    metadata = FactorMetadata(factor_id, name, "1.0.0", "McLeod Alpha Research", "2026-07-19T00:00:00Z", name, rationale, "POSITIVE", category, ("core", category.lower().replace("_", "-")), ("company_fundamentals", "snapshot_date"), True, True, "EXPERIMENTAL", True, False, dependencies=fields)
     return FactorContract(metadata, evaluator)
 
 
