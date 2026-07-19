@@ -14,9 +14,9 @@ usage() {
 Usage: laptop_ship_and_deploy.sh [-m "commit message"] [--no-go-live]
 
 Behavior:
-- Commits local changes (if any)
-- Pushes to remote branch
-- Triggers canonical Control Center /api/go-live (unless --no-go-live)
+- Commits local changes (if any) from either laptop or desktop
+- Rebases on the remote branch, then pushes the resulting commit
+- Verifies the remote SHA before triggering canonical Control Center /api/go-live
 
 Environment overrides:
 - MCLEOD_ROOT
@@ -70,11 +70,17 @@ else
   echo "ship_changes=none"
 fi
 
-LOCAL_HEAD="$(git rev-parse HEAD)"
-echo "ship_local_head=$LOCAL_HEAD"
+git fetch "$REMOTE" "$BRANCH"
+git rebase "$REMOTE/$BRANCH"
 
 git push "$REMOTE" "$BRANCH"
-echo "ship_push=ok"
+LOCAL_HEAD="$(git rev-parse HEAD)"
+REMOTE_HEAD="$(git ls-remote "$REMOTE" "refs/heads/$BRANCH" | awk '{print $1}')"
+if [[ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]]; then
+  echo "ERROR: remote SHA verification failed local=$LOCAL_HEAD remote=${REMOTE_HEAD:-missing}" >&2
+  exit 1
+fi
+echo "ship_push=ok sha=$LOCAL_HEAD"
 
 if [[ "$TRIGGER_GOLIVE" != "1" ]]; then
   echo "ship_trigger_golive=skipped"

@@ -14,16 +14,15 @@ echo "Promote canonical runtime"
 echo "root=$ROOT"
 echo "remote=$REMOTE branch=$BRANCH"
 
-# Preserve any local edits, then hard-sync to remote branch to prevent stale deploys.
 if [[ -n "$(git status --porcelain)" ]]; then
-	STASH_NAME="auto-promote-$(date +%Y%m%d-%H%M%S)"
-	git stash push -u -m "$STASH_NAME" || true
-	echo "stashed_local_changes=$STASH_NAME"
+	echo "ERROR: canonical worktree is dirty; refusing to stash, reset, or promote unpublished changes"
+	echo "Run scripts/maintenance/laptop_ship_and_deploy.sh from the machine containing the changes."
+	git status --short
+	exit 2
 fi
 
 git fetch "$REMOTE"
-git checkout "$BRANCH"
-git reset --hard "$REMOTE/$BRANCH"
+git merge --ff-only "$REMOTE/$BRANCH"
 
 MCLEOD_REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}" \
 MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1}" \
