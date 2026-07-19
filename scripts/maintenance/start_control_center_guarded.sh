@@ -9,6 +9,94 @@ RUN_BACKGROUND="${RUN_BACKGROUND:-0}"
 REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}"
 REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1}"
 REQUIRED_REDIRECT_FLAG="${MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER:-0}"
+TRADE_DB_PATH="$ROOT/data/mcleod_alpha.db"
+
+db_has_trade_log_table() {
+  local db_path="$1"
+  "$PYTHON_BIN" - "$db_path" <<'PY' >/dev/null 2>&1
+import os
+import sqlite3
+import sys
+
+path = sys.argv[1]
+if not os.path.exists(path) or os.path.getsize(path) <= 0:
+    raise SystemExit(1)
+
+try:
+    con = sqlite3.connect(path)
+    row = con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='trade_log' LIMIT 1"
+    ).fetchone()
+    con.close()
+except Exception:
+    raise SystemExit(1)
+
+raise SystemExit(0 if row else 1)
+PY
+}
+
+bootstrap_trade_log_schema() {
+  "$PYTHON_BIN" - <<'PY' >/dev/null
+from execution.trade_logger import init_trade_log
+init_trade_log()
+PY
+}
+
+restore_trade_db_if_needed() {
+  mkdir -p "$ROOT/data"
+
+  if db_has_trade_log_table "$TRADE_DB_PATH"; then
+    echo "trade_db_check=OK path=$TRADE_DB_PATH"
+    return 0
+  fi
+
+  echo "trade_db_check=INVALID path=$TRADE_DB_PATH"
+
+  local restore_candidates=()
+  if [[ -n "${MCLEOD_DB_RESTORE_SOURCE:-}" ]]; then
+    restore_candidates+=("${MCLEOD_DB_RESTORE_SOURCE}")
+  fi
+  restore_candidates+=(
+    "$HOME/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha - Dropbox Backup/data/mcleod_alpha.db"
+    "$HOME/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha/data/mcleod_alpha.db"
+    "$ROOT/data/mcleod_alpha.db.backup"
+  )
+
+  local src
+  for src in "${restore_candidates[@]}"; do
+    if [[ "$src" == "$TRADE_DB_PATH" ]]; then
+      continue
+    fi
+    if db_has_trade_log_table "$src"; then
+      cp "$src" "$TRADE_DB_PATH"
+      echo "trade_db_restored_from=$src"
+      break
+    fi
+  done
+
+  if ! db_has_trade_log_table "$TRADE_DB_PATH"; then
+    echo "trade_db_restore_fallback=bootstrap_schema"
+    bootstrap_trade_log_schema
+  fi
+
+  if db_has_trade_log_table "$TRADE_DB_PATH"; then
+    echo "trade_db_check=HEALED path=$TRADE_DB_PATH"
+    "$PYTHON_BIN" - "$TRADE_DB_PATH" <<'PY'
+import sqlite3
+import sys
+
+path = sys.argv[1]
+con = sqlite3.connect(path)
+count = con.execute("SELECT COUNT(*) FROM trade_log").fetchone()[0]
+con.close()
+print(f"trade_db_trade_log_rows={count}")
+PY
+    return 0
+  fi
+
+  echo "ERROR: trade_db remains invalid after restore/bootstrap attempts"
+  exit 1
+}
 
 python_has_required_modules() {
   local py="$1"
@@ -100,6 +188,8 @@ if [[ "${MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER:-$REQUIRED_REDIRECT_FLAG}" 
   echo "ERROR: MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER mismatch (current=${MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER:-unset}, required=$REQUIRED_REDIRECT_FLAG)"
   exit 1
 fi
+
+restore_trade_db_if_needed
 
 # Optional strict cleanliness gate (recommended for canonical runtime).
 if [[ "${ENFORCE_CLEAN_GIT_ON_START:-1}" == "1" ]]; then

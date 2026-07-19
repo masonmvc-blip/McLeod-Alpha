@@ -75,4 +75,10 @@ echo "canonical_checks"
 curl -sS "$CANONICAL_URL/api/status" | python3 -c 'import sys,json; d=json.load(sys.stdin); print("canonical_schema=" + str(d.get("status_schema_version") or "unknown")); print("canonical_host=" + str((d.get("runtime_fingerprint") or {}).get("hostname") or "unknown"))'
 curl -sS "$CANONICAL_URL" | grep -nE "Parity|Today's Trades" | sed -n '1,40p'
 
+if [[ -x "$ROOT/scripts/maintenance/post_deploy_smoke_check.sh" ]]; then
+  "$ROOT/scripts/maintenance/post_deploy_smoke_check.sh" "$BASE_URL" "$CANONICAL_URL"
+else
+  echo "WARN: smoke check script missing or not executable"
+fi
+
 echo "lock_complete=1"
