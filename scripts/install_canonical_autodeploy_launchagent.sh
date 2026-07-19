@@ -39,7 +39,12 @@ fi
 
 mkdir -p "$HOME/Library/LaunchAgents" "$LOCAL_RUNNER_DIR"
 mkdir -p "$ROOT_DIR/logs"
-cp "$WATCH_SCRIPT" "$RUNNER_PATH"
+cat > "$RUNNER_PATH" <<RUNNER
+#!/usr/bin/env zsh
+set -euo pipefail
+export MCLEOD_ROOT='$ROOT_DIR'
+exec /bin/bash '$WATCH_SCRIPT'
+RUNNER
 chmod 755 "$RUNNER_PATH"
 
 cat > "$PLIST_PATH" <<PLIST
