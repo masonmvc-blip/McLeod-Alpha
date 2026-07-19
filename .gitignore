@@ -1,0 +1,77 @@
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*token*
+*secret*
+*credential*
+*apikey*
+*api_key*
+
+# Logs and runtime artifacts
+*.log
+logs/
+*.pid
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Generated reports / outputs
+archive/
+reports/*
+!reports/*.py
+reports/**/*.html
+reports/**/*.csv
+reports/**/*.json
+reports/**/*.jsonl
+reports/**/*.svg
+reports/**/*.png
+output/
+*.report.json
+
+# Market data and large generated datasets
+data/
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# Screenshots and media exports
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Dropbox conflict and machine-specific files
+*conflicted copy*
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,44 @@
+{
+  "version": "paper-activation-policy-v1",
+  "required_milestone_markers": [
+    "data/research/logs/IndependentSystemCertification_Validated.json",
+    "data/research/logs/PaperPortfolioOperationsReadiness_Validated.json"
+  ],
+  "required_operator_roles": [
+    "PAPER_OPERATOR",
+    "PAPER_APPROVER",
+    "RISK_REVIEWER",
+    "SYSTEM_ADMIN",
+    "INCIDENT_OWNER"
+  ],
+  "minimum_independent_approvers": 2,
+  "prohibited_role_overlap_rules": {
+    "operator_vs_approver": [
+      "PAPER_OPERATOR",
+      "PAPER_APPROVER"
+    ],
+    "operator_vs_risk": [
+      "PAPER_OPERATOR",
+      "RISK_REVIEWER"
+    ],
+    "approver_vs_admin": [
+      "PAPER_APPROVER",
+      "SYSTEM_ADMIN"
+    ]
+  },
+  "required_runbook_version": "paper-ops-runbook-v1",
+  "required_backup_cadence": "daily",
+  "required_restore_test_cadence": "weekly",
+  "required_reconciliation_cadence": "daily",
+  "required_reporting_cadence": "daily",
+  "required_escalation_contacts": [
+    "incident_owner",
+    "risk_reviewer"
+  ],
+  "required_corporate_action_procedure": "reports/paper_portfolio_corporate_action_procedure_v1.md",
+  "required_incident_response_procedure": "reports/paper_portfolio_incident_response_v1.md",
+  "required_rollback_procedure": "reports/paper_portfolio_rollback_procedure_v1.md",
+  "required_manual_approval_scope": "manual_paper_only",
+  "activation_expiration_period_hours": 24,
+  "maximum_unresolved_warnings": 0
+}

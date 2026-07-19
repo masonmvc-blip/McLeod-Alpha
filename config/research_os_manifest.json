@@ -1,0 +1,43 @@
+{
+  "Research_OS_version": "1.0",
+  "Phase1_Framework_Locked": true,
+  "Phase2_Framework_Locked": true,
+  "Phase2_MultiCompany_Validated": true,
+  "Phase2_Downstream_Integration_Validated": true,
+  "Architecture_Frozen_PrePhase3": true,
+  "schema_versions": {
+    "phase1_framework": "Phase1_Framework_Locked",
+    "phase2_canonical_score": "2026-07-18.phase2.v2",
+    "phase2_lock_name": "Phase2_Framework_Locked",
+    "phase2_downstream_adapter": "2026-07-18.phase2.downstream.v1"
+  },
+  "lock_milestones": [
+    "Phase1_Framework_Locked",
+    "Phase2_Framework_Locked",
+    "Phase2_MultiCompany_Validated",
+    "Phase2_Downstream_Integration_Validated",
+    "Architecture_Frozen_PrePhase3"
+  ],
+  "supported_companies": [
+    "RKLB",
+    "NBIS"
+  ],
+  "approved_phase2_companies": [
+    "RKLB",
+    "NBIS"
+  ],
+  "artifact_versions": {
+    "phase1_fact_artifact": "Phase1_Framework_Locked",
+    "phase1_review_artifact": "Phase1_Framework_Locked",
+    "phase2_artifact": "2026-07-18.phase2.v2",
+    "phase2_review_artifact": "2026-07-18.phase2.review.v1",
+    "research_os_release_report": "Research_OS_v1.0"
+  },
+  "compatibility_rules": [
+    "Phase 1 readiness must be true before Phase 2 execution.",
+    "Phase 2 consumes only locked Phase 1 artifacts.",
+    "Phase 2 downstream consumers must use the adapter only.",
+    "Approval for EIPV remains disabled until a future platform version changes the gate explicitly.",
+    "Any schema, ticker, fingerprint, or milestone mismatch fails closed."
+  ]
+}

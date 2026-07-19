@@ -1,0 +1,33 @@
+{
+  "generated_for": "paper_portfolio_activation_gate",
+  "policy_version": "paper-activation-policy-v1",
+  "attestations": [
+    {
+      "attestation_id": "att-runbook-reviewed-001",
+      "attestation_type": "RUNBOOK_REVIEWED",
+      "operator_identity": "approver_alpha",
+      "operator_role": "PAPER_APPROVER",
+      "signed_timestamp": "2026-07-18T12:30:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "evidence_references": ["reports/paper_portfolio_operations_runbook_v1.md"],
+      "policy_version": "paper-activation-policy-v1",
+      "status": "ACTIVE",
+      "revocation_reference": null,
+      "provenance": {"source": "example"}
+    },
+    {
+      "attestation_id": "att-backup-policy-001",
+      "attestation_type": "BACKUP_POLICY_APPROVED",
+      "operator_identity": "risk_alpha",
+      "operator_role": "RISK_REVIEWER",
+      "signed_timestamp": "2026-07-18T12:31:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "evidence_references": ["reports/paper_portfolio_activation_checklist_v1.md"],
+      "policy_version": "paper-activation-policy-v1",
+      "status": "ACTIVE",
+      "revocation_reference": null,
+      "provenance": {"source": "example"}
+    }
+  ],
+  "note": "Example only. Generate full attestations set before any manual paper activation review."
+}

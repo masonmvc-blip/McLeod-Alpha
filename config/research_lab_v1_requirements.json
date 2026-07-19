@@ -1,0 +1,451 @@
+{
+  "certification_eligible": true,
+  "eligibility_rule": "certification_eligible is derived from per-requirement statuses and must be true only when all are VERIFIED.",
+  "generated_on": "2026-07-18",
+  "milestone": "McLeodResearchLabReleaseCertification_Validated",
+  "requirements": [
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/logs/McLeodResearchLab_v1.0_Validated.json"
+      ],
+      "id": "1.1",
+      "implementation_files": [
+        "data/research/logs/McLeodResearchLab_v1.0_Validated.json"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_validation_marker_is_not_treated_as_final_certification"
+      ],
+      "public_interfaces": [
+        "validation marker metadata contract"
+      ],
+      "requirement": "Validation marker integrity and provisional handling",
+      "status": "VERIFIED",
+      "verification_rationale": "Marker explicitly remains PROVISIONAL with deficiency metadata until final release criteria are met.",
+      "verified_hash_references": {
+        "data/research/logs/McLeodResearchLab_v1.0_Validated.json": "67269bed806316ef63658e92d8c1f4e277c1403ef67178275010cbef5e92abba"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "config/research_lab_v1_requirements.json"
+      ],
+      "id": "2.1",
+      "implementation_files": [
+        "config/research_lab_v1_requirements.json"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "public_interfaces": [
+        "requirements traceability schema v1"
+      ],
+      "requirement": "Machine-readable requirement traceability",
+      "status": "VERIFIED",
+      "verification_rationale": "Every requirement maps to implementation, tests, evidence artifacts, and hash references.",
+      "verified_hash_references": {
+        "reports/mcleod_research_lab_release_certification_v1.md": "4636763c325069ab8f22b7cf3c4dca44857ad3d83947f9766cf062a5d2987937"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_module_completeness_and_substantive_implementations"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/__init__.py"
+      ],
+      "id": "3.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/__init__.py",
+        "engine/phase4/research_lab/types.py",
+        "engine/phase4/research_lab/model.py",
+        "engine/phase4/research_lab/statistics.py",
+        "engine/phase4/research_lab/validation.py",
+        "engine/phase4/research_lab/cross_validation.py",
+        "engine/phase4/research_lab/reporting.py",
+        "engine/phase4/research_lab/scientific_parity.py",
+        "engine/phase4/research_lab/adversarial_datasets.py",
+        "engine/phase4/research_lab/overfitting_certification.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_module_completeness_and_substantive_implementations"
+      ],
+      "public_interfaces": [
+        "engine.phase4.research_lab package API"
+      ],
+      "requirement": "Required module completeness and substantive implementation",
+      "status": "VERIFIED",
+      "verification_rationale": "All required modules exist, have substantive implementations, and export certified interfaces.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/__init__.py": "caf550214646e3e87e7072a562444501b35d5701ba1dff7175a1a06b1a735b29"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_factor_library_required_factors_and_registry_controls"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/model.py"
+      ],
+      "id": "4.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/model.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_factor_library_required_factors_and_registry_controls"
+      ],
+      "public_interfaces": [
+        "FactorRegistry.register",
+        "FactorRegistry.register_custom",
+        "FactorRegistry.list_all"
+      ],
+      "requirement": "Initial factor library coverage and registry controls",
+      "status": "VERIFIED",
+      "verification_rationale": "Required built-in factors are present, duplicates fail closed, custom registration is deterministic.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/model.py": "e2fc17358a5a87375914399ebaeabdf7b6b73b30eec27cae2fdaa06aa484ccf3"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_cross_validation_certification_guards"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/cross_validation.py"
+      ],
+      "id": "5.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/cross_validation.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_cross_validation_certification_guards"
+      ],
+      "public_interfaces": [
+        "build_cross_validation_folds"
+      ],
+      "requirement": "Cross-validation support and chronological guardrails",
+      "status": "VERIFIED",
+      "verification_rationale": "Rolling, expanding, walk-forward, k-fold, and out-of-time are validated with chronology, purge, and embargo controls.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/cross_validation.py": "948218951c738c7718a360055081ea229602a0845c27ddf1f739e61edea4b80d"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_scientific_library_parity_complete_and_deterministic"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/scientific_parity.py"
+      ],
+      "id": "6.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/scientific_parity.py",
+        "engine/phase4/research_lab/backtest.py",
+        "engine/phase4/research_lab/statistics.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_scientific_library_parity_complete_and_deterministic"
+      ],
+      "public_interfaces": [
+        "run_scientific_parity_suite",
+        "scientific_parity_passed"
+      ],
+      "requirement": "Scientific-library statistical parity across metrics and tests",
+      "status": "VERIFIED",
+      "verification_rationale": "Trusted-reference parity fixtures validate core metrics and statistical procedures with deterministic seeds and tolerances.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/scientific_parity.py": "4eb0994f85fe5bfcee28562317feae3bdce1e6d867ad68e408c2ea55d82920f1"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_dataset_adversarial_fixtures_detect_contamination_from_data"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/adversarial_datasets.py"
+      ],
+      "id": "7.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/adversarial_datasets.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_dataset_adversarial_fixtures_detect_contamination_from_data"
+      ],
+      "public_interfaces": [
+        "build_adversarial_dataset_fixtures",
+        "validate_dataset_fixture",
+        "run_dataset_adversarial_suite",
+        "dataset_suite_passed"
+      ],
+      "requirement": "Dataset-level adversarial bias and leakage fixture engine",
+      "status": "VERIFIED",
+      "verification_rationale": "Point-in-time observations are inspected directly; valid fixtures pass and contaminated fixtures fail with offending observation IDs.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/adversarial_datasets.py": "0a3441721e0aba0ef5cc557cc19e7fc4941467c445a0544d2bccaf962b72a72b"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_overfitting_adversarial_family_matrix"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "engine/phase4/research_lab/overfitting_certification.py"
+      ],
+      "id": "8.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/overfitting_certification.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_overfitting_adversarial_family_matrix"
+      ],
+      "public_interfaces": [
+        "run_overfitting_adversarial_matrix",
+        "overfitting_matrix_passed",
+        "certify_overfitting_family"
+      ],
+      "requirement": "Expanded overfitting adversarial-family validation",
+      "status": "VERIFIED",
+      "verification_rationale": "Deterministic adversarial families detect repeated testing, multiple comparisons, instability, concentration, and endpoint manipulation.",
+      "verified_hash_references": {
+        "engine/phase4/research_lab/overfitting_certification.py": "a2c27136cd7e99f537b747d857325763a73214af6e872be4e48f370fd613280a"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_scientific_library_parity_complete_and_deterministic"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/reports/mcleod_research_lab_v1/artifact_manifest_v1.json"
+      ],
+      "id": "9.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/hypothesis.py",
+        "engine/phase4/research_lab/dataset.py",
+        "engine/phase4/research_lab/experiment.py",
+        "engine/phase4/research_lab/model.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_determinism_across_processes_and_input_order"
+      ],
+      "public_interfaces": [
+        "deterministic_hypothesis_id",
+        "deterministic_dataset_id",
+        "deterministic_experiment_id",
+        "ResearchLabModel.run_experiment"
+      ],
+      "requirement": "Determinism and reproducibility across process and input order",
+      "status": "VERIFIED",
+      "verification_rationale": "Repeated runs and separate-process runs are deterministic; artifact hashes remain stable for identical inputs.",
+      "verified_hash_references": {
+        "data/research/reports/mcleod_research_lab_v1/artifact_manifest_v1.json": "d0112fbc167d7f4bddf182215becac6174ff6348a75f17c62a2d07c8d4b32164"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_model_change_firewall_and_broker_isolation"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "tests/test_research_lab_release_certification_invariants.py"
+      ],
+      "id": "10.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/__init__.py",
+        "engine/phase4/research_lab/model.py",
+        "engine/phase4/research_lab/validation.py",
+        "engine/phase4/research_lab/scientific_parity.py",
+        "engine/phase4/research_lab/adversarial_datasets.py",
+        "engine/phase4/research_lab/overfitting_certification.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_model_change_firewall_and_broker_isolation"
+      ],
+      "public_interfaces": [
+        "package import boundary checks"
+      ],
+      "requirement": "Model-change firewall and no broker, credential, or production state access",
+      "status": "VERIFIED",
+      "verification_rationale": "AST and token checks enforce no broker imports, credentials, portfolio mutation, or trade execution paths.",
+      "verified_hash_references": {
+        "tests/test_research_lab_release_certification_invariants.py": "69d8289f512500841688bf33786b1639afd5a8c6e1599ed63d6534fadb52dfbb"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_artifact_hashing_pipeline_is_real_and_deterministic"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/reports/mcleod_research_lab_v1/artifact_manifest_v1.json",
+        "data/research/reports/mcleod_research_lab_v1/research_lab_summary_v1.md",
+        "data/research/reports/mcleod_research_lab_v1/experiment_report_v1.md",
+        "data/research/reports/mcleod_research_lab_v1/factor_rankings_v1.md",
+        "data/research/reports/mcleod_research_lab_v1/model_improvement_recommendations_v1.md"
+      ],
+      "id": "11.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/model.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_artifact_hashing_pipeline_is_real_and_deterministic"
+      ],
+      "public_interfaces": [
+        "ResearchLabModel.write_reports_with_artifact_manifest"
+      ],
+      "requirement": "Direct reporting-pipeline SHA-256 artifact hashing and deterministic manifest generation",
+      "status": "VERIFIED",
+      "verification_rationale": "Pipeline computes real hashes internally, avoids placeholder values, hashes reports after hash embedding, and writes manifest last.",
+      "verified_hash_references": {
+        "data/research/reports/mcleod_research_lab_v1/artifact_manifest_v1.json": "d0112fbc167d7f4bddf182215becac6174ff6348a75f17c62a2d07c8d4b32164",
+        "data/research/reports/mcleod_research_lab_v1/experiment_report_v1.md": "b1eafd5726e3b85220bce2237443a1ab148c48dbe0eebff5e86052801b11aae0",
+        "data/research/reports/mcleod_research_lab_v1/factor_rankings_v1.md": "d259ae9ad6baede9c1b015d838dcb7e8232bd245e5fc5a5b886776aba0715bfc",
+        "data/research/reports/mcleod_research_lab_v1/model_improvement_recommendations_v1.md": "8154c3b7f2a57ef1bb4ddb9c32e900ec3052a145b56205fc237ca96588f54c39",
+        "data/research/reports/mcleod_research_lab_v1/research_lab_summary_v1.md": "13ec1e5491e8e1f65abd6f0a5f4cc8d01ceeb22bf45dfacf407bbf151240665d"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_synthetic_labeling_and_report_disclosure_requirements"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/reports/mcleod_research_lab_v1/research_lab_summary_v1.md",
+        "data/research/reports/mcleod_research_lab_v1/experiment_report_v1.md"
+      ],
+      "id": "12.1",
+      "implementation_files": [
+        "engine/phase4/research_lab/reporting.py",
+        "engine/phase4/research_lab/model.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_synthetic_labeling_and_report_disclosure_requirements"
+      ],
+      "public_interfaces": [
+        "render_research_lab_summary",
+        "render_experiment_report",
+        "render_model_improvement_recommendations"
+      ],
+      "requirement": "Synthetic-data labeling and no-alpha implication statements",
+      "status": "VERIFIED",
+      "verification_rationale": "All certified reports preserve synthetic-only framing and no-historical-alpha disclaimers.",
+      "verified_hash_references": {
+        "data/research/reports/mcleod_research_lab_v1/experiment_report_v1.md": "b1eafd5726e3b85220bce2237443a1ab148c48dbe0eebff5e86052801b11aae0",
+        "data/research/reports/mcleod_research_lab_v1/research_lab_summary_v1.md": "13ec1e5491e8e1f65abd6f0a5f4cc8d01ceeb22bf45dfacf407bbf151240665d"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/logs/research_lab_release_certification_matrix_results.json"
+      ],
+      "id": "13.1",
+      "implementation_files": [
+        "data/research/logs/research_lab_release_certification_matrix_results.json"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "public_interfaces": [
+        "canonical matrix results log"
+      ],
+      "requirement": "Full deterministic canonical matrix execution in required order",
+      "status": "VERIFIED",
+      "verification_rationale": "Matrix log records 21 stages in canonical order with all stages green.",
+      "verified_hash_references": {
+        "data/research/logs/research_lab_release_certification_matrix_results.json": "d6f3d1de77b3f0114ab407922f8157f83c8355f76111b1b6b4443f3c34a9eb35"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_clean_environment_rehearsal"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "tests/test_research_lab_release_certification_invariants.py"
+      ],
+      "id": "14.1",
+      "implementation_files": [
+        "tests/test_research_lab_release_certification_invariants.py"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_clean_environment_rehearsal"
+      ],
+      "public_interfaces": [
+        "clean-room certification rehearsal test"
+      ],
+      "requirement": "Clean-environment certification rehearsal and reproducibility",
+      "status": "VERIFIED",
+      "verification_rationale": "Rehearsal verifies valid/contaminated behavior, deterministic outputs, and cleanup guarantees.",
+      "verified_hash_references": {
+        "tests/test_research_lab_release_certification_invariants.py": "69d8289f512500841688bf33786b1639afd5a8c6e1599ed63d6534fadb52dfbb"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "reports/mcleod_research_lab_release_certification_v1.md"
+      ],
+      "id": "15.1",
+      "implementation_files": [
+        "reports/mcleod_research_lab_release_certification_v1.md"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "public_interfaces": [
+        "release certification report"
+      ],
+      "requirement": "Release certification report generation",
+      "status": "VERIFIED",
+      "verification_rationale": "Report documents parity, adversarial fixtures, overfitting families, artifact hashing, matrix outcome, and final decision.",
+      "verified_hash_references": {
+        "reports/mcleod_research_lab_release_certification_v1.md": "4636763c325069ab8f22b7cf3c4dca44857ad3d83947f9766cf062a5d2987937"
+      }
+    },
+    {
+      "certification_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "deficiency": "",
+      "evidence_artifacts": [
+        "data/research/logs/McLeodResearchLabReleaseCertification_Validated.json"
+      ],
+      "id": "16.1",
+      "implementation_files": [
+        "data/research/logs/McLeodResearchLabReleaseCertification_Validated.json"
+      ],
+      "invariant_tests": [
+        "tests/test_research_lab_release_certification_invariants.py::test_traceability_all_verified_and_eligibility_derived"
+      ],
+      "public_interfaces": [
+        "final certification marker"
+      ],
+      "requirement": "Final release-certification marker only after all requirements verified and all gates pass",
+      "status": "VERIFIED",
+      "verification_rationale": "Marker creation is now gated by independently derived eligibility and complete certification pass criteria.",
+      "verified_hash_references": {
+        "data/research/logs/McLeodResearchLabReleaseCertification_Validated.json": "b985ff5e74b43d9f6e983602e39485c7b5ea3f9f1aa0d305e66dfecc5eb856ae"
+      }
+    }
+  ]
+}

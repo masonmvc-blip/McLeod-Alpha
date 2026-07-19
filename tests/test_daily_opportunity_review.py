@@ -1,0 +1,184 @@
+import json
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+import pandas as pd
+
+from execution.opportunity_logger import log_evaluated_setups
+import reports.daily_opportunity_review as dor
+
+
+ET = ZoneInfo("America/New_York")
+UTC = ZoneInfo("UTC")
+
+
+def _sample_df():
+    rows = [
+        {"datetime": datetime(2026, 7, 17, 13, 56, tzinfo=UTC), "open": 600.0, "high": 600.2, "low": 599.8, "close": 600.1, "volume": 1000, "ema10": 600.0, "ema20": 599.9, "ema50": 599.7, "vwap": 599.9, "macd_hist": 0.01},
+        {"datetime": datetime(2026, 7, 17, 13, 57, tzinfo=UTC), "open": 600.1, "high": 600.3, "low": 600.0, "close": 600.2, "volume": 1200, "ema10": 600.05, "ema20": 599.95, "ema50": 599.75, "vwap": 599.95, "macd_hist": 0.02},
+        {"datetime": datetime(2026, 7, 17, 13, 58, tzinfo=UTC), "open": 600.2, "high": 600.4, "low": 600.1, "close": 600.3, "volume": 1400, "ema10": 600.1, "ema20": 600.0, "ema50": 599.8, "vwap": 600.0, "macd_hist": 0.03},
+        {"datetime": datetime(2026, 7, 17, 13, 59, tzinfo=UTC), "open": 600.3, "high": 600.45, "low": 600.2, "close": 600.4, "volume": 1500, "ema10": 600.15, "ema20": 600.05, "ema50": 599.85, "vwap": 600.05, "macd_hist": 0.04},
+        {"datetime": datetime(2026, 7, 17, 14, 0, tzinfo=UTC), "open": 600.4, "high": 600.6, "low": 600.3, "close": 600.5, "volume": 1600, "ema10": 600.2, "ema20": 600.1, "ema50": 599.9, "vwap": 600.1, "macd_hist": 0.05},
+    ]
+    df = pd.DataFrame(rows)
+    df.index = pd.to_datetime(df["datetime"])
+    return df
+
+
+def test_logger_timestamps_are_eastern(tmp_path, monkeypatch):
+    monkeypatch.setattr("execution.opportunity_logger.OPPORTUNITY_LOG_DIR", tmp_path)
+
+    df = _sample_df()
+    last = df.iloc[-1]
+    prev = df.iloc[-2]
+
+    log_evaluated_setups(
+        last=last,
+        prev=prev,
+        df=df,
+        regime="BULL_TREND",
+        call_score=5,
+        call_reasons=["bull_ema_stack", "ema10_rising"],
+        put_score=1,
+        put_reasons=["volume_weakening_bearish_move"],
+        entry_threshold=5,
+        allow_entry=True,
+        in_position=False,
+        in_market_hours=True,
+        entered_call=True,
+        entered_put=False,
+        feature_payload={},
+        selected_option_call={"symbol": "SPY_260717C00600000"},
+        selected_option_put=None,
+    )
+
+    path = tmp_path / "opportunity_setups_2026-07-17.jsonl"
+    lines = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(lines) == 2
+    for row in lines:
+        eval_dt = datetime.fromisoformat(row["evaluation_time_et"])
+        candle_dt = datetime.fromisoformat(row["candle_time_et"])
+        assert eval_dt.tzinfo is not None
+        assert candle_dt.tzinfo is not None
+        assert eval_dt.utcoffset().total_seconds() in {-4 * 3600, -5 * 3600}
+        assert candle_dt.utcoffset().total_seconds() in {-4 * 3600, -5 * 3600}
+
+
+def test_executed_and_rejected_included_once(tmp_path, monkeypatch):
+    monkeypatch.setattr(dor, "OPPORTUNITY_LOG_DIR", tmp_path)
+    monkeypatch.setattr(dor, "REPORTS_DIR", tmp_path / "reports")
+    monkeypatch.setattr(dor, "SPY_HISTORY_PATH", tmp_path / "spy.csv")
+
+    log_path = tmp_path / "opportunity_setups_2026-07-17.jsonl"
+    payload = {
+        "event_id": "2026-07-17T10:00:00-04:00|CALL",
+        "evaluation_time_et": "2026-07-17T10:00:01-04:00",
+        "candle_time_et": "2026-07-17T10:00:00-04:00",
+        "direction": "CALL",
+        "spy_price": 600.0,
+        "entered": True,
+        "rejected": False,
+        "rejection_reason": None,
+        "market_regime": "BULL_TREND",
+        "positive_signals": ["bull_ema_stack"],
+        "penalties": [],
+    }
+    log_path.write_text(json.dumps(payload) + "\n" + json.dumps(payload) + "\n" + json.dumps({
+        **payload,
+        "event_id": "2026-07-17T10:00:00-04:00|PUT",
+        "direction": "PUT",
+        "entered": False,
+        "rejected": True,
+        "rejection_reason": "Regime mismatch (BULL_TREND)",
+    }) + "\n", encoding="utf-8")
+
+    spy_csv = "datetime,open,high,low,close,volume\n2026-07-17T14:01:00+00:00,600,600.1,599.9,600.05,100\n"
+    (tmp_path / "spy.csv").write_text(spy_csv, encoding="utf-8")
+
+    paths = dor.build_daily_opportunity_review("2026-07-17")
+    data = json.loads(paths.json.read_text(encoding="utf-8"))
+    assert data["summary"]["total_evaluations"] == 2
+    assert data["summary"]["trades_taken"] == 1
+    assert data["summary"]["trades_rejected"] == 1
+
+
+def test_post_rejection_tracking_uses_only_future_candles(tmp_path, monkeypatch):
+    monkeypatch.setattr(dor, "OPPORTUNITY_LOG_DIR", tmp_path)
+    monkeypatch.setattr(dor, "REPORTS_DIR", tmp_path / "reports")
+    monkeypatch.setattr(dor, "SPY_HISTORY_PATH", tmp_path / "spy.csv")
+
+    log_path = tmp_path / "opportunity_setups_2026-07-17.jsonl"
+    log_path.write_text(json.dumps({
+        "event_id": "2026-07-17T10:00:00-04:00|PUT",
+        "evaluation_time_et": "2026-07-17T10:00:01-04:00",
+        "candle_time_et": "2026-07-17T10:00:00-04:00",
+        "direction": "PUT",
+        "spy_price": 600.0,
+        "entered": False,
+        "rejected": True,
+        "rejection_reason": "Regime mismatch",
+        "market_regime": "BULL_TREND",
+        "positive_signals": [],
+        "penalties": [],
+    }) + "\n", encoding="utf-8")
+
+    # 09:59 ET candle has huge move and must be ignored; 10:01 ET is the first valid future candle.
+    spy_csv = "\n".join([
+        "datetime,open,high,low,close,volume",
+        "2026-07-17T13:59:00+00:00,600,620,580,610,100",
+        "2026-07-17T14:01:00+00:00,600,600.2,599.7,599.9,100",
+        "2026-07-17T14:02:00+00:00,599.9,600.0,599.5,599.6,100",
+    ])
+    (tmp_path / "spy.csv").write_text(spy_csv, encoding="utf-8")
+
+    paths = dor.build_daily_opportunity_review("2026-07-17")
+    data = json.loads(paths.json.read_text(encoding="utf-8"))
+    row = data["evaluated_setups"][0]
+    tracking = row["post_rejection_tracking"]
+
+    assert tracking["future_candles_used"] == 2
+    assert tracking["max_favorable_spy_move"] < 5
+
+
+def test_estimated_outcomes_are_labeled_estimates(tmp_path, monkeypatch):
+    monkeypatch.setattr(dor, "OPPORTUNITY_LOG_DIR", tmp_path)
+    monkeypatch.setattr(dor, "REPORTS_DIR", tmp_path / "reports")
+    monkeypatch.setattr(dor, "SPY_HISTORY_PATH", tmp_path / "spy.csv")
+
+    (tmp_path / "opportunity_setups_2026-07-17.jsonl").write_text(json.dumps({
+        "event_id": "2026-07-17T10:00:00-04:00|CALL",
+        "evaluation_time_et": "2026-07-17T10:00:01-04:00",
+        "candle_time_et": "2026-07-17T10:00:00-04:00",
+        "direction": "CALL",
+        "spy_price": 600.0,
+        "entered": False,
+        "rejected": True,
+        "rejection_reason": "CALL score below threshold by 1",
+        "market_regime": "BULL_TREND",
+        "positive_signals": [],
+        "penalties": [],
+    }) + "\n", encoding="utf-8")
+
+    (tmp_path / "spy.csv").write_text(
+        "datetime,open,high,low,close,volume\n"
+        "2026-07-17T14:01:00+00:00,600,601,599.8,600.9,100\n",
+        encoding="utf-8",
+    )
+
+    paths = dor.build_daily_opportunity_review("2026-07-17")
+    payload = json.loads(paths.json.read_text(encoding="utf-8"))
+    outcome = payload["evaluated_setups"][0]["estimated_option_outcome"]
+    assert outcome["is_estimate"] is True
+    assert outcome["label"] == "estimated_from_spy_proxy"
+
+
+def test_live_decision_predicates_unchanged():
+    source = Path("phase3_monitor.py").read_text(encoding="utf-8")
+
+    assert "elif regime == \"BULL_TREND\" and call_score >= ENTRY_SCORE_THRESHOLD:" in source
+    assert "elif regime == \"BEAR_TREND\" and put_score >= ENTRY_SCORE_THRESHOLD:" in source
+    assert "stop = entry - 0.75" in source
+    assert "stop = entry + 0.75" in source
+    assert "target = entry + 1.50" in source
+    assert "target = entry - 1.50" in source

@@ -1,0 +1,34 @@
+{
+  "INFORMATION_TECHNOLOGY": [
+    "CRWD",
+    "OPRA",
+    "MU",
+    "DDOG",
+    "ANET",
+    "APLD",
+    "FISV",
+    "NBIS"
+  ],
+  "INDUSTRIALS": [
+    "RKLB",
+    "MOG.A",
+    "SPCX"
+  ],
+  "CONSUMER_DISCRETIONARY": [
+    "AMZN",
+    "MELI"
+  ],
+  "HEALTH_CARE": [
+    "ARTV",
+    "CVS",
+    "TGTX",
+    "VMD"
+  ],
+  "FINANCIALS": [
+    "C",
+    "VBNK"
+  ],
+  "MATERIALS": [
+    "AGX"
+  ]
+}

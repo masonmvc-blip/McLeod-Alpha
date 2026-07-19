@@ -1,0 +1,475 @@
+{
+  "description": "McLeod Core Research Metrics - v1.0",
+  "last_updated": "2026-07-14",
+  "version": "1.0.0",
+  "metrics": {
+    "business_quality": {
+      "display_name": "Business Quality",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Overall quality of business model, competitive position, and industry dynamics",
+      "components": [
+        "competitive_moat",
+        "secular_tailwinds",
+        "capital_allocation"
+      ],
+      "confidence": 0
+    },
+    "management_quality": {
+      "display_name": "Management Quality",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Quality and track record of management team",
+      "components": [
+        "insider_activity",
+        "capital_allocation"
+      ],
+      "confidence": 0
+    },
+    "valuation": {
+      "display_name": "Valuation",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Is stock cheap relative to intrinsic value? 50=fair, 70+=undervalued, 30-=overvalued",
+      "components": [
+        "pe_ratio",
+        "pb_ratio",
+        "fcf_yield"
+      ],
+      "confidence": 0
+    },
+    "expected_2yr_cagr": {
+      "display_name": "Expected 2-Year CAGR",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Expected compound annual growth rate over next 2 years",
+      "confidence": 0
+    },
+    "expected_10yr_cagr": {
+      "display_name": "Expected 10-Year CAGR",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Expected compound annual growth rate over next 10 years",
+      "confidence": 0
+    },
+    "balance_sheet": {
+      "display_name": "Balance Sheet Quality",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Strength of balance sheet - debt levels, liquidity, asset quality",
+      "components": [
+        "debt_to_equity",
+        "current_ratio",
+        "asset_quality"
+      ],
+      "confidence": 0
+    },
+    "capital_allocation": {
+      "display_name": "Capital Allocation",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "How effectively management deploys capital - buybacks, dividends, reinvestment",
+      "confidence": 0
+    },
+    "roic": {
+      "display_name": "Return on Invested Capital (ROIC)",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        200
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Return generated on invested capital. 15%+ is strong",
+      "confidence": 0
+    },
+    "free_cash_flow": {
+      "display_name": "Free Cash Flow Growth",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "YoY growth rate of free cash flow",
+      "confidence": 0
+    },
+    "insider_activity": {
+      "display_name": "Insider Activity",
+      "data_type": "text",
+      "range": null,
+      "source": "NEEDS_RESEARCH",
+      "description": "Recent insider buying/selling activity - positive/neutral/negative/unknown",
+      "confidence": 0
+    },
+    "secular_tailwinds": {
+      "display_name": "Secular Tailwinds",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Are there long-term positive industry/market trends? 0=headwinds, 50=neutral, 100=strong tailwinds",
+      "confidence": 0
+    },
+    "competitive_moat": {
+      "display_name": "Competitive Moat",
+      "data_type": "text",
+      "range": null,
+      "source": "NEEDS_RESEARCH",
+      "description": "Type and strength of competitive advantage - none/weak/moderate/strong",
+      "confidence": 0
+    },
+    "probability_permanent_loss": {
+      "display_name": "Probability of Permanent Loss",
+      "data_type": "percentage",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Risk of permanent capital loss (business failure, bankruptcy, etc)",
+      "confidence": 0
+    },
+    "margin_of_safety": {
+      "display_name": "Margin of Safety",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Discount to intrinsic value providing safety margin",
+      "confidence": 0
+    },
+    "thesis_health": {
+      "display_name": "Thesis Health",
+      "data_type": "text",
+      "range": null,
+      "source": "mcleod_portfolio_engine",
+      "description": "Status of investment thesis - intact/at_risk/broken",
+      "default": "HEALTHY",
+      "confidence": 50
+    },
+    "liquidity_score": {
+      "display_name": "Liquidity Score",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "schwab_portfolio",
+      "description": "Trading liquidity - average daily volume, bid-ask spread",
+      "confidence": 80
+    },
+    "margin_requirement": {
+      "display_name": "Margin Requirement (% of Value)",
+      "data_type": "percentage",
+      "range": [
+        0,
+        100
+      ],
+      "source": "portfolio_engine",
+      "description": "Margin needed to hold position - 50% for equities, 25% for options",
+      "confidence": 90
+    },
+    "buffett_score": {
+      "display_name": "Buffett Quality Score",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Score based on Buffett's investment criteria: ROE, debt, predictable earnings, growth",
+      "confidence": 0
+    },
+    "lynch_10bagger_score": {
+      "display_name": "Lynch 10-Bagger Score",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Potential to 10x from current levels based on Lynch framework",
+      "confidence": 0,
+      "system": "separate"
+    },
+    "greenblatt_score": {
+      "display_name": "Greenblatt Magic Formula Score",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Score based on Greenblatt's magic formula (earnings yield + ROIC)",
+      "confidence": 0
+    },
+    "graham_templeton_score": {
+      "display_name": "Graham/Templeton Value Score",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "Value investing score - deep discount, strong fundamentals, margin of safety",
+      "confidence": 0
+    },
+    "ibd_composite": {
+      "display_name": "IBD Composite Rating",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "IBD's composite rating combining growth, profitability, momentum",
+      "confidence": 0
+    },
+    "ibd_eps_growth": {
+      "display_name": "IBD EPS Growth",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "IBD's rating of earnings growth",
+      "confidence": 0
+    },
+    "ibd_relative_strength": {
+      "display_name": "IBD Relative Strength",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "NEEDS_RESEARCH",
+      "description": "IBD's relative price strength rating",
+      "confidence": 0
+    },
+    "mcleod_core_composite": {
+      "display_name": "McLeod Core Composite",
+      "data_type": "score",
+      "range": [
+        0,
+        100
+      ],
+      "source": "research_engine",
+      "description": "McLeod proprietary composite score - only assigned if sufficient underlying metrics",
+      "minimum_required_metrics": 5,
+      "confidence": 0
+    },
+    "data_quality_score": {
+      "display_name": "Data Quality Score",
+      "data_type": "percentage",
+      "range": [
+        0,
+        100
+      ],
+      "source": "research_engine",
+      "description": "% of metrics populated vs total metrics (excludes optional fields)",
+      "confidence": 100
+    },
+    "revenue_growth_1yr": {
+      "display_name": "Revenue Growth (1Y)",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "1-year revenue growth rate from SEC filings",
+      "confidence": 0
+    },
+    "revenue_growth_3yr": {
+      "display_name": "Revenue Growth (3Y CAGR)",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "3-year revenue compound annual growth rate from SEC filings",
+      "confidence": 0
+    },
+    "eps_growth_1yr": {
+      "display_name": "EPS Growth (1Y)",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "1-year EPS growth rate from SEC filings",
+      "confidence": 0
+    },
+    "eps_growth_3yr": {
+      "display_name": "EPS Growth (3Y CAGR)",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "3-year EPS compound annual growth rate from SEC filings",
+      "confidence": 0
+    },
+    "gross_margin": {
+      "display_name": "Gross Margin",
+      "data_type": "percentage",
+      "range": [
+        0,
+        100
+      ],
+      "source": "SEC Data",
+      "description": "Gross profit margin % from SEC filings",
+      "confidence": 0
+    },
+    "operating_margin": {
+      "display_name": "Operating Margin",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        100
+      ],
+      "source": "SEC Data",
+      "description": "Operating profit margin % from SEC filings",
+      "confidence": 0
+    },
+    "net_margin": {
+      "display_name": "Net Profit Margin",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        100
+      ],
+      "source": "SEC Data",
+      "description": "Net profit margin % from SEC filings",
+      "confidence": 0
+    },
+    "roe": {
+      "display_name": "Return on Equity",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "Return on shareholders' equity % from SEC filings",
+      "confidence": 0
+    },
+    "roa": {
+      "display_name": "Return on Assets",
+      "data_type": "percentage",
+      "range": [
+        -100,
+        500
+      ],
+      "source": "SEC Data",
+      "description": "Return on total assets % from SEC filings",
+      "confidence": 0
+    },
+    "debt_to_equity": {
+      "display_name": "Debt-to-Equity Ratio",
+      "data_type": "number",
+      "range": [
+        0,
+        100
+      ],
+      "source": "SEC Data",
+      "description": "Total debt divided by shareholders' equity from SEC filings",
+      "confidence": 0
+    },
+    "current_ratio": {
+      "display_name": "Current Ratio",
+      "data_type": "number",
+      "range": [
+        0,
+        20
+      ],
+      "source": "SEC Data",
+      "description": "Current assets divided by current liabilities from SEC filings",
+      "confidence": 0
+    }
+  },
+  "scoring_rules": {
+    "mcleod_core_composite": {
+      "description": "Only calculate when sufficient data available",
+      "required_fields": [
+        "valuation",
+        "business_quality",
+        "balance_sheet",
+        "roic"
+      ],
+      "minimum_quality_threshold": 50,
+      "weights": {
+        "valuation": 0.25,
+        "business_quality": 0.35,
+        "balance_sheet": 0.15,
+        "capital_allocation": 0.15,
+        "roic": 0.1
+      },
+      "note": "If any required field is NEEDS_RESEARCH, score is NOT assigned"
+    }
+  },
+  "data_sources": {
+    "schwab_portfolio": {
+      "description": "Schwab API via portfolio_sync.py",
+      "reliability": "high",
+      "freshness": "real-time"
+    },
+    "portfolio_engine": {
+      "description": "McLeod Portfolio Engine v1.0 calculations",
+      "reliability": "high",
+      "freshness": "on-run"
+    },
+    "mcleod_portfolio_engine": {
+      "description": "McLeod Portfolio Engine analytics",
+      "reliability": "high",
+      "freshness": "on-run"
+    },
+    "NEEDS_RESEARCH": {
+      "description": "Manual research required - not yet automated",
+      "reliability": "unknown",
+      "freshness": "stale"
+    }
+  },
+  "thresholds": {
+    "data_quality_good": 60,
+    "data_quality_poor": 30,
+    "stale_data_days": 30,
+    "missing_critical_metrics": 3
+  }
+}

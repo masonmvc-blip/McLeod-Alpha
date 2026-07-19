@@ -1,0 +1,1619 @@
+{
+  "version": "1.0.0",
+  "engine": "McLeod Intelligence Engine",
+  "description": "Comprehensive intelligence metrics with automated and manual data sources",
+  
+  "metrics": {
+    "revenue_growth_1yr": {
+      "name": "Revenue Growth (1-Year)",
+      "category": "Financial Metrics",
+      "data_type": "percent",
+      "source": "SEC Filings / Market Data",
+      "confidence": 85,
+      "range": ["-100", "100"],
+      "description": "Year-over-year revenue growth percentage",
+      "calculation": "(Current Year Revenue - Prior Year Revenue) / Prior Year Revenue * 100"
+    },
+    
+    "revenue_growth_3yr": {
+      "name": "Revenue Growth (3-Year CAGR)",
+      "category": "Financial Metrics",
+      "data_type": "percent",
+      "source": "SEC Filings / Market Data",
+      "confidence": 85,
+      "range": ["-50", "100"],
+      "description": "3-year compound annual growth rate for revenue"
+    },
+    
+    "eps_growth_1yr": {
+      "name": "EPS Growth (1-Year)",
+      "category": "Financial Metrics",
+      "data_type": "percent",
+      "source": "SEC Filings / Market Data",
+      "confidence": 85,
+      "range": ["-100", "100"],
+      "description": "Year-over-year earnings per share growth"
+    },
+    
+    "eps_growth_3yr": {
+      "name": "EPS Growth (3-Year CAGR)",
+      "category": "Financial Metrics",
+      "data_type": "percent",
+      "source": "SEC Filings / Market Data",
+      "confidence": 85,
+      "range": ["-50", "100"],
+      "description": "3-year compound annual growth rate for EPS"
+    },
+    
+    "gross_margin": {
+      "name": "Gross Margin",
+      "category": "Profitability",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["-50", "100"],
+      "description": "(Revenue - COGS) / Revenue"
+    },
+    
+    "operating_margin": {
+      "name": "Operating Margin",
+      "category": "Profitability",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["-50", "100"],
+      "description": "Operating Income / Revenue"
+    },
+    
+    "net_margin": {
+      "name": "Net Profit Margin",
+      "category": "Profitability",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["-50", "100"],
+      "description": "Net Income / Revenue"
+    },
+    
+    "free_cash_flow_1yr": {
+      "name": "Free Cash Flow (1-Year)",
+      "category": "Cash Flow",
+      "data_type": "dollars",
+      "source": "SEC Filings",
+      "confidence": 85,
+      "range": ["-inf", "inf"],
+      "description": "Operating Cash Flow - Capital Expenditures"
+    },
+    
+    "free_cash_flow_growth": {
+      "name": "Free Cash Flow Growth",
+      "category": "Cash Flow",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 85,
+      "range": ["-100", "100"],
+      "description": "Year-over-year FCF growth percentage"
+    },
+    
+    "roic": {
+      "name": "Return on Invested Capital",
+      "category": "Returns",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 80,
+      "range": ["-50", "100"],
+      "description": "NOPAT / Invested Capital - measure of capital efficiency"
+    },
+    
+    "roe": {
+      "name": "Return on Equity",
+      "category": "Returns",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 85,
+      "range": ["-50", "100"],
+      "description": "Net Income / Shareholder Equity"
+    },
+    
+    "roa": {
+      "name": "Return on Assets",
+      "category": "Returns",
+      "data_type": "percent",
+      "source": "SEC Filings",
+      "confidence": 85,
+      "range": ["-50", "100"],
+      "description": "Net Income / Total Assets"
+    },
+    
+    "debt_to_equity": {
+      "name": "Debt-to-Equity Ratio",
+      "category": "Balance Sheet",
+      "data_type": "ratio",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["0", "10"],
+      "description": "Total Debt / Shareholder Equity - leverage metric"
+    },
+    
+    "net_debt": {
+      "name": "Net Debt",
+      "category": "Balance Sheet",
+      "data_type": "dollars",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["-inf", "inf"],
+      "description": "Total Debt - Cash & Equivalents"
+    },
+    
+    "current_ratio": {
+      "name": "Current Ratio",
+      "category": "Liquidity",
+      "data_type": "ratio",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["0", "10"],
+      "description": "Current Assets / Current Liabilities"
+    },
+    
+    "quick_ratio": {
+      "name": "Quick Ratio",
+      "category": "Liquidity",
+      "data_type": "ratio",
+      "source": "SEC Filings",
+      "confidence": 90,
+      "range": ["0", "10"],
+      "description": "(Current Assets - Inventory) / Current Liabilities"
+    },
+    
+    "pe_ratio": {
+      "name": "P/E Ratio",
+      "category": "Valuation",
+      "data_type": "ratio",
+      "source": "Market Data",
+      "confidence": 95,
+      "range": ["0", "200"],
+      "description": "Price / Earnings per Share"
+    },
+    
+    "price_to_book": {
+      "name": "Price-to-Book Ratio",
+      "category": "Valuation",
+      "data_type": "ratio",
+      "source": "Market Data",
+      "confidence": 90,
+      "range": ["0", "50"],
+      "description": "Market Cap / Book Value"
+    },
+    
+    "price_to_sales": {
+      "name": "Price-to-Sales Ratio",
+      "category": "Valuation",
+      "data_type": "ratio",
+      "source": "Market Data",
+      "confidence": 90,
+      "range": ["0", "100"],
+      "description": "Market Cap / Revenue"
+    },
+    
+    "price_to_fcf": {
+      "name": "Price-to-FCF Ratio",
+      "category": "Valuation",
+      "data_type": "ratio",
+      "source": "Market Data",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Market Cap / Free Cash Flow"
+    },
+    
+    "dividend_yield": {
+      "name": "Dividend Yield",
+      "category": "Income",
+      "data_type": "percent",
+      "source": "Market Data",
+      "confidence": 95,
+      "range": ["0", "20"],
+      "description": "Annual Dividends / Stock Price"
+    },
+    
+    "liquidity_score": {
+      "name": "Liquidity Score",
+      "category": "Portfolio Metrics",
+      "data_type": "score",
+      "source": "Schwab Portfolio",
+      "confidence": 95,
+      "range": ["0", "100"],
+      "description": "Tradability and bid-ask spread assessment from Schwab"
+    },
+    
+    "margin_requirement": {
+      "name": "Margin Requirement",
+      "category": "Portfolio Metrics",
+      "data_type": "dollars",
+      "source": "Portfolio Engine",
+      "confidence": 95,
+      "range": ["0", "inf"],
+      "description": "Portfolio margin requirement for position"
+    },
+    
+    "thesis_health": {
+      "name": "Thesis Health Status",
+      "category": "McLeod Analysis",
+      "data_type": "status",
+      "source": "McLeod Portfolio Engine",
+      "confidence": 50,
+      "range": ["HEALTHY", "NEEDS_REVIEW", "BROKEN"],
+      "description": "Current health status of investment thesis"
+    },
+    
+    "business_quality": {
+      "name": "Business Quality Score",
+      "category": "McLeod Research",
+      "data_type": "score",
+      "source": "Manual Research",
+      "confidence": 0,
+      "range": ["0", "100"],
+      "description": "Assessment of competitive position, moat, management"
+    },
+    
+    "valuation_score": {
+      "name": "Valuation Score",
+      "category": "McLeod Research",
+      "data_type": "score",
+      "source": "Manual Research",
+      "confidence": 0,
+      "range": ["0", "100"],
+      "description": "Relative valuation vs historical and peers"
+    },
+    
+    "buffett_score": {
+      "name": "Buffett Quality Score",
+      "category": "Investment Frameworks",
+      "data_type": "score",
+      "source": "Manual Research",
+      "confidence": 0,
+      "range": ["0", "100"],
+      "description": "Buffett quality assessment: moat, returns, financial health"
+    },
+    
+    "greenblatt_score": {
+      "name": "Greenblatt Magic Formula Score",
+      "category": "Investment Frameworks",
+      "data_type": "score",
+      "source": "Calculated (if data available)",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Magic Formula: ROIC * Return on Assets vs valuation"
+    },
+    
+    "graham_templeton_score": {
+      "name": "Graham-Templeton Value Score",
+      "category": "Investment Frameworks",
+      "data_type": "score",
+      "source": "Manual Research",
+      "confidence": 0,
+      "range": ["0", "100"],
+      "description": "Value investor assessment: margin of safety, quality"
+    },
+    
+    "ibd_composite": {
+      "name": "IBD Composite Rating",
+      "category": "IBD Ratings",
+      "data_type": "score",
+      "source": "IBD Manual Import",
+      "confidence": 80,
+      "range": ["0", "99"],
+      "description": "IBD Composite - overall rating"
+    },
+    
+    "ibd_eps_rating": {
+      "name": "IBD EPS Rating",
+      "category": "IBD Ratings",
+      "data_type": "score",
+      "source": "IBD Manual Import",
+      "confidence": 80,
+      "range": ["0", "99"],
+      "description": "IBD EPS Rating - earnings growth quality"
+    },
+    
+    "ibd_rs_rating": {
+      "name": "IBD Relative Strength Rating",
+      "category": "IBD Ratings",
+      "data_type": "score",
+      "source": "IBD Manual Import",
+      "confidence": 80,
+      "range": ["0", "99"],
+      "description": "IBD RS Rating - relative price strength vs market"
+    },
+    
+    "ibd_smr_rating": {
+      "name": "IBD Sales/Margin/ROE Rating",
+      "category": "IBD Ratings",
+      "data_type": "score",
+      "source": "IBD Manual Import",
+      "confidence": 80,
+      "range": ["A", "E"],
+      "description": "IBD SMR - sales growth, profit margins, ROE"
+    },
+    
+    "ibd_acc_dis": {
+      "name": "IBD Accumulation/Distribution",
+      "category": "IBD Ratings",
+      "data_type": "rating",
+      "source": "IBD Manual Import",
+      "confidence": 75,
+      "range": ["A-E"],
+      "description": "IBD Acc/Dis - institutional buying/selling"
+    },
+    
+    "ibd_industry_rank": {
+      "name": "IBD Industry Group Rank",
+      "category": "IBD Ratings",
+      "data_type": "rank",
+      "source": "IBD Manual Import",
+      "confidence": 75,
+      "range": ["1", "200"],
+      "description": "Industry group rank out of ~200 industry groups"
+    },
+    
+    "market_cap": {
+      "name": "Market Capitalization",
+      "category": "Market Data",
+      "data_type": "dollars",
+      "source": "Market Data",
+      "confidence": 95,
+      "range": ["0", "inf"],
+      "description": "Market cap = Stock Price × Shares Outstanding"
+    },
+    
+    "shares_outstanding": {
+      "name": "Shares Outstanding",
+      "category": "Market Data",
+      "data_type": "shares",
+      "source": "Market Data",
+      "confidence": 90,
+      "range": ["0", "inf"],
+      "description": "Total shares outstanding (diluted)"
+    },
+
+    "analyst_eps_estimate_current": {
+      "name": "Analyst EPS Estimate (Current)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["-inf", "inf"],
+      "description": "Current consensus EPS estimate"
+    },
+
+    "analyst_eps_estimate_7d_ago": {
+      "name": "Analyst EPS Estimate (7 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["-inf", "inf"],
+      "description": "Consensus EPS estimate from 7 days ago"
+    },
+
+    "analyst_eps_estimate_30d_ago": {
+      "name": "Analyst EPS Estimate (30 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["-inf", "inf"],
+      "description": "Consensus EPS estimate from 30 days ago"
+    },
+
+    "analyst_eps_estimate_90d_ago": {
+      "name": "Analyst EPS Estimate (90 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["-inf", "inf"],
+      "description": "Consensus EPS estimate from 90 days ago"
+    },
+
+    "analyst_revenue_estimate_current": {
+      "name": "Analyst Revenue Estimate (Current)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["-inf", "inf"],
+      "description": "Current consensus revenue estimate"
+    },
+
+    "analyst_revenue_estimate_7d_ago": {
+      "name": "Analyst Revenue Estimate (7 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["-inf", "inf"],
+      "description": "Consensus revenue estimate from 7 days ago"
+    },
+
+    "analyst_revenue_estimate_30d_ago": {
+      "name": "Analyst Revenue Estimate (30 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["-inf", "inf"],
+      "description": "Consensus revenue estimate from 30 days ago"
+    },
+
+    "analyst_revenue_estimate_90d_ago": {
+      "name": "Analyst Revenue Estimate (90 Days Ago)",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 60,
+      "range": ["-inf", "inf"],
+      "description": "Consensus revenue estimate from 90 days ago"
+    },
+
+    "analyst_long_term_growth_estimate": {
+      "name": "Analyst Long-Term Growth Estimate",
+      "category": "Analyst Intelligence",
+      "data_type": "percent",
+      "source": "Analyst Intelligence",
+      "confidence": 60,
+      "range": ["-100", "200"],
+      "description": "Consensus long-term growth estimate"
+    },
+
+    "analyst_recommendation_consensus": {
+      "name": "Analyst Recommendation Consensus",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["1", "5"],
+      "description": "Consensus recommendation score (lower is stronger buy)"
+    },
+
+    "analyst_num_analysts": {
+      "name": "Analyst Coverage Count",
+      "category": "Analyst Intelligence",
+      "data_type": "count",
+      "source": "Analyst Intelligence",
+      "confidence": 75,
+      "range": ["0", "500"],
+      "description": "Number of covering analysts"
+    },
+
+    "analyst_estimate_dispersion": {
+      "name": "Estimate Dispersion",
+      "category": "Analyst Intelligence",
+      "data_type": "percent",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["0", "200"],
+      "description": "Dispersion of analyst target estimates"
+    },
+
+    "analyst_target_price_consensus": {
+      "name": "Target Price Consensus",
+      "category": "Analyst Intelligence",
+      "data_type": "dollars",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["0", "inf"],
+      "description": "Consensus target price"
+    },
+
+    "analyst_target_price_revision_30d_pct": {
+      "name": "Target Price Revision (30D)",
+      "category": "Analyst Intelligence",
+      "data_type": "percent",
+      "source": "Analyst Intelligence",
+      "confidence": 60,
+      "range": ["-100", "100"],
+      "description": "30-day target price revision percentage"
+    },
+
+    "analyst_upgrade_count_90d": {
+      "name": "Upgrades (90D)",
+      "category": "Analyst Intelligence",
+      "data_type": "count",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["0", "100"],
+      "description": "Count of analyst upgrades in the last 90 days"
+    },
+
+    "analyst_downgrade_count_90d": {
+      "name": "Downgrades (90D)",
+      "category": "Analyst Intelligence",
+      "data_type": "count",
+      "source": "Analyst Intelligence",
+      "confidence": 65,
+      "range": ["0", "100"],
+      "description": "Count of analyst downgrades in the last 90 days"
+    },
+
+    "analyst_eps_revision_score": {
+      "name": "EPS Revision Score",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Score of EPS estimate revision direction and magnitude"
+    },
+
+    "analyst_revenue_revision_score": {
+      "name": "Revenue Revision Score",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Score of revenue estimate revision direction and magnitude"
+    },
+
+    "analyst_estimate_momentum_score": {
+      "name": "Estimate Momentum Score",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Composite momentum score from revisions and rating actions"
+    },
+
+    "analyst_confidence_score": {
+      "name": "Analyst Confidence Score",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Confidence score from analyst coverage, dispersion, and consensus"
+    },
+
+    "analyst_alpha_score": {
+      "name": "Overall Analyst Alpha Score",
+      "category": "Analyst Intelligence",
+      "data_type": "score",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Overall Analyst Intelligence score on a 0-100 scale"
+    },
+
+    "analyst_intelligence_explainability": {
+      "name": "Analyst Intelligence Explainability",
+      "category": "Analyst Intelligence",
+      "data_type": "text",
+      "source": "Analyst Intelligence",
+      "confidence": 70,
+      "range": ["N/A", "N/A"],
+      "description": "Human-readable analyst evidence trail"
+    },
+
+    "earnings_call_demand_momentum_score": {
+      "name": "Demand Momentum Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 72,
+      "range": ["0", "100"],
+      "description": "Demand and bookings momentum inferred from official earnings-call materials"
+    },
+
+    "earnings_call_pricing_power_score": {
+      "name": "Pricing Power Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Pricing power and realization signal from management commentary"
+    },
+
+    "earnings_call_margin_outlook_score": {
+      "name": "Margin Outlook Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Gross and operating margin direction signal"
+    },
+
+    "earnings_call_management_confidence_score": {
+      "name": "Management Confidence Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Confidence level inferred from guidance and tone"
+    },
+
+    "earnings_call_management_credibility_score": {
+      "name": "Management Credibility Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Credibility and execution quality score from specificity and Q&A behavior"
+    },
+
+    "earnings_call_competitive_position_score": {
+      "name": "Competitive Position Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 66,
+      "range": ["0", "100"],
+      "description": "Market share and competitive intensity direction"
+    },
+
+    "earnings_call_capital_allocation_commentary_score": {
+      "name": "Capital Allocation Commentary Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 66,
+      "range": ["0", "100"],
+      "description": "Quality of buyback/dividend/debt/capex/reinvestment commentary"
+    },
+
+    "earnings_call_risk_deterioration_score": {
+      "name": "Risk Deterioration Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Higher means worsening risk posture inferred from call materials"
+    },
+
+    "earnings_call_guidance_consistency_score": {
+      "name": "Guidance Consistency Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 65,
+      "range": ["0", "100"],
+      "description": "Consistency versus prior guidance from disclosed call language"
+    },
+
+    "earnings_call_vs_reported_results_score": {
+      "name": "Reported Results Alignment Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 65,
+      "range": ["0", "100"],
+      "description": "Alignment signal between commentary and reported outcomes"
+    },
+
+    "earnings_call_thesis_impact_score": {
+      "name": "Earnings Call Thesis Impact Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Composite thesis impact signal from call dimensions"
+    },
+
+    "earnings_call_intelligence_score": {
+      "name": "Overall Earnings Call Intelligence Score",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["0", "100"],
+      "description": "Overall earnings-call intelligence score"
+    },
+
+    "earnings_call_thesis_signal": {
+      "name": "Earnings Call Thesis Signal",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["N/A", "N/A"],
+      "description": "Detected thesis state: strengthening, stable, weakening, or potential break"
+    },
+
+    "earnings_call_change_vs_prev_quarter": {
+      "name": "Call Score Change vs Previous Quarter",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 62,
+      "range": ["-100", "100"],
+      "description": "Delta in call intelligence score versus prior quarter"
+    },
+
+    "earnings_call_change_vs_prev_year": {
+      "name": "Call Score Change vs Prior Year Quarter",
+      "category": "Earnings Call Intelligence",
+      "data_type": "score",
+      "source": "Earnings Call Intelligence",
+      "confidence": 60,
+      "range": ["-100", "100"],
+      "description": "Delta in call intelligence score versus same quarter last year"
+    },
+
+    "earnings_call_strongest_positive_change": {
+      "name": "Strongest Positive Call Change",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["N/A", "N/A"],
+      "description": "Most positive category movement from call analysis"
+    },
+
+    "earnings_call_strongest_negative_change": {
+      "name": "Strongest Negative Call Change",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["N/A", "N/A"],
+      "description": "Most negative category movement from call analysis"
+    },
+
+    "earnings_call_material_count": {
+      "name": "Earnings Material Count",
+      "category": "Earnings Call Intelligence",
+      "data_type": "count",
+      "source": "Earnings Call Intelligence",
+      "confidence": 80,
+      "range": ["0", "50"],
+      "description": "Count of official materials identified for the latest call cycle"
+    },
+
+    "earnings_call_source_urls": {
+      "name": "Earnings Call Source URLs",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "JSON list of source URLs used for evidence trail"
+    },
+
+    "earnings_call_explainability": {
+      "name": "Earnings Call Explainability",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 70,
+      "range": ["N/A", "N/A"],
+      "description": "Human-readable earnings call evidence, excerpts, and changes"
+    },
+
+    "earnings_call_data_missing_reason": {
+      "name": "Earnings Call Missing Data Reason",
+      "category": "Earnings Call Intelligence",
+      "data_type": "text",
+      "source": "Earnings Call Intelligence",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Reason when official transcript/material is unavailable"
+    },
+
+    "insider_open_market_buy_score": {
+      "name": "Open-Market Buy Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Signal strength of discretionary open-market insider buying"
+    },
+
+    "insider_significance_score": {
+      "name": "Insider Significance Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Importance of insider buying based on value, size, and ownership change"
+    },
+
+    "insider_cluster_buying_score": {
+      "name": "Cluster Buying Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Strength of multi-insider cluster buying"
+    },
+
+    "insider_alignment_score": {
+      "name": "Insider Alignment Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 72,
+      "range": ["0", "100"],
+      "description": "Context alignment score using valuation, decline, quality, and liquidity"
+    },
+
+    "insider_track_record_score": {
+      "name": "Insider Track Record Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 68,
+      "range": ["0", "100"],
+      "description": "Historical effectiveness of the identified insider buyers when available"
+    },
+
+    "insider_quality_score": {
+      "name": "Insider Quality Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 72,
+      "range": ["0", "100"],
+      "description": "Role-quality score emphasizing CEO/CFO/founder/chairman purchases"
+    },
+
+    "insider_intelligence_score": {
+      "name": "Overall Insider Intelligence Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Overall insider signal score"
+    },
+
+    "insider_thesis_impact_score": {
+      "name": "Insider Thesis Impact Score",
+      "category": "Insider Intelligence",
+      "data_type": "score",
+      "source": "Insider Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Additive thesis-impact score from insider activity"
+    },
+
+    "insider_thesis_signal": {
+      "name": "Insider Thesis Signal",
+      "category": "Insider Intelligence",
+      "data_type": "text",
+      "source": "Insider Intelligence",
+      "confidence": 75,
+      "range": ["N/A", "N/A"],
+      "description": "Detected insider-driven thesis state"
+    },
+
+    "insider_cluster_buyers_count_7d": {
+      "name": "Cluster Buyers Count (7D)",
+      "category": "Insider Intelligence",
+      "data_type": "count",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["0", "100"],
+      "description": "Unique insider buyers in the last 7 days"
+    },
+
+    "insider_cluster_buyers_count_30d": {
+      "name": "Cluster Buyers Count (30D)",
+      "category": "Insider Intelligence",
+      "data_type": "count",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["0", "100"],
+      "description": "Unique insider buyers in the last 30 days"
+    },
+
+    "insider_cluster_buyers_count_90d": {
+      "name": "Cluster Buyers Count (90D)",
+      "category": "Insider Intelligence",
+      "data_type": "count",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["0", "100"],
+      "description": "Unique insider buyers in the last 90 days"
+    },
+
+    "insider_cluster_dollar_value_90d": {
+      "name": "Cluster Dollar Value (90D)",
+      "category": "Insider Intelligence",
+      "data_type": "dollars",
+      "source": "Insider Intelligence",
+      "confidence": 82,
+      "range": ["0", "inf"],
+      "description": "Total discretionary cluster-buying value in the last 90 days"
+    },
+
+    "insider_executive_cluster_flag": {
+      "name": "Executive Cluster Flag",
+      "category": "Insider Intelligence",
+      "data_type": "flag",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["0", "1"],
+      "description": "1 if executive buyers participated in the cluster"
+    },
+
+    "insider_director_only_cluster_flag": {
+      "name": "Director-Only Cluster Flag",
+      "category": "Insider Intelligence",
+      "data_type": "flag",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["0", "1"],
+      "description": "1 if the cluster is director-only"
+    },
+
+    "insider_repeated_large_sales_flag": {
+      "name": "Repeated Large Sales Review Flag",
+      "category": "Insider Intelligence",
+      "data_type": "flag",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["0", "1"],
+      "description": "1 if unusually large or repeated discretionary insider sales need review"
+    },
+
+    "insider_large_sales_value_90d": {
+      "name": "Large Sales Value (90D)",
+      "category": "Insider Intelligence",
+      "data_type": "dollars",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["0", "inf"],
+      "description": "Total discretionary insider sales flagged for review"
+    },
+
+    "primary_buyer_names": {
+      "name": "Primary Buyer Names",
+      "category": "Insider Intelligence",
+      "data_type": "text",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["N/A", "N/A"],
+      "description": "Primary discretionary insider buyers behind the signal"
+    },
+
+    "primary_buyer_titles": {
+      "name": "Primary Buyer Titles",
+      "category": "Insider Intelligence",
+      "data_type": "text",
+      "source": "Insider Intelligence",
+      "confidence": 85,
+      "range": ["N/A", "N/A"],
+      "description": "Titles of primary discretionary insider buyers"
+    },
+
+    "insider_recent_transactions_count": {
+      "name": "Recent Insider Transactions Count",
+      "category": "Insider Intelligence",
+      "data_type": "count",
+      "source": "Insider Intelligence",
+      "confidence": 88,
+      "range": ["0", "500"],
+      "description": "Recent insider transaction count from SEC filings"
+    },
+
+    "insider_source_url_count": {
+      "name": "Insider Source URL Count",
+      "category": "Insider Intelligence",
+      "data_type": "count",
+      "source": "Insider Intelligence",
+      "confidence": 88,
+      "range": ["0", "500"],
+      "description": "Count of SEC source documents contributing to current insider analysis"
+    },
+
+    "insider_missing_data_reason": {
+      "name": "Insider Missing Data Reason",
+      "category": "Insider Intelligence",
+      "data_type": "text",
+      "source": "Insider Intelligence",
+      "confidence": 88,
+      "range": ["N/A", "N/A"],
+      "description": "Reason when meaningful insider data is unavailable"
+    },
+
+    "insider_explainability": {
+      "name": "Insider Explainability",
+      "category": "Insider Intelligence",
+      "data_type": "text",
+      "source": "Insider Intelligence",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Human-readable insider evidence trail"
+    },
+
+    "earnings_quality_cash_conversion_score": {
+      "name": "Cash Conversion Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 85,
+      "range": ["0", "100"],
+      "description": "Cash backing and conversion quality of reported earnings"
+    },
+
+    "earnings_quality_accrual_quality_score": {
+      "name": "Accrual Quality Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Accrual and working-capital quality score"
+    },
+
+    "earnings_quality_revenue_quality_score": {
+      "name": "Revenue Quality Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Revenue durability and receivables/deferred-revenue quality score"
+    },
+
+    "earnings_quality_expense_quality_score": {
+      "name": "Expense Quality Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Expense quality score including SBC and recurring adjustments"
+    },
+
+    "earnings_quality_dilution_score": {
+      "name": "Dilution Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Shareholder dilution and issuance quality score"
+    },
+
+    "earnings_quality_capital_intensity_score": {
+      "name": "Capital Intensity Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Capital intensity and reinvestment quality score"
+    },
+
+    "earnings_quality_balance_sheet_score": {
+      "name": "Balance-Sheet Earnings Quality Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Balance-sheet quality supporting earnings durability"
+    },
+
+    "earnings_quality_score": {
+      "name": "Overall Earnings Quality Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 85,
+      "range": ["0", "100"],
+      "description": "Overall SEC-derived earnings quality score"
+    },
+
+    "earnings_quality_thesis_impact_score": {
+      "name": "Earnings Quality Thesis Impact Score",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Additive thesis impact score from earnings quality"
+    },
+
+    "earnings_quality_thesis_signal": {
+      "name": "Earnings Quality Thesis Signal",
+      "category": "Earnings Quality",
+      "data_type": "text",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Detected thesis state from earnings quality"
+    },
+
+    "earnings_quality_cash_conversion_trend": {
+      "name": "Cash Conversion Trend",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 78,
+      "range": ["-100", "100"],
+      "description": "Multi-year trend in cash conversion"
+    },
+
+    "earnings_quality_dilution_trend": {
+      "name": "Dilution Trend",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 78,
+      "range": ["-100", "100"],
+      "description": "Multi-year dilution trend"
+    },
+
+    "earnings_quality_accrual_trend": {
+      "name": "Accrual Trend",
+      "category": "Earnings Quality",
+      "data_type": "score",
+      "source": "Earnings Quality",
+      "confidence": 78,
+      "range": ["-100", "100"],
+      "description": "Trend in accrual burden"
+    },
+
+    "earnings_quality_recurring_adjustments_flag": {
+      "name": "Recurring Adjustments Flag",
+      "category": "Earnings Quality",
+      "data_type": "flag",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["0", "1"],
+      "description": "1 when recurring adjustments are flagged"
+    },
+
+    "earnings_quality_strongest_positive_factor": {
+      "name": "Strongest Positive Earnings Quality Factor",
+      "category": "Earnings Quality",
+      "data_type": "text",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Strongest positive earnings-quality factor"
+    },
+
+    "earnings_quality_strongest_negative_factor": {
+      "name": "Strongest Negative Earnings Quality Factor",
+      "category": "Earnings Quality",
+      "data_type": "text",
+      "source": "Earnings Quality",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Strongest negative earnings-quality factor"
+    },
+
+    "earnings_quality_comparability_flag": {
+      "name": "Earnings Quality Comparability Flag",
+      "category": "Earnings Quality",
+      "data_type": "text",
+      "source": "Earnings Quality",
+      "confidence": 85,
+      "range": ["N/A", "N/A"],
+      "description": "Flags adjusted sector-specific handling when direct comparisons are unreliable"
+    },
+
+    "earnings_quality_explainability": {
+      "name": "Earnings Quality Explainability",
+      "category": "Earnings Quality",
+      "data_type": "text",
+      "source": "Earnings Quality",
+      "confidence": 82,
+      "range": ["N/A", "N/A"],
+      "description": "Human-readable earnings quality evidence trail"
+    },
+
+    "capital_allocation_score": {
+      "name": "Capital Allocation Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Overall capital deployment quality score"
+    },
+
+    "capital_allocation_buyback_quality_score": {
+      "name": "Buyback Quality Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Buyback timing, valuation, and dilution-offset quality"
+    },
+
+    "capital_allocation_buyback_authorization_score": {
+      "name": "Buyback Authorization Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 76,
+      "range": ["0", "100"],
+      "description": "Quality of board authorization and execution-readiness for buyback programs"
+    },
+
+    "capital_allocation_buyback_execution_score": {
+      "name": "Buyback Execution Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Consistency and scale of repurchase execution over time"
+    },
+
+    "capital_allocation_buyback_net_share_reduction_score": {
+      "name": "Net Share Reduction Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 79,
+      "range": ["0", "100"],
+      "description": "Net reduction in diluted share count after offsetting issuance pressure"
+    },
+
+    "capital_allocation_buyback_valuation_score": {
+      "name": "Buyback Valuation Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 73,
+      "range": ["0", "100"],
+      "description": "Assesses valuation quality at repurchase execution points"
+    },
+
+    "capital_allocation_buyback_funding_quality_score": {
+      "name": "Buyback Funding Quality Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Evaluates whether buybacks are funded by healthy free cash flow rather than balance-sheet stress"
+    },
+
+    "capital_allocation_buyback_sbc_offset_score": {
+      "name": "Buyback SBC Offset Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Measures whether buybacks are accretive beyond stock-based compensation dilution"
+    },
+
+    "capital_allocation_buyback_timing_score": {
+      "name": "Buyback Timing Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 72,
+      "range": ["0", "100"],
+      "description": "Assesses timing discipline of buyback execution"
+    },
+
+    "capital_allocation_buyback_effectiveness_score": {
+      "name": "Buyback Effectiveness Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 79,
+      "range": ["0", "100"],
+      "description": "Observed per-share value creation after buyback execution"
+    },
+
+    "capital_allocation_buyback_intelligence_score": {
+      "name": "Share Buyback Intelligence Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Composite score summarizing buyback authorization, execution, valuation, funding, and outcomes"
+    },
+
+    "capital_allocation_buyback_thesis_impact_score": {
+      "name": "Buyback Thesis Impact Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 76,
+      "range": ["0", "100"],
+      "description": "Estimated impact of buyback behavior on thesis quality"
+    },
+
+    "capital_allocation_buyback_authorization_status": {
+      "name": "Buyback Authorization Status",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "text",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 72,
+      "range": ["N/A", "N/A"],
+      "description": "Authorization status inferred from SEC filing evidence"
+    },
+
+    "capital_allocation_buyback_strongest_positive_evidence": {
+      "name": "Strongest Positive Buyback Evidence",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "text",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 74,
+      "range": ["N/A", "N/A"],
+      "description": "Strongest positive buyback evidence component"
+    },
+
+    "capital_allocation_buyback_strongest_negative_evidence": {
+      "name": "Strongest Negative Buyback Evidence",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "text",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 74,
+      "range": ["N/A", "N/A"],
+      "description": "Strongest negative buyback evidence component"
+    },
+
+    "capital_allocation_buyback_evidence_trail": {
+      "name": "Buyback Evidence Trail",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "text",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Structured evidence trail with source URL, accession number, filing type, and freshness metadata"
+    },
+
+    "capital_allocation_acquisition_quality_score": {
+      "name": "Acquisition Quality Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Acquisition quality and post-deal value creation signal"
+    },
+
+    "capital_allocation_incremental_roic_score": {
+      "name": "Incremental ROIC Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Incremental return on reinvested capital score"
+    },
+
+    "capital_allocation_retained_earnings_efficiency_score": {
+      "name": "Retained Earnings Efficiency Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 78,
+      "range": ["0", "100"],
+      "description": "Efficiency of retained earnings in compounding value"
+    },
+
+    "capital_allocation_shareholder_alignment_score": {
+      "name": "Shareholder Alignment Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["0", "100"],
+      "description": "Alignment of capital decisions with shareholder value creation"
+    },
+
+    "capital_allocation_intelligence_score": {
+      "name": "Overall Capital Allocation Intelligence Score",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 82,
+      "range": ["0", "100"],
+      "description": "Overall capital allocation intelligence score"
+    },
+
+    "capital_allocation_value_creation_proxy": {
+      "name": "Capital Allocation Value Creation Proxy",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "score",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 75,
+      "range": ["0", "100"],
+      "description": "Proxy for intrinsic value and owner-earnings creation per share"
+    },
+
+    "capital_allocation_explainability": {
+      "name": "Capital Allocation Explainability",
+      "category": "Capital Allocation Intelligence",
+      "data_type": "text",
+      "source": "Capital Allocation Intelligence",
+      "confidence": 80,
+      "range": ["N/A", "N/A"],
+      "description": "Human-readable capital allocation evidence trail"
+    },
+    
+    "data_quality_score": {
+      "name": "Data Quality Score",
+      "category": "Meta",
+      "data_type": "percent",
+      "source": "Intelligence Engine",
+      "confidence": 100,
+      "range": ["0", "100"],
+      "description": "% of supported metrics populated with data"
+    }
+  },
+  
+  "scoring_rules": {
+    "greenblatt_magic_formula": {
+      "description": "Greenblatt Magic Formula score calculation",
+      "requires": ["roic", "pe_ratio", "price_to_sales"],
+      "minimum_quality_threshold": 60,
+      "calculation": "Combines ROIC rank vs valuation rank"
+    },
+    
+    "mcleod_core_composite": {
+      "description": "McLeod Core Composite - only assigned if sufficient data",
+      "required_fields": ["valuation_score", "business_quality", "roic", "debt_to_equity"],
+      "minimum_quality_threshold": 70,
+      "weights": {
+        "valuation": 0.25,
+        "business_quality": 0.35,
+        "roic": 0.25,
+        "debt_to_equity": 0.15
+      }
+    }
+  },
+  
+  "data_sources": {
+    "sec_filings": {
+      "name": "SEC Filings (10-K, 10-Q, 8-K)",
+      "reliability": "HIGH",
+      "freshness": "Quarterly (10-Q) or Annual (10-K)",
+      "metrics": [
+        "revenue_growth", "eps_growth", "gross_margin", "operating_margin",
+        "net_margin", "free_cash_flow", "roic", "roe", "roa",
+        "debt_to_equity", "net_debt", "current_ratio", "quick_ratio"
+      ]
+    },
+    
+    "market_data": {
+      "name": "Real-time Market Data",
+      "reliability": "HIGH",
+      "freshness": "Real-time",
+      "metrics": [
+        "market_cap", "pe_ratio", "price_to_book", "price_to_sales",
+        "price_to_fcf", "dividend_yield", "liquidity_score"
+      ]
+    },
+    
+    "schwab_portfolio": {
+      "name": "Schwab API Portfolio Data",
+      "reliability": "HIGH",
+      "freshness": "Real-time",
+      "metrics": ["liquidity_score", "margin_requirement"]
+    },
+    
+    "ibd_manual": {
+      "name": "IBD Manual Import (CSV)",
+      "reliability": "HIGH",
+      "freshness": "Weekly (manual updates)",
+      "metrics": [
+        "ibd_composite", "ibd_eps_rating", "ibd_rs_rating",
+        "ibd_smr_rating", "ibd_acc_dis", "ibd_industry_rank"
+      ]
+    },
+
+    "earnings_call_intelligence": {
+      "name": "Official Earnings Call Materials",
+      "reliability": "MEDIUM",
+      "freshness": "Quarterly",
+      "metrics": [
+        "earnings_call_demand_momentum_score",
+        "earnings_call_pricing_power_score",
+        "earnings_call_margin_outlook_score",
+        "earnings_call_management_confidence_score",
+        "earnings_call_management_credibility_score",
+        "earnings_call_competitive_position_score",
+        "earnings_call_capital_allocation_commentary_score",
+        "earnings_call_risk_deterioration_score",
+        "earnings_call_thesis_impact_score",
+        "earnings_call_intelligence_score"
+      ]
+    },
+
+    "insider_intelligence": {
+      "name": "Official SEC Form 4 Insider Activity",
+      "reliability": "HIGH",
+      "freshness": "Daily as filed",
+      "metrics": [
+        "insider_open_market_buy_score",
+        "insider_significance_score",
+        "insider_cluster_buying_score",
+        "insider_alignment_score",
+        "insider_track_record_score",
+        "insider_intelligence_score",
+        "insider_thesis_impact_score"
+      ]
+    },
+
+    "earnings_quality": {
+      "name": "SEC XBRL Earnings Quality",
+      "reliability": "HIGH",
+      "freshness": "Annual filings with multi-year history",
+      "metrics": [
+        "earnings_quality_cash_conversion_score",
+        "earnings_quality_accrual_quality_score",
+        "earnings_quality_revenue_quality_score",
+        "earnings_quality_expense_quality_score",
+        "earnings_quality_dilution_score",
+        "earnings_quality_capital_intensity_score",
+        "earnings_quality_balance_sheet_score",
+        "earnings_quality_score",
+        "earnings_quality_thesis_impact_score"
+      ]
+    },
+
+    "capital_allocation": {
+      "name": "SEC XBRL Capital Allocation",
+      "reliability": "HIGH",
+      "freshness": "Annual filings with multi-year history",
+      "metrics": [
+        "capital_allocation_score",
+        "capital_allocation_buyback_quality_score",
+        "capital_allocation_buyback_authorization_score",
+        "capital_allocation_buyback_execution_score",
+        "capital_allocation_buyback_net_share_reduction_score",
+        "capital_allocation_buyback_valuation_score",
+        "capital_allocation_buyback_funding_quality_score",
+        "capital_allocation_buyback_sbc_offset_score",
+        "capital_allocation_buyback_timing_score",
+        "capital_allocation_buyback_effectiveness_score",
+        "capital_allocation_buyback_intelligence_score",
+        "capital_allocation_buyback_thesis_impact_score",
+        "capital_allocation_acquisition_quality_score",
+        "capital_allocation_incremental_roic_score",
+        "capital_allocation_retained_earnings_efficiency_score",
+        "capital_allocation_shareholder_alignment_score",
+        "capital_allocation_intelligence_score"
+      ]
+    },
+    
+    "portfolio_engine": {
+      "name": "McLeod Portfolio Engine",
+      "reliability": "HIGH",
+      "freshness": "On-demand",
+      "metrics": ["thesis_health", "margin_requirement"]
+    },
+    
+    "manual_research": {
+      "name": "Manual Research and Analysis",
+      "reliability": "MEDIUM",
+      "freshness": "Variable",
+      "metrics": [
+        "business_quality", "valuation_score", "buffett_score",
+        "graham_templeton_score"
+      ]
+    }
+  },
+  
+  "thresholds": {
+    "data_quality_good": 70,
+    "data_quality_acceptable": 50,
+    "data_quality_poor": 30,
+    "stale_data_days": 90,
+    "warning_threshold_days": 30
+  }
+}

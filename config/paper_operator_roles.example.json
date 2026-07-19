@@ -1,0 +1,71 @@
+{
+  "generated_for": "paper_portfolio_activation_gate",
+  "policy_version": "paper-activation-policy-v1",
+  "assignments": [
+    {
+      "assignment_id": "assign-paper-operator-001",
+      "operator_identity": "operator_alpha",
+      "role": "PAPER_OPERATOR",
+      "effective_timestamp": "2026-07-18T12:00:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "approval_reference": "manual-approval-ticket-1001",
+      "status": "ACTIVE",
+      "provenance": {
+        "source": "example",
+        "requires_manual_verification": true
+      }
+    },
+    {
+      "assignment_id": "assign-paper-approver-001",
+      "operator_identity": "approver_alpha",
+      "role": "PAPER_APPROVER",
+      "effective_timestamp": "2026-07-18T12:00:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "approval_reference": "manual-approval-ticket-1002",
+      "status": "ACTIVE",
+      "provenance": {
+        "source": "example",
+        "requires_manual_verification": true
+      }
+    },
+    {
+      "assignment_id": "assign-risk-reviewer-001",
+      "operator_identity": "risk_alpha",
+      "role": "RISK_REVIEWER",
+      "effective_timestamp": "2026-07-18T12:00:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "approval_reference": "manual-approval-ticket-1003",
+      "status": "ACTIVE",
+      "provenance": {
+        "source": "example",
+        "requires_manual_verification": true
+      }
+    },
+    {
+      "assignment_id": "assign-system-admin-001",
+      "operator_identity": "admin_alpha",
+      "role": "SYSTEM_ADMIN",
+      "effective_timestamp": "2026-07-18T12:00:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "approval_reference": "manual-approval-ticket-1004",
+      "status": "ACTIVE",
+      "provenance": {
+        "source": "example",
+        "requires_manual_verification": true
+      }
+    },
+    {
+      "assignment_id": "assign-incident-owner-001",
+      "operator_identity": "incident_alpha",
+      "role": "INCIDENT_OWNER",
+      "effective_timestamp": "2026-07-18T12:00:00",
+      "expiration_timestamp": "2026-12-31T23:59:59",
+      "approval_reference": "manual-approval-ticket-1005",
+      "status": "ACTIVE",
+      "provenance": {
+        "source": "example",
+        "requires_manual_verification": true
+      }
+    }
+  ]
+}
