@@ -8608,7 +8608,10 @@ if __name__ == '__main__':
     print("")
     dashboard_host = os.getenv("CONTROL_CENTER_HOST", "127.0.0.1").strip() or "127.0.0.1"
     print(f"📱 Dashboard URL (canonical): {CANONICAL_CONTROL_CENTER_URL}")
-    print(f"🔒 Local non-canonical dashboard access redirects to canonical URL")
+    if REDIRECT_NONCANONICAL_CONTROL_CENTER:
+        print("🔒 Local non-canonical dashboard access redirects to canonical URL")
+    else:
+        print("🟢 Local non-canonical dashboard access is allowed (redirect disabled)")
     print(f"🔁 Code sync watcher: {'ON' if (AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE or AUTO_RESTART_BOT_ON_SCRIPT_CHANGE) else 'OFF'}")
     print("✋ Press Ctrl+C to stop the control center")
     print("="*70 + "\n")

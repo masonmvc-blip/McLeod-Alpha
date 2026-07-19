@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Recover canonical control center when Tailnet URL returns 502.
 ROOT_CANDIDATES=(
-  "$HOME/Documents/GitHub/McLeod-Alpha"
   "$HOME/Documents/GitHub/McLeod-Alpha-New"
+  "$HOME/Documents/GitHub/McLeod-Alpha"
 )
 
 PROJECT_ROOT=""
@@ -21,6 +21,7 @@ if [[ -z "$PROJECT_ROOT" ]]; then
 fi
 
 cd "$PROJECT_ROOT"
+"$PROJECT_ROOT/scripts/maintenance/assert_canonical_repo.sh" "$PROJECT_ROOT"
 echo "Using project root: $PROJECT_ROOT"
 
 # Ensure env file exists for live credentials.
@@ -42,7 +43,7 @@ pkill -f "control_center.py" || true
 pkill -f "phase3_monitor.py" || true
 
 # Start control center in canonical-friendly local mode.
-export MCLEOD_CANONICAL_RUNTIME_HOST="Masons-iMac.local"
+export MCLEOD_CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 export MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER=0
 export ACCOUNT_MODE=live
 export SCHWAB_CALLBACK_URL="https://127.0.0.1"

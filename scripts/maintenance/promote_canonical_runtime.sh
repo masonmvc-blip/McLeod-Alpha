@@ -8,6 +8,7 @@ BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
 
 cd "$ROOT"
+"$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
 
 echo "Promote canonical runtime"
 echo "root=$ROOT"

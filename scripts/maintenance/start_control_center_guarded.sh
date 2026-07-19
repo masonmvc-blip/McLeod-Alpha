@@ -12,6 +12,7 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
 fi
 
 cd "$ROOT"
+"$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
 
 echo "root=$ROOT"
 echo "hostname=$(hostname)"
