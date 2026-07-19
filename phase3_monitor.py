@@ -23,10 +23,9 @@ from schwab.auth import easy_client
 
 sys.path.append(str(Path("execution").resolve()))
 
-load_dotenv()
-
 SYMBOL = "SPY"
-SLEEP_SECONDS = 60
+MARKET_POLL_SECONDS = max(1.0, float(os.getenv("MARKET_POLL_SECONDS", "2")))
+OFF_HOURS_POLL_SECONDS = max(MARKET_POLL_SECONDS, float(os.getenv("OFF_HOURS_POLL_SECONDS", "60")))
 TOKEN_PATH = "token.json"
 EASTERN_TZ = ZoneInfo("America/New_York")
 UTC_TZ = ZoneInfo("UTC")
@@ -169,42 +168,39 @@ def _build_schwab_client():
             print(f"Retrying Schwab auth in {SCHWAB_AUTH_RETRY_SECONDS}s...")
             time.sleep(SCHWAB_AUTH_RETRY_SECONDS)
 
-client = _build_schwab_client()
-
-EQUITY_STREAM = SchwabEquityQuoteStream(client, SYMBOL)
-try:
-    EQUITY_STREAM.start()
-except Exception as exc:
-    print(f"Equity quote stream startup failed: {exc}")
-
-ACCOUNT_MODE = str(os.getenv("ACCOUNT_MODE", "paper")).strip().lower()
-if ACCOUNT_MODE != "live":
-    raise RuntimeError("LIVE trading only: set ACCOUNT_MODE=live")
-
 USE_LIVE_ENGINE = True
-ENGINE_MODULE = importlib.import_module("execution.live_engine" if USE_LIVE_ENGINE else "execution.paper_engine")
+client = None
+EQUITY_STREAM = None
+ENGINE_MODULE = None
+original_open_trade = None
 
-open_trade = ENGINE_MODULE.open_trade
-manage_trade = ENGINE_MODULE.manage_trade
-in_trade = ENGINE_MODULE.in_trade
 
-if USE_LIVE_ENGINE:
-    account_number = str(os.getenv("SCHWAB_ACCOUNT_NUMBER", "")).strip()
-    account_hash = str(os.getenv("SCHWAB_ACCOUNT_HASH", "")).strip()
-
-    if hasattr(ENGINE_MODULE, "set_schwab_client"):
-        ENGINE_MODULE.set_schwab_client(client, account_number, account_hash)
-
-    print(f"Account Verified: {account_number}")
-    print(f"Mode: LIVE TRADING")
-    print(f"Live engine configured with account {account_number}")
-
-    if hasattr(ENGINE_MODULE, "reconcile_startup"):
-        reconciliation_ok = bool(ENGINE_MODULE.reconcile_startup())
-        if reconciliation_ok:
-            print("Broker reconciliation successful")
-        else:
-            print("BROKER RECONCILIATION FAILED")
+def _initialize_live_runtime():
+    """Perform broker and engine startup only for an explicit monitor run."""
+    global client, EQUITY_STREAM, ENGINE_MODULE, original_open_trade, manage_trade, in_trade
+    load_dotenv()
+    if str(os.getenv("ACCOUNT_MODE", "paper")).strip().lower() != "live":
+        raise RuntimeError("LIVE trading only: set ACCOUNT_MODE=live")
+    client = _build_schwab_client()
+    EQUITY_STREAM = SchwabEquityQuoteStream(client, SYMBOL)
+    try:
+        EQUITY_STREAM.start()
+    except Exception as exc:
+        print(f"Equity quote stream startup failed: {exc}")
+    ENGINE_MODULE = importlib.import_module("execution.live_engine" if USE_LIVE_ENGINE else "execution.paper_engine")
+    original_open_trade = ENGINE_MODULE.open_trade
+    manage_trade = ENGINE_MODULE.manage_trade
+    in_trade = ENGINE_MODULE.in_trade
+    if USE_LIVE_ENGINE:
+        account_number = str(os.getenv("SCHWAB_ACCOUNT_NUMBER", "")).strip()
+        account_hash = str(os.getenv("SCHWAB_ACCOUNT_HASH", "")).strip()
+        if hasattr(ENGINE_MODULE, "set_schwab_client"):
+            ENGINE_MODULE.set_schwab_client(client, account_number, account_hash)
+        print(f"Account Verified: {account_number}")
+        print("Mode: LIVE TRADING")
+        print(f"Live engine configured with account {account_number}")
+        if hasattr(ENGINE_MODULE, "reconcile_startup"):
+            print("Broker reconciliation successful" if ENGINE_MODULE.reconcile_startup() else "BROKER RECONCILIATION FAILED")
 
 
 def _normalize_candles_frame(frame):
@@ -262,6 +258,10 @@ def _is_regular_market_hours_now():
         return False
     minutes = now_et.hour * 60 + now_et.minute
     return (9 * 60 + 30) <= minutes < (16 * 60)
+
+
+def _cycle_sleep_seconds():
+    return MARKET_POLL_SECONDS if _is_regular_market_hours_now() else OFF_HOURS_POLL_SECONDS
 
 
 def get_spy_live_quote():
@@ -634,7 +634,6 @@ def get_option_chain():
 
 
 startup_entry_attempts = 0
-original_open_trade = open_trade
 
 def open_trade(*args, **kwargs):
     global startup_entry_attempts, LAST_ENTRY_EXECUTION_METRICS
@@ -684,10 +683,6 @@ def open_trade(*args, **kwargs):
         "filled_via": engine_metrics.get("filled_via"),
     }
     return opened
-
-print("McLeod Alpha Phase 3 monitor started.")
-print("Mode: LIVE TRADING" if USE_LIVE_ENGINE else "Mode: PAPER TRADING")
-
 
 def maybe_enter_trade(last, prev, regime):
     cycle_entry_start_ms = _perf_ms_now()
@@ -838,9 +833,16 @@ def maybe_enter_trade(last, prev, regime):
     }
 
 
-last_processed_candle_time = None
-
-while True:
+def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime, sleep_fn=time.sleep):
+    """Run the production monitor; bounded cycles are for deterministic tests only."""
+    global last_processed_candle_time
+    runtime_initializer()
+    print("McLeod Alpha Phase 3 monitor started.")
+    print("Mode: LIVE TRADING" if USE_LIVE_ENGINE else "Mode: PAPER TRADING")
+    last_processed_candle_time = None
+    completed_cycles = 0
+    while max_cycles is None or completed_cycles < max_cycles:
+        completed_cycles += 1
         cycle_start_ms = _perf_ms_now()
         try:
             candles_fetch_start_ms = _perf_ms_now()
@@ -849,7 +851,7 @@ while True:
         except Exception as e:
             print(f"Candle fetch error: {e}")
             _append_latency_skip_event(reason="candle_fetch_error", cycle_start_ms=cycle_start_ms)
-            time.sleep(SLEEP_SECONDS)
+            sleep_fn(_cycle_sleep_seconds())
             continue
         latest_candle_time = df.iloc[-1].name if not df.empty else None
         latest_candle_text = latest_candle_time.strftime("%Y-%m-%d %H:%M:%S") if latest_candle_time is not None else "none"
@@ -861,7 +863,7 @@ while True:
                 cycle_start_ms=cycle_start_ms,
                 candles_fetch_ms=candles_fetch_ms,
             )
-            time.sleep(SLEEP_SECONDS)
+            sleep_fn(_cycle_sleep_seconds())
             continue
 
         indicators_start_ms = _perf_ms_now()
@@ -876,7 +878,7 @@ while True:
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
-            time.sleep(SLEEP_SECONDS)
+            sleep_fn(_cycle_sleep_seconds())
             continue
 
         if last_processed_candle_time is None:
@@ -929,7 +931,7 @@ while True:
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
-            time.sleep(SLEEP_SECONDS)
+            sleep_fn(_cycle_sleep_seconds())
             continue
 
         if not _is_regular_market_hours_now() and LAST_CANDLE_SOURCE != "live_window":
@@ -943,7 +945,7 @@ while True:
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
-            time.sleep(SLEEP_SECONDS)
+            sleep_fn(_cycle_sleep_seconds())
             continue
 
         entry_metrics = maybe_enter_trade(last, prev, regime)
@@ -1005,4 +1007,8 @@ while True:
 
         last_processed_candle_time = last.name
 
-        time.sleep(SLEEP_SECONDS)
+        sleep_fn(_cycle_sleep_seconds())
+
+
+if __name__ == "__main__":
+    run_monitor()

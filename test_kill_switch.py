@@ -62,8 +62,8 @@ def register_signal_handlers():
     atexit.register(graceful_shutdown)                # Fallback on normal exit
 
 
-def test_kill_switch():
-    """Test the emergency kill switch."""
+def run_kill_switch(*, max_iterations=None, sleep_fn=time.sleep):
+    """Run the manual kill-switch demonstration; tests provide a finite bound."""
     register_signal_handlers()
     
     print("=" * 80)
@@ -74,17 +74,25 @@ def test_kill_switch():
     
     iteration = 0
     
-    while True:
+    while max_iterations is None or iteration < max_iterations:
         if _shutdown_requested:
             break
         
         iteration += 1
         print(f"[{iteration}] Trading loop iteration... (Press Ctrl+C to exit)")
-        time.sleep(1)
+        sleep_fn(1)
+    return iteration
+
+
+def test_kill_switch():
+    """Exercise one deterministic loop iteration without registering a live wait."""
+    global _shutdown_requested
+    _shutdown_requested = False
+    assert run_kill_switch(max_iterations=1, sleep_fn=lambda _: None) == 1
 
 
 if __name__ == "__main__":
     try:
-        test_kill_switch()
+        run_kill_switch()
     except KeyboardInterrupt:
         pass

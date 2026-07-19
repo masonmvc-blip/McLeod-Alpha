@@ -1,0 +1,11 @@
+{
+  "sources": {
+    "sec": {"period_rule": "event_driven", "stale_after_days": 90},
+    "prices": {"period_rule": "trading_day", "minimum_coverage_percentage": 100, "stale_after_days": 1},
+    "fundamentals": {"period_rule": "quarterly", "minimum_coverage_percentage": 100, "stale_after_days": 120},
+    "macro": {"period_rule": "event_driven", "stale_after_days": 90},
+    "analysts": {"period_rule": "event_driven", "stale_after_days": 90},
+    "news": {"period_rule": "event_driven", "stale_after_days": 90},
+    "universes": {"period_rule": "membership_effective", "minimum_coverage_percentage": 100, "stale_after_days": 365}
+  }
+}
