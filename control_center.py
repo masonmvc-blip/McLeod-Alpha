@@ -58,6 +58,9 @@ BOT_SCRIPT = PROJECT_ROOT / "phase3_monitor.py"
 EXPECTED_BOT_SCRIPT_NAME = "phase3_monitor.py"
 BOT_PID_FILE = PROJECT_ROOT / ".bot_pid"
 BOT_LOG_FILE = PROJECT_ROOT / "bot_output.log"
+CANONICAL_DEPLOY_SCRIPT = PROJECT_ROOT / "scripts" / "maintenance" / "sync_and_restart_from_start_button.sh"
+CANONICAL_DEPLOY_PID_FILE = PROJECT_ROOT / ".canonical_deploy_pid"
+CANONICAL_DEPLOY_LOG_FILE = PROJECT_ROOT / "logs" / "canonical_deploy.log"
 STATUS_FILE = PROJECT_ROOT / ".control_center_status"
 BOT_STOP_ALERT_STATE_FILE = PROJECT_ROOT / "data" / "bot_stop_alert_state.json"
 CONTINUATION_STATUS_FILE = PROJECT_ROOT / "data" / "continuation_last_test.json"
@@ -2502,6 +2505,64 @@ def _git_dirty_summary() -> tuple[bool, list[str]]:
 
     lines = [ln.strip() for ln in str(output or "").splitlines() if ln.strip()]
     return (len(lines) > 0), lines[:8]
+
+
+def start_canonical_sync_and_restart():
+    """Queue a detached GitHub sync, Control Center restart, and bot restart."""
+    repo_allowed, current_repo, expected_repo = _runtime_repo_path_allows_start()
+    if not repo_allowed:
+        return {"status": "error", "message": f"Start blocked in repo {current_repo}; canonical repo is {expected_repo}"}
+
+    host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
+    if not host_allowed:
+        return {"status": "error", "message": f"Start blocked on host {current_host}; canonical runtime host is {allowed_host}"}
+
+    if not CANONICAL_DEPLOY_SCRIPT.is_file() or not os.access(CANONICAL_DEPLOY_SCRIPT, os.X_OK):
+        return {"status": "error", "message": f"Canonical deploy script is unavailable: {CANONICAL_DEPLOY_SCRIPT}"}
+
+    try:
+        fetch_result = subprocess.run(
+            ["git", "-C", str(PROJECT_ROOT), "fetch", "origin", "main"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if fetch_result.returncode != 0:
+            return {"status": "error", "message": f"Start blocked: {(fetch_result.stderr or 'GitHub fetch failed').strip()}"}
+        local_sha = subprocess.check_output(["git", "-C", str(PROJECT_ROOT), "rev-parse", "HEAD"], text=True).strip()
+        remote_sha = subprocess.check_output(["git", "-C", str(PROJECT_ROOT), "rev-parse", "origin/main"], text=True).strip()
+    except Exception as error:
+        return {"status": "error", "message": f"Start blocked: unable to inspect GitHub state ({error})"}
+
+    is_dirty, _ = _git_dirty_summary()
+    if local_sha != remote_sha and is_dirty:
+        return {"status": "error", "message": "Start blocked: GitHub has newer changes while this desktop has uncommitted work. Commit or reconcile the desktop changes first; nothing was overwritten."}
+
+    try:
+        existing_pid = int(CANONICAL_DEPLOY_PID_FILE.read_text(encoding="utf-8").strip())
+        os.kill(existing_pid, 0)
+        return {"status": "success", "message": f"GitHub sync and restart already running (PID: {existing_pid})", "pid": existing_pid}
+    except (FileNotFoundError, ProcessLookupError, ValueError):
+        CANONICAL_DEPLOY_PID_FILE.unlink(missing_ok=True)
+    except PermissionError:
+        return {"status": "error", "message": "Unable to verify active GitHub sync process"}
+
+    try:
+        CANONICAL_DEPLOY_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        env = os.environ.copy()
+        env["MCLEOD_CANONICAL_RUNTIME_HOST"] = CANONICAL_RUNTIME_HOST
+        env["MCLEOD_CANONICAL_CONTROL_CENTER_URL"] = CANONICAL_CONTROL_CENTER_URL
+        env["PYTHONUNBUFFERED"] = "1"
+        with open(CANONICAL_DEPLOY_LOG_FILE, "a", buffering=1) as log_fp:
+            process = subprocess.Popen(
+                [str(CANONICAL_DEPLOY_SCRIPT)], cwd=str(PROJECT_ROOT), stdout=log_fp,
+                stderr=subprocess.STDOUT, env=env, start_new_session=True,
+            )
+        CANONICAL_DEPLOY_PID_FILE.write_text(str(process.pid), encoding="utf-8")
+        return {"status": "success", "message": "GitHub sync, Control Center restart, and bot restart started", "pid": process.pid}
+    except Exception as error:
+        return {"status": "error", "message": f"Failed to start GitHub sync: {error}"}
 
 
 def start_bot():
@@ -5758,9 +5819,14 @@ def api_parity_baseline():
 
 @app.route('/api/start', methods=['POST'])
 def api_start():
-    """Start the bot"""
-    result = start_bot()
-    return jsonify(result)
+    """Sync GitHub, restart the Control Center, then start the bot."""
+    return jsonify(start_canonical_sync_and_restart())
+
+
+@app.route('/api/start-direct', methods=['POST'])
+def api_start_direct():
+    """Start the bot without triggering a GitHub deployment cycle."""
+    return jsonify(start_bot())
 
 
 @app.route('/api/go-live', methods=['POST'])
