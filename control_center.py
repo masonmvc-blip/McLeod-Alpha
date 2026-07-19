@@ -7754,7 +7754,7 @@ HTML_DASHBOARD = """
                 } else if (runtimeHostLower.includes('macbook') || runtimeHostLower.includes('laptop')) {
                     runtimeBadge = '✅ 💻 laptop';
                 }
-                const checklistText = `${runtimeBadge} | ${modeOk ? '✅' : '☐'} ${modeLabel} | ${reconOk ? '✅' : '☐'} Broker | ${parityOk ? '✅' : '☐'} Parity | ${accountOk ? '✅' : '☐'} ${accountDisplayLabel}`;
+                const checklistText = `${runtimeBadge} | ${modeOk ? '✅' : '☐'} ${modeLabel} | ${reconOk ? '✅' : '☐'} Broker | ${parityOk ? '✅' : '🛑'} Parity | ${accountOk ? '✅' : '☐'} ${accountDisplayLabel}`;
 
                 // Trade entry readiness (fast and visible)
                 const tradeEntryEnabled = !!status.trade_entry_enabled;
