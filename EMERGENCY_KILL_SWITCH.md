@@ -169,7 +169,7 @@ def graceful_shutdown(signum=None, frame=None):
     
     # 1. Get current position (if any)
     try:
-        from execution.paper_engine import current_position
+        from execution.live_engine import current_position
     except ImportError:
         current_position = None
     

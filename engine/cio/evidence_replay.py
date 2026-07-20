@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from engine.memory import get_memory
+
 from .evidence_ledger import EvidenceLedger
 from .evidence_record import EvidenceLineageRecord, EvidenceRecord
 
@@ -97,8 +99,7 @@ class EvidenceReplay:
         )
 
         final_path = Path(report_path or DEFAULT_CHAIN_REPORT_PATH)
-        final_path.parent.mkdir(parents=True, exist_ok=True)
-        final_path.write_text(markdown, encoding="utf-8")
+        get_memory().write_experiment_text(final_path, markdown, "cio_evidence_chain_report", source="cio_evidence_replay", correlation_id=f"{target_type}:{target_id}")
 
         return ReconstructedEvidenceChain(
             target_type=target_type,

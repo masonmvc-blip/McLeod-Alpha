@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
+from engine.memory import get_memory
+
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 OPPORTUNITY_LOG_DIR = Path("data/reports/opportunity_logs")
@@ -486,8 +488,7 @@ def log_evaluated_setups(
 
     trade_date = datetime.fromisoformat(candle_time_et).date().isoformat()
     output_path = OPPORTUNITY_LOG_DIR / f"opportunity_setups_{trade_date}.jsonl"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(call_record) + "\n")
-        f.write(json.dumps(put_record) + "\n")
+    memory = get_memory()
+    correlation_id = f"opportunity-setups:{trade_date}"
+    memory.append_report_line(output_path, json.dumps(call_record), "opportunity_setups", source="opportunity_logger", correlation_id=correlation_id)
+    memory.append_report_line(output_path, json.dumps(put_record), "opportunity_setups", source="opportunity_logger", correlation_id=correlation_id)

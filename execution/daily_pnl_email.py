@@ -4,10 +4,8 @@ Sends one email per day after configured market-close time.
 Supports Microsoft Outlook transport (default) and SMTP transport.
 """
 
-import json
 import os
 import smtplib
-import sqlite3
 import subprocess
 from datetime import datetime, time as dt_time
 from email.message import EmailMessage
@@ -16,8 +14,8 @@ from typing import Dict, Any
 from zoneinfo import ZoneInfo
 
 from schwab.auth import easy_client
+from engine.memory import get_memory
 
-DB_PATH = Path("data/mcleod_alpha.db")
 STATE_PATH = Path("data/daily_pnl_email_state.json")
 
 
@@ -69,25 +67,12 @@ def _recipient() -> str:
 
 
 def _load_state() -> Dict[str, Any]:
-    if not STATE_PATH.exists():
-        return {}
-    try:
-        return json.loads(STATE_PATH.read_text())
-    except Exception:
-        return {}
+    loaded = get_memory().load_setting(STATE_PATH, {})
+    return loaded if isinstance(loaded, dict) else {}
 
 
 def _save_state(state: Dict[str, Any]) -> None:
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2))
-
-
-def _table_columns() -> set:
-    if not DB_PATH.exists():
-        return set()
-    with sqlite3.connect(DB_PATH) as con:
-        rows = con.execute("PRAGMA table_info(trade_log)").fetchall()
-    return {row[1] for row in rows}
+    get_memory().save_setting("daily_pnl_email_state", state, STATE_PATH, source="daily_pnl_email")
 
 
 def _broker_today_net_pnl(date_str: str) -> float | None:
@@ -153,50 +138,12 @@ def _broker_today_net_pnl(date_str: str) -> float | None:
 
 
 def _daily_stats(date_str: str) -> Dict[str, Any]:
-    if not DB_PATH.exists():
-        return {
-            "date": date_str,
-            "trades": 0,
-            "wins": 0,
-            "losses": 0,
-            "net_pnl": 0.0,
-            "rows": [],
-        }
-
-    cols = _table_columns()
-    use_option = "option_pnl_dollars" in cols
-    pnl_col = "option_pnl_dollars" if use_option else "pnl"
-
-    query = f"""
-    SELECT id, entry_time, exit_time, direction, exit_reason,
-           COALESCE({pnl_col}, 0) AS pnl_value,
-           option_symbol
-    FROM trade_log
-        WHERE substr(entry_time, 1, 10) = ?
-    ORDER BY entry_time ASC
-    """
-
-    with sqlite3.connect(DB_PATH) as con:
-        con.row_factory = sqlite3.Row
-        rows = [dict(r) for r in con.execute(query, (date_str,)).fetchall()]
-
-    pnl_values = [float(r.get("pnl_value") or 0.0) for r in rows]
-    wins = sum(1 for p in pnl_values if p > 0)
-    losses = sum(1 for p in pnl_values if p < 0)
-
-    net_pnl = float(sum(pnl_values))
+    stats = get_memory().load_daily_trade_performance(date_str)
     broker_net_pnl = _broker_today_net_pnl(date_str)
     if broker_net_pnl is not None:
-        net_pnl = broker_net_pnl
-
-    return {
-        "date": date_str,
-        "trades": len(rows),
-        "wins": wins,
-        "losses": losses,
-        "net_pnl": net_pnl,
-        "rows": rows,
-    }
+        stats["net_pnl"] = broker_net_pnl
+        stats["broker_net_pnl"] = broker_net_pnl
+    return stats
 
 
 def _build_subject(date_str: str, net_pnl: float) -> str:
@@ -337,6 +284,7 @@ def maybe_send_daily_pnl_email() -> bool:
         sent = _send_via_outlook(to_email, subject, body) or _send_via_smtp(to_email, subject, body)
 
     if sent:
+        get_memory().record_daily_performance(stats)
         state["last_sent_date"] = today_str
         state["last_subject"] = subject
         state["last_sent_at"] = datetime.now().isoformat()

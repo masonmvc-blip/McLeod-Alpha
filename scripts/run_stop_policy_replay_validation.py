@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic replay harness for stop-policy validation.
-
-Replays a synthetic option-price path through paper stop management and
-emits a pass/fail matrix for each profit-zone stop rule.
-"""
+"""Deterministic replay harness for canonical Brain stop-policy validation."""
 
 from __future__ import annotations
 
@@ -14,7 +10,7 @@ from typing import List, Dict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import execution.paper_engine as paper_engine
+from backtesting.stop_policy_simulator import SimulatedPosition, simulate_trade_management
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,18 +27,14 @@ class _FixedDateTime(datetime):
         return base
 
 
-def _build_position(entry: float = 5.0) -> paper_engine.Position:
-    return paper_engine.Position(
+def _build_position(entry: float = 5.0) -> SimulatedPosition:
+    return SimulatedPosition(
         direction="CALL",
         entry_price=500.0,
-        stop_price=495.0,
         target_price=510.0,
         quantity=1,
-        opened=datetime(2026, 7, 17, 9, 50, 0),
-        reason="REPLAY_VALIDATION",
-        option_symbol="SPY_TEST",
+        opened=datetime(2026, 7, 17, 9, 59, 0),
         option_entry=entry,
-        option_delta=0.5,
         option_stop=0.0,
         option_initial_stop=0.0,
     )
@@ -71,19 +63,15 @@ def _run_replay() -> List[Dict[str, object]]:
     entry = 5.0
     marks = [5.00, 5.101, 5.151, 5.201, 5.251, 5.301, 5.351, 5.401]
 
-    # Patch paper engine for deterministic, side-effect-free replay.
-    paper_engine.datetime = _FixedDateTime
-    paper_engine.save_position = lambda _pos: None
-    paper_engine.close_trade = lambda *_args, **_kwargs: False
-
     rows: List[Dict[str, object]] = []
 
     for mark in marks:
         pos = _build_position(entry=entry)
-        paper_engine.current_position = pos
-        paper_engine.load_position = lambda _cls, _pos=pos: _pos
-
-        paper_engine.manage_trade(price=500.0, option_mark=mark, option_bid=mark)
+        pos, _decision = simulate_trade_management(
+            position=pos,
+            option_mark=mark,
+            now=_FixedDateTime.now(),
+        )
 
         expected = _expected_stop(entry, mark)
         actual = float(pos.option_stop)
@@ -113,7 +101,7 @@ def _to_markdown(rows: List[Dict[str, object]]) -> str:
     lines = [
         "# Stop Policy Replay Validation Matrix",
         "",
-        "Deterministic replay using `execution/paper_engine.py` with synthetic trigger prices.",
+        "Deterministic replay using the canonical Brain simulation adapter with synthetic trigger prices.",
         "",
         f"Summary: {passed}/{total} passed, {failed} failed.",
         "",

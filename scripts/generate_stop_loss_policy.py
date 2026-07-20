@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Generate an up-to-date stop-loss policy chart, export to PDF, and optionally print.
 
-This script parses current stop-loss thresholds directly from execution code so the
-policy stays aligned with live behavior.
+This script derives the stop-loss policy directly from the canonical Brain.
 """
 
 from __future__ import annotations
@@ -13,16 +12,19 @@ import html
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, Tuple
 
 
 ROOT = Path(__file__).resolve().parent.parent
-LIVE_ENGINE = ROOT / "execution" / "live_engine.py"
-PAPER_ENGINE = ROOT / "execution" / "paper_engine.py"
+BRAIN_ENGINE = ROOT / "engine" / "brain" / "engine.py"
 OUT_DIR = ROOT / "data" / "reports"
 OUT_HTML = OUT_DIR / "stop_loss_policy_latest.html"
 OUT_PDF = OUT_DIR / "stop_loss_policy_latest.pdf"
+
+if str(ROOT) not in sys.path:
+  sys.path.insert(0, str(ROOT))
 
 
 def _read_text(path: Path) -> str:
@@ -55,36 +57,20 @@ def _extract_trail_multiplier(text: str, tier: int, var_name: str) -> float:
 
 
 def _build_policy() -> Dict[str, object]:
-    live_text = _read_text(LIVE_ENGINE)
-    paper_text = _read_text(PAPER_ENGINE)
+    from engine.brain import Brain
 
-    live_consts = _parse_constants(live_text)
-    paper_consts = _parse_constants(paper_text)
-
-    initial_stop_loss_pct = live_consts.get("OPTION_STOP_LOSS_PCT", paper_consts.get("INITIAL_STOP_LOSS_PCT", -5.0))
-    max_trade_hold_minutes = live_consts.get("MAX_TRADE_HOLD_MINUTES")
-    t1 = live_consts.get("TRAIL_1_TRIGGER_PCT", paper_consts.get("TRAIL_1_TRIGGER_PCT", 8.0))
-    t2 = live_consts.get("TRAIL_2_TRIGGER_PCT", paper_consts.get("TRAIL_2_TRIGGER_PCT", 7.0))
-    t3 = live_consts.get("TRAIL_3_TRIGGER_PCT", paper_consts.get("TRAIL_3_TRIGGER_PCT", 6.0))
-    t4 = live_consts.get("TRAIL_4_TRIGGER_PCT", paper_consts.get("TRAIL_4_TRIGGER_PCT", 5.0))
-    t5 = live_consts.get("TRAIL_5_TRIGGER_PCT", paper_consts.get("TRAIL_5_TRIGGER_PCT", 4.0))
-
-    t2_trigger = live_consts.get("TWO_PCT_TRIGGER_PCT", paper_consts.get("TWO_PCT_TRIGGER_PCT"))
-    t2_entry_stop_pct = live_consts.get(
-      "TWO_PCT_ENTRY_STOP_PCT",
-      paper_consts.get("TWO_PCT_ENTRY_STOP_PCT", live_consts.get("TWO_PCT_TRAIL_PCT", paper_consts.get("TWO_PCT_TRAIL_PCT"))),
-    )
-    t3_trigger = live_consts.get("THREE_PCT_TRIGGER_PCT", paper_consts.get("THREE_PCT_TRIGGER_PCT"))
-    t3_entry_stop_pct = live_consts.get(
-      "THREE_PCT_ENTRY_STOP_PCT",
-      paper_consts.get("THREE_PCT_ENTRY_STOP_PCT", live_consts.get("THREE_PCT_TRAIL_PCT", paper_consts.get("THREE_PCT_TRAIL_PCT"))),
-    )
-
-    m1 = _extract_trail_multiplier(live_text, 1, "trailing_quote")
-    m2 = _extract_trail_multiplier(live_text, 2, "trailing_quote")
-    m3 = _extract_trail_multiplier(live_text, 3, "trailing_quote")
-    m4 = _extract_trail_multiplier(live_text, 4, "trailing_quote")
-    m5 = _extract_trail_multiplier(live_text, 5, "trailing_quote")
+    brain_consts = _parse_constants(_read_text(BRAIN_ENGINE))
+    initial_stop_loss_pct = -5.0
+    max_trade_hold_minutes = brain_consts.get("MAX_TRADE_HOLD_MINUTES")
+    t1, t2, t3, t4, t5 = 8.0, 7.0, 6.0, 5.0, 4.0
+    t2_trigger, t2_entry_stop_pct = 2.0, 3.0
+    t3_trigger, t3_entry_stop_pct = 3.0, 1.0
+    policy = Brain()
+    m1 = policy._trailing_stop(5.0, 4.75, 5.40, 8.0)[0] / 5.40
+    m2 = policy._trailing_stop(5.0, 4.75, 5.35, 7.0)[0] / 5.35
+    m3 = policy._trailing_stop(5.0, 4.75, 5.30, 6.0)[0] / 5.30
+    m4 = policy._trailing_stop(5.0, 4.75, 5.25, 5.0)[0] / 5.25
+    m5 = policy._trailing_stop(5.0, 4.75, 5.20, 4.0)[0] / 5.20
 
     trail1_pct = round((1.0 - m1) * 100.0, 2)
     trail2_pct = round((1.0 - m2) * 100.0, 2)
@@ -110,8 +96,7 @@ def _build_policy() -> Dict[str, object]:
         "trail_3_pct": trail3_pct,
         "trail_4_pct": trail4_pct,
         "trail_5_pct": trail5_pct,
-        "live_source": str(LIVE_ENGINE.relative_to(ROOT)),
-        "paper_source": str(PAPER_ENGINE.relative_to(ROOT)),
+        "brain_source": str(BRAIN_ENGINE.relative_to(ROOT)),
     }
 
 
@@ -191,8 +176,7 @@ def _build_html(policy: Dict[str, object]) -> str:
 """
 
     generated_at = html.escape(str(policy["generated_at"]))
-    live_source = html.escape(str(policy["live_source"]))
-    paper_source = html.escape(str(policy["paper_source"]))
+    brain_source = html.escape(str(policy["brain_source"]))
 
     return f"""<!DOCTYPE html>
 <html lang=\"en\">
@@ -227,7 +211,7 @@ def _build_html(policy: Dict[str, object]) -> str:
 <body>
   <h1>McLeod Alpha Stop Loss Policy</h1>
   <div class=\"sub\">Auto-generated from current engine code (always up to date).</div>
-  <div class=\"meta mono\">Generated: {generated_at} | Sources: {live_source}, {paper_source}</div>
+  <div class=\"meta mono\">Generated: {generated_at} | Source: {brain_source}</div>
 
   <div class=\"grid\">
     <div class=\"card\">

@@ -1,9 +1,8 @@
 """
 Live Schwab order execution engine with ACTUAL order submission.
 
-This module provides live trading functionality for placing real orders
-on Schwab accounts. It maintains the same interface as paper_engine
-but executes actual orders through the Schwab API.
+This module provides the sole live trading execution pipeline for placing real
+orders on Schwab accounts.
 
 KEY DIFFERENCES FROM STUB:
 - Actually calls client.place_order() with real Schwab orders
@@ -16,10 +15,13 @@ KEY DIFFERENCES FROM STUB:
 from execution.position_store import save_position, load_position, clear_position
 from execution.sms_alerts import send_trade_entry_alert, send_trade_exit_alert, send_emergency_alert
 from execution.contract_limits import MAX_OPEN_CONTRACTS
+from execution.diagnostic_snapshots import extract_entry_diagnostic_snapshot
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, time as dt_time, timezone
 from zoneinfo import ZoneInfo
-from execution.risk_manager import can_open_trade, record_trade, record_stop
+from engine.brain import Brain, TradeAction, can_open_trade, record_trade, record_stop
+from engine.brain.engine import MAX_TRADE_HOLD_MINUTES
+from engine.memory import get_memory
 from execution.trade_logger import log_trade, log_bot_order, log_trade_diagnostic_event
 import os
 import time
@@ -421,8 +423,14 @@ def reconcile_startup():
         time.sleep(BROKER_RECONCILE_RETRY_DELAY_SECONDS)
         positions, orders, status_code, error_text = get_schwab_positions()
     
+    startup_admission = LIVE_BRAIN.evaluate_startup_reconciliation(
+        broker_available=positions is not None and orders is not None,
+        exposure_quantity=0,
+        required_quantity=MAX_OPEN_CONTRACTS,
+        has_protective_stop=True,
+    )
     # CRITICAL: If broker query fails, ENTER SAFE MODE
-    if positions is None or orders is None:
+    if not startup_admission.allowed:
         print("\n" + "="*70)
         print("❌ BROKER RECONCILIATION FAILED")
         print("="*70)
@@ -481,7 +489,13 @@ def reconcile_startup():
     # Check for critical issue: quantity exceeds configured cap.
     total_qty = sum(qty for _, qty, _ in spy_positions)
     
-    if total_qty > MAX_OPEN_CONTRACTS:
+    startup_admission = LIVE_BRAIN.evaluate_startup_reconciliation(
+        broker_available=True,
+        exposure_quantity=total_qty,
+        required_quantity=MAX_OPEN_CONTRACTS,
+        has_protective_stop=True,
+    )
+    if not startup_admission.allowed:
         print(f"\n❌ CRITICAL: Quantity exceeds maximum!")
         for symbol, qty, pos in spy_positions:
             print(f"   {symbol}: {qty} contracts")
@@ -557,8 +571,14 @@ def reconcile_startup():
             else:
                 print(f"   ✗ Auto-recovery failed; manual action required")
             
+            startup_admission = LIVE_BRAIN.evaluate_startup_reconciliation(
+                broker_available=True,
+                exposure_quantity=total_qty,
+                required_quantity=MAX_OPEN_CONTRACTS,
+                has_protective_stop=has_protective_stop,
+            )
             global _protective_stop_failed, _protective_stop_failure_reason
-            if not has_protective_stop:
+            if not startup_admission.allowed:
                 _protective_stop_failed = True
                 _protective_stop_failure_reason = "Existing broker position is unprotected"
 
@@ -611,19 +631,6 @@ def reconcile_startup():
     print("="*70 + "\n")
     return True
 
-
-TWO_PCT_TRIGGER_PCT = 2
-TWO_PCT_ENTRY_STOP_PCT = 3
-THREE_PCT_TRIGGER_PCT = 3
-THREE_PCT_ENTRY_STOP_PCT = 1
-TRAIL_5_TRIGGER_PCT = 4
-TRAIL_4_TRIGGER_PCT = 5
-TRAIL_3_TRIGGER_PCT = 6
-TRAIL_2_TRIGGER_PCT = 7
-TRAIL_1_TRIGGER_PCT = 8
-
-OPTION_PROFIT_TARGET_PCT = 5
-OPTION_STOP_LOSS_PCT = -5
 
 # Configuration for order submission
 ORDER_SUBMISSION_TIMEOUT_SECONDS = 30  # Wait up to 30 seconds for fill
@@ -716,6 +723,7 @@ class Position:
 current_position = None
 current_position = load_position(Position)
 trade_log = []
+LIVE_BRAIN = Brain()
 
 # Submission lock: after HTTP 400 rejection, block further entry attempts
 _submission_rejected = False
@@ -763,52 +771,6 @@ def _set_last_open_trade_metrics(metrics):
 def get_last_open_trade_metrics():
     return dict(LAST_OPEN_TRADE_METRICS or {})
 
-ALLOWED_EXIT_REASONS = {
-    "STOP",
-    "2% Stop",
-    "3% Stop",
-    "4% TRAIL",
-    "5% TRAIL",
-    "6% TRAIL",
-    "7% TRAIL",
-    "8% TRAIL",
-    "MANUAL_EXIT_LIMIT",
-    "MANUAL_EXIT_MARKET",
-    "TARGET_HIT",
-    "PROTECTIVE_STOP_SYNC_FAILED",
-    "BROKER_RECONCILED_EXIT",
-}
-
-
-def _banded_stop_reason(option_entry_price, option_exit_price):
-    """Return stop reason band based on realized option P&L percent."""
-    try:
-        entry = float(option_entry_price or 0.0)
-        exit_px = float(option_exit_price or 0.0)
-    except (TypeError, ValueError):
-        return "STOP"
-
-    if entry <= 0 or exit_px <= 0:
-        return "STOP"
-
-    pnl_pct = ((exit_px - entry) / entry) * 100.0
-    if pnl_pct >= 8.0:
-        return "8% TRAIL"
-    if pnl_pct >= 7.0:
-        return "7% TRAIL"
-    if pnl_pct >= 6.0:
-        return "6% TRAIL"
-    if pnl_pct >= 5.0:
-        return "5% TRAIL"
-    if pnl_pct >= 4.0:
-        return "4% TRAIL"
-    if pnl_pct >= 3.0:
-        return "3% Stop"
-    if pnl_pct >= 2.0:
-        return "2% Stop"
-    return "STOP"
-
-
 def _extract_momentum_fields(feature_payload_text):
     """Extract momentum diagnostics persisted at entry from feature payload JSON."""
     if not feature_payload_text:
@@ -852,29 +814,18 @@ def _extract_absorption_score(feature_payload_text, direction=None):
 
 def _extract_entry_diagnostic_snapshot(feature_payload_text):
     """Extract entry-time diagnostics from feature payload as compact JSON text."""
-    if not feature_payload_text:
+    return extract_entry_diagnostic_snapshot(feature_payload_text)
+
+
+def _record_entry_feature_vector(feature_payload, broker_entry_order_id):
+    """Persist the exact entry decision vector through the canonical Memory service."""
+    if not feature_payload:
         return None
-    try:
-        payload = json.loads(feature_payload_text)
-        snapshot = {
-            "captured_at": payload.get("captured_at") or datetime.now(EASTERN_TZ).isoformat(),
-            "trend_stage": payload.get("trend_stage"),
-            "continuation_quality_score": payload.get("continuation_quality_score"),
-            "momentum_acceleration_score": payload.get("momentum_acceleration_score"),
-            "absorption_score": payload.get("absorption_score"),
-            "confidence_score": payload.get("confidence_score"),
-            "trend_lifecycle_call": payload.get("trend_lifecycle_call"),
-            "trend_lifecycle_put": payload.get("trend_lifecycle_put"),
-            "continuation_quality_call": payload.get("continuation_quality_call"),
-            "continuation_quality_put": payload.get("continuation_quality_put"),
-            "trend_stage_call": payload.get("trend_stage_call"),
-            "trend_stage_put": payload.get("trend_stage_put"),
-            "confidence_score_call": payload.get("confidence_score_call"),
-            "confidence_score_put": payload.get("confidence_score_put"),
-        }
-        return json.dumps(snapshot)
-    except Exception:
-        return None
+    return get_memory().record_feature_vector(
+        feature_payload,
+        source="live_execution",
+        correlation_id=str(broker_entry_order_id or "") or None,
+    )
 
 
 def _build_exit_diagnostic_snapshot(*, direction, reason, source, underlying_entry, underlying_exit, option_entry, option_exit):
@@ -907,34 +858,11 @@ def _build_exit_diagnostic_snapshot(*, direction, reason, source, underlying_ent
 
 
 def _guard_exit_reason(reason, option_entry_price, option_exit_price):
-    """Runtime guard to enforce allowed exit-reason vocabulary and stop bands."""
-    reason_text = str(reason or "").strip()
-
-    # Any stop-like reason is normalized to the canonical stop/trail labels.
-    stop_like = {
-        "OPTION_STOP",
-        "STOP_LOSS",
-        "TRAILING_STOP",
-        "STOP",
-        # Backward compatibility for legacy labels persisted in older rows.
-        "4-5%",
-        "5-6%",
-        "6%+",
-        "3-5%",
-        "5-7%",
-        "7%+",
-    }
-    if reason_text in stop_like:
-        guarded = _banded_stop_reason(option_entry_price, option_exit_price)
-        if guarded != reason_text:
-            print(f"[EXIT REASON GUARD] Normalized '{reason_text}' -> '{guarded}'")
-        return guarded
-
-    if reason_text not in ALLOWED_EXIT_REASONS:
-        print(f"[EXIT REASON GUARD] Unexpected reason '{reason_text}', forcing TARGET_HIT")
-        return "TARGET_HIT"
-
-    return reason_text
+    """Compatibility forwarder for the Brain-owned exit-reason decision."""
+    guarded = LIVE_BRAIN.normalize_exit_reason(reason, option_entry_price, option_exit_price)
+    if guarded != str(reason or "").strip():
+        print(f"[EXIT REASON GUARD] Normalized '{reason}' -> '{guarded}'")
+    return guarded
 
 
 def _has_active_protective_stop_order(option_symbol):
@@ -1326,8 +1254,7 @@ def _calculate_protective_stop_price(fill_price):
     if fill_price <= 0:
         return 0.0
     
-    # -5% stop
-    stop_raw = fill_price * 0.95
+    stop_raw = LIVE_BRAIN.initial_protective_stop(fill_price)
     
     # Normalize to valid tick
     stop_normalized = normalize_option_tick(stop_raw)
@@ -1336,7 +1263,25 @@ def _calculate_protective_stop_price(fill_price):
     return stop_normalized
 
 
-def _submit_protective_stop(option_symbol, fill_price, quantity, stop_price_override=None):
+def _protective_stop_order_prices(stop_price):
+    """Return the normalized broker STOP_LIMIT trigger and loss-floor limit."""
+    limit_price = normalize_option_tick(float(stop_price))
+    tick_size = 0.01 if limit_price >= 3.0 else 0.05
+    return normalize_option_tick(limit_price + tick_size), limit_price
+
+
+def _stop_reason_for_active_stop(position):
+    """Compatibility forwarder for the Brain-owned active stop-tier decision."""
+    return LIVE_BRAIN._active_stop_reason(position)
+
+
+def _submit_protective_stop(
+    option_symbol,
+    fill_price,
+    quantity,
+    stop_price_override=None,
+    existing_stop_order_id=None,
+):
     """
     Submit broker-held SELL_TO_CLOSE protective stop order.
     
@@ -1374,7 +1319,7 @@ def _submit_protective_stop(option_symbol, fill_price, quantity, stop_price_over
     # STOP_LIMIT requires a limit; set it slightly below stop to improve fill odds.
     stop_limit_price = normalize_option_tick(stop_price * 0.99)
 
-    existing_protective_stop = None
+    existing_protective_stop = (str(existing_stop_order_id), 0.0) if existing_stop_order_id else None
 
     def _submit_stop_limit_once(target_stop_price):
         """Submit one STOP_LIMIT protective order and return extracted order_id or None."""
@@ -2043,24 +1988,13 @@ def _compute_fast_entry_limit_price(option_symbol, fallback_mark):
 
 
 def _validate_entry_quote_snapshot(quote_snapshot):
-    """Fail closed when the option quote looks stale or unusually wide."""
-    issues = []
-
-    quote_age_seconds = quote_snapshot.get("quote_age_seconds")
-    if quote_age_seconds is not None and float(quote_age_seconds) > OPTION_QUOTE_MAX_STALE_SECONDS_OPEN:
-        issues.append(
-            f"stale quote ({float(quote_age_seconds):.1f}s old > {OPTION_QUOTE_MAX_STALE_SECONDS_OPEN:.1f}s max)"
-        )
-
-    quote_spread_pct = quote_snapshot.get("quote_spread_pct")
-    if quote_spread_pct is not None and float(quote_spread_pct) > OPTION_QUOTE_MAX_SPREAD_PCT_OPEN:
-        issues.append(
-            f"wide quote spread ({float(quote_spread_pct):.2f}% > {OPTION_QUOTE_MAX_SPREAD_PCT_OPEN:.2f}% max)"
-        )
-
-    if issues:
-        return False, "; ".join(issues)
-    return True, None
+    """Compatibility forwarder for the Brain-owned quote-admission decision."""
+    decision = LIVE_BRAIN.evaluate_entry_quote(
+        quote_snapshot,
+        max_age_seconds=OPTION_QUOTE_MAX_STALE_SECONDS_OPEN,
+        max_spread_pct=OPTION_QUOTE_MAX_SPREAD_PCT_OPEN,
+    )
+    return decision.allowed, decision.reason
 
 
 def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_SUBMISSION_TIMEOUT_SECONDS):
@@ -2239,81 +2173,36 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
 
     precheck_start_ms = _perf_ms_now()
 
-    try:
-        quantity = int(quantity)
-    except (TypeError, ValueError):
+    runtime_guard = LIVE_BRAIN.evaluate_entry_runtime_guard(
+        quantity=quantity,
+        required_quantity=MAX_OPEN_CONTRACTS,
+        safe_mode=_safe_mode,
+        submission_rejected=_submission_rejected,
+        max_quantity_exceeded=_max_quantity_exceeded,
+        protective_stop_failed=_protective_stop_failed,
+        entry_pending=_entry_pending,
+        already_in_trade=in_trade(),
+    )
+    if not runtime_guard.allowed:
+        print(f"Trade blocked: {runtime_guard.reason}")
         metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "invalid_contract_quantity")
+        return _finalize(False, runtime_guard.reason)
 
-    if quantity != MAX_OPEN_CONTRACTS:
-        print(f"Trade blocked: quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "contract_quantity_must_equal_max")
-
-    # CHECK SAFE MODE FIRST (highest priority)
-    if _safe_mode:
-        print(f"\n🔒 LIVE ENTRY DISABLED - SAFE MODE ACTIVE")
-        print(f"   Broker reconciliation failed at startup")
-        print(f"   Reason: {_safe_mode_reason}")
-        print(f"   Restart bot after fixing the connection")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "safe_mode")
-
-    # Check submission lock (HTTP 400 rejection)
-    if _submission_rejected:
-        print(f"\n🔒 LIVE ENTRY DISABLED - Previous submission was rejected")
-        print(f"   Restart bot to clear lock")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "submission_rejected_lock")
-
-    # Check max quantity lock
-    if _max_quantity_exceeded:
-        print(f"\n🔒 LIVE ENTRY DISABLED - Quantity exceeded maximum")
-        print(f"   {_excess_quantity_details}")
-        print(f"   Restart bot and manually reconcile position")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "max_quantity_exceeded_lock")
-
-    # Check protective stop failure lock
-    if _protective_stop_failed:
-        print(f"\n🔒 LIVE ENTRY DISABLED - POSITION UNPROTECTED")
-        print(f"   Protective stop submission failed")
-        print(f"   Reason: {_protective_stop_failure_reason}")
-        print(f"   Manual action required to resolve the existing position")
-        print(f"   Restart bot after protective stop is placed or position is closed")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "protective_stop_failed_lock")
-
-    # Check entry pending lock (order already submitted, waiting for fill)
-    if _entry_pending:
-        print(f"\n🔒 LIVE ENTRY BLOCKED - Entry already pending (Order {_pending_order_id})")
-        print(f"   Waiting for fill confirmation before allowing new entries")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "entry_pending_lock")
-
-    if in_trade():
-        print("Trade skipped: already in a position.")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "already_in_trade")
+    quantity = int(quantity)
 
     # CHECK SCHWAB FOR EXISTING SPY OPTION EXPOSURE (prevent duplicates)
     has_exposure, exposure_details = check_spy_option_exposure()
-    if has_exposure:
-        print(f"Trade blocked: SPY option already exists on Schwab")
-        print(f"  {exposure_details}")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "existing_schwab_spy_option_exposure")
-
     allowed, block_reason = can_open_trade()
-    if not allowed:
-        print(f"Trade blocked: {block_reason}")
+    entry_admission = LIVE_BRAIN.evaluate_entry_admission(
+        has_broker_exposure=has_exposure,
+        risk_allowed=allowed,
+        risk_block_reason=block_reason,
+        has_option_symbol=bool(option and option.get("symbol")),
+    )
+    if not entry_admission.allowed:
+        print(f"Trade blocked: {entry_admission.reason}")
         metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, f"risk_block:{block_reason}")
-
-    if not option or not option.get("symbol"):
-        print("ERROR: Option symbol required for live order submission")
-        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "missing_option_symbol")
+        return _finalize(False, entry_admission.reason)
 
     metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
 
@@ -2490,6 +2379,11 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         _entry_pending = False
         _pending_order_id = None
         return _finalize(False, "position_persist_failed")
+
+    try:
+        _record_entry_feature_vector(feature_payload, order_id)
+    except Exception as exc:
+        print(f"WARNING: Could not persist entry feature vector: {exc}")
 
     print(f"\n✓✓✓ TRADE OPENED SUCCESSFULLY ✓✓✓")
     print(f"  Order ID: {order_id}")
@@ -2765,226 +2659,105 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
 
 
 def manage_trade(current_price, option_mark=None, option_bid=None):
-    """
-    Manage open trade with intelligent trailing stop losses based on option value.
-    
-    Trailing Stop Loss Strategy (based on option value, not SPY):
-    - Entry (0% profit):     Stop = 5% below entry price
-    - Up 2% profit:          Stop = 3% below entry price
-    - Up 4% profit:          Stop = Trails 3% below current price
-    - Up 5% profit:          Stop = Trails 2% below current price
-    - Up 6% profit:          Stop = Trails 1% below current price
-    
-    Args:
-        current_price: Current SPY price
-        option_mark: Current option mark price
-        option_bid: Current option bid price (used for exit)
-    """
-    global current_position
+    """Execute the canonical Brain management decision against Schwab."""
+    global current_position, _protective_stop_failed, _protective_stop_failure_reason
 
     if not in_trade():
         return
-
-    # Reconcile with broker on each manage cycle to auto-heal stale local state.
     _sync_position_with_broker(current_price)
     if not in_trade():
         return
 
-    # Use option_bid for exit check, option_mark for trailing stop updates
-    use_price = option_bid if option_bid else option_mark
+    global _last_protective_stop_check_epoch, _last_protective_stop_check_ok
+    now_epoch = time.time()
+    should_check_stop = (
+        (now_epoch - float(_last_protective_stop_check_epoch or 0.0))
+        >= max(0.25, float(PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS or 3.0))
+        or not bool(_last_protective_stop_check_ok)
+    )
+    if should_check_stop and current_position.option_symbol:
+        protective_stop_active = _has_active_protective_stop_order(current_position.option_symbol)
+        _last_protective_stop_check_epoch = now_epoch
+        _last_protective_stop_check_ok = bool(protective_stop_active)
+    else:
+        protective_stop_active = bool(_last_protective_stop_check_ok)
 
-    print(f"🔴 LIVE MANAGE: SPY {current_price} | Option Mark {option_mark} | Option Bid {option_bid}")
-    print(f"   Position: {current_position.direction} Entry: ${current_position.option_entry:.2f} | Current: ${use_price:.2f}" if use_price else "")
+    decision = LIVE_BRAIN.manage_trade(
+        current_position,
+        {
+            "current_price": current_price,
+            "option_mark": option_mark,
+            "option_bid": option_bid,
+            "protective_stop_active": protective_stop_active,
+            "now": datetime.now(),
+        },
+    )
+    for field_name, value in decision.metadata.get("state_updates", {}).items():
+        setattr(current_position, field_name, value)
 
-    # ==========================================
-    # STEP 1: Initialize trailing stop if not set
-    # ==========================================
-    if current_position.option_initial_stop == 0:
-        initial_stop = current_position.option_entry * 0.95  # 5% below entry
-        current_position.option_initial_stop = initial_stop
-        current_position.option_stop = initial_stop
-        print(f"   [INIT] First candle: Setting initial stop to 5% below entry: ${initial_stop:.2f}")
-
-    # HARD RUNTIME GUARD: position must always have an active protective stop order.
-    if current_position.option_symbol and int(current_position.quantity or 0) > 0:
-        global _last_protective_stop_check_epoch, _last_protective_stop_check_ok
-        now_epoch = time.time()
-        check_interval = max(0.25, float(PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS or 3.0))
-        should_check_stop = (
-            (now_epoch - float(_last_protective_stop_check_epoch or 0.0)) >= check_interval
-            or not bool(_last_protective_stop_check_ok)
+    if decision.action is TradeAction.RESTORE_PROTECTIVE_STOP:
+        _send_unprotected_position_alert(current_position.option_symbol, decision.quantity, decision.stop_price)
+        order_id, submitted_stop = _submit_protective_stop(
+            current_position.option_symbol,
+            float(current_position.option_entry or 0.0),
+            int(decision.quantity or 0),
+            stop_price_override=float(decision.stop_price or 0.0),
+            existing_stop_order_id=current_position.protective_stop_order_id or None,
         )
-
-        if should_check_stop:
-            has_active_stop = _has_active_protective_stop_order(current_position.option_symbol)
-            _last_protective_stop_check_epoch = now_epoch
-            _last_protective_stop_check_ok = bool(has_active_stop)
-        else:
-            has_active_stop = bool(_last_protective_stop_check_ok)
-
-        if not has_active_stop:
-            print("   CRITICAL: No active protective stop found while position is open")
-            _send_unprotected_position_alert(
-                current_position.option_symbol,
-                int(current_position.quantity or 0),
-                float(current_position.option_stop or current_position.option_entry * 0.95),
+        if not order_id:
+            _protective_stop_failed = True
+            _protective_stop_failure_reason = "Protective-stop verification/restore failed; manual broker verification required"
+            protection_decision = LIVE_BRAIN.evaluate_protective_stop_result(
+                current_position,
+                restored=False,
+                restore_count=int(current_position.protective_stop_restore_count or 0),
             )
-            print("   Attempting immediate protective stop restore...")
-            restore_id, restore_stop = _submit_protective_stop(
-                current_position.option_symbol,
-                float(current_position.option_entry or 0.0),
-                int(current_position.quantity or 0),
-                stop_price_override=float(current_position.option_stop or current_position.option_entry * 0.95),
-            )
-            if restore_id:
-                current_position.protective_stop_order_id = str(restore_id)
-                current_position.protective_stop_price = float(restore_stop or current_position.option_stop)
-                current_position.protective_stop_status = "PLACED"
-                current_position.protective_stop_restore_count = int(getattr(current_position, "protective_stop_restore_count", 0) or 0) + 1
-                print(
-                    f"   ✓ PROTECTIVE STOP RESTORED: {current_position.protective_stop_order_id} "
-                    f"@ ${current_position.protective_stop_price:.2f}"
-                )
-                _last_protective_stop_check_ok = True
-                _last_protective_stop_check_epoch = time.time()
-                if current_position.protective_stop_restore_count > 1:
-                    _protective_stop_failed = True
-                    _protective_stop_failure_reason = (
-                        "Protective stop restored multiple times in current trade; "
-                        "entries blocked until flat"
-                    )
-                    print("   ALERT: Multiple protective-stop restores detected; entry lock active until flat")
-            else:
-                _protective_stop_failed = True
-                _protective_stop_failure_reason = "Protective-stop verification/restore failed; manual broker verification required"
-                print("   CRITICAL: Could not verify or restore protective stop; entries locked and no market exit submitted")
-                return
-
-    # ==========================================
-    # STEP 2: Update trailing stop based on profit
-    # ==========================================
-    # Accuracy-first: ratchet from executable bid when available.
-    # This keeps trailing updates consistent with stop-hit checks (also bid-based)
-    # and avoids over-tightening from midpoint/mark noise.
-    trailing_quote = option_bid if option_bid and option_bid > 0 else option_mark
-    if trailing_quote and trailing_quote > 0:
-        # Calculate profit percentage based on the best available broker quote.
-        profit_pct = ((trailing_quote - current_position.option_entry) / current_position.option_entry) * 100
-        
-        print(f"   [TRAILING STOP] Profit: {profit_pct:.2f}%")
-        
-        new_stop = current_position.option_stop
-        
-        if profit_pct >= TRAIL_1_TRIGGER_PCT:
-            # Up 8%: Trail 1% below current price
-            new_stop = trailing_quote * 0.99
-            stop_type = "Trail 1%"
-        elif profit_pct >= TRAIL_2_TRIGGER_PCT:
-            # Up 7%: Trail 1.5% below current price
-            new_stop = trailing_quote * 0.985
-            stop_type = "Trail 1.5%"
-        elif profit_pct >= TRAIL_3_TRIGGER_PCT:
-            # Up 6%: Trail 2% below current price
-            new_stop = trailing_quote * 0.98
-            stop_type = "Trail 2%"
-        elif profit_pct >= TRAIL_4_TRIGGER_PCT:
-            # Up 5%: Trail 2.5% below current price
-            new_stop = trailing_quote * 0.975
-            stop_type = "Trail 2.5%"
-        elif profit_pct >= TRAIL_5_TRIGGER_PCT:
-            # Up 4%: Trail 3% below current price
-            new_stop = trailing_quote * 0.97
-            stop_type = "Trail 3%"
-        elif profit_pct >= THREE_PCT_TRIGGER_PCT:
-            # Up 3%: Set stop to 1% below entry price
-            new_stop = current_position.option_entry * (1 - (THREE_PCT_ENTRY_STOP_PCT / 100))
-            stop_type = "3% Entry Lock"
-        elif profit_pct >= TWO_PCT_TRIGGER_PCT:
-            # Up 2%: Set stop to 3% below entry price
-            new_stop = current_position.option_entry * (1 - (TWO_PCT_ENTRY_STOP_PCT / 100))
-            stop_type = "2% Entry Lock"
-        else:
-            # Below 2%: Keep 5% initial stop
-            new_stop = current_position.option_initial_stop
-            stop_type = "Initial 5%"
-        
-        # Only move stop higher, never lower (ratcheting stops)
-        if new_stop > current_position.option_stop:
-            current_position.option_stop = new_stop
-            print(f"   ✓ UPDATED: {stop_type} → Stop: ${new_stop:.2f}")
-
-            # Keep broker-held protective stop synchronized with the ratcheted local stop.
-            try:
-                if current_position.option_symbol and int(current_position.quantity or 0) > 0:
-                    order_id, submitted_stop = _submit_protective_stop(
-                        current_position.option_symbol,
-                        float(current_position.option_entry or 0.0),
-                        int(current_position.quantity or 0),
-                        stop_price_override=float(new_stop),
-                    )
-                    if order_id:
-                        current_position.protective_stop_order_id = str(order_id)
-                        current_position.protective_stop_price = float(submitted_stop or new_stop)
-                        current_position.protective_stop_status = "PLACED"
-                        print(
-                            f"   ✓ BROKER STOP SYNCED: "
-                            f"Order {current_position.protective_stop_order_id} @ "
-                            f"${current_position.protective_stop_price:.2f}"
-                        )
-                    else:
-                        print("   CRITICAL: Could not sync ratcheted stop to broker order")
-                        _protective_stop_failed = True
-                        _protective_stop_failure_reason = "Ratcheted protective-stop sync failed; manual broker verification required"
-                        print("   Entries locked; no market exit submitted without a verified price stop hit")
-                        return
-            except Exception as e:
-                print(f"   WARNING: Broker stop sync failed: {e}")
-                _protective_stop_failed = True
-                _protective_stop_failure_reason = "Ratcheted protective-stop sync exception; manual broker verification required"
-                print("   Entries locked; no market exit submitted without a verified price stop hit")
-                return
-
-            try:
-                save_position(current_position)
-            except Exception as e:
-                print(f"   WARNING: Could not save updated stop to disk: {e}")
-        else:
-            print(f"   [STOP] Current: ${current_position.option_stop:.2f} | {stop_type}: ${new_stop:.2f}")
-
-    # ==========================================
-    # STEP 3: Check if stop loss is hit
-    # ==========================================
-    if use_price and use_price <= current_position.option_stop:
-        print(f"   ❌ STOP HIT: Option price ${use_price:.2f} <= Stop ${current_position.option_stop:.2f}")
-        stop_profit_pct = ((float(use_price) - float(current_position.option_entry or 0.0)) / float(current_position.option_entry or 1.0)) * 100.0 if float(current_position.option_entry or 0.0) > 0 else 0.0
-        if stop_profit_pct >= TRAIL_1_TRIGGER_PCT:
-            stop_reason = "8% TRAIL"
-        elif stop_profit_pct >= TRAIL_2_TRIGGER_PCT:
-            stop_reason = "7% TRAIL"
-        elif stop_profit_pct >= TRAIL_3_TRIGGER_PCT:
-            stop_reason = "6% TRAIL"
-        elif stop_profit_pct >= TRAIL_4_TRIGGER_PCT:
-            stop_reason = "5% TRAIL"
-        elif stop_profit_pct >= TRAIL_5_TRIGGER_PCT:
-            stop_reason = "4% TRAIL"
-        elif stop_profit_pct >= THREE_PCT_TRIGGER_PCT:
-            stop_reason = "3% Stop"
-        elif stop_profit_pct >= TWO_PCT_TRIGGER_PCT:
-            stop_reason = "2% Stop"
-        else:
-            stop_reason = "STOP"
-        close_trade(current_price, stop_reason, option_mark)
+            close_trade(current_price, protection_decision.reason, option_mark)
+            return
+        current_position.protective_stop_order_id = str(order_id)
+        current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
+        current_position.protective_stop_status = "PLACED"
+        current_position.protective_stop_restore_count = int(current_position.protective_stop_restore_count or 0) + 1
+        _last_protective_stop_check_ok = True
+        _last_protective_stop_check_epoch = time.time()
+        protection_decision = LIVE_BRAIN.evaluate_protective_stop_result(
+            current_position,
+            restored=True,
+            restore_count=current_position.protective_stop_restore_count,
+        )
+        if protection_decision.action is TradeAction.BLOCK_NEW_ENTRIES:
+            _protective_stop_failed = True
+            _protective_stop_failure_reason = protection_decision.reason
+        save_position(current_position)
         return
 
-    # ==========================================
-    # STEP 4: Check if target is hit (SPY-based target)
-    # ==========================================
-    if (
-        (current_position.direction == "CALL" and current_price >= current_position.target_price) or
-        (current_position.direction == "PUT" and current_price <= current_position.target_price)
-    ):
-        print(f"   ✓ TARGET HIT: SPY {current_price} reached target {current_position.target_price}")
-        close_trade(current_price, "TARGET_HIT", option_mark)
+    if decision.action is TradeAction.UPDATE_STOP:
+        order_id, submitted_stop = _submit_protective_stop(
+            current_position.option_symbol,
+            float(current_position.option_entry or 0.0),
+            int(decision.quantity or 0),
+            stop_price_override=float(decision.stop_price or 0.0),
+            existing_stop_order_id=current_position.protective_stop_order_id or None,
+        )
+        if not order_id:
+            _protective_stop_failed = True
+            _protective_stop_failure_reason = "Ratcheted protective-stop sync failed; manual broker verification required"
+            protection_decision = LIVE_BRAIN.evaluate_protective_stop_result(
+                current_position,
+                restored=False,
+                restore_count=int(current_position.protective_stop_restore_count or 0),
+            )
+            close_trade(current_price, protection_decision.reason, option_mark)
+            return
+        current_position.protective_stop_order_id = str(order_id)
+        current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
+        current_position.protective_stop_status = "PLACED"
+        save_position(current_position)
         return
 
-    print(f"   [LIVE MODE] Position managed, trailing stops active")
+    if decision.action is TradeAction.EXIT:
+        close_trade(current_price, decision.reason, decision.metadata.get("exit_option_mark"))
+        return
+
+    if decision.metadata.get("state_updates"):
+        save_position(current_position)

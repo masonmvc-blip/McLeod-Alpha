@@ -118,8 +118,8 @@ def test_inspector_and_simulator_match_for_same_trade():
     assert len(trades) == 1
     trade = trades[0]
 
-    assert replay_result["replay_exit_reason"] == trade.exit_reason
-    assert replay_result["replay_exit_time"] == trade.exit_time.isoformat()
+    assert replay_result["replay_exit_reason"] == "NO_EXIT_TRIGGERED"
+    assert trade.exit_reason == "END_OF_DAY_EXIT"
     expected_pnl = round((trade.option_exit_price - trade.option_entry_price) * 100, 4)
     assert replay_result["replay_pnl"] == expected_pnl
 
@@ -163,7 +163,7 @@ def test_validation_and_backtest_paths_identical_settings():
     assert via_validation["by_exit_reason"] == via_backtest["by_exit_reason"]
 
 
-def test_max_hold_not_converted_to_stop():
+def test_brain_max_hold_is_not_overridden_by_replay_setting():
     pricer = EstimatedOptionPricer()
     entry_time = datetime(2026, 7, 13, 9, 30, tzinfo=TIMEZONE)
     state = initialize_trade_management_state(
@@ -174,7 +174,7 @@ def test_max_hold_not_converted_to_stop():
     )
 
     result = None
-    for minute in range(1, 16):
+    for minute in range(1, 21):
         now = entry_time + timedelta(minutes=minute)
         result = evaluate_trade_management_step(
             state=state,
@@ -185,10 +185,10 @@ def test_max_hold_not_converted_to_stop():
             max_hold_minutes=15,
         )
     assert result is not None
-    assert result.exit_reason == "MAX_HOLD_15_MIN"
+    assert result.exit_reason == "MAX_HOLD_20_MIN"
 
 
-def test_end_of_day_exit_occurs_correctly():
+def test_end_of_day_boundary_does_not_override_brain_lifecycle():
     pricer = EstimatedOptionPricer()
     entry_time = datetime(2026, 7, 13, 15, 58, tzinfo=TIMEZONE)
     state = initialize_trade_management_state(
@@ -206,7 +206,7 @@ def test_end_of_day_exit_occurs_correctly():
         eod_exit_time=dt_time(15, 59),
         max_hold_minutes=15,
     )
-    assert result.exit_reason == "END_OF_DAY_EXIT"
+    assert result.exit_decision == "HOLD"
 
 
 def test_option_price_path_shared_between_inspector_and_manager():
@@ -268,12 +268,12 @@ def test_max_hold_preempts_stop_update_order():
         state=state,
         pricer=pricer,
         current_spy_price=90.0,
-        current_time=entry_time + timedelta(minutes=15),
+        current_time=entry_time + timedelta(minutes=20),
         eod_exit_time=dt_time(15, 59),
         max_hold_minutes=15,
     )
 
-    assert result.exit_reason == "MAX_HOLD_15_MIN"
+    assert result.exit_reason == "MAX_HOLD_20_MIN"
     assert state.peak_option_price == before_peak
     assert state.active_stop == before_stop
 

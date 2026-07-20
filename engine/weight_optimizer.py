@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+from engine.memory import Memory, get_memory
 
 
 WORKSPACE = Path(__file__).parent.parent
@@ -145,28 +146,23 @@ class FactorStat:
 
 
 class WeightOptimizer:
-    def __init__(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    def __init__(self, memory: Memory | None = None):
+        self.memory = memory or get_memory()
 
     def _load_history(self) -> List[Dict[str, str]]:
-        if not PREDICTIONS_HISTORY_CSV.exists():
-            return []
-        with open(PREDICTIONS_HISTORY_CSV, newline="", encoding="utf-8") as f:
-            return list(csv.DictReader(f))
+        return self.memory.read_optimization_csv(PREDICTIONS_HISTORY_CSV)
 
     def _append_factor_history(self, rows: List[Dict[str, Any]]) -> None:
-        existing: List[Dict[str, str]] = []
-        if FACTOR_PERF_HISTORY_CSV.exists():
-            with open(FACTOR_PERF_HISTORY_CSV, newline="", encoding="utf-8") as f:
-                existing = list(csv.DictReader(f))
-
+        existing = self.memory.read_optimization_csv(FACTOR_PERF_HISTORY_CSV)
         existing.extend(rows)
-        with open(FACTOR_PERF_HISTORY_CSV, "w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=FACTOR_HISTORY_FIELDS)
-            w.writeheader()
-            for row in existing:
-                w.writerow({k: row.get(k, "") for k in FACTOR_HISTORY_FIELDS})
+        normalized = [{key: row.get(key, "") for key in FACTOR_HISTORY_FIELDS} for row in existing]
+        self.memory.write_optimization_csv(
+            FACTOR_PERF_HISTORY_CSV,
+            FACTOR_HISTORY_FIELDS,
+            normalized,
+            "factor_performance_history",
+            source="weight_optimizer",
+        )
 
     def _append_status_history(self, evaluation_week: str, reason: str) -> None:
         self._append_factor_history(
@@ -435,7 +431,7 @@ class WeightOptimizer:
                 lines.append(f"- Train samples: {rec.get('train_samples')}")
             if rec.get("oos_samples") is not None:
                 lines.append(f"- OOS samples: {rec.get('oos_samples')}")
-            WEEKLY_REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            self.memory.write_optimization_text(WEEKLY_REPORT, "\n".join(lines) + "\n", "weekly_model_improvement", source="weight_optimizer")
             return
 
         lines.extend(
@@ -496,7 +492,7 @@ class WeightOptimizer:
             ]
         )
 
-        WEEKLY_REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self.memory.write_optimization_text(WEEKLY_REPORT, "\n".join(lines) + "\n", "weekly_model_improvement", source="weight_optimizer")
 
 
 def run_weight_optimizer() -> Dict[str, Any]:

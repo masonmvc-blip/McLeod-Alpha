@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, time as dt_time
+from types import SimpleNamespace
 from typing import Optional, Any
 
 import pandas as pd
 
 from backtesting.option_pricer import EstimatedOptionPricer
+from engine.brain import Brain, TradeAction
 
 
 @dataclass
@@ -16,6 +18,7 @@ class ReplayTradeManagementState:
     entry_time: datetime
     direction: str
     entry_spy_price: float
+    target_price: float
     entry_option_price: float
     initial_stop: float
     active_stop: float
@@ -112,11 +115,15 @@ def run_deterministic_trade_replay(
 
 
 def _active_trailing_pct(option_pnl_pct: float) -> Optional[float]:
-    if option_pnl_pct >= 25.0:
-        return 1.5
-    if option_pnl_pct >= 15.0:
-        return 2.0
     if option_pnl_pct >= 8.0:
+        return 1.0
+    if option_pnl_pct >= 7.0:
+        return 1.5
+    if option_pnl_pct >= 6.0:
+        return 2.0
+    if option_pnl_pct >= 5.0:
+        return 2.5
+    if option_pnl_pct >= 4.0:
         return 3.0
     return None
 
@@ -128,11 +135,14 @@ def initialize_trade_management_state(
     entry_spy_price: float,
     entry_option_price: float,
 ) -> ReplayTradeManagementState:
-    initial_stop = float(entry_option_price * 0.95)
+    brain = Brain()
+    initial_stop = brain.initial_protective_stop(entry_option_price)
+    target_price = brain.build_trade(direction, entry_spy_price)["target"]
     return ReplayTradeManagementState(
         entry_time=entry_time,
         direction=direction,
         entry_spy_price=float(entry_spy_price),
+        target_price=float(target_price),
         entry_option_price=float(entry_option_price),
         initial_stop=initial_stop,
         active_stop=initial_stop,
@@ -179,56 +189,7 @@ def evaluate_trade_management_step(
         price_source = "ESTIMATED"
     stop_evaluation_price = option_bid if option_bid > 0 else option_mark
 
-    eod_hit = current_time.time() >= eod_exit_time
     eod_comparison = f"{current_time.time()} >= {eod_exit_time}"
-
-    hold_minutes = (current_time - state.entry_time).total_seconds() / 60.0
-    max_hold_hit = hold_minutes >= float(max_hold_minutes)
-    max_hold_comparison = f"{round(hold_minutes, 6)} >= {float(max_hold_minutes)}"
-
-    if eod_hit:
-        return ReplayTradeStepResult(
-            option_mark=option_mark,
-            option_bid=option_bid,
-            price_source=price_source,
-            stop_evaluation_price=stop_evaluation_price,
-            option_pnl_pct=0.0,
-            peak_option_price_before_update=peak_before_update,
-            peak_option_price_after_update=float(state.peak_option_price),
-            active_stop_before_update=active_stop_before_update,
-            active_stop_after_update=float(state.active_stop),
-            trailing_percentage=None,
-            trailing_active=False,
-            exit_decision="EXIT",
-            exit_reason="END_OF_DAY_EXIT",
-            final_option_price=option_mark,
-            stop_check_order="AFTER_PRICE_UPDATE",
-            stop_comparison=f"{round(stop_evaluation_price, 6)} <= {round(state.active_stop, 6)}",
-            max_hold_comparison=max_hold_comparison,
-            eod_comparison=eod_comparison,
-        )
-
-    if max_hold_hit:
-        return ReplayTradeStepResult(
-            option_mark=option_mark,
-            option_bid=option_bid,
-            price_source=price_source,
-            stop_evaluation_price=stop_evaluation_price,
-            option_pnl_pct=0.0,
-            peak_option_price_before_update=peak_before_update,
-            peak_option_price_after_update=float(state.peak_option_price),
-            active_stop_before_update=active_stop_before_update,
-            active_stop_after_update=float(state.active_stop),
-            trailing_percentage=None,
-            trailing_active=False,
-            exit_decision="EXIT",
-            exit_reason="MAX_HOLD_15_MIN",
-            final_option_price=option_mark,
-            stop_check_order="AFTER_PRICE_UPDATE",
-            stop_comparison=f"{round(stop_evaluation_price, 6)} <= {round(state.active_stop, 6)}",
-            max_hold_comparison=max_hold_comparison,
-            eod_comparison=eod_comparison,
-        )
 
     if option_mark > state.peak_option_price:
         state.peak_option_price = option_mark
@@ -239,24 +200,39 @@ def evaluate_trade_management_step(
         else 0.0
     )
 
-    if option_pnl_pct >= 5.0:
-        state.breakeven_armed = True
-        state.active_stop = max(state.active_stop, state.entry_option_price)
-
+    position = SimpleNamespace(
+        direction=state.direction,
+        entry_price=state.entry_spy_price,
+        target_price=state.target_price,
+        quantity=1,
+        opened=state.entry_time,
+        option_entry=state.entry_option_price,
+        option_stop=state.active_stop,
+        option_initial_stop=state.initial_stop,
+    )
+    decision = Brain().manage_trade(
+        position,
+        {
+            "current_price": current_spy_price,
+            "option_mark": option_mark,
+            "option_bid": option_bid,
+            "protective_stop_active": True,
+            "now": current_time,
+        },
+    )
+    for field_name, value in decision.metadata.get("state_updates", {}).items():
+        setattr(position, field_name, value)
+    state.active_stop = float(position.option_stop)
+    state.initial_stop = float(position.option_initial_stop)
+    state.breakeven_armed = state.active_stop >= state.entry_option_price
     trailing_percentage = _active_trailing_pct(option_pnl_pct)
-    if trailing_percentage is not None:
-        trailing_stop = option_mark * (1.0 - trailing_percentage / 100.0)
-        state.active_stop = max(state.active_stop, trailing_stop)
 
     peak_after_update = float(state.peak_option_price)
     active_stop_after_update = float(state.active_stop)
     stop_comparison = f"{round(stop_evaluation_price, 6)} <= {round(state.active_stop, 6)}"
+    max_hold_comparison = "Brain MAX_TRADE_HOLD_MINUTES"
 
-    if stop_evaluation_price <= state.active_stop:
-        if state.active_stop > state.initial_stop and option_pnl_pct > 0:
-            exit_reason = "TRAILING_STOP"
-        else:
-            exit_reason = "INITIAL_STOP"
+    if decision.action is TradeAction.EXIT:
         return ReplayTradeStepResult(
             option_mark=option_mark,
             option_bid=option_bid,
@@ -268,11 +244,11 @@ def evaluate_trade_management_step(
             active_stop_before_update=active_stop_before_update,
             active_stop_after_update=active_stop_after_update,
             trailing_percentage=trailing_percentage,
-            trailing_active=trailing_percentage is not None,
+            trailing_active=decision.action is TradeAction.UPDATE_STOP,
             exit_decision="EXIT",
-            exit_reason=exit_reason,
-            final_option_price=stop_evaluation_price,
-            stop_check_order="AFTER_PRICE_UPDATE",
+            exit_reason=decision.reason,
+            final_option_price=float(decision.exit_price or option_mark),
+            stop_check_order="BRAIN_MANAGED",
             stop_comparison=stop_comparison,
             max_hold_comparison=max_hold_comparison,
             eod_comparison=eod_comparison,
@@ -289,11 +265,11 @@ def evaluate_trade_management_step(
         active_stop_before_update=active_stop_before_update,
         active_stop_after_update=active_stop_after_update,
         trailing_percentage=trailing_percentage,
-        trailing_active=trailing_percentage is not None,
+        trailing_active=decision.action is TradeAction.UPDATE_STOP,
         exit_decision="HOLD",
         exit_reason="",
         final_option_price=option_mark,
-        stop_check_order="AFTER_PRICE_UPDATE",
+        stop_check_order="BRAIN_MANAGED",
         stop_comparison=stop_comparison,
         max_hold_comparison=max_hold_comparison,
         eod_comparison=eod_comparison,

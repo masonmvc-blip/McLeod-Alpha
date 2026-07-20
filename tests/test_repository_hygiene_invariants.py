@@ -83,8 +83,8 @@ def test_no_duplicate_canonical_engine_implementations_in_active_paths() -> None
     ]
     assert not backup_py
 
-    assert (REPO_ROOT / "execution" / "paper_engine.py").exists()
     assert (REPO_ROOT / "execution" / "live_engine.py").exists()
+    assert (REPO_ROOT / "backtesting" / "stop_policy_simulator.py").exists()
     assert (REPO_ROOT / "backtesting" / "signal_replay.py").exists()
     assert (REPO_ROOT / "strategy" / "signals.py").exists()
 

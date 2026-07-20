@@ -18,7 +18,6 @@ import json
 import os
 import re
 import smtplib
-import sqlite3
 import subprocess
 from datetime import date, datetime, time as dt_time, timedelta
 from email.message import EmailMessage
@@ -27,9 +26,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 from schwab.auth import easy_client
+from engine.memory import get_memory
 from reports.daily_opportunity_review import build_daily_opportunity_review
 
-DB_PATH = Path("data/mcleod_alpha.db")
 STATE_PATH = Path("data/daily_trade_log_email_state.json")
 OUTPUT_DIR = Path("data/reports/trade_logs")
 BOT_LOG_PATH = Path("bot_output.log")
@@ -102,17 +101,12 @@ def _configured_send_time_ct() -> dt_time:
 
 
 def _load_state() -> Dict[str, Any]:
-    if not STATE_PATH.exists():
-        return {}
-    try:
-        return json.loads(STATE_PATH.read_text())
-    except Exception:
-        return {}
+    loaded = get_memory().load_setting(STATE_PATH, {})
+    return loaded if isinstance(loaded, dict) else {}
 
 
 def _save_state(state: Dict[str, Any]) -> None:
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2))
+    get_memory().save_setting("daily_trade_log_email_state", state, STATE_PATH, source="daily_trade_log_email")
 
 
 def _to_iso(value: Any) -> Optional[str]:
@@ -144,14 +138,6 @@ def _parse_iso(value: Any) -> Optional[datetime]:
     return parsed
 
 
-def _table_columns(table_name: str) -> set:
-    if not DB_PATH.exists():
-        return set()
-    with sqlite3.connect(DB_PATH) as con:
-        rows = con.execute(f"PRAGMA table_info({table_name})").fetchall()
-    return {row[1] for row in rows}
-
-
 def _is_placeholder_option_symbol(symbol: Any) -> bool:
     text = str(symbol or "").strip().upper()
     if not text:
@@ -177,9 +163,9 @@ def _filter_placeholder_trade_rows(trades: List[Dict[str, Any]]) -> List[Dict[st
 
 def _append_delivery_log(line: str) -> None:
     try:
-        DELIVERY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with DELIVERY_LOG_PATH.open("a") as f:
-            f.write(line.rstrip() + "\n")
+        get_memory().append_report_line(
+            DELIVERY_LOG_PATH, line, "daily_trade_log_delivery", source="daily_trade_log_email",
+        )
     except Exception:
         pass
 
@@ -223,61 +209,12 @@ def _process_pending_verification(state: Dict[str, Any], now_ct: datetime) -> No
 
 
 def _bot_order_ids_from_audit() -> set:
-    if not DB_PATH.exists():
-        return set()
-
-    cols = _table_columns("bot_order_audit")
-    if not cols:
-        return set()
-
-    out = set()
-    with sqlite3.connect(DB_PATH) as con:
-        con.row_factory = sqlite3.Row
-        rows = con.execute("SELECT order_id FROM bot_order_audit").fetchall()
-        for row in rows:
-            order_id = str(row["order_id"] or "").strip()
-            if order_id:
-                out.add(order_id)
-    return out
+    order_ids, _ = get_memory().load_trade_log_export_inputs("")
+    return order_ids
 
 
 def _fetch_trades_for_date(trade_date: str) -> List[Dict[str, Any]]:
-    if not DB_PATH.exists():
-        return []
-
-    cols = _table_columns("trade_log")
-    if not cols:
-        return []
-
-    pnl_expr = "COALESCE(option_pnl_dollars, pnl, 0)"
-
-    query = f"""
-    SELECT
-        id,
-        entry_time,
-        exit_time,
-        direction,
-        exit_reason,
-        option_symbol,
-        option_entry,
-        option_exit,
-        option_quantity,
-        option_pnl_pct,
-        {pnl_expr} AS dollar_pnl,
-        broker_entry_order_id,
-        broker_exit_order_id,
-        feature_payload,
-        entry_diagnostic_snapshot,
-        exit_diagnostic_snapshot
-    FROM trade_log
-    WHERE substr(entry_time, 1, 10) = ?
-    ORDER BY entry_time ASC
-    """
-
-    with sqlite3.connect(DB_PATH) as con:
-        con.row_factory = sqlite3.Row
-        rows = [dict(row) for row in con.execute(query, (trade_date,)).fetchall()]
-
+    _, rows = get_memory().load_trade_log_export_inputs(trade_date)
     return _filter_placeholder_trade_rows(rows)
 
 
@@ -642,8 +579,6 @@ def _csv_row_from_export_row(row: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Path]:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
     csv_path = OUTPUT_DIR / f"daily_trade_log_{trade_date}.csv"
     json_path = OUTPUT_DIR / f"daily_trade_review_data_{trade_date}.json"
 
@@ -673,11 +608,14 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
         "operational_errors",
     ]
 
-    with csv_path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=csv_fields)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(_csv_row_from_export_row(row))
+    get_memory().write_report_csv(
+        csv_path,
+        csv_fields,
+        [_csv_row_from_export_row(row) for row in rows],
+        "daily_trade_log_export",
+        source="daily_trade_log_email",
+        correlation_id=f"daily-trade-log:{trade_date}",
+    )
 
     wins = sum(1 for row in rows if float(row.get("dollar_pnl") or 0.0) > 0)
     losses = sum(1 for row in rows if float(row.get("dollar_pnl") or 0.0) < 0)
@@ -696,7 +634,13 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
         "trades": rows,
     }
 
-    json_path.write_text(json.dumps(payload, indent=2))
+    get_memory().write_report_json(
+        json_path,
+        payload,
+        "daily_trade_log_review_data",
+        source="daily_trade_log_email",
+        correlation_id=f"daily-trade-log:{trade_date}",
+    )
     return csv_path, json_path
 
 
@@ -724,7 +668,7 @@ def _send_via_smtp(to_email: str, subject: str, body: str, attachments: List[Pat
 
     for path in attachments:
         try:
-            data = path.read_bytes()
+            data = get_memory().read_report_bytes(path)
             msg.add_attachment(
                 data,
                 maintype="application",

@@ -23,6 +23,8 @@ from datetime import datetime, timezone, timedelta, date
 import calendar
 from typing import Optional
 from pathlib import Path
+
+from engine.memory import get_memory
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -45,6 +47,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils.account_manager import AccountManager
 from utils.decision_contract import normalize_reason_text, reason_code_from_text, quote_state_from_age
 from execution.equity_stream import SchwabEquityQuoteStream
+from engine.architecture_health import build_architecture_health
 
 # Setup paths
 PROJECT_ROOT = Path(__file__).parent
@@ -340,18 +343,12 @@ def _format_recent_log_line_et(
 
 
 def _load_bot_stop_alert_state():
-    if not BOT_STOP_ALERT_STATE_FILE.exists():
-        return {}
-    try:
-        loaded = json.loads(BOT_STOP_ALERT_STATE_FILE.read_text(encoding="utf-8"))
-        return loaded if isinstance(loaded, dict) else {}
-    except Exception:
-        return {}
+    loaded = get_memory().load_setting(BOT_STOP_ALERT_STATE_FILE, {})
+    return loaded if isinstance(loaded, dict) else {}
 
 
 def _save_bot_stop_alert_state(state: dict):
-    BOT_STOP_ALERT_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    BOT_STOP_ALERT_STATE_FILE.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+    get_memory().save_setting("bot_stop_alert_state", state, BOT_STOP_ALERT_STATE_FILE)
 
 
 def _bot_stop_alert_recipient():
@@ -730,23 +727,21 @@ def _parity_baseline_from_fingerprint(fingerprint: dict):
 
 
 def _save_parity_baseline(payload: dict):
-    PARITY_BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PARITY_BASELINE_FILE.write_text(
-        json.dumps(payload, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )
-    _PARITY_BASELINE_CACHE["mtime"] = PARITY_BASELINE_FILE.stat().st_mtime
+    memory = get_memory()
+    memory.save_setting("parity_baseline", payload, PARITY_BASELINE_FILE)
+    _PARITY_BASELINE_CACHE["mtime"] = memory.setting_projection_revision(PARITY_BASELINE_FILE)
     _PARITY_BASELINE_CACHE["payload"] = dict(payload)
 
 
 def _load_parity_baseline(force_reload: bool = False):
     try:
-        if not PARITY_BASELINE_FILE.exists():
+        memory = get_memory()
+        current_mtime = memory.setting_projection_revision(PARITY_BASELINE_FILE)
+        if current_mtime is None:
             _PARITY_BASELINE_CACHE["mtime"] = None
             _PARITY_BASELINE_CACHE["payload"] = None
             return None
 
-        current_mtime = PARITY_BASELINE_FILE.stat().st_mtime
         if (
             not force_reload
             and _PARITY_BASELINE_CACHE.get("payload") is not None
@@ -754,7 +749,7 @@ def _load_parity_baseline(force_reload: bool = False):
         ):
             return dict(_PARITY_BASELINE_CACHE["payload"])
 
-        loaded = json.loads(PARITY_BASELINE_FILE.read_text(encoding="utf-8"))
+        loaded = memory.load_setting(PARITY_BASELINE_FILE)
         if not isinstance(loaded, dict):
             return None
 
@@ -1588,8 +1583,6 @@ def _title_case_words(value: str) -> str:
 
 
 def _log_daily_trades_chart_snapshot(trading_date, trades, summary, is_fallback_day):
-    DAILY_TRADES_CHART_DIR.mkdir(parents=True, exist_ok=True)
-
     dated_svg = DAILY_TRADES_CHART_DIR / f"daily_trades_chart_{trading_date}.svg"
     latest_svg = DAILY_TRADES_CHART_DIR / "latest_daily_trades_chart.svg"
     dated_json = DAILY_TRADES_CHART_DIR / f"daily_trades_chart_{trading_date}.json"
@@ -1671,12 +1664,16 @@ def _log_daily_trades_chart_snapshot(trading_date, trades, summary, is_fallback_
         "chart_file": str(dated_svg),
     }
 
-    dated_svg.write_text(svg, encoding="utf-8")
-    latest_svg.write_text(svg, encoding="utf-8")
-    dated_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    latest_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    with DAILY_TRADES_CHART_LOG.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, sort_keys=True) + "\n")
+    memory = get_memory()
+    correlation_id = f"daily-trades-chart:{trading_date}"
+    memory.write_report_text(dated_svg, svg, "daily_trades_chart", source="cockpit", correlation_id=correlation_id)
+    memory.write_report_text(latest_svg, svg, "daily_trades_chart", source="cockpit", correlation_id=correlation_id)
+    memory.write_report_json(dated_json, payload, "daily_trades_chart", source="cockpit", correlation_id=correlation_id)
+    memory.write_report_json(latest_json, payload, "daily_trades_chart", source="cockpit", correlation_id=correlation_id)
+    memory.append_report_line(
+        DAILY_TRADES_CHART_LOG, json.dumps(payload, sort_keys=True), "daily_trades_chart",
+        source="cockpit", correlation_id=correlation_id,
+    )
 
     return payload
 
@@ -1948,9 +1945,12 @@ def _get_primary_network_status(force: bool = False):
 
 def _append_internet_quality_sample(payload: dict):
     try:
-        INTERNET_QUALITY_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with INTERNET_QUALITY_HISTORY_FILE.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        get_memory().append_report_line(
+            INTERNET_QUALITY_HISTORY_FILE,
+            json.dumps(payload, separators=(",", ":")),
+            "internet_quality_history",
+            source="cockpit",
+        )
     except Exception:
         pass
 
@@ -2632,7 +2632,7 @@ def start_bot():
 
         # Clear stale/manual stop marker before launching a new monitor.
         try:
-            BOT_MANUAL_STOP_MARKER_FILE.unlink(missing_ok=True)
+            get_memory().clear_setting("bot_manual_stop_marker", BOT_MANUAL_STOP_MARKER_FILE)
         except Exception:
             pass
 
@@ -2697,14 +2697,14 @@ def stop_bot():
         # Mark this as an intentional operator stop so the monitor can avoid
         # auto-restarting on this specific SIGTERM.
         try:
-            BOT_MANUAL_STOP_MARKER_FILE.parent.mkdir(parents=True, exist_ok=True)
-            BOT_MANUAL_STOP_MARKER_FILE.write_text(
-                json.dumps({
+            get_memory().save_setting(
+                "bot_manual_stop_marker",
+                {
                     "requested_at": datetime.now(timezone.utc).isoformat(),
                     "source": "control_center",
                     "pid": pid,
-                }, indent=2),
-                encoding="utf-8",
+                },
+                BOT_MANUAL_STOP_MARKER_FILE,
             )
         except Exception:
             pass
@@ -2809,10 +2809,7 @@ def queue_exit_trade_command():
         "source": "CONTROL_CENTER",
     }
 
-    CONTROL_COMMAND_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = CONTROL_COMMAND_FILE.with_suffix(".tmp")
-    temp_path.write_text(json.dumps(command, indent=2), encoding="utf-8")
-    os.replace(temp_path, CONTROL_COMMAND_FILE)
+    get_memory().save_setting("control_command", command, CONTROL_COMMAND_FILE)
     return command
 
 
@@ -5103,87 +5100,6 @@ def _schwab_transaction_day_net_pnl(trading_date: str):
     return None
 
 
-def _backfill_trade_log_from_broker_rows(con, broker_rows):
-    """Insert broker-derived trades missing from trade_log by broker order IDs."""
-    if not broker_rows:
-        return 0
-
-    cur = con.cursor()
-    inserted = 0
-
-    for trade in broker_rows:
-        entry_order_id = str(trade.get("broker_entry_order_id") or "")
-        exit_order_id = str(trade.get("broker_exit_order_id") or "")
-        if not entry_order_id and not exit_order_id:
-            continue
-
-        cur.execute(
-            """
-            SELECT 1
-            FROM trade_log
-            WHERE COALESCE(broker_entry_order_id, '') = ?
-              AND COALESCE(broker_exit_order_id, '') = ?
-            LIMIT 1
-            """,
-            (entry_order_id, exit_order_id),
-        )
-        if cur.fetchone() is not None:
-            continue
-
-        cur.execute(
-            """
-            INSERT INTO trade_log (
-                entry_time,
-                exit_time,
-                direction,
-                entry_price,
-                exit_price,
-                pnl,
-                exit_reason,
-                option_symbol,
-                option_entry,
-                option_exit,
-                option_quantity,
-                option_pnl_dollars,
-                option_return,
-                option_pnl_pct,
-                broker_entry_order_id,
-                broker_exit_order_id,
-                feature_payload,
-                entry_diagnostic_snapshot,
-                exit_diagnostic_snapshot
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                trade.get("entry_time"),
-                trade.get("exit_time"),
-                trade.get("direction"),
-                trade.get("entry_price"),
-                trade.get("exit_price"),
-                trade.get("pnl"),
-                trade.get("exit_reason"),
-                trade.get("option_symbol"),
-                trade.get("option_entry"),
-                trade.get("option_exit"),
-                trade.get("option_quantity"),
-                trade.get("pnl"),
-                None,
-                None,
-                entry_order_id,
-                exit_order_id,
-                None,
-                None,
-                None,
-            ),
-        )
-        inserted += 1
-
-    if inserted:
-        con.commit()
-    return inserted
-
-
 def _option_direction_from_symbol(symbol: str):
     symbol_text = str(symbol or "")
     m = re.search(r"([CP])(\d{8})$", symbol_text)
@@ -5806,6 +5722,12 @@ def api_status_legacy():
     return jsonify(_get_cached_status_snapshot())
 
 
+@app.route('/api/architecture-health', methods=['GET'])
+def api_architecture_health():
+    """Expose source-derived consolidation metrics for the live runtime."""
+    return jsonify(build_architecture_health(PROJECT_ROOT))
+
+
 def _get_cached_status_snapshot(force_refresh: bool = False):
     """Return a short-lived cached status payload to protect the hot endpoint path."""
     now_ts = time.time()
@@ -6057,28 +5979,15 @@ def api_today_trades():
     try:
         import sqlite3
         from datetime import date
-        from execution.trade_logger import init_trade_log
         
         db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        if not db_path.exists() or db_path.stat().st_size == 0:
-            # Bootstrap an empty-but-valid schema so the endpoint never hard-fails
-            # on a missing/zero-byte DB file.
-            init_trade_log()
-        
-        con = sqlite3.connect(str(db_path))
+        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
         con.row_factory = sqlite3.Row
         cur = con.cursor()
         is_fallback_day = False
         trade_log_columns = {row[1] for row in cur.execute("PRAGMA table_info(trade_log)").fetchall()}
         if not trade_log_columns:
-            # Self-heal schema drift: recreate table and continue with empty set.
-            con.close()
-            init_trade_log()
-            con = sqlite3.connect(str(db_path))
-            con.row_factory = sqlite3.Row
-            cur = con.cursor()
-            trade_log_columns = {row[1] for row in cur.execute("PRAGMA table_info(trade_log)").fetchall()}
+            return jsonify({"trades": [], "summary": {}, "error": "trade_log is unavailable"}), 503
         absorption_select = "absorption_score" if "absorption_score" in trade_log_columns else "NULL AS absorption_score"
         
         # First try today's date
@@ -6200,10 +6109,6 @@ def api_today_trades():
         broker_trades = _broker_transaction_trades_for_date(trading_date) if trading_date else []
         using_broker_trades = bool(broker_trades)
         if using_broker_trades:
-            try:
-                _backfill_trade_log_from_broker_rows(con, broker_trades)
-            except Exception:
-                pass
             trades = broker_trades
 
         # Keep one row per logical trade even when executions are split.
@@ -6872,6 +6777,51 @@ HTML_DASHBOARD = """
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 12px;
+        }
+
+        .architecture-health-summary {
+            color: #4a5568;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .architecture-health-score {
+            color: #1f2937;
+            font-size: 22px;
+            font-weight: 700;
+            margin: 4px 0 8px;
+        }
+
+        .architecture-health-blockers {
+            color: #4a5568;
+            font-size: 11px;
+            line-height: 1.35;
+            margin: 8px 0 0;
+            padding-left: 16px;
+            text-align: left;
+        }
+
+        .architecture-evidence {
+            margin-bottom: 14px;
+        }
+
+        .architecture-evidence summary {
+            color: #34495e;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .architecture-evidence-list {
+            color: #4a5568;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.45;
+            margin: 8px 0 0;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-left: 18px;
         }
 
         .status-card.position-call {
@@ -7872,6 +7822,54 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
+        <div class="status-grid primary-status-grid" id="architectureHealthGrid">
+            <div class="status-card">
+                <h3>Brain</h3>
+                <div class="architecture-health-score" id="architectureBrainScore">Loading...</div>
+                <p class="architecture-health-summary" id="architectureBrainSummary">Decision ownership</p>
+                <ul class="architecture-health-blockers" id="architectureBrainBlockers"></ul>
+            </div>
+            <div class="status-card">
+                <h3>Memory</h3>
+                <div class="architecture-health-score" id="architectureMemoryScore">Loading...</div>
+                <p class="architecture-health-summary" id="architectureMemorySummary">Persistence ownership</p>
+                <ul class="architecture-health-blockers" id="architectureMemoryBlockers"></ul>
+            </div>
+            <div class="status-card">
+                <h3>Cockpit</h3>
+                <div class="architecture-health-score" id="architectureCockpitScore">Loading...</div>
+                <p class="architecture-health-summary" id="architectureCockpitSummary">UI ownership</p>
+                <ul class="architecture-health-blockers" id="architectureCockpitBlockers"></ul>
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>Architecture Completion</h3>
+                <div class="architecture-health-score" id="architectureOverallScore">Loading...</div>
+                <p class="architecture-health-summary" id="architectureOverallSummary">Weighted ownership review</p>
+            </div>
+            <details class="architecture-evidence">
+                <summary id="architectureEvidenceSummary">Supporting scanner evidence</summary>
+                <ul class="architecture-evidence-list" id="architectureEvidenceList"></ul>
+            </details>
+            <p class="architecture-health-summary" id="architectureBaseline">Known baseline issues load separately.</p>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>Current Architecture Priorities</h3>
+                <ol class="architecture-health-blockers" id="architecturePriorityList">
+                    <li>Loading prioritized milestones...</li>
+                </ol>
+                <p class="architecture-health-summary" id="architecturePriorityEstimate"></p>
+            </div>
+            <details class="architecture-evidence">
+                <summary>Completion contracts</summary>
+                <ul class="architecture-evidence-list" id="architectureContractList"></ul>
+            </details>
+        </div>
+
         <div class="trades-actions">
             <button class="bot-toggle stopped" id="botToggleBtn" onclick="toggleBot()">▶ Start Bot</button>
             <div class="trade-summary-card neutral" id="todayPnlCard"><h4>Today's P&L</h4><div class="trade-summary-value" id="todayPnl">Loading...</div></div>
@@ -7904,14 +7902,17 @@ HTML_DASHBOARD = """
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
         let dailyLearningRefreshInFlight = false;
+        let architectureHealthRefreshInFlight = false;
         let lastLogsRefreshMs = 0;
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
         let lastDailyLearningRefreshMs = 0;
+        let lastArchitectureHealthRefreshMs = 0;
         const LOGS_REFRESH_INTERVAL_MS = 5000;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
         const DAILY_LEARNING_REFRESH_INTERVAL_MS = 30000;
+        const ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1500;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
@@ -9070,6 +9071,68 @@ HTML_DASHBOARD = """
             }
         }
 
+        async function updateArchitectureHealth() {
+            if (architectureHealthRefreshInFlight || (Date.now() - lastArchitectureHealthRefreshMs) < ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS) {
+                return;
+            }
+
+            architectureHealthRefreshInFlight = true;
+            try {
+                const res = await fetch('/api/architecture-health');
+                const report = await res.json();
+                const overall = report.overall || {};
+                const brain = report.brain || {};
+                const memory = report.memory || {};
+                const cockpit = report.cockpit || {};
+                const baseline = report.baseline || {};
+                const baselineCount = Array.isArray(baseline.known_issues) ? baseline.known_issues.length : 0;
+                const components = [
+                    ['Brain', brain, 'architectureBrain'],
+                    ['Memory', memory, 'architectureMemory'],
+                    ['Cockpit', cockpit, 'architectureCockpit'],
+                ];
+                const escapeArchitectureText = (value) => safeEscape(String(value || ''));
+                const renderBlockers = (component, prefix) => {
+                    const capabilities = Array.isArray(component.capabilities) ? component.capabilities : [];
+                    const remaining = capabilities.filter((capability) => capability.status !== 'complete');
+                    document.getElementById(`${prefix}Score`).textContent = `${Number(component.score || 0)}%`;
+                    document.getElementById(`${prefix}Summary`).textContent = `${remaining.length} ownership capability blocker(s)`;
+                    document.getElementById(`${prefix}Blockers`).innerHTML = remaining.map((capability) => {
+                        const files = Array.isArray(capability.remaining_files) ? capability.remaining_files.join(', ') : '';
+                        return `<li>${escapeArchitectureText(capability.label)}: ${escapeArchitectureText(files || capability.status)}</li>`;
+                    }).join('') || '<li>All reviewed capabilities are complete.</li>';
+                };
+
+                components.forEach(([label, component, prefix]) => renderBlockers(component, prefix));
+                const evidence = components.flatMap(([label, component]) => (Array.isArray(component.evidence) ? component.evidence : []).map((item) => ({label, ...item})));
+                const incompleteCapabilities = components.flatMap(([label, component]) => (Array.isArray(component.capabilities) ? component.capabilities : [])
+                    .filter((capability) => capability.status !== 'complete')
+                    .map((capability) => ({label, ...capability})));
+                const priorities = report.priorities || {};
+                const roadmap = Array.isArray(priorities.priorities) ? priorities.priorities : [];
+
+                document.getElementById('architectureOverallScore').textContent = `${Number(overall.completion_percent || 0)}%`;
+                document.getElementById('architectureOverallSummary').textContent = `Brain ${Number(brain.score || 0)}% | Memory ${Number(memory.score || 0)}% | Cockpit ${Number(cockpit.score || 0)}%`;
+                document.getElementById('architectureEvidenceSummary').textContent = `Supporting scanner evidence (${evidence.length} finding${evidence.length === 1 ? '' : 's'})`;
+                document.getElementById('architectureEvidenceList').innerHTML = evidence.map((item) => `<li><strong>${escapeArchitectureText(item.label)}</strong> | ${escapeArchitectureText(item.path)}:${Number(item.line || 0)} | ${escapeArchitectureText(item.category)} | ${escapeArchitectureText(item.why)}</li>`).join('') || '<li>No runtime boundary findings.</li>';
+                document.getElementById('architectureBaseline').textContent = baselineCount
+                    ? `Known baseline issue${baselineCount === 1 ? '' : 's'}: ${(baseline.known_issues || []).map((item) => item.summary).join(' | ')} Not included in architecture scoring.`
+                    : 'No known baseline issues.';
+                document.getElementById('architecturePriorityList').innerHTML = roadmap.map((priority) => `<li><strong>${escapeArchitectureText(priority.label)}</strong> | Impact: +${Number(priority.impact_percent || 0)}% | Blocker: ${escapeArchitectureText(priority.blocker)}</li>`).join('') || '<li>No remaining prioritized milestones.</li>';
+                document.getElementById('architecturePriorityEstimate').textContent = `Estimated completion after next milestone: ${Number(priorities.estimated_completion_after_next_milestone || overall.completion_percent || 0)}%`;
+                document.getElementById('architectureContractList').innerHTML = incompleteCapabilities.map((capability) => {
+                    const criteria = Array.isArray(capability.definition_of_complete) ? capability.definition_of_complete.join(' ') : '';
+                    return `<li><strong>${escapeArchitectureText(capability.label)}</strong> | Owner: ${escapeArchitectureText(capability.owner)} | Complete when: ${escapeArchitectureText(criteria)}</li>`;
+                }).join('') || '<li>All capability contracts are complete.</li>';
+                lastArchitectureHealthRefreshMs = Date.now();
+            } catch (err) {
+                console.error('Error loading architecture health:', err);
+                document.getElementById('architectureOverallScore').textContent = 'Unavailable';
+            } finally {
+                architectureHealthRefreshInFlight = false;
+            }
+        }
+
         async function updateTodaysTrades() {
             if (tradesRefreshInFlight) {
                 return;
@@ -9248,6 +9311,7 @@ HTML_DASHBOARD = """
             updateTodaysTrades();
             updateExecutionQuality(lastStatusSnapshot);
             updateDailyLearningInsights();
+            updateArchitectureHealth();
         });
 
         document.addEventListener('visibilitychange', () => {
@@ -9267,7 +9331,9 @@ HTML_DASHBOARD = """
             lastTradesRefreshMs = 0;
             lastExecutionQualityRefreshMs = 0;
             lastDailyLearningRefreshMs = 0;
+            lastArchitectureHealthRefreshMs = 0;
             refreshStatus();
+            updateArchitectureHealth();
         });
 
         window.addEventListener('storage', (event) => {

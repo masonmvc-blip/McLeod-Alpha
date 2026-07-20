@@ -7,7 +7,7 @@ import pandas as pd
 
 import execution.trade_logger as trade_logger
 import execution.daily_trade_log_email as daily_trade_log_email
-import execution.paper_engine as paper_engine
+import execution.live_engine as live_engine
 import phase3_monitor
 
 
@@ -74,5 +74,5 @@ def test_entry_snapshot_includes_absorption_from_payload():
         "absorption_score": 2.2,
         "confidence_score": 2.8,
     })
-    snapshot_text = paper_engine._extract_entry_diagnostic_snapshot(payload)
+    snapshot_text = live_engine._extract_entry_diagnostic_snapshot(payload)
     assert json.loads(snapshot_text)["absorption_score"] == 2.2

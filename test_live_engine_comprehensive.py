@@ -5,7 +5,7 @@ Tests verify:
 1. live mode calls the real Schwab order endpoint
 2. no local position exists before confirmed fill
 3. rejected/unfilled orders do not create positions
-4. paper mode never sends a live order
+4. the monitor has no paper execution path
 5. account/state mismatch blocks trading
 """
 
@@ -364,58 +364,11 @@ def test_non_four_contract_order_is_rejected_before_submission():
     assert live_engine.LAST_OPEN_TRADE_METRICS["block_reason"] == "contract_quantity_must_equal_max"
 
 
-def test_paper_mode_never_sends_live_order():
-    """
-    TEST 4: Paper mode never sends a live order
-    
-    Verifies:
-    - When using paper_engine, place_order() is NEVER called
-    - Paper trades use stub implementation
-    """
-    print("\n" + "="*70)
-    print("TEST 4: Paper mode never sends live order")
-    print("="*70)
-    
-    # Import paper engine
-    from execution import paper_engine
-    from execution.position_store import clear_position
-    
-    # Clear any persisted position
-    clear_position()
-    paper_engine.current_position = None
-    
-    try:
-        # Setup and call paper_engine.open_trade()
-        result = paper_engine.open_trade(
-            direction="CALL",
-            price=450.00,
-            stop=445.00,
-            target=460.00,
-            quantity=1,
-            reason="TEST",
-            option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65}
-        )
-        
-        # Paper engine should create position WITHOUT calling Schwab
-        assert result is True, "paper_engine.open_trade() returned False"
-        print("✓ paper_engine.open_trade() succeeded")
-        
-        # Paper position should NOT have order ID
-        if paper_engine.current_position:
-            assert not hasattr(paper_engine.current_position, 'schwab_order_id') or \
-                   paper_engine.current_position.schwab_order_id == "", \
-                   "Paper position should not have order ID"
-            print("✓ Paper position has NO Schwab order ID")
-        
-        print("\n✓ TEST 4 PASSED")
-        
-    except Exception as e:
-        print(f"\n✗ TEST 4 FAILED: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-    finally:
-        paper_engine.current_position = None
+def test_monitor_has_no_paper_execution_path():
+    """Production monitor always imports the sole live execution pipeline."""
+    source = (Path(__file__).parent / "phase3_monitor.py").read_text(encoding="utf-8")
+    assert "execution.paper_engine" not in source
+    assert 'import_module("execution.live_engine")' in source
 
 
 def test_position_stores_order_metadata():

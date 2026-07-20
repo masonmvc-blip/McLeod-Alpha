@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
+from engine.memory import get_memory
+
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 OPPORTUNITY_LOG_DIR = Path("data/reports/opportunity_logs")
@@ -42,7 +44,7 @@ def _load_events(trade_date: str) -> List[Dict[str, Any]]:
 
     events: List[Dict[str, Any]] = []
     seen = set()
-    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+    for line in get_memory().read_report_text(path, encoding="utf-8", errors="ignore").splitlines():
         line = line.strip()
         if not line:
             continue
@@ -64,9 +66,8 @@ def _load_spy_candles(trade_date: str) -> List[Dict[str, Any]]:
         return []
 
     out: List[Dict[str, Any]] = []
-    with SPY_HISTORY_PATH.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
+    reader = csv.DictReader(get_memory().read_report_text(SPY_HISTORY_PATH, encoding="utf-8").splitlines())
+    for row in reader:
             dt = _parse_dt(row.get("datetime"))
             if dt is None:
                 continue
@@ -385,16 +386,8 @@ def _to_csv_rows(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _write_csv(path: Path, rows: List[Dict[str, Any]]) -> None:
-    if not rows:
-        path.write_text("event_id\n", encoding="utf-8")
-        return
-
-    fieldnames = list(rows[0].keys())
-    with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
+    fieldnames = list(rows[0].keys()) if rows else ["event_id"]
+    get_memory().write_report_csv(path, fieldnames, rows, "daily_opportunity_review", source="daily_opportunity_review")
 
 
 def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, Any]]) -> str:
@@ -440,8 +433,6 @@ def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, 
 
 
 def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-
     out_csv = REPORTS_DIR / f"daily_opportunity_review_{trade_date}.csv"
     out_json = REPORTS_DIR / f"daily_opportunity_review_{trade_date}.json"
     out_html = REPORTS_DIR / f"daily_opportunity_review_{trade_date}.html"
@@ -458,18 +449,7 @@ def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
     csv_rows = _to_csv_rows(enriched)
 
     _write_csv(out_csv, csv_rows)
-    out_json.write_text(
-        json.dumps(
-            {
-                "trade_date": trade_date,
-                "generated_at": datetime.now(EASTERN_TZ).isoformat(),
-                "summary": summary,
-                "evaluated_setups": enriched,
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-    out_html.write_text(_render_html(trade_date, summary, csv_rows), encoding="utf-8")
+    get_memory().write_report_json(out_json, {"trade_date": trade_date, "generated_at": datetime.now(EASTERN_TZ).isoformat(), "summary": summary, "evaluated_setups": enriched}, "daily_opportunity_review", source="daily_opportunity_review", correlation_id=f"daily-opportunity-review:{trade_date}")
+    get_memory().write_report_text(out_html, _render_html(trade_date, summary, csv_rows), "daily_opportunity_review", source="daily_opportunity_review", correlation_id=f"daily-opportunity-review:{trade_date}")
 
     return ReviewPaths(html=out_html, csv=out_csv, json=out_json)

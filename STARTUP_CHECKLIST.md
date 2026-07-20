@@ -56,7 +56,6 @@ Use these scripts as the blessed operational path to avoid stale process/file co
 ### Core Files Present
 - [ ] `phase3_monitor.py` exists and is executable
 - [ ] `execution/live_engine.py` exists
-- [ ] `execution/paper_engine.py` exists (fallback)
 - [ ] `EMERGENCY_KILL_SWITCH.md` available
 
 ### Data Directories
@@ -155,7 +154,7 @@ Look for these indicators in logs:
 **Checklist:**
 - [ ] Orders marked with 🔴 LIVE prefix (if trade enters)
 - [ ] No "PAPER" mode indicators in logs
-- [ ] No fallback to paper_engine messages
+- [ ] No alternate execution-engine messages
 - [ ] Position tracking shows Schwab order IDs (if live order placed)
 
 ---

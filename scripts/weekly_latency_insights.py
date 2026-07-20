@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+from engine.memory import get_memory
+
 DEFAULT_INPUT_PATH = Path("data/reports/latency_cycle_history.jsonl")
 DEFAULT_OUTPUT_DIR = Path("data/reports/latency_weekly")
 DEFAULT_DECISION_INPUT_PATH = Path("data/reports/decision_audit_history.jsonl")
@@ -61,11 +63,7 @@ def _percentile(values: List[float], pct: float) -> Optional[float]:
 
 def _load_events(input_path: Path) -> List[Dict[str, Any]]:
     events: List[Dict[str, Any]] = []
-    if not input_path.exists():
-        return events
-
-    with input_path.open("r", encoding="utf-8") as handle:
-        for line in handle:
+    for line in get_memory().read_report_text(input_path, encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
                 continue
@@ -449,10 +447,12 @@ def _write_outputs(summary: Dict[str, Any], output_dir: Path) -> Dict[str, Path]
 
     md_blob = "\n".join(md_lines).rstrip() + "\n"
 
-    json_path.write_text(json_blob, encoding="utf-8")
-    latest_json.write_text(json_blob, encoding="utf-8")
-    md_path.write_text(md_blob, encoding="utf-8")
-    latest_md.write_text(md_blob, encoding="utf-8")
+    memory = get_memory()
+    correlation_id = f"weekly-latency-insights:{summary.get('generated_at') or days}"
+    memory.write_report_text(json_path, json_blob, "weekly_latency_insights", source="weekly_latency_insights", correlation_id=correlation_id)
+    memory.write_report_text(latest_json, json_blob, "weekly_latency_insights", source="weekly_latency_insights", correlation_id=correlation_id)
+    memory.write_report_text(md_path, md_blob, "weekly_latency_insights", source="weekly_latency_insights", correlation_id=correlation_id)
+    memory.write_report_text(latest_md, md_blob, "weekly_latency_insights", source="weekly_latency_insights", correlation_id=correlation_id)
 
     return {
         "json": json_path,

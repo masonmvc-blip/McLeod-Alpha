@@ -18,6 +18,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
 
+from engine.memory import get_memory
+
 WORKSPACE = Path(__file__).resolve().parent.parent
 DATA_DIR = WORKSPACE / "data"
 REPORTS_DIR = WORKSPACE / "reports"
@@ -90,9 +92,7 @@ def _pick_python() -> str:
 
 
 def _append_log(message: str) -> None:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(message)
+    get_memory().append_report_line(LOG_FILE, message, "mcleod_report_run_log", source="run_mcleod_report")
 
 
 def _run_step(step: Step) -> None:
@@ -142,10 +142,8 @@ def _run_step(step: Step) -> None:
 
 
 def _read_csv(path: Path) -> List[dict]:
-    if not path.exists():
-        return []
-    with open(path, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    text = get_memory().read_report_text(path, encoding="utf-8")
+    return list(csv.DictReader(text.splitlines())) if text else []
 
 
 def _to_float(value: str, default: float = 0.0) -> float:
@@ -205,7 +203,7 @@ def _write_replacement_report(replacements: List[dict]) -> None:
                 )
             )
 
-    REPLACEMENT_REPORT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    get_memory().write_report_text(REPLACEMENT_REPORT_MD, "\n".join(lines) + "\n", "replacement_candidates", source="run_mcleod_report")
 
 
 def _write_core_report() -> None:
@@ -376,7 +374,7 @@ def _write_core_report() -> None:
         lines.append("- ✅ No missing or stale data warnings detected")
     lines.append("")
 
-    CORE_REPORT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    get_memory().write_report_text(CORE_REPORT_MD, "\n".join(lines) + "\n", "mcleod_core_rankings", source="run_mcleod_report")
     _write_replacement_report(replacement_rows)
 
 
@@ -436,8 +434,12 @@ def _build_steps(python_exec: str) -> List[Step]:
 
 
 def main() -> int:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    LOG_FILE.write_text(f"[{_now()}] McLeod report launcher start\n", encoding="utf-8")
+    get_memory().write_report_text(
+        LOG_FILE,
+        f"[{_now()}] McLeod report launcher start\n",
+        "mcleod_report_run_log",
+        source="run_mcleod_report",
+    )
 
     python_exec = _pick_python()
     print(f"Using Python: {python_exec}")

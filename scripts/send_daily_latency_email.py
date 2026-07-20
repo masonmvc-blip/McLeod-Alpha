@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from dotenv import load_dotenv
+from engine.memory import get_memory
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -37,11 +38,9 @@ def _load_env() -> None:
 
 
 def _append_log(payload: Dict[str, Any]) -> None:
-    RUN_LOG.parent.mkdir(parents=True, exist_ok=True)
     record = dict(payload)
     record.setdefault("logged_at", datetime.now().isoformat())
-    with RUN_LOG.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    get_memory().append_report_line(RUN_LOG, json.dumps(record, sort_keys=True), "daily_latency_email_log", source="send_daily_latency_email")
 
 
 def _ensure_email_config() -> Tuple[bool, Sequence[str], Dict[str, str]]:
@@ -73,9 +72,10 @@ def _run_latency_report(days: int) -> None:
 
 
 def _load_latest_summary() -> Dict[str, Any]:
-    if not LATEST_JSON.exists():
+    text = get_memory().read_report_text(LATEST_JSON, encoding="utf-8")
+    if not text:
         raise FileNotFoundError(f"Missing latency summary JSON: {LATEST_JSON}")
-    return json.loads(LATEST_JSON.read_text(encoding="utf-8"))
+    return json.loads(text)
 
 
 def _fmt_ms(value: Optional[float]) -> str:

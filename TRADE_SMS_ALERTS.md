@@ -51,8 +51,8 @@ TRADE_ALERT_TO_NUMBER=+1YOUR_MOBILE_NUMBER
 
 - Live options entry fill confirmed: `execution/live_engine.py`
 - Live options exit: `execution/live_engine.py`
-- Paper options entry: `execution/paper_engine.py`
-- Paper options exit: `execution/paper_engine.py`
+- Live options entry: `execution/live_engine.py`
+- Live options exit: `execution/live_engine.py`
 - Legacy paper path entry/exit: `paper_trader.py`
 
 ## 2.5) Send a one-time test text

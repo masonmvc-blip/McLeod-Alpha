@@ -74,7 +74,6 @@ def main():
     files = [
         ("phase3_monitor.py", "Core trading bot"),
         ("execution/live_engine.py", "Live trading engine"),
-        ("execution/paper_engine.py", "Fallback engine"),
         (".env", "Configuration"),
         ("token.json", "Schwab token"),
     ]

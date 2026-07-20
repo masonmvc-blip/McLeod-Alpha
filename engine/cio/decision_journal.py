@@ -7,6 +7,8 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any, Iterable
 
+from engine.memory import Memory, get_memory
+
 from .decision_record import (
     DecisionJournalConflictError,
     DecisionJournalError,
@@ -41,9 +43,9 @@ def _first_sentence(text: str) -> str:
 
 
 class DecisionJournal:
-    def __init__(self, root_path: Path = DEFAULT_ROOT) -> None:
+    def __init__(self, root_path: Path = DEFAULT_ROOT, memory: Memory | None = None) -> None:
         self.root_path = Path(root_path)
-        self.root_path.mkdir(parents=True, exist_ok=True)
+        self.memory = memory or get_memory()
         self.decisions_path = self.root_path / "decisions.jsonl"
         self.outcomes_path = self.root_path / "outcomes.jsonl"
         self.index_path = self.root_path / "index.json"
@@ -96,8 +98,8 @@ class DecisionJournal:
         open_records = [record for record in decisions if record.decision_id not in outcome_map]
 
         summary = self._build_performance_summary(decisions, closed_records, open_records, outcome_map)
-        self.summary_path.write_text(_stable_json(summary) + "\n", encoding="utf-8")
-        self.report_path.write_text(self._render_performance_report(summary), encoding="utf-8")
+        self.memory.write_experiment_text(self.summary_path, _stable_json(summary) + "\n", "cio_decision_performance_summary", source="cio_decision_journal")
+        self.memory.write_experiment_text(self.report_path, self._render_performance_report(summary), "cio_decision_performance_report", source="cio_decision_journal")
         self._write_index()
         return summary
 
@@ -339,8 +341,7 @@ class DecisionJournal:
                 return prior
             raise DecisionJournalConflictError(f"Conflicting decision_id: {record.decision_id}")
 
-        with self.decisions_path.open("a", encoding="utf-8") as handle:
-            handle.write(record.to_json_line() + "\n")
+        self.memory.append_experiment_line(self.decisions_path, record.to_json_line(), "cio_decision", source="cio_decision_journal", correlation_id=record.decision_id)
         return record
 
     def _append_or_validate_outcome(self, outcome: RealizedOutcome) -> RealizedOutcome:
@@ -352,25 +353,20 @@ class DecisionJournal:
                 return prior
             raise DecisionJournalConflictError(f"Conflicting outcome decision_id: {outcome.decision_id}")
 
-        with self.outcomes_path.open("a", encoding="utf-8") as handle:
-            handle.write(_stable_json(outcome.to_dict()) + "\n")
+        self.memory.append_experiment_line(self.outcomes_path, _stable_json(outcome.to_dict()), "cio_decision_outcome", source="cio_decision_journal", correlation_id=outcome.decision_id)
         return outcome
 
     def _load_decision_records(self) -> list[DecisionRecord]:
-        if not self.decisions_path.exists():
-            return []
         records: list[DecisionRecord] = []
-        for line in self.decisions_path.read_text(encoding="utf-8").splitlines():
+        for line in self.memory.read_experiment_text(self.decisions_path, encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             records.append(DecisionRecord.from_dict(json.loads(line)))
         return records
 
     def _load_outcomes(self) -> list[RealizedOutcome]:
-        if not self.outcomes_path.exists():
-            return []
         outcomes: list[RealizedOutcome] = []
-        for line in self.outcomes_path.read_text(encoding="utf-8").splitlines():
+        for line in self.memory.read_experiment_text(self.outcomes_path, encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             outcomes.append(RealizedOutcome.from_dict(json.loads(line)))
@@ -380,7 +376,7 @@ class DecisionJournal:
         decisions = self._load_decision_records()
         outcomes = self._load_outcomes()
         summary = self._build_index_payload(decisions, outcomes)
-        self.index_path.write_text(_stable_json(summary) + "\n", encoding="utf-8")
+        self.memory.write_experiment_text(self.index_path, _stable_json(summary) + "\n", "cio_decision_index", source="cio_decision_journal")
         return summary
 
     def _build_index_payload(self, decisions: list[DecisionRecord], outcomes: list[RealizedOutcome]) -> dict[str, Any]:

@@ -13,15 +13,12 @@ import json
 
 from backtesting.data_loader import classify_candle, TIMEZONE
 from backtesting.replay_engine import ReplayEngine
+from engine.brain import Brain
 from strategy.signals import (
     add_indicators,
     build_feature_snapshot,
     classify_market_regime,
-    is_regime_aligned,
-    volume_momentum,
     momentum_freshness,
-    score_call,
-    score_put,
 )
 
 
@@ -787,6 +784,7 @@ class SignalReplayEngine:
         self.engine = replay_engine
         self.call_threshold = call_threshold
         self.put_threshold = put_threshold
+        self.brain = Brain()
         self.candles_buffer = []
         self.signals = []
         
@@ -836,42 +834,22 @@ class SignalReplayEngine:
         last = df.iloc[-1]
         prev = df.iloc[-2]
         
-        # Get market regime from shared classifier used by production.
+        entry_decision = self.brain.evaluate_entry(last, prev, df)
         regime_snapshot = classify_market_regime(last, prev)
-        regime = regime_snapshot["market_regime"]
-        
-        # Score both call and put
-        call_score, call_reasons = score_call(last, prev)
-        put_score, put_reasons = score_put(last, prev)
-        
-        # Volume momentum
-        vol = volume_momentum(df)
+        regime = entry_decision["regime"]
+        call_score = entry_decision["call_score"]
+        put_score = entry_decision["put_score"]
+        call_reasons = entry_decision["call_reasons"]
+        put_reasons = entry_decision["put_reasons"]
+        vol = entry_decision["volume"]
         call_momentum = momentum_freshness(df, direction="CALL")
         put_momentum = momentum_freshness(df, direction="PUT")
-        
-        # Adjust scores based on volume
-        if vol["trend"] == "INCREASING":
-            if float(last.close) > float(last.open):
-                call_score += 1
-                call_reasons.append("volume_confirming_bullish_move")
-            elif float(last.close) < float(last.open):
-                put_score += 1
-                put_reasons.append("volume_confirming_bearish_move")
-        elif vol["trend"] == "DECREASING":
-            if float(last.close) > float(last.open):
-                call_score -= 1
-                if "volume_weakening_bullish_move" not in call_reasons:
-                    call_reasons.append("volume_weakening_bullish_move")
-            elif float(last.close) < float(last.open):
-                put_score -= 1
-                if "volume_weakening_bearish_move" not in put_reasons:
-                    put_reasons.append("volume_weakening_bearish_move")
         
         # Build feature snapshot
         feature = build_feature_snapshot(df)
 
-        call_aligned = is_regime_aligned("CALL", regime)
-        put_aligned = is_regime_aligned("PUT", regime)
+        call_aligned = entry_decision["direction"] == "CALL"
+        put_aligned = entry_decision["direction"] == "PUT"
         call_lifecycle = trend_lifecycle_engine(df, direction="CALL")
         put_lifecycle = trend_lifecycle_engine(df, direction="PUT")
         call_stage = trend_stage_engine(call_lifecycle)
@@ -905,24 +883,11 @@ class SignalReplayEngine:
             put_stage,
         )
 
-        # Backtest replay has no live protective stop heartbeat state; keep alarm false.
+        # Brain owns live entry qualification. The replay-only fields below are
+        # diagnostics and never alter that decision.
+        call_qualified = entry_decision["direction"] == "CALL"
+        put_qualified = entry_decision["direction"] == "PUT"
         protective_alarm_active = False
-        
-        # Determine qualification
-        call_qualified = (
-            call_score >= self.call_threshold
-            and call_aligned
-            and call_continuation_quality.get("passes", False)
-            and _safe_float(call_confidence.get("score", 0.0)) >= CONFIDENCE_MIN_SCORE
-            and (not protective_alarm_active)
-        )
-        put_qualified = (
-            put_score >= self.put_threshold
-            and put_aligned
-            and put_continuation_quality.get("passes", False)
-            and _safe_float(put_confidence.get("score", 0.0)) >= CONFIDENCE_MIN_SCORE
-            and (not protective_alarm_active)
-        )
         
         return {
             "timestamp": current_candle["timestamp"],

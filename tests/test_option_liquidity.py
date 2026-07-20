@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
-from execution.option_selector import MIN_OPTION_DAILY_VOLUME, select_option_from_chain
+from execution.option_selector import MIN_OPTION_DAILY_VOLUME, get_nearest_expiration, select_option_from_chain
+from engine.brain import Brain
 
 
 def _chain_with_contracts(*contracts):
@@ -35,3 +36,20 @@ def test_selector_accepts_option_at_daily_volume_minimum():
 
     assert selected["symbol"] == "SPY_MIN"
     assert selected["volume"] == MIN_OPTION_DAILY_VOLUME
+
+
+def test_brain_owns_option_ranking_policy():
+    chain = _chain_with_contracts(
+        _contract("SPY_LOWER_VOLUME", MIN_OPTION_DAILY_VOLUME),
+        _contract("SPY_HIGHER_VOLUME", MIN_OPTION_DAILY_VOLUME + 1),
+    )
+
+    selected = Brain().select_option_contract(chain, "CALL", 750.0)
+
+    assert selected["symbol"] == "SPY_HIGHER_VOLUME"
+
+
+def test_nearest_expiration_does_not_require_a_liquid_contract():
+    chain = _chain_with_contracts(_contract("SPY_LOW", MIN_OPTION_DAILY_VOLUME - 1))["callExpDateMap"]
+
+    assert get_nearest_expiration(chain) in chain

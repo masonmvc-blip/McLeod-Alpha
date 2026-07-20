@@ -82,12 +82,12 @@ The system uses **8-tier progressive trailing stops** based on option value:
 ### Files Modified
 
 1. **execution/live_engine.py** - Updated `manage_trade()` function
-2. **execution/paper_engine.py** - Updated `manage_trade()` function + constants
+2. **engine/brain/engine.py** - Canonical trailing-stop decision policy
 
 ### Constants Updated
 
 ```python
-# Paper Engine (execution/paper_engine.py)
+# Canonical Brain (engine/brain/engine.py)
 BREAKEVEN_TRIGGER_PCT = 3       # Move stop to breakeven at 3% profit
 TRAIL_2_TRIGGER_PCT = 5         # Trail 2% at 5% profit
 TRAIL_1_TRIGGER_PCT = 7         # Trail 1% at 7% profit

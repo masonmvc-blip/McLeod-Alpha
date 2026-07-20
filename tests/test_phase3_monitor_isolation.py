@@ -10,6 +10,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from engine.brain import Brain
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -210,14 +212,21 @@ def test_entry_snapshot_preserves_support_resistance() -> None:
 def test_startup_guard_blocks_two_entries_then_releases_to_engine(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
     engine_calls = []
+    admissions = []
     monkeypatch.setattr(module, "startup_entry_attempts", 0)
     monkeypatch.setattr(module, "original_open_trade", lambda *args, **kwargs: engine_calls.append((args, kwargs)) or True)
     monkeypatch.setattr(module, "ENGINE_MODULE", SimpleNamespace())
+    monkeypatch.setattr(
+        module.LIVE_BRAIN,
+        "evaluate_startup_entry_admission",
+        lambda **facts: admissions.append(facts) or Brain().evaluate_startup_entry_admission(**facts),
+    )
 
     assert module.open_trade("CALL") is False
     assert module.open_trade("CALL") is False
     assert module.open_trade("CALL") is True
     assert len(engine_calls) == 1
+    assert [item["attempted_entries"] for item in admissions] == [0, 1, 2]
 
 
 def test_candle_history_merge_preserves_cached_context_and_fresh_values() -> None:

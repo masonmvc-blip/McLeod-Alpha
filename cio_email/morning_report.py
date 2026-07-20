@@ -32,6 +32,7 @@ from dotenv import load_dotenv
 
 from engine.portfolio_engine import PortfolioEngine, RESEARCH_NEEDED
 from engine.data_sources.transcript_source import TranscriptDataSource
+from engine.memory import get_memory
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -281,21 +282,17 @@ def _pick_refresh_python() -> str:
 
 
 def _save_state(state: Dict[str, Any]) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    _atomic_write_text(STATE_PATH, json.dumps(state, indent=2, sort_keys=True) + "\n")
+    get_memory().save_setting("morning_cio_email_state", state, STATE_PATH, source="morning_cio_email")
 
 
 def _append_run_log(payload: Dict[str, Any]) -> None:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
     record = dict(payload)
     record.setdefault("logged_at", _now_ct().isoformat())
-    with RUN_LOG_PATH.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    get_memory().append_report_line(RUN_LOG_PATH, json.dumps(record, sort_keys=True), "morning_cio_run_log", source="morning_cio_email")
 
 
 def _append_delivery_registry(payload: Dict[str, Any]) -> None:
     """Append delivery metadata without persisting credentials or message bodies."""
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
     record = dict(payload)
     record.setdefault("logged_at", _now_ct().isoformat())
     allowed = {
@@ -311,14 +308,11 @@ def _append_delivery_registry(payload: Dict[str, Any]) -> None:
         "logged_at",
     }
     safe_record = {key: value for key, value in record.items() if key in allowed}
-    with DELIVERY_REGISTRY_PATH.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(safe_record, sort_keys=True) + "\n")
+    get_memory().append_report_line(DELIVERY_REGISTRY_PATH, json.dumps(safe_record, sort_keys=True), "morning_cio_delivery_registry", source="morning_cio_email")
 
 
 def _delivery_succeeded_for_date(report_date: str) -> bool:
-    if not DELIVERY_REGISTRY_PATH.exists():
-        return False
-    for line in DELIVERY_REGISTRY_PATH.read_text(encoding="utf-8").splitlines():
+    for line in get_memory().read_report_text(DELIVERY_REGISTRY_PATH, encoding="utf-8").splitlines():
         try:
             row = json.loads(line)
         except (TypeError, json.JSONDecodeError):
@@ -332,18 +326,24 @@ def _delivery_succeeded_for_date(report_date: str) -> bool:
     return False
 
 
-def _atomic_write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
-    try:
-        temp_path.write_text(content, encoding="utf-8")
-        os.replace(temp_path, path)
-    finally:
-        temp_path.unlink(missing_ok=True)
+def _persist_report_text(path: Path, content: str) -> None:
+    get_memory().write_report_text(path, content, "morning_cio_artifact", source="morning_cio_email")
+
+
+class _MemoryReportLogHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            get_memory().append_report_line(
+                LOG_DIR / "morning_cio_email.log",
+                self.format(record),
+                "morning_cio_runtime_log",
+                source="morning_cio_email",
+            )
+        except Exception:
+            pass
 
 
 def _configure_logger(run_id: str) -> logging.Logger:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger(f"morning_cio_email.{run_id}")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
@@ -354,7 +354,7 @@ def _configure_logger(run_id: str) -> logging.Logger:
     console.setFormatter(formatter)
     logger.addHandler(console)
 
-    file_handler = logging.FileHandler(LOG_DIR / "morning_cio_email.log", encoding="utf-8")
+    file_handler = _MemoryReportLogHandler()
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     return logger
@@ -1598,13 +1598,13 @@ def _write_artifacts(bundle: ReportBundle, text_body: str, html_body: str, paylo
         "---\n\n"
         f"{text_body}\n"
     )
-    _atomic_write_text(LATEST_TEXT, text_body)
-    _atomic_write_text(LATEST_HTML, html_body)
-    _atomic_write_text(LATEST_JSON, json_body)
-    _atomic_write_text(LEGACY_MARKDOWN_PATH, legacy_md)
-    _atomic_write_text(archive_dir / "morning_cio_report.md", legacy_md)
-    _atomic_write_text(archive_dir / "morning_cio_report.html", html_body)
-    _atomic_write_text(archive_dir / "morning_cio_report.json", json_body)
+    _persist_report_text(LATEST_TEXT, text_body)
+    _persist_report_text(LATEST_HTML, html_body)
+    _persist_report_text(LATEST_JSON, json_body)
+    _persist_report_text(LEGACY_MARKDOWN_PATH, legacy_md)
+    _persist_report_text(archive_dir / "morning_cio_report.md", legacy_md)
+    _persist_report_text(archive_dir / "morning_cio_report.html", html_body)
+    _persist_report_text(archive_dir / "morning_cio_report.json", json_body)
 
 
 def _update_state(bundle: ReportBundle) -> None:

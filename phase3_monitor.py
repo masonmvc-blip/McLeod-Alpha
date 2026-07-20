@@ -2,9 +2,8 @@ from execution.option_selector import select_option_from_chain, find_option_mark
 from execution.equity_stream import SchwabEquityQuoteStream
 from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
-from engine.brain import classify_entry_regime as market_regime
-
-from engine.brain import LIVE_ENTRY_MIN_SCORE, build_entry_risk_plan, is_entry_eligible
+from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
+from engine.memory import get_memory
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
@@ -28,6 +27,7 @@ from schwab.auth import easy_client
 sys.path.append(str(Path("execution").resolve()))
 
 SYMBOL = "SPY"
+LIVE_BRAIN = Brain()
 MARKET_POLL_SECONDS = max(1.0, float(os.getenv("MARKET_POLL_SECONDS", "2")))
 CANDLE_POLL_SECONDS = max(0.05, float(os.getenv("CANDLE_POLL_SECONDS", "0.5")))
 OFF_HOURS_POLL_SECONDS = max(MARKET_POLL_SECONDS, float(os.getenv("OFF_HOURS_POLL_SECONDS", "60")))
@@ -71,9 +71,7 @@ def _append_latency_event(payload):
     if not LATENCY_METRICS_ENABLED:
         return
     try:
-        LATENCY_METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with LATENCY_METRICS_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, separators=(",", ":"), default=str) + "\n")
+        get_memory().record_latency(payload, LATENCY_METRICS_PATH)
     except Exception as exc:
         print(f"Latency metrics write error: {exc}")
 
@@ -82,9 +80,7 @@ def _append_decision_audit_event(payload):
     if not DECISION_AUDIT_ENABLED:
         return
     try:
-        DECISION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with DECISION_AUDIT_PATH.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, separators=(",", ":"), default=str) + "\n")
+        get_memory().record_decision(payload, DECISION_AUDIT_PATH, source="monitor")
     except Exception as exc:
         print(f"Decision audit write error: {exc}")
 
@@ -207,7 +203,6 @@ def _build_schwab_client():
             print(f"Retrying Schwab auth in {SCHWAB_AUTH_RETRY_SECONDS}s...")
             time.sleep(SCHWAB_AUTH_RETRY_SECONDS)
 
-USE_LIVE_ENGINE = True
 client = None
 EQUITY_STREAM = None
 ENGINE_MODULE = None
@@ -226,20 +221,19 @@ def _initialize_live_runtime():
         EQUITY_STREAM.start()
     except Exception as exc:
         print(f"Equity quote stream startup failed: {exc}")
-    ENGINE_MODULE = importlib.import_module("execution.live_engine" if USE_LIVE_ENGINE else "execution.paper_engine")
+    ENGINE_MODULE = importlib.import_module("execution.live_engine")
     original_open_trade = ENGINE_MODULE.open_trade
     manage_trade = ENGINE_MODULE.manage_trade
     in_trade = ENGINE_MODULE.in_trade
-    if USE_LIVE_ENGINE:
-        account_number = str(os.getenv("SCHWAB_ACCOUNT_NUMBER", "")).strip()
-        account_hash = str(os.getenv("SCHWAB_ACCOUNT_HASH", "")).strip()
-        if hasattr(ENGINE_MODULE, "set_schwab_client"):
-            ENGINE_MODULE.set_schwab_client(client, account_number, account_hash)
-        print(f"Account Verified: {account_number}")
-        print("Mode: LIVE TRADING")
-        print(f"Live engine configured with account {account_number}")
-        if hasattr(ENGINE_MODULE, "reconcile_startup"):
-            print("Broker reconciliation successful" if ENGINE_MODULE.reconcile_startup() else "BROKER RECONCILIATION FAILED")
+    account_number = str(os.getenv("SCHWAB_ACCOUNT_NUMBER", "")).strip()
+    account_hash = str(os.getenv("SCHWAB_ACCOUNT_HASH", "")).strip()
+    if hasattr(ENGINE_MODULE, "set_schwab_client"):
+        ENGINE_MODULE.set_schwab_client(client, account_number, account_hash)
+    print(f"Account Verified: {account_number}")
+    print("Mode: LIVE TRADING")
+    print(f"Live engine configured with account {account_number}")
+    if hasattr(ENGINE_MODULE, "reconcile_startup"):
+        print("Broker reconciliation successful" if ENGINE_MODULE.reconcile_startup() else "BROKER RECONCILIATION FAILED")
 
 
 def _normalize_candles_frame(frame):
@@ -264,7 +258,7 @@ def _load_cached_candles():
         return pd.DataFrame()
 
     try:
-        cached = pd.read_csv(CANDLE_CACHE_PATH)
+        cached = get_memory().load_csv_projection(CANDLE_CACHE_PATH)
         cached = _normalize_candles_frame(cached)
         return cached.tail(390).copy()
     except Exception as exc:
@@ -274,9 +268,8 @@ def _load_cached_candles():
 
 def _persist_cached_candles(df):
     try:
-        CANDLE_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         output = df.reset_index().rename(columns={"index": "datetime"}).tail(390)
-        output.to_csv(CANDLE_CACHE_PATH, index=False)
+        get_memory().save_csv_projection(CANDLE_CACHE_PATH, output)
     except Exception as exc:
         print(f"Candle cache write error: {exc}")
 
@@ -636,52 +629,6 @@ def candle_quality(last):
     }
 
 
-def score_call(last, prev):
-    score = 0
-    reasons = []
-
-    if last.close > last.vwap:
-        score += 1
-        reasons.append("price_above_vwap")
-    if last.ema10 > last.ema20 > last.ema50:
-        score += 2
-        reasons.append("bull_ema_stack")
-    if last.ema10 > prev.ema10:
-        score += 1
-        reasons.append("ema10_rising")
-    if last.macd_hist > prev.macd_hist:
-        score += 1
-        reasons.append("macd_improving")
-    if last.close > prev.high:
-        score += 1
-        reasons.append("breaks_prev_high")
-
-    return score, reasons
-
-
-def score_put(last, prev):
-    score = 0
-    reasons = []
-
-    if last.close < last.vwap:
-        score += 1
-        reasons.append("price_below_vwap")
-    if last.ema10 < last.ema20 < last.ema50:
-        score += 2
-        reasons.append("bear_ema_stack")
-    if last.ema10 < prev.ema10:
-        score += 1
-        reasons.append("ema10_falling")
-    if last.macd_hist < prev.macd_hist:
-        score += 1
-        reasons.append("macd_weakening")
-    if last.close < prev.low:
-        score += 1
-        reasons.append("breaks_prev_low")
-
-    return score, reasons
-
-
 def score_closed_candle_frame(candles):
     """Return the strategy's CALL/PUT scores for an already closed candle frame."""
     if not isinstance(candles, pd.DataFrame):
@@ -697,26 +644,12 @@ def score_closed_candle_frame(candles):
 
     last = indicators.iloc[-1]
     prev = indicators.iloc[-2]
-    regime = market_regime(last, prev)
-    call_score, _ = score_call(last, prev)
-    put_score, _ = score_put(last, prev)
-    volume = volume_momentum(indicators, emit_log=False)
-
-    if volume["trend"] == "INCREASING":
-        if float(last.close) > float(last.open):
-            call_score += 1
-        elif float(last.close) < float(last.open):
-            put_score += 1
-    elif volume["trend"] == "DECREASING":
-        if float(last.close) > float(last.open):
-            call_score -= 1
-        elif float(last.close) < float(last.open):
-            put_score -= 1
+    decision = LIVE_BRAIN.evaluate_entry(last, prev, indicators)
 
     return {
-        "call_score": call_score,
-        "put_score": put_score,
-        "regime": regime,
+        "call_score": decision["call_score"],
+        "put_score": decision["put_score"],
+        "regime": decision["regime"],
         "timestamp": indicators.index[-1],
     }
 
@@ -844,14 +777,18 @@ def open_trade(*args, **kwargs):
 
     start_ms = _perf_ms_now()
 
-    if startup_entry_attempts < STARTUP_GUARD_BLOCKED_ATTEMPTS:
+    startup_admission = LIVE_BRAIN.evaluate_startup_entry_admission(
+        attempted_entries=startup_entry_attempts,
+        blocked_attempts=STARTUP_GUARD_BLOCKED_ATTEMPTS,
+    )
+    if not startup_admission.allowed:
         startup_entry_attempts += 1
         print(f"STARTUP GUARD: blocked open_trade {startup_entry_attempts}/{STARTUP_GUARD_BLOCKED_ATTEMPTS}")
         LAST_ENTRY_EXECUTION_METRICS = {
             "attempted": True,
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
-            "block_reason": "startup_guard",
+            "block_reason": startup_admission.reason,
             "precheck_ms": None,
             "quote_compute_ms": None,
             "submit_order_ms": None,
@@ -927,29 +864,16 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "filled_via": None,
         }
 
-    call_score, call_reasons = score_call(last, prev)
-    put_score, put_reasons = score_put(last, prev)
+    entry_decision = LIVE_BRAIN.evaluate_entry(last, prev, completed_candles)
+    regime = entry_decision["regime"]
+    call_score = entry_decision["call_score"]
+    put_score = entry_decision["put_score"]
+    call_reasons = entry_decision["call_reasons"]
+    put_reasons = entry_decision["put_reasons"]
+    vol = entry_decision["volume"]
 
     trend = "NEUTRAL" if regime == "NO_TRADE" else regime
     print(f"Trend: {trend}")
-
-    vol = volume_momentum(completed_candles)
-
-    if vol["trend"] == "INCREASING":
-        if float(last.close) > float(last.open):
-            call_score += 1
-            call_reasons.append("volume_confirming_bullish_move")
-        elif float(last.close) < float(last.open):
-            put_score += 1
-            put_reasons.append("volume_confirming_bearish_move")
-
-    elif vol["trend"] == "DECREASING":
-        if float(last.close) > float(last.open):
-            call_score -= 1
-            call_reasons.append("volume_weakening_bullish_move")
-        elif float(last.close) < float(last.open):
-            put_score -= 1
-            put_reasons.append("volume_weakening_bearish_move")
 
     print(f"Volume-adjusted scores: CALL={call_score} | PUT={put_score}")
 
@@ -959,9 +883,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
 
     log_signal(float(last.close), regime, call_score, put_score)
 
-    if is_entry_eligible("CALL", regime, call_score):
-        entry = float(last.close)
-        stop, target, quantity = build_entry_risk_plan("CALL", entry)
+    if entry_decision["direction"] == "CALL":
+        trade_plan = LIVE_BRAIN.build_trade("CALL", float(last.close))
+        entry, stop, target, quantity = (
+            trade_plan["entry"], trade_plan["stop"], trade_plan["target"], trade_plan["quantity"]
+        )
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)
@@ -975,7 +901,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         )
 
         open_start_ms = _perf_ms_now()
-        opened = bool(open_trade("CALL", entry, stop, target, quantity, "PHASE2_BULL_CALL", option, feature_payload))
+        opened = bool(open_trade("CALL", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
         return {
             "attempted": True,
@@ -1010,9 +936,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "filled_via": LAST_ENTRY_EXECUTION_METRICS.get("filled_via"),
         }
 
-    elif is_entry_eligible("PUT", regime, put_score):
-        entry = float(last.close)
-        stop, target, quantity = build_entry_risk_plan("PUT", entry)
+    elif entry_decision["direction"] == "PUT":
+        trade_plan = LIVE_BRAIN.build_trade("PUT", float(last.close))
+        entry, stop, target, quantity = (
+            trade_plan["entry"], trade_plan["stop"], trade_plan["target"], trade_plan["quantity"]
+        )
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)
@@ -1026,7 +954,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         )
 
         open_start_ms = _perf_ms_now()
-        opened = bool(open_trade("PUT", entry, stop, target, quantity, "PHASE2_BEAR_PUT", option, feature_payload))
+        opened = bool(open_trade("PUT", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
         return {
             "attempted": True,
@@ -1105,7 +1033,7 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
         except Exception as exc:
             print(f"Option-chain prewarm unavailable: {exc}")
     print("McLeod Alpha Phase 3 monitor started.")
-    print("Mode: LIVE TRADING" if USE_LIVE_ENGINE else "Mode: PAPER TRADING")
+    print("Mode: LIVE TRADING")
     last_processed_candle_time = None
     completed_cycles = 0
     while max_cycles is None or completed_cycles < max_cycles:

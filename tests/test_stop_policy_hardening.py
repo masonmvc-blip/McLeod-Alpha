@@ -2,8 +2,8 @@ from datetime import datetime
 
 import pytest
 
+from backtesting.stop_policy_simulator import SimulatedPosition, simulate_trade_management
 import execution.live_engine as live_engine
-import execution.paper_engine as paper_engine
 
 
 class _FixedDateTime(datetime):
@@ -15,18 +15,14 @@ class _FixedDateTime(datetime):
         return base
 
 
-def _paper_position(entry=5.0):
-    return paper_engine.Position(
+def _simulated_position(entry=5.0):
+    return SimulatedPosition(
         direction="CALL",
         entry_price=500.0,
-        stop_price=495.0,
         target_price=510.0,
         quantity=1,
-        opened=datetime(2026, 7, 17, 9, 50, 0),
-        reason="TEST",
-        option_symbol="SPY_TEST",
+        opened=datetime(2026, 7, 17, 9, 59, 0),
         option_entry=entry,
-        option_delta=0.5,
         option_stop=0.0,
         option_initial_stop=0.0,
     )
@@ -97,32 +93,21 @@ def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
         (5.401, 5.34699),
     ],
 )
-def test_paper_stop_ladder_thresholds(option_mark, expected_stop, monkeypatch):
-    pos = _paper_position()
-    paper_engine.current_position = pos
-
-    monkeypatch.setattr(paper_engine, "datetime", _FixedDateTime)
-    monkeypatch.setattr(paper_engine, "load_position", lambda _cls: pos)
-    monkeypatch.setattr(paper_engine, "save_position", lambda _pos: None)
-    monkeypatch.setattr(paper_engine, "close_trade", lambda *_args, **_kwargs: False)
-
-    paper_engine.manage_trade(price=500.0, option_mark=option_mark, option_bid=option_mark)
+def test_simulation_adapter_stop_ladder_thresholds(option_mark, expected_stop):
+    pos, _decision = simulate_trade_management(
+        position=_simulated_position(),
+        option_mark=option_mark,
+        now=_FixedDateTime.now(),
+    )
 
     assert pos.option_stop == pytest.approx(expected_stop, abs=1e-6)
 
 
-def test_paper_ratchet_never_moves_down(monkeypatch):
-    pos = _paper_position()
+def test_simulation_adapter_ratchet_never_moves_down():
+    pos = _simulated_position()
     pos.option_initial_stop = 4.75
     pos.option_stop = 5.30
-    paper_engine.current_position = pos
-
-    monkeypatch.setattr(paper_engine, "datetime", _FixedDateTime)
-    monkeypatch.setattr(paper_engine, "load_position", lambda _cls: pos)
-    monkeypatch.setattr(paper_engine, "save_position", lambda _pos: None)
-    monkeypatch.setattr(paper_engine, "close_trade", lambda *_args, **_kwargs: False)
-
-    paper_engine.manage_trade(price=500.0, option_mark=5.25, option_bid=5.25)
+    pos, _decision = simulate_trade_management(position=pos, option_mark=5.25, now=_FixedDateTime.now())
 
     assert pos.option_stop == pytest.approx(5.30, abs=1e-6)
 

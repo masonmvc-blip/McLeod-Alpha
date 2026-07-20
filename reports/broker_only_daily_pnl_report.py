@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import sqlite3
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
@@ -14,8 +13,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import control_center
+from engine.memory import get_memory
 
-DB_PATH = ROOT / "data" / "mcleod_alpha.db"
 OUT_CSV = ROOT / "reports" / "broker_only_daily_pnl.csv"
 OUT_MD = ROOT / "reports" / "broker_only_daily_pnl_summary.md"
 
@@ -44,7 +43,7 @@ def _has_text(value) -> bool:
     return value is not None and str(value).strip() != ""
 
 
-def _is_broker_backed(row: sqlite3.Row) -> bool:
+def _is_broker_backed(row: dict) -> bool:
     """Classify rows as broker-backed only when entry+exit IDs are present.
 
     This is intentionally strict so daily performance reflects confirmed
@@ -75,25 +74,7 @@ def _schwab_cash_day_pnl(day: str) -> float | None:
 
 
 def build_report() -> tuple[Path, Path, dict[str, DayStats]]:
-    if not DB_PATH.exists():
-        raise FileNotFoundError(f"Trade DB not found: {DB_PATH}")
-
-    with sqlite3.connect(str(DB_PATH)) as con:
-        con.row_factory = sqlite3.Row
-        rows = con.execute(
-            """
-            SELECT
-                date(entry_time) AS trade_date,
-                COALESCE(option_pnl_dollars, pnl, 0.0) AS pnl_dollars,
-                option_symbol,
-                broker_entry_order_id,
-                broker_exit_order_id
-            FROM trade_log
-            WHERE entry_time IS NOT NULL
-                            AND date(entry_time) IS NOT NULL
-            ORDER BY date(entry_time), id
-            """
-        ).fetchall()
+    rows = get_memory().load_broker_daily_pnl_rows()
 
     daily: dict[str, DayStats] = defaultdict(DayStats)
 
@@ -115,53 +96,16 @@ def build_report() -> tuple[Path, Path, dict[str, DayStats]]:
             item.unlinked_rows += 1
             item.unlinked_pnl += pnl
 
-    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    with OUT_CSV.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(
-            [
-                "date",
-                "all_rows",
-                "all_pnl",
-                "broker_rows",
-                "broker_pnl",
-                "broker_win_rate",
-                "unlinked_rows",
-                "unlinked_pnl",
-                "broker_share_of_rows",
-                "schwab_cash_pnl",
-                "cash_minus_broker_logged",
-            ]
-        )
-        for day in sorted(daily.keys()):
-            s = daily[day]
-            s.schwab_cash_pnl = _schwab_cash_day_pnl(day)
-            broker_win_rate = (
-                (s.broker_wins / s.broker_rows) if s.broker_rows > 0 else 0.0
-            )
-            broker_share_rows = (
-                (s.broker_rows / s.all_rows) if s.all_rows > 0 else 0.0
-            )
-            cash_minus_broker = (
-                round(float(s.schwab_cash_pnl) - float(s.broker_pnl), 2)
-                if s.schwab_cash_pnl is not None
-                else None
-            )
-            writer.writerow(
-                [
-                    day,
-                    s.all_rows,
-                    round(s.all_pnl, 2),
-                    s.broker_rows,
-                    round(s.broker_pnl, 2),
-                    round(broker_win_rate, 4),
-                    s.unlinked_rows,
-                    round(s.unlinked_pnl, 2),
-                    round(broker_share_rows, 4),
-                    "" if s.schwab_cash_pnl is None else round(s.schwab_cash_pnl, 2),
-                    "" if cash_minus_broker is None else cash_minus_broker,
-                ]
-            )
+    csv_fields = ["date", "all_rows", "all_pnl", "broker_rows", "broker_pnl", "broker_win_rate", "unlinked_rows", "unlinked_pnl", "broker_share_of_rows", "schwab_cash_pnl", "cash_minus_broker_logged"]
+    csv_rows = []
+    for day in sorted(daily.keys()):
+        s = daily[day]
+        s.schwab_cash_pnl = _schwab_cash_day_pnl(day)
+        broker_win_rate = (s.broker_wins / s.broker_rows) if s.broker_rows > 0 else 0.0
+        broker_share_rows = (s.broker_rows / s.all_rows) if s.all_rows > 0 else 0.0
+        cash_minus_broker = round(float(s.schwab_cash_pnl) - float(s.broker_pnl), 2) if s.schwab_cash_pnl is not None else ""
+        csv_rows.append({"date": day, "all_rows": s.all_rows, "all_pnl": round(s.all_pnl, 2), "broker_rows": s.broker_rows, "broker_pnl": round(s.broker_pnl, 2), "broker_win_rate": round(broker_win_rate, 4), "unlinked_rows": s.unlinked_rows, "unlinked_pnl": round(s.unlinked_pnl, 2), "broker_share_of_rows": round(broker_share_rows, 4), "schwab_cash_pnl": "" if s.schwab_cash_pnl is None else round(s.schwab_cash_pnl, 2), "cash_minus_broker_logged": cash_minus_broker})
+    get_memory().write_report_csv(OUT_CSV, csv_fields, csv_rows, "broker_only_daily_pnl", source="broker_only_daily_pnl_report")
 
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = [
@@ -195,7 +139,7 @@ def build_report() -> tuple[Path, Path, dict[str, DayStats]]:
             " |"
         )
 
-    OUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    get_memory().write_report_text(OUT_MD, "\n".join(lines) + "\n", "broker_only_daily_pnl", source="broker_only_daily_pnl_report")
     return OUT_CSV, OUT_MD, daily
 
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any
+
+from engine.memory import Memory, get_memory
 
 from .evidence_record import (
     EvidenceConflictError,
@@ -30,29 +30,9 @@ def _sha256_bytes(content: bytes) -> str:
     return sha256(content).hexdigest()
 
 
-def _atomic_write_bytes(path: Path, content: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile("wb", dir=str(path.parent), delete=False) as handle:
-        handle.write(content)
-        tmp = Path(handle.name)
-    os.replace(tmp, path)
-
-
-def _atomic_write_text(path: Path, content: str) -> None:
-    _atomic_write_bytes(path, content.encode("utf-8"))
-
-
-def _append_line_atomic(path: Path, line: str) -> None:
-    existing = path.read_text(encoding="utf-8") if path.exists() else ""
-    content = existing + line + "\n"
-    _atomic_write_text(path, content)
-
-
-def _jsonl_load(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
+def _jsonl_load(memory: Memory, path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for text in path.read_text(encoding="utf-8").splitlines():
+    for text in memory.read_experiment_text(path, encoding="utf-8").splitlines():
         stripped = text.strip()
         if not stripped:
             continue
@@ -69,9 +49,9 @@ class EvidenceLedgerIntegrity:
 
 
 class EvidenceLedger:
-    def __init__(self, root_path: Path = DEFAULT_LEDGER_ROOT) -> None:
+    def __init__(self, root_path: Path = DEFAULT_LEDGER_ROOT, memory: Memory | None = None) -> None:
         self.root_path = Path(root_path)
-        self.root_path.mkdir(parents=True, exist_ok=True)
+        self.memory = memory or get_memory()
         self.evidence_path = self.root_path / "evidence.jsonl"
         self.lineage_path = self.root_path / "lineage.jsonl"
         self.index_path = self.root_path / "index.json"
@@ -79,11 +59,11 @@ class EvidenceLedger:
         self._ensure_base_files()
 
     def _ensure_base_files(self) -> None:
-        if not self.evidence_path.exists():
-            _atomic_write_text(self.evidence_path, "")
-        if not self.lineage_path.exists():
-            _atomic_write_text(self.lineage_path, "")
-        if not self.index_path.exists() or not self.manifest_path.exists():
+        if not self.memory.experiment_projection_exists(self.evidence_path):
+            self.memory.write_experiment_text(self.evidence_path, "", "cio_evidence_ledger", source="cio_evidence_ledger")
+        if not self.memory.experiment_projection_exists(self.lineage_path):
+            self.memory.write_experiment_text(self.lineage_path, "", "cio_evidence_ledger", source="cio_evidence_ledger")
+        if not self.memory.experiment_projection_exists(self.index_path) or not self.memory.experiment_projection_exists(self.manifest_path):
             self.rebuild_index()
 
     def append_evidence(self, record: EvidenceRecord) -> EvidenceRecord:
@@ -94,7 +74,7 @@ class EvidenceLedger:
                 return prior
             raise EvidenceConflictError(f"Conflicting evidence_id: {record.evidence_id}")
 
-        _append_line_atomic(self.evidence_path, _line(record.to_dict()))
+        self.memory.append_experiment_line(self.evidence_path, _line(record.to_dict()), "cio_evidence", source="cio_evidence_ledger", correlation_id=record.evidence_id)
         self.rebuild_index()
         return record
 
@@ -116,7 +96,7 @@ class EvidenceLedger:
                 return prior
             raise EvidenceConflictError(f"Conflicting lineage_id: {lineage_record.lineage_id}")
 
-        _append_line_atomic(self.lineage_path, _line(lineage_record.to_dict()))
+        self.memory.append_experiment_line(self.lineage_path, _line(lineage_record.to_dict()), "cio_evidence_lineage", source="cio_evidence_ledger", correlation_id=lineage_record.lineage_id)
         self.rebuild_index()
         return lineage_record
 
@@ -179,10 +159,10 @@ class EvidenceLedger:
             ).hexdigest(),
         }
 
-        _atomic_write_text(self.index_path, json.dumps(index_payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
+        self.memory.write_experiment_text(self.index_path, json.dumps(index_payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", "cio_evidence_index", source="cio_evidence_ledger")
 
         manifest = self._build_manifest()
-        _atomic_write_text(self.manifest_path, json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
+        self.memory.write_experiment_text(self.manifest_path, json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n", "cio_evidence_manifest", source="cio_evidence_ledger")
         return index_payload
 
     def verify_integrity(self) -> EvidenceLedgerIntegrity:
@@ -190,7 +170,7 @@ class EvidenceLedger:
         mismatches: list[str] = []
 
         for path in (self.evidence_path, self.lineage_path, self.index_path, self.manifest_path):
-            if not path.exists():
+            if not self.memory.experiment_projection_exists(path):
                 missing.append(path.name)
 
         if missing:
@@ -201,13 +181,13 @@ class EvidenceLedger:
                 details={"reason": "missing ledger files"},
             )
 
-        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        manifest = json.loads(self.memory.read_experiment_text(self.manifest_path, encoding="utf-8"))
         expected_hashes = manifest.get("file_hashes", {})
 
         observed_hashes = {
-            "evidence.jsonl": _sha256_bytes(self.evidence_path.read_bytes()),
-            "lineage.jsonl": _sha256_bytes(self.lineage_path.read_bytes()),
-            "index.json": _sha256_bytes(self.index_path.read_bytes()),
+            "evidence.jsonl": _sha256_bytes(self.memory.read_experiment_bytes(self.evidence_path)),
+            "lineage.jsonl": _sha256_bytes(self.memory.read_experiment_bytes(self.lineage_path)),
+            "index.json": _sha256_bytes(self.memory.read_experiment_bytes(self.index_path)),
         }
 
         for name, observed in sorted(observed_hashes.items(), key=lambda item: item[0]):
@@ -232,20 +212,20 @@ class EvidenceLedger:
         return EvidenceReplay(self).reconstruct_chain(target_type=target_type, target_id=target_id)
 
     def _load_evidence_records(self) -> tuple[EvidenceRecord, ...]:
-        rows = _jsonl_load(self.evidence_path)
+        rows = _jsonl_load(self.memory, self.evidence_path)
         items = tuple(EvidenceRecord.from_dict(row) for row in rows)
         return tuple(sorted(items, key=lambda item: (item.observed_at, item.evidence_id)))
 
     def _load_lineage_records(self) -> tuple[EvidenceLineageRecord, ...]:
-        rows = _jsonl_load(self.lineage_path)
+        rows = _jsonl_load(self.memory, self.lineage_path)
         items = tuple(EvidenceLineageRecord.from_dict(row) for row in rows)
         return tuple(sorted(items, key=lambda item: (item.created_at, item.lineage_id)))
 
     def _build_manifest(self) -> dict[str, Any]:
         file_hashes = {
-            "evidence.jsonl": _sha256_bytes(self.evidence_path.read_bytes()) if self.evidence_path.exists() else _sha256_bytes(b""),
-            "lineage.jsonl": _sha256_bytes(self.lineage_path.read_bytes()) if self.lineage_path.exists() else _sha256_bytes(b""),
-            "index.json": _sha256_bytes(self.index_path.read_bytes()) if self.index_path.exists() else _sha256_bytes(b""),
+            "evidence.jsonl": _sha256_bytes(self.memory.read_experiment_bytes(self.evidence_path)),
+            "lineage.jsonl": _sha256_bytes(self.memory.read_experiment_bytes(self.lineage_path)),
+            "index.json": _sha256_bytes(self.memory.read_experiment_bytes(self.index_path)),
         }
         manifest_core = {
             "ledger_root": str(self.root_path),
