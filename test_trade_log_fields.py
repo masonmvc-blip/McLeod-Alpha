@@ -38,26 +38,25 @@ def test_trade_log_fields():
     print(f"  Exit price (SPY):  $449.50")
     print(f"  Reason:     MAX_HOLD_15_MIN")
     
-    try:
-        # Call log_trade with all fields populated
-        log_trade(
-            entry_time=entry_time.isoformat(),
-            exit_time=exit_time.isoformat(),
-            direction="PUT",
-            entry_price=450.00,
-            exit_price=449.50,
-            pnl=0.50,
-            exit_reason="MAX_HOLD_15_MIN",
-            feature_payload='{"support_resistance": {}, "macd": {}}',
-            option_symbol="SPY 07-13-26 P450",
-            option_entry=2.50,
-            option_exit=3.15,
-            option_quantity=1,
-            option_delta=-0.65,
-            option_return=26.0,
-            option_pnl_dollars=65.00,
-            option_pnl_pct=26.0,
-        )
+    # Call log_trade with all fields populated
+    log_trade(
+        entry_time=entry_time.isoformat(),
+        exit_time=exit_time.isoformat(),
+        direction="PUT",
+        entry_price=450.00,
+        exit_price=449.50,
+        pnl=0.50,
+        exit_reason="MAX_HOLD_15_MIN",
+        feature_payload='{"support_resistance": {}, "macd": {}}',
+        option_symbol="SPY 07-13-26 P450",
+        option_entry=2.50,
+        option_exit=3.15,
+        option_quantity=1,
+        option_delta=-0.65,
+        option_return=26.0,
+        option_pnl_dollars=65.00,
+        option_pnl_pct=26.0,
+    )
     
     print("\nOption details:")
     print(f"  Option symbol:    SPY 07-13-26 P450")
@@ -147,10 +146,9 @@ def test_trade_log_fields():
             print("✗ FAILURE: Some option fields are missing!")
             print("=" * 60)
             assert all_present, "Some option fields are missing"
-    finally:
-        trade_logger.DB = original_db
-        if test_db.exists():
-            test_db.unlink()
+    trade_logger.DB = original_db
+    if test_db.exists():
+        test_db.unlink()
 
 if __name__ == "__main__":
     try:
