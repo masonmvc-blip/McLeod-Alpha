@@ -162,13 +162,12 @@ def test_live_order_calls_schwab_api():
         print(f"✓ Order ID stored: {live_engine.current_position.schwab_order_id}")
         
         print("\n✓ TEST 1 PASSED")
-        return True
         
     except Exception as e:
         print(f"\n✗ TEST 1 FAILED: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
     finally:
         live_engine.current_position = None
         # Clean up position file for next test
@@ -220,13 +219,12 @@ def test_no_position_before_fill_confirmation():
         print("✓ NO position created (kept bot flat)")
         
         print("\n✓ TEST 2 PASSED")
-        return True
         
     except Exception as e:
         print(f"\n✗ TEST 2 FAILED: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
     finally:
         live_engine.current_position = None
 
@@ -276,13 +274,12 @@ def test_rejected_orders_do_not_create_positions():
         print("✓ NO position created (kept bot flat)")
         
         print("\n✓ TEST 3 PASSED")
-        return True
         
     except Exception as e:
         print(f"\n✗ TEST 3 FAILED: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
     finally:
         live_engine.current_position = None
         # Clean up position file for next test
@@ -337,13 +334,12 @@ def test_paper_mode_never_sends_live_order():
             print("✓ Paper position has NO Schwab order ID")
         
         print("\n✓ TEST 4 PASSED")
-        return True
         
     except Exception as e:
         print(f"\n✗ TEST 4 FAILED: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
     finally:
         paper_engine.current_position = None
 
@@ -403,13 +399,12 @@ def test_position_stores_order_metadata():
         print(f"✓ Submitted price stored: {pos.submitted_limit_price}")
         
         print("\n✓ TEST 5 PASSED")
-        return True
         
     except Exception as e:
         print(f"\n✗ TEST 5 FAILED: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
     finally:
         live_engine.current_position = None
         # Clean up position file for next test
@@ -436,8 +431,8 @@ if __name__ == "__main__":
     results = []
     for test_name, test_func in tests:
         try:
-            passed = test_func()
-            results.append((test_name, passed))
+            test_func()
+            results.append((test_name, True))
         except Exception as e:
             print(f"\n✗ TEST CRASHED: {e}")
             import traceback

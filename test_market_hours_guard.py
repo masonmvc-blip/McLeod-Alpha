@@ -82,11 +82,10 @@ def test_market_hours_guard():
     if all_passed:
         print("✓ ALL TESTS PASSED")
         print("=" * 70)
-        return True
     else:
         print("✗ SOME TESTS FAILED")
         print("=" * 70)
-        return False
+        raise AssertionError("Market-hours guard did not match expected entry windows")
 
 def test_candle_collection():
     """Verify that candle collection is not blocked."""
@@ -105,19 +104,13 @@ def test_candle_collection():
     print("  ✓ Existing positions can still be managed/closed")
     
     print("\n" + "=" * 70)
-    return True
 
 if __name__ == "__main__":
     try:
-        hours_passed = test_market_hours_guard()
-        candles_passed = test_candle_collection()
-        
-        if hours_passed and candles_passed:
-            print("\n✓ ALL VERIFICATIONS PASSED")
-            sys.exit(0)
-        else:
-            print("\n✗ VERIFICATION FAILED")
-            sys.exit(1)
+        test_market_hours_guard()
+        test_candle_collection()
+        print("\n✓ ALL VERIFICATIONS PASSED")
+        sys.exit(0)
     except Exception as e:
         print(f"\n✗ TEST ERROR: {e}")
         import traceback

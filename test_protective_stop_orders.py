@@ -143,7 +143,6 @@ def test_1_entry_fill_triggers_protective_stop():
     print(f"  - Entry Fill: ${5.68}")
     print(f"  - Protective Stop Order ID: 222")
     print(f"  - Protective Stop Price: ${5.40} (-5% of entry)")
-    return True
 
 
 def test_2_protective_stop_uses_sell_to_close():
@@ -181,7 +180,6 @@ def test_2_protective_stop_uses_sell_to_close():
     print(f"  - Quantity: 1")
     print(f"  - Order Type: STOP")
     print(f"  - Stop Price: {stop_price}")
-    return True
 
 
 def test_3_stop_price_based_on_option_fill():
@@ -207,7 +205,6 @@ def test_3_stop_price_based_on_option_fill():
     print(f"  - SPY Price: ${spy_price}")
     print(f"  - Option Fill Price: ${option_fill_price}")
     print(f"  - Protective Stop: ${stop_price} (-5% of option fill)")
-    return True
 
 
 def test_4_position_not_marked_protected_until_accepted():
@@ -282,7 +279,6 @@ def test_4_position_not_marked_protected_until_accepted():
     print(f"  - Entry Filled: Yes (position exists)")
     print(f"  - Protective Stop Status: FAILED")
     print(f"  - Trading Blocked: Yes (_protective_stop_failed = True)")
-    return True
 
 
 def test_5_failed_stop_blocks_new_entries():
@@ -316,7 +312,6 @@ def test_5_failed_stop_blocks_new_entries():
     print(f"  - POSITION UNPROTECTED status active")
     print(f"  - New entries blocked")
     print(f"  - Manual action required")
-    return True
 
 
 def test_6_stop_canceled_for_exit():
@@ -365,7 +360,6 @@ def test_6_stop_canceled_for_exit():
     print(f"  - Protective Stop Order ID: 222")
     print(f"  - Cancellation Status: Success")
     print(f"  - Exit can now proceed")
-    return True
 
 
 def test_7_startup_detects_unprotected_position():
@@ -410,7 +404,6 @@ def test_7_startup_detects_unprotected_position():
     print(f"  - Protective Stop: None")
     print(f"  - Status: UNPROTECTED")
     print(f"  - Trading Disabled: Yes")
-    return True
 
 
 def test_8_broker_query_failure_enters_safe_mode():
@@ -444,7 +437,6 @@ def test_8_broker_query_failure_enters_safe_mode():
     print(f"  - SAFE MODE: Activated")
     print(f"  - Assumption: NOT assuming flat")
     print(f"  - Trading: Blocked until connection restored")
-    return True
 
 
 def test_9_max_contract_cap_enforced():
@@ -489,7 +481,6 @@ def test_9_max_contract_cap_enforced():
     print(f"  - Max Allowed: 3")
     print(f"  - Status: BLOCKED")
     print(f"  - Manual reconciliation required")
-    return True
 
 
 def test_10_no_duplicate_exit_orders():
@@ -537,7 +528,6 @@ def test_10_no_duplicate_exit_orders():
     print(f"  - First Exit: Success")
     print(f"  - Position After: None")
     print(f"  - Second Exit Attempt: Blocked (no position)")
-    return True
 
 
 # Run all tests

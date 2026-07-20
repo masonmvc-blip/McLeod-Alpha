@@ -130,12 +130,11 @@ def test_stop_reason_logic():
     print("  1. INITIAL_STOP when stop hasn't trailed OR trade not profitable")
     print("  2. TRAILING_STOP when stop HAS trailed AND trade IS profitable")
     print("\n")
-    return True
 
 if __name__ == "__main__":
     try:
-        success = test_stop_reason_logic()
-        sys.exit(0 if success else 1)
+        test_stop_reason_logic()
+        sys.exit(0)
     except Exception as e:
         print(f"\n✗ TEST FAILED: {e}")
         import traceback
