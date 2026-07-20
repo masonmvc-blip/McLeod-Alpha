@@ -10,7 +10,8 @@ mcleod_market_change_allowed() {
   session="$(TZ=America/New_York date '+%u %H%M')"
   local weekday="${session%% *}"
   local clock="${session##* }"
-  [[ "$weekday" -lt 6 && "$clock" -ge 0930 && "$clock" -lt 1545 ]] && return 1
+  clock=$((10#$clock))
+  [[ "$weekday" -lt 6 && "$clock" -ge 930 && "$clock" -lt 1545 ]] && return 1
   return 0
 }
 
