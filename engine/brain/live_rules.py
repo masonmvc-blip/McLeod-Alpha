@@ -3,6 +3,9 @@
 from execution.contract_limits import MAX_OPEN_CONTRACTS
 
 
+LIVE_ENTRY_MIN_SCORE = 5
+
+
 def classify_entry_regime(last, previous) -> str:
     """Classify a closed candle for the live SPY entry gate."""
     if (
@@ -43,3 +46,16 @@ def build_entry_risk_plan(direction: str, entry_price: float) -> tuple[float, fl
     else:
         raise ValueError(f"Unsupported live entry direction: {direction!r}")
     return stop, target, calculate_entry_quantity(entry, stop)
+
+
+def is_entry_eligible(direction: str, regime: str, score: int | float) -> bool:
+    """Return whether a scored live signal satisfies the canonical entry gate."""
+    normalized_direction = str(direction or "").upper()
+    normalized_regime = str(regime or "").upper()
+    try:
+        normalized_score = float(score)
+    except (TypeError, ValueError):
+        return False
+
+    expected_regime = {"CALL": "BULL_TREND", "PUT": "BEAR_TREND"}.get(normalized_direction)
+    return expected_regime == normalized_regime and normalized_score >= LIVE_ENTRY_MIN_SCORE

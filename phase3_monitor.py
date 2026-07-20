@@ -4,7 +4,7 @@ from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
 from engine.brain import classify_entry_regime as market_regime
 
-from engine.brain import build_entry_risk_plan
+from engine.brain import LIVE_ENTRY_MIN_SCORE, build_entry_risk_plan, is_entry_eligible
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
@@ -890,7 +890,7 @@ def open_trade(*args, **kwargs):
 
 def maybe_enter_trade(last, prev, regime, completed_candles):
     cycle_entry_start_ms = _perf_ms_now()
-    min_score_threshold = 5
+    min_score_threshold = LIVE_ENTRY_MIN_SCORE
 
     if in_trade():
         print("Entry skipped: already in trade")
@@ -959,7 +959,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
 
     log_signal(float(last.close), regime, call_score, put_score)
 
-    if regime == "BULL_TREND" and call_score >= 5:
+    if is_entry_eligible("CALL", regime, call_score):
         entry = float(last.close)
         stop, target, quantity = build_entry_risk_plan("CALL", entry)
 
@@ -1010,7 +1010,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "filled_via": LAST_ENTRY_EXECUTION_METRICS.get("filled_via"),
         }
 
-    elif regime == "BEAR_TREND" and put_score >= 5:
+    elif is_entry_eligible("PUT", regime, put_score):
         entry = float(last.close)
         stop, target, quantity = build_entry_risk_plan("PUT", entry)
 
