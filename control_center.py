@@ -4349,7 +4349,7 @@ def _realized_spy_option_pnl_for_date(trading_date: str):
 
 
 def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
-    """Return realized SPY option P&L for an inclusive date range from trade_log exits."""
+    """Return realized P&L for broker-linked SPY option exits in an inclusive date range."""
     if not start_date or not end_date:
         return None
 
@@ -4367,6 +4367,8 @@ def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
             SELECT ROUND(SUM(COALESCE(option_pnl_dollars, pnl, 0)), 2) AS realized
             FROM trade_log
             WHERE exit_time IS NOT NULL
+                            AND TRIM(COALESCE(broker_entry_order_id, '')) <> ''
+                            AND TRIM(COALESCE(broker_exit_order_id, '')) <> ''
               AND substr(exit_time, 1, 10) >= ?
               AND substr(exit_time, 1, 10) <= ?
             """,

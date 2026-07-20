@@ -11,8 +11,7 @@ import sys
 
 def test_trade_log_fields():
     """Test that all option fields are populated when logging a trade."""
-    
-    # Create a test database
+    # Use a dedicated database so this verification cannot affect live P&L.
     test_db = Path("test_trade_verification.db")
     if test_db.exists():
         test_db.unlink()
@@ -22,7 +21,10 @@ def test_trade_log_fields():
     
     # Import the trade logger
     sys.path.insert(0, str(Path("execution").resolve()))
+    import trade_logger
     from trade_logger import log_trade
+    original_db = trade_logger.DB
+    trade_logger.DB = test_db
     
     # Simulate a trade with all option fields populated
     entry_time = datetime.now() - timedelta(minutes=10)
@@ -36,25 +38,26 @@ def test_trade_log_fields():
     print(f"  Exit price (SPY):  $449.50")
     print(f"  Reason:     MAX_HOLD_15_MIN")
     
-    # Call log_trade with all fields populated
-    log_trade(
-        entry_time=entry_time.isoformat(),
-        exit_time=exit_time.isoformat(),
-        direction="PUT",
-        entry_price=450.00,
-        exit_price=449.50,
-        pnl=0.50,
-        exit_reason="MAX_HOLD_15_MIN",
-        feature_payload='{"support_resistance": {}, "macd": {}}',
-        option_symbol="SPY 07-13-26 P450",
-        option_entry=2.50,
-        option_exit=3.15,
-        option_quantity=1,
-        option_delta=-0.65,
-        option_return=26.0,
-        option_pnl_dollars=65.00,
-        option_pnl_pct=26.0,
-    )
+    try:
+        # Call log_trade with all fields populated
+        log_trade(
+            entry_time=entry_time.isoformat(),
+            exit_time=exit_time.isoformat(),
+            direction="PUT",
+            entry_price=450.00,
+            exit_price=449.50,
+            pnl=0.50,
+            exit_reason="MAX_HOLD_15_MIN",
+            feature_payload='{"support_resistance": {}, "macd": {}}',
+            option_symbol="SPY 07-13-26 P450",
+            option_entry=2.50,
+            option_exit=3.15,
+            option_quantity=1,
+            option_delta=-0.65,
+            option_return=26.0,
+            option_pnl_dollars=65.00,
+            option_pnl_pct=26.0,
+        )
     
     print("\nOption details:")
     print(f"  Option symbol:    SPY 07-13-26 P450")
@@ -71,7 +74,7 @@ def test_trade_log_fields():
     print("Verifying data was inserted correctly...")
     print("=" * 60)
     
-    with sqlite3.connect("data/mcleod_alpha.db") as con:
+    with sqlite3.connect(test_db) as con:
         con.row_factory = sqlite3.Row
         cursor = con.cursor()
         
@@ -144,6 +147,10 @@ def test_trade_log_fields():
             print("✗ FAILURE: Some option fields are missing!")
             print("=" * 60)
             assert all_present, "Some option fields are missing"
+    finally:
+        trade_logger.DB = original_db
+        if test_db.exists():
+            test_db.unlink()
 
 if __name__ == "__main__":
     try:

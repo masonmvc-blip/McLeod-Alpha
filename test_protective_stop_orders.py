@@ -512,9 +512,10 @@ def test_10_no_duplicate_exit_orders():
     cancel_response.raise_for_status = Mock()
     mock_client.cancel_order.return_value = cancel_response
     
-    with patch.object(live_engine, "_submit_option_exit_market_order", return_value="999"):
-        with patch.object(live_engine, "_wait_for_fill", return_value=(True, 5.98)):
-            result1 = close_trade(755.0, "TARGET_HIT", 5.98)
+    with patch.object(live_engine, "log_trade"):
+        with patch.object(live_engine, "_submit_option_exit_market_order", return_value="999"):
+            with patch.object(live_engine, "_wait_for_fill", return_value=(True, 5.98)):
+                result1 = close_trade(755.0, "TARGET_HIT", 5.98)
     assert result1 == True, "First close should work"
     
     # Position should be cleared
