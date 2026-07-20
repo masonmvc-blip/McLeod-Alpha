@@ -7,9 +7,16 @@ CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
 CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}"
 REQUIRE_CLEAN_REPO_FOR_LOCK="${MCLEOD_GOLIVE_REQUIRE_CLEAN_REPO_FOR_LOCK:-1}"
+SESSION_GUARD="$ROOT/scripts/maintenance/market_session_guard.sh"
 
 cd "$ROOT"
+. "$SESSION_GUARD"
 "$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
+
+if ! mcleod_market_change_allowed; then
+  mcleod_market_change_block_message
+  exit 1
+fi
 
 if [[ "$(hostname | tr '[:upper:]' '[:lower:]')" != "$(echo "$CANONICAL_HOST" | tr '[:upper:]' '[:lower:]')" ]]; then
   echo "ERROR: go-live is Desktop-only"

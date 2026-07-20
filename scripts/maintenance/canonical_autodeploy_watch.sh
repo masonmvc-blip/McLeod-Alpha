@@ -11,8 +11,10 @@ LOCK_SCRIPT="$ROOT/scripts/maintenance/lock_canonical_runtime.sh"
 CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 LOCK_RETRY_ATTEMPTS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_ATTEMPTS:-3}"
 LOCK_RETRY_SLEEP_SECONDS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_SLEEP_SECONDS:-8}"
+SESSION_GUARD="$ROOT/scripts/maintenance/market_session_guard.sh"
 
 cd "$ROOT"
+. "$SESSION_GUARD"
 "$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
 
 if [[ ! -x "$LOCK_SCRIPT" ]]; then
@@ -47,6 +49,11 @@ while true; do
   local_sha="$(git rev-parse HEAD)"
 
   if [[ "$remote_sha" != "$last_seen_sha" || "$remote_sha" != "$local_sha" ]]; then
+    if ! mcleod_market_change_allowed; then
+      mcleod_market_change_block_message
+      sleep "$INTERVAL_SECONDS"
+      continue
+    fi
     echo "autodeploy_detected_change local=$local_sha remote=$remote_sha at $(date '+%Y-%m-%d %H:%M:%S')"
     applied=0
     for ((attempt=1; attempt<=LOCK_RETRY_ATTEMPTS; attempt++)); do

@@ -8,11 +8,17 @@ BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 INTERVAL_SECONDS="${MCLEOD_AUTO_PUBLISH_POLL_SECONDS:-1}"
 DEBOUNCE_SECONDS="${MCLEOD_AUTO_PUBLISH_DEBOUNCE_SECONDS:-1}"
 STATE_FILE="${MCLEOD_AUTO_PUBLISH_STATE_FILE:-$ROOT/data/auto_publish_last_state.txt}"
+SESSION_GUARD="$ROOT/scripts/maintenance/market_session_guard.sh"
 
 cd "$ROOT"
+. "$SESSION_GUARD"
 
 publish_changes() {
   local before after remote_head
+  if ! mcleod_market_change_allowed; then
+    mcleod_market_change_block_message
+    return 0
+  fi
   before="$(git status --porcelain --untracked-files=all)"
   [[ -z "$before" ]] && return 0
 
