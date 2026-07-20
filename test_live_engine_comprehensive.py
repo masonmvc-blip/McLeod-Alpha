@@ -290,6 +290,29 @@ def test_rejected_orders_do_not_create_positions():
             pass
 
 
+def test_non_four_contract_order_is_rejected_before_submission():
+    """Live entry must reject any contract count other than four."""
+    import execution.live_engine as live_engine
+
+    mock_client = MockSchwabClient(should_fill=True)
+    live_engine.set_schwab_client(mock_client, "33310903", "hash123")
+    live_engine.current_position = None
+
+    result = live_engine.open_trade(
+        direction="CALL",
+        price=450.00,
+        stop=445.00,
+        target=460.00,
+        quantity=3,
+        reason="TEST",
+        option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65},
+    )
+
+    assert result is False
+    assert mock_client.place_order_called is False
+    assert live_engine.LAST_OPEN_TRADE_METRICS["block_reason"] == "contract_quantity_must_equal_max"
+
+
 def test_paper_mode_never_sends_live_order():
     """
     TEST 4: Paper mode never sends a live order
@@ -375,7 +398,7 @@ def test_position_stores_order_metadata():
             price=450.00,
             stop=445.00,
             target=460.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65}
         )
@@ -424,6 +447,7 @@ if __name__ == "__main__":
         ("Live mode calls Schwab API", test_live_order_calls_schwab_api),
         ("No position before fill confirmation", test_no_position_before_fill_confirmation),
         ("Rejected orders do not create positions", test_rejected_orders_do_not_create_positions),
+        ("Non-four contract order is rejected", test_non_four_contract_order_is_rejected_before_submission),
         ("Paper mode never sends live order", test_paper_mode_never_sends_live_order),
         ("Position stores order metadata", test_position_stores_order_metadata),
     ]

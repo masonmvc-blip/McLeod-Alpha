@@ -111,7 +111,7 @@ def test_1_entry_fill_triggers_protective_stop():
         price=750.0,
         stop=732.5,
         target=760.0,
-        quantity=1,
+        quantity=4,
         reason="TEST",
         option={
             "symbol": "SPY 260724C00754000",
@@ -261,7 +261,7 @@ def test_4_position_not_marked_protected_until_accepted():
         price=750.0,
         stop=732.5,
         target=760.0,
-        quantity=1,
+        quantity=4,
         reason="TEST",
         option={
             "symbol": "SPY 260724C00754000",
@@ -300,7 +300,7 @@ def test_5_failed_stop_blocks_new_entries():
         price=750.0,
         stop=732.5,
         target=760.0,
-        quantity=1,
+        quantity=4,
         reason="TEST",
         option={"symbol": "SPY 260724C00754000", "mark": 5.68}
     )
