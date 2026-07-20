@@ -16,8 +16,6 @@ import unittest
 from datetime import datetime
 from unittest.mock import Mock, patch, MagicMock
 
-sys.path.insert(0, '/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha')
-
 from execution import live_engine
 
 
