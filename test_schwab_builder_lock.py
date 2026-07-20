@@ -47,7 +47,7 @@ class TestBuilderGeneratedOrder(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            1
+            4
         )
         
         # Verify builder was called
@@ -80,7 +80,7 @@ class TestBuilderGeneratedOrder(unittest.TestCase):
         ]
         
         for symbol in test_symbols:
-            order_id = live_engine._submit_option_order(symbol, "CALL", 5.41, 1)
+            order_id = live_engine._submit_option_order(symbol, "CALL", 5.41, 4)
             self.assertIsNotNone(order_id)
             print(f"✓ TEST 1b: Exact symbol preserved: {repr(symbol)}")
 
@@ -108,7 +108,7 @@ class TestAccountHashUsage(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            1
+            4
         )
         
         # Verify place_order was called with hash
@@ -145,7 +145,7 @@ class TestSubmissionLock(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            1
+            4
         )
         
         self.assertIsNone(order_id)
@@ -192,7 +192,7 @@ class TestSubmissionLock(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )

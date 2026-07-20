@@ -1611,13 +1611,23 @@ def _submit_option_order(option_symbol, direction, limit_price, quantity):
         option_symbol: Exact option symbol from Schwab (e.g., "SPY 260724C00754000")
         direction: "CALL" or "PUT" 
         limit_price: Limit price (already normalized to valid tick)
-        quantity: Number of contracts (should be 1)
+        quantity: Number of contracts (must be exactly MAX_OPEN_CONTRACTS)
     
     Returns:
         order_id: Schwab order ID if submitted successfully
         None: if submission failed or locked
     """
     global _submission_rejected, _rejection_reason
+
+    try:
+        quantity = int(quantity)
+    except (TypeError, ValueError):
+        print("ERROR: Invalid live entry contract quantity")
+        return None
+
+    if quantity != MAX_OPEN_CONTRACTS:
+        print(f"ERROR: Live entry quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
+        return None
     
     # Check submission lock
     if _submission_rejected:
@@ -1844,6 +1854,16 @@ def _submit_option_exit_market_order(option_symbol, quantity):
 
 def _submit_option_entry_market_order(option_symbol, quantity):
     """Submit a broker BUY_TO_OPEN market order for fast entry fallback."""
+    try:
+        quantity = int(quantity)
+    except (TypeError, ValueError):
+        print("ERROR: Invalid live entry contract quantity")
+        return None
+
+    if quantity != MAX_OPEN_CONTRACTS:
+        print(f"ERROR: Live entry quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
+        return None
+
     if not _schwab_client or not _schwab_account_hash:
         print("ERROR: Schwab client or account hash not configured for entry market order")
         return None

@@ -177,7 +177,7 @@ class TestSchwabErrorHandling(unittest.TestCase):
             "SPY 260724C00754000",
             "CALL",
             4.6864,  # Invalid price precision
-            1
+            4
         )
         
         # Verify order failed (returns None)
@@ -211,7 +211,7 @@ class TestSchwabErrorHandling(unittest.TestCase):
             "SPY 260724C00754000",
             "CALL",
             4.6864,
-            1
+            4
         )
         
         self.assertIsNone(result)
