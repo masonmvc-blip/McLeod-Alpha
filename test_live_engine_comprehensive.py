@@ -138,7 +138,7 @@ def test_live_order_calls_schwab_api():
             price=450.00,
             stop=445.00,
             target=460.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65}
         )
@@ -205,7 +205,7 @@ def test_no_position_before_fill_confirmation():
             price=450.00,
             stop=445.00,
             target=460.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65}
         )
@@ -260,7 +260,7 @@ def test_rejected_orders_do_not_create_positions():
             price=450.00,
             stop=445.00,
             target=460.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00754000", "mark": 2.50, "delta": 0.65}
         )

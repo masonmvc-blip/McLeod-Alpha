@@ -2267,10 +2267,10 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
         return _finalize(False, "invalid_contract_quantity")
 
-    if quantity < 1 or quantity > MAX_OPEN_CONTRACTS:
-        print(f"Trade blocked: quantity {quantity} is outside 1..{MAX_OPEN_CONTRACTS}")
+    if quantity != MAX_OPEN_CONTRACTS:
+        print(f"Trade blocked: quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
         metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
-        return _finalize(False, "contract_quantity_out_of_range")
+        return _finalize(False, "contract_quantity_must_equal_max")
 
     # CHECK SAFE MODE FIRST (highest priority)
     if _safe_mode:
