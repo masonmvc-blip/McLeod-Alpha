@@ -10,9 +10,4 @@ def calculate_quantity(entry_price, stop_price):
     if risk_per_share <= 0:
         return 0
 
-    qty = int(RISK_PER_TRADE / risk_per_share)
-
-    if qty < 1:
-        qty = 1
-
-    return min(qty, MAX_CONTRACTS)
+    return MAX_CONTRACTS
