@@ -447,7 +447,7 @@ def test_9_max_contract_cap_enforced():
     
     mock_client = MagicMock()
     
-    # Setup: Existing position with qty > MAX_OPEN_CONTRACTS (4)
+    # Setup: Existing position with qty above MAX_OPEN_CONTRACTS (4).
     account_response = Mock()
     account_response.status_code = 200
     account_response.json.return_value = {
@@ -455,7 +455,7 @@ def test_9_max_contract_cap_enforced():
             "positions": [
                 {
                     "instrument": {"assetType": "OPTION", "symbol": "SPY 260724C00754000"},
-                    "longQuantity": 4,  # qty > max cap (3)
+                    "longQuantity": 5,
                     "averagePrice": 5.50
                 }
             ],
@@ -477,8 +477,8 @@ def test_9_max_contract_cap_enforced():
     assert live_engine._max_quantity_exceeded == True, "Should set max quantity exceeded"
     
     print("✓ PASS: Maximum contract cap enforced")
-    print(f"  - Position Qty: 4")
-    print(f"  - Max Allowed: 3")
+    print(f"  - Position Qty: 5")
+    print(f"  - Max Allowed: 4")
     print(f"  - Status: BLOCKED")
     print(f"  - Manual reconciliation required")
 

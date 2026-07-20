@@ -15,6 +15,7 @@ KEY DIFFERENCES FROM STUB:
 
 from execution.position_store import save_position, load_position, clear_position
 from execution.sms_alerts import send_trade_entry_alert, send_trade_exit_alert, send_emergency_alert
+from execution.contract_limits import MAX_OPEN_CONTRACTS
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, time as dt_time, timezone
 from zoneinfo import ZoneInfo
@@ -480,14 +481,12 @@ def reconcile_startup():
     # Check for critical issue: quantity exceeds configured cap.
     total_qty = sum(qty for _, qty, _ in spy_positions)
     
-    # Hard safety lock: any broker quantity above 1 contract requires manual reconcile.
-    # This remains stricter than configurable cap for startup safety.
-    if total_qty > 1:
+    if total_qty > MAX_OPEN_CONTRACTS:
         print(f"\n❌ CRITICAL: Quantity exceeds maximum!")
         for symbol, qty, pos in spy_positions:
             print(f"   {symbol}: {qty} contracts")
         _max_quantity_exceeded = True
-        _excess_quantity_details = f"Schwab has {total_qty} contracts (max 1)"
+        _excess_quantity_details = f"Schwab has {total_qty} contracts (max {MAX_OPEN_CONTRACTS})"
         print(f"\n🔒 TRADING DISABLED until manually reconciled")
         print(f"   Please close excess position on Schwab manually")
         print("="*70 + "\n")
@@ -629,8 +628,7 @@ OPTION_STOP_LOSS_PCT = -5
 # Configuration for order submission
 ORDER_SUBMISSION_TIMEOUT_SECONDS = 30  # Wait up to 30 seconds for fill
 ORDER_CHECK_INTERVAL_SECONDS = float(os.getenv("ORDER_CHECK_INTERVAL_SECONDS", "0.08"))  # Check fill status every 80ms
-ORDER_QUANTITY = 3                      # Target 3 contracts per trade
-MAX_OPEN_CONTRACTS = 4                  # Safety cap for existing broker exposure
+ORDER_QUANTITY = MAX_OPEN_CONTRACTS      # Target the configured maximum per trade
 ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "1.25"))
 ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "1.0"))
 ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
@@ -2262,6 +2260,17 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         return bool(opened)
 
     precheck_start_ms = _perf_ms_now()
+
+    try:
+        quantity = int(quantity)
+    except (TypeError, ValueError):
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "invalid_contract_quantity")
+
+    if quantity < 1 or quantity > MAX_OPEN_CONTRACTS:
+        print(f"Trade blocked: quantity {quantity} is outside 1..{MAX_OPEN_CONTRACTS}")
+        metrics["precheck_ms"] = _elapsed_ms(precheck_start_ms)
+        return _finalize(False, "contract_quantity_out_of_range")
 
     # CHECK SAFE MODE FIRST (highest priority)
     if _safe_mode:
