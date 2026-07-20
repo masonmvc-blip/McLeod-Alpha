@@ -4,7 +4,7 @@ from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
 from engine.brain import classify_entry_regime as market_regime
 
-from execution.position_sizing import calculate_quantity
+from engine.brain import calculate_entry_quantity
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
@@ -856,7 +856,7 @@ def _refresh_option_chain_cache(*, force=False):
         entry = float(last.close)
         stop = entry - 0.75
         target = entry + 1.50
-        quantity = calculate_quantity(entry, stop)
+        quantity = calculate_entry_quantity(entry, stop)
 
         chain = get_option_chain()
         option = select_option_from_chain(chain, "CALL", entry)
@@ -876,7 +876,7 @@ def _refresh_option_chain_cache(*, force=False):
         entry = float(last.close)
         stop = entry + 0.75
         target = entry - 1.50
-        quantity = calculate_quantity(entry, stop)
+        quantity = calculate_entry_quantity(entry, stop)
 
         chain = get_option_chain()
         option = select_option_from_chain(chain, "PUT", entry)
@@ -1021,7 +1021,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         entry = float(last.close)
         stop = entry - 0.75
         target = entry + 1.50
-        quantity = calculate_quantity(entry, stop)
+        quantity = calculate_entry_quantity(entry, stop)
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)
@@ -1074,7 +1074,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         entry = float(last.close)
         stop = entry + 0.75
         target = entry - 1.50
-        quantity = calculate_quantity(entry, stop)
+        quantity = calculate_entry_quantity(entry, stop)
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)

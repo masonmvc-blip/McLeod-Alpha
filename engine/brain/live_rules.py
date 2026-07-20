@@ -1,4 +1,6 @@
-"""Live entry rules owned exclusively by the canonical Brain."""
+"""Live entry and risk rules owned exclusively by the canonical Brain."""
+
+from execution.contract_limits import MAX_OPEN_CONTRACTS
 
 
 def classify_entry_regime(last, previous) -> str:
@@ -18,3 +20,11 @@ def classify_entry_regime(last, previous) -> str:
         return "BEAR_TREND"
 
     return "NO_TRADE"
+
+
+def calculate_entry_quantity(entry_price, stop_price) -> int:
+    """Return the permitted live quantity for a valid entry-risk distance."""
+    risk_per_share = abs(float(entry_price) - float(stop_price))
+    if risk_per_share <= 0:
+        return 0
+    return MAX_OPEN_CONTRACTS

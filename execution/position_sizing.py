@@ -1,13 +1,3 @@
-from execution.contract_limits import MAX_OPEN_CONTRACTS
+"""Retired compatibility import for the canonical Brain sizing rule."""
 
-ACCOUNT_SIZE = 1000
-RISK_PER_TRADE = 10
-MAX_CONTRACTS = MAX_OPEN_CONTRACTS
-
-def calculate_quantity(entry_price, stop_price):
-    risk_per_share = abs(entry_price - stop_price)
-
-    if risk_per_share <= 0:
-        return 0
-
-    return MAX_CONTRACTS
+from engine.brain import calculate_entry_quantity as calculate_quantity
