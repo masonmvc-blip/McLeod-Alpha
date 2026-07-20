@@ -4,7 +4,7 @@ from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
 from engine.brain import classify_entry_regime as market_regime
 
-from engine.brain import calculate_entry_quantity
+from engine.brain import build_entry_risk_plan
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
@@ -834,64 +834,6 @@ def _refresh_option_chain_cache(*, force=False):
     _LAST_OPTION_CHAIN_REFRESH_EPOCH = now_epoch
     return chain
 
-    log_signal(
-        float(last.close),
-        regime,
-        call_score,
-        put_score,
-        feature_payload={
-            "call_reasons": call_reasons,
-            "put_reasons": put_reasons,
-            "volume_trend": vol.get("trend"),
-            "signal_threshold": min_score_threshold,
-            "ema10": float(getattr(last, "ema10", 0.0)),
-            "ema20": float(getattr(last, "ema20", 0.0)),
-            "ema50": float(getattr(last, "ema50", 0.0)),
-            "vwap": float(getattr(last, "vwap", 0.0)),
-            "macd_hist": float(getattr(last, "macd_hist", 0.0)),
-        },
-    )
-
-    if regime == "BULL_TREND" and call_score >= 5:
-        entry = float(last.close)
-        stop = entry - 0.75
-        target = entry + 1.50
-        quantity = calculate_entry_quantity(entry, stop)
-
-        chain = get_option_chain()
-        option = select_option_from_chain(chain, "CALL", entry)
-        print(f"Selected option: {option}")
-
-        open_trade(
-            direction="CALL",
-            price=entry,
-            stop=stop,
-            target=target,
-            quantity=quantity,
-            reason="PHASE2_BULL_CALL",
-            option=option,
-        )
-
-    elif regime == "BEAR_TREND" and put_score >= 5:
-        entry = float(last.close)
-        stop = entry + 0.75
-        target = entry - 1.50
-        quantity = calculate_entry_quantity(entry, stop)
-
-        chain = get_option_chain()
-        option = select_option_from_chain(chain, "PUT", entry)
-        print(f"Selected option: {option}")
-
-        open_trade(
-            direction="PUT",
-            price=entry,
-            stop=stop,
-            target=target,
-            quantity=quantity,
-            reason="PHASE2_BEAR_PUT",
-            option=option,
-        )
-
 
 
 STARTUP_GUARD_BLOCKED_ATTEMPTS = 2
@@ -1019,9 +961,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
 
     if regime == "BULL_TREND" and call_score >= 5:
         entry = float(last.close)
-        stop = entry - 0.75
-        target = entry + 1.50
-        quantity = calculate_entry_quantity(entry, stop)
+        stop, target, quantity = build_entry_risk_plan("CALL", entry)
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)
@@ -1072,9 +1012,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
 
     elif regime == "BEAR_TREND" and put_score >= 5:
         entry = float(last.close)
-        stop = entry + 0.75
-        target = entry - 1.50
-        quantity = calculate_entry_quantity(entry, stop)
+        stop, target, quantity = build_entry_risk_plan("PUT", entry)
 
         chain_start_ms = _perf_ms_now()
         chain = _CACHED_OPTION_CHAIN or _refresh_option_chain_cache(force=True)

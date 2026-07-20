@@ -28,3 +28,18 @@ def calculate_entry_quantity(entry_price, stop_price) -> int:
     if risk_per_share <= 0:
         return 0
     return MAX_OPEN_CONTRACTS
+
+
+def build_entry_risk_plan(direction: str, entry_price: float) -> tuple[float, float, int]:
+    """Build the canonical live entry stop, target, and permitted quantity."""
+    entry = float(entry_price)
+    normalized_direction = str(direction or "").upper()
+    if normalized_direction == "CALL":
+        stop = entry - 0.75
+        target = entry + 1.50
+    elif normalized_direction == "PUT":
+        stop = entry + 0.75
+        target = entry - 1.50
+    else:
+        raise ValueError(f"Unsupported live entry direction: {direction!r}")
+    return stop, target, calculate_entry_quantity(entry, stop)
