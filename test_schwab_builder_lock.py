@@ -231,7 +231,7 @@ class TestPositionSafety(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )
@@ -287,8 +287,28 @@ class TestPositionSafety(unittest.TestCase):
         print("✓ TEST 4.2: Unfilled order doesn't create position")
 
 
+class TestEntryQuantityGuard(unittest.TestCase):
+    """TEST 5: Every entry submission path requires exactly four contracts."""
+
+    @patch('execution.live_engine._schwab_client')
+    def test_direct_submission_rejects_non_four_quantity(self, mock_client):
+        live_engine._schwab_account_hash = "HASH123"
+        live_engine._submission_rejected = False
+
+        order_id = live_engine._submit_option_order(
+            "SPY 260724C00756000",
+            "CALL",
+            5.41,
+            3,
+        )
+
+        self.assertIsNone(order_id)
+        mock_client.place_order.assert_not_called()
+        print("✓ TEST 5.1: Non-four direct submission blocked before Schwab")
+
+
 class TestBuilderStructure(unittest.TestCase):
-    """TEST 5: Verify builder creates proper order structure"""
+    """TEST 6: Verify builder creates proper order structure"""
     
     def test_option_buy_to_open_limit_parameters(self):
         """Verify parameters match schwab-py builder signature"""
@@ -331,6 +351,7 @@ def run_tests():
     suite.addTests(loader.loadTestsFromTestCase(TestAccountHashUsage))
     suite.addTests(loader.loadTestsFromTestCase(TestSubmissionLock))
     suite.addTests(loader.loadTestsFromTestCase(TestPositionSafety))
+    suite.addTests(loader.loadTestsFromTestCase(TestEntryQuantityGuard))
     suite.addTests(loader.loadTestsFromTestCase(TestBuilderStructure))
     
     runner = unittest.TextTestRunner(verbosity=2)
