@@ -2,6 +2,7 @@ from execution.option_selector import select_option_from_chain, find_option_mark
 from execution.equity_stream import SchwabEquityQuoteStream
 from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
+from engine.brain import classify_entry_regime as market_regime
 
 from execution.position_sizing import calculate_quantity
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
@@ -532,18 +533,6 @@ def _indicators_ready(df):
         return False, "indicator values contain NaN in latest rows"
 
     return True, "ok"
-
-
-def market_regime(last, prev):
-    if last.close > last.vwap and last.ema10 > last.ema20 > last.ema50 and last.ema10 > prev.ema10:
-        return "BULL_TREND"
-
-    if last.close < last.vwap and last.ema10 < last.ema20 < last.ema50 and last.ema10 < prev.ema10:
-        return "BEAR_TREND"
-
-    return "NO_TRADE"
-
-
 
 
 def volume_momentum(df, *, emit_log=True):
