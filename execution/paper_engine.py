@@ -409,7 +409,11 @@ def manage_trade(price, option_mark=None, option_bid=None):
         close_trade(price, "END_OF_DAY_EXIT", option_mark)
         return
 
-    if datetime.now(EASTERN_TZ) - current_position.opened >= timedelta(minutes=15):
+    opened_at = current_position.opened
+    if opened_at.tzinfo is None:
+        opened_at = opened_at.replace(tzinfo=EASTERN_TZ)
+
+    if now_et - opened_at >= timedelta(minutes=15):
         print("MAX HOLD REACHED: closing position after 15 minutes")
         close_trade(price, "MAX_HOLD_15_MIN", option_mark)
         return
