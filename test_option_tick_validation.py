@@ -19,8 +19,6 @@ from datetime import datetime
 from unittest.mock import Mock, patch, MagicMock, call
 
 # Add current directory to path for imports
-sys.path.insert(0, '/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha')
-
 from execution import live_engine
 
 
@@ -247,7 +245,7 @@ class TestPositionClosureBehavior(unittest.TestCase):
             price=750.00,
             stop=745.00,
             target=755.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={
                 "symbol": "SPY 260724C00754000",
@@ -303,7 +301,7 @@ class TestPositionClosureBehavior(unittest.TestCase):
             price=750.00,
             stop=745.00,
             target=755.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={
                 "symbol": "SPY 260724C00754000",

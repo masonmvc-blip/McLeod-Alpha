@@ -17,8 +17,6 @@ Tests mandatory protective stop requirements:
 """
 
 import sys
-sys.path.insert(0, '/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha')
-
 from unittest.mock import MagicMock, Mock, patch
 from datetime import datetime
 from execution.live_engine import (

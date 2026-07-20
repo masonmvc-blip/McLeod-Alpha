@@ -274,7 +274,7 @@ class TestPositionSafety(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=1,
+            quantity=4,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )
