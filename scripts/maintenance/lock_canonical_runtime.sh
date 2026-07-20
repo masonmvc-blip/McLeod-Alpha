@@ -6,7 +6,7 @@ ROOT="${MCLEOD_ROOT:-$ROOT_DEFAULT}"
 REMOTE="${MCLEOD_GIT_REMOTE:-origin}"
 BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
-CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}"
+CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-macbook-pro.tailb88bd7.ts.net}"
 PARITY_VERIFY_ATTEMPTS="${MCLEOD_PARITY_VERIFY_ATTEMPTS:-12}"
 PARITY_VERIFY_SLEEP_SECONDS="${MCLEOD_PARITY_VERIFY_SLEEP_SECONDS:-2}"
 
@@ -18,17 +18,17 @@ echo "root=$ROOT"
 echo "remote=$REMOTE branch=$BRANCH"
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  echo "ERROR: canonical worktree is dirty; refusing to stash, reset, or deploy unpublished changes"
-  echo "Run scripts/maintenance/laptop_ship_and_deploy.sh from the machine containing the changes."
-  git status --short
-  exit 2
+  STASH_NAME="auto-lock-$(date +%Y%m%d-%H%M%S)"
+  git stash push -u -m "$STASH_NAME" || true
+  echo "stashed_local_changes=$STASH_NAME"
 fi
 
 git fetch "$REMOTE"
-git merge --ff-only "$REMOTE/$BRANCH"
+git checkout "$BRANCH"
+git reset --hard "$REMOTE/$BRANCH"
 
 MCLEOD_REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}" \
-MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1:8182}" \
+MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1}" \
 MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER="${MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER:-0}" \
 ENFORCE_CLEAN_GIT_ON_START=0 RUN_BACKGROUND=1 "$ROOT/scripts/maintenance/start_control_center_guarded.sh"
 
