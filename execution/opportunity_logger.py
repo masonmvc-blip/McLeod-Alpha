@@ -165,6 +165,101 @@ def _candle_structure(last, prev, df) -> Dict[str, Any]:
     }
 
 
+def _candle_research_metrics(last, prev, df) -> Dict[str, Any]:
+    open_price = _safe_float(getattr(last, "open", None))
+    high = _safe_float(getattr(last, "high", None))
+    low = _safe_float(getattr(last, "low", None))
+    close = _safe_float(getattr(last, "close", None))
+    volume = _safe_float(getattr(last, "volume", None))
+
+    candle_range = max((high or 0.0) - (low or 0.0), 0.0)
+    body = abs((close or 0.0) - (open_price or 0.0))
+    body_pct = round(body / candle_range, 4) if candle_range > 0 else None
+    close_location_value = round((((close or 0.0) - (low or 0.0)) / candle_range) * 2.0 - 1.0, 4) if candle_range > 0 else None
+    upper_wick_pct = round((max((high or 0.0) - max(open_price or 0.0, close or 0.0), 0.0) / candle_range), 4) if candle_range > 0 else None
+    lower_wick_pct = round((max(min(open_price or 0.0, close or 0.0) - (low or 0.0), 0.0) / candle_range), 4) if candle_range > 0 else None
+
+    recent = df.iloc[-21:-1] if len(df) >= 21 else df.iloc[:-1]
+    recent_ranges = []
+    recent_volumes = []
+    for _, row in recent.iterrows():
+        row_high = _safe_float(getattr(row, "high", None))
+        row_low = _safe_float(getattr(row, "low", None))
+        row_volume = _safe_float(getattr(row, "volume", None))
+        if row_high is not None and row_low is not None:
+            recent_ranges.append(max(row_high - row_low, 0.0))
+        if row_volume is not None and row_volume > 0:
+            recent_volumes.append(row_volume)
+    average_range = sum(recent_ranges) / len(recent_ranges) if recent_ranges else None
+    average_volume = sum(recent_volumes) / len(recent_volumes) if recent_volumes else None
+
+    prior_high = _safe_float(getattr(prev, "high", None))
+    prior_low = _safe_float(getattr(prev, "low", None))
+    structure = "MIXED"
+    if high is not None and low is not None and prior_high is not None and prior_low is not None:
+        if high > prior_high and low > prior_low:
+            structure = "HIGHER_HIGH_HIGHER_LOW"
+        elif high < prior_high and low < prior_low:
+            structure = "LOWER_HIGH_LOWER_LOW"
+
+    session_rows = []
+    candle_time = getattr(last, "name", None)
+    candle_date = getattr(candle_time, "date", lambda: None)()
+    for index, row in df.iterrows():
+        index_date = getattr(index, "date", lambda: None)()
+        if candle_date is not None and index_date != candle_date:
+            continue
+        row_high = _safe_float(getattr(row, "high", None))
+        row_low = _safe_float(getattr(row, "low", None))
+        row_close = _safe_float(getattr(row, "close", None))
+        row_volume = _safe_float(getattr(row, "volume", None))
+        if None not in (row_high, row_low, row_close, row_volume) and row_volume > 0:
+            session_rows.append((index, (row_high + row_low + row_close) / 3.0, row_volume, row_high, row_low))
+
+    vwap = None
+    vwap_slope_3 = None
+    opening_range_high = None
+    opening_range_low = None
+    if session_rows:
+        cumulative_volume = sum(row[2] for row in session_rows)
+        vwap = sum(row[1] * row[2] for row in session_rows) / cumulative_volume if cumulative_volume else None
+        if len(session_rows) >= 4:
+            prior_rows = session_rows[:-3]
+            prior_volume = sum(row[2] for row in prior_rows)
+            if prior_volume:
+                vwap_slope_3 = vwap - (sum(row[1] * row[2] for row in prior_rows) / prior_volume)
+        opening_rows = []
+        for index, _, _, row_high, row_low in session_rows:
+            hour = getattr(index, "hour", None)
+            minute = getattr(index, "minute", None)
+            if hour == 9 and minute is not None and 30 <= minute < 60:
+                opening_rows.append((row_high, row_low))
+        if opening_rows:
+            opening_range_high = max(row[0] for row in opening_rows)
+            opening_range_low = min(row[1] for row in opening_rows)
+
+    return {
+        "candle_body_pct_of_range": body_pct,
+        "candle_close_location_value": close_location_value,
+        "candle_upper_wick_pct": upper_wick_pct,
+        "candle_lower_wick_pct": lower_wick_pct,
+        "candle_range": round(candle_range, 6),
+        "candle_range_vs_20bar_avg": round(candle_range / average_range, 4) if average_range and average_range > 0 else None,
+        "candle_relative_volume_20": round(volume / average_volume, 4) if volume is not None and average_volume and average_volume > 0 else None,
+        "candle_structure": structure,
+        "session_vwap": round(vwap, 6) if vwap is not None else None,
+        "price_distance_from_session_vwap": round((close or 0.0) - vwap, 6) if close is not None and vwap is not None else None,
+        "session_vwap_slope_3": round(vwap_slope_3, 6) if vwap_slope_3 is not None else None,
+        "opening_range_high": opening_range_high,
+        "opening_range_low": opening_range_low,
+        "opening_range_state": "ABOVE" if opening_range_high is not None and close is not None and close > opening_range_high else "BELOW" if opening_range_low is not None and close is not None and close < opening_range_low else "INSIDE" if opening_range_high is not None else "UNAVAILABLE",
+        "bullish_breakout_failure": bool(high is not None and prior_high is not None and close is not None and high > prior_high and close <= prior_high),
+        "bearish_breakout_failure": bool(low is not None and prior_low is not None and close is not None and low < prior_low and close >= prior_low),
+        "distance_to_recent_high_in_avg_range": round(((max([_safe_float(getattr(row, "high", None)) or 0.0 for _, row in recent.iterrows()]) - (close or 0.0)) / average_range), 4) if len(recent) and average_range and average_range > 0 and close is not None else None,
+        "distance_to_recent_low_in_avg_range": round((((close or 0.0) - min([_safe_float(getattr(row, "low", None)) or 0.0 for _, row in recent.iterrows()])) / average_range), 4) if len(recent) and average_range and average_range > 0 and close is not None else None,
+    }
+
+
 def _direction_rejection_reason(
     direction: str,
     entered: bool,
@@ -317,6 +412,7 @@ def _build_setup_record(
     record.update(_ema_metrics(df=df, last=last, bars=3))
     record.update(_macd_metrics(df=df, last=last, bars=3))
     record.update(_candle_structure(last=last, prev=prev, df=df))
+    record.update(_candle_research_metrics(last=last, prev=prev, df=df))
 
     return record
 

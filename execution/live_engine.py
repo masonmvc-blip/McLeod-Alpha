@@ -1172,25 +1172,11 @@ def _sync_position_with_broker(current_price, force: bool = False):
         broker_exit_price = _extract_execution_price(matched_exit)
         broker_exit_time = _order_time(matched_exit) or broker_exit_time
     else:
-        # Fallback: previous behavior (latest filled SELL_TO_CLOSE by symbol).
-        for order in reversed(orders):
-            status = (order.get("status") or "").upper()
-            if status != "FILLED":
-                continue
-            for leg in order.get("orderLegCollection", []) or []:
-                inst = leg.get("instrument", {})
-                if inst.get("assetType") != "OPTION":
-                    continue
-                if inst.get("symbol") != symbol:
-                    continue
-                if (leg.get("instruction") or "").upper() != "SELL_TO_CLOSE":
-                    continue
-                broker_exit_order_id = order.get("orderId")
-                broker_exit_price = _extract_execution_price(order)
-                broker_exit_time = _order_time(order) or broker_exit_time
-                break
-            if broker_exit_order_id:
-                break
+        print(
+            "WARNING: Broker shows no position but no matching post-entry "
+            f"SELL_TO_CLOSE fill was found for {symbol}; preserving local state."
+        )
+        return
 
     # If broker entry order ID is known, prefer exact BUY_TO_OPEN execution price.
     broker_entry_price = float(current_position.option_entry or 0.0)
@@ -1611,23 +1597,13 @@ def _submit_option_order(option_symbol, direction, limit_price, quantity):
         option_symbol: Exact option symbol from Schwab (e.g., "SPY 260724C00754000")
         direction: "CALL" or "PUT" 
         limit_price: Limit price (already normalized to valid tick)
-        quantity: Number of contracts (must be exactly MAX_OPEN_CONTRACTS)
+        quantity: Number of contracts (should be 1)
     
     Returns:
         order_id: Schwab order ID if submitted successfully
         None: if submission failed or locked
     """
     global _submission_rejected, _rejection_reason
-
-    try:
-        quantity = int(quantity)
-    except (TypeError, ValueError):
-        print("ERROR: Invalid live entry contract quantity")
-        return None
-
-    if quantity != MAX_OPEN_CONTRACTS:
-        print(f"ERROR: Live entry quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
-        return None
     
     # Check submission lock
     if _submission_rejected:
@@ -1854,16 +1830,6 @@ def _submit_option_exit_market_order(option_symbol, quantity):
 
 def _submit_option_entry_market_order(option_symbol, quantity):
     """Submit a broker BUY_TO_OPEN market order for fast entry fallback."""
-    try:
-        quantity = int(quantity)
-    except (TypeError, ValueError):
-        print("ERROR: Invalid live entry contract quantity")
-        return None
-
-    if quantity != MAX_OPEN_CONTRACTS:
-        print(f"ERROR: Live entry quantity must be exactly {MAX_OPEN_CONTRACTS}, received {quantity}")
-        return None
-
     if not _schwab_client or not _schwab_account_hash:
         print("ERROR: Schwab client or account hash not configured for entry market order")
         return None
@@ -2124,12 +2090,7 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
     
     while time.time() - start_time < max_wait_seconds:
         try:
-            # Support both client signatures used across runtime/tests:
-            # get_order(account_hash, order_id) and get_order(order_id, account_hash).
-            try:
-                resp = _schwab_client.get_order(_schwab_account_hash, order_id)
-            except Exception:
-                resp = _schwab_client.get_order(order_id, _schwab_account_hash)
+            resp = _schwab_client.get_order(order_id, _schwab_account_hash)
             resp.raise_for_status()
             order_data = resp.json()
             
@@ -2191,10 +2152,7 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
     # If still not filled, proactively cancel working order so it cannot fill later
     # outside bot control (which would leave a position without automated protection).
     try:
-        try:
-            latest = _schwab_client.get_order(_schwab_account_hash, order_id)
-        except Exception:
-            latest = _schwab_client.get_order(order_id, _schwab_account_hash)
+        latest = _schwab_client.get_order(order_id, _schwab_account_hash)
         latest.raise_for_status()
         latest_data = latest.json() or {}
         latest_status = str(latest_data.get("status") or "").upper()
@@ -2897,8 +2855,9 @@ def manage_trade(current_price, option_mark=None, option_bid=None):
                     )
                     print("   ALERT: Multiple protective-stop restores detected; entry lock active until flat")
             else:
-                print("   EMERGENCY: Could not restore protective stop, closing position now")
-                close_trade(current_price, "PROTECTIVE_STOP_SYNC_FAILED", option_mark)
+                _protective_stop_failed = True
+                _protective_stop_failure_reason = "Protective-stop verification/restore failed; manual broker verification required"
+                print("   CRITICAL: Could not verify or restore protective stop; entries locked and no market exit submitted")
                 return
 
     # ==========================================
@@ -2974,13 +2933,15 @@ def manage_trade(current_price, option_mark=None, option_bid=None):
                         )
                     else:
                         print("   CRITICAL: Could not sync ratcheted stop to broker order")
-                        print("   EMERGENCY: Closing position to avoid unprotected exposure")
-                        close_trade(current_price, "PROTECTIVE_STOP_SYNC_FAILED", option_mark)
+                        _protective_stop_failed = True
+                        _protective_stop_failure_reason = "Ratcheted protective-stop sync failed; manual broker verification required"
+                        print("   Entries locked; no market exit submitted without a verified price stop hit")
                         return
             except Exception as e:
                 print(f"   WARNING: Broker stop sync failed: {e}")
-                print("   EMERGENCY: Closing position to avoid unprotected exposure")
-                close_trade(current_price, "PROTECTIVE_STOP_SYNC_FAILED", option_mark)
+                _protective_stop_failed = True
+                _protective_stop_failure_reason = "Ratcheted protective-stop sync exception; manual broker verification required"
+                print("   Entries locked; no market exit submitted without a verified price stop hit")
                 return
 
             try:

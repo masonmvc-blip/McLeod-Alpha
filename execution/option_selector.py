@@ -1,5 +1,7 @@
 from datetime import date, datetime
 
+MIN_OPTION_DAILY_VOLUME = 500
+
 
 
 def get_nearest_expiration(chain):
@@ -78,6 +80,9 @@ def select_option_from_chain(data, direction, spy_price):
             if spread > 0.05 or spread_pct > 8:
                 continue
 
+            if volume < MIN_OPTION_DAILY_VOLUME:
+                continue
+
             candidates.append({
                 "symbol": contract.get("symbol"),
                 "description": contract.get("description"),
@@ -96,7 +101,10 @@ def select_option_from_chain(data, direction, spy_price):
             })
 
     if not candidates:
-        print("REJECTED: no option passed bid-ask and liquidity filters")
+        print(
+            "REJECTED: no option passed bid-ask and daily-volume liquidity filters "
+            f"(minimum volume: {MIN_OPTION_DAILY_VOLUME})"
+        )
         return None
 
     # Highest volume first. Ties favor open interest, then closest strike.

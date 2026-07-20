@@ -122,16 +122,10 @@ def _estimate_option_returns(direction: str, entry_price: float, price: float) -
     return spy_return_pct * ESTIMATED_OPTION_MOVE_MULTIPLIER
 
 
-def _enrich_rejected_event(event: Dict[str, Any], candles: List[Dict[str, Any]]) -> Dict[str, Any]:
-    if event.get("entered"):
-        event["post_rejection_tracking"] = None
-        event["outcome_classification"] = None
-        event["estimated_option_outcome"] = None
-        return event
-
+def _enrich_event_outcomes(event: Dict[str, Any], candles: List[Dict[str, Any]]) -> Dict[str, Any]:
     event_time = _parse_dt(event.get("candle_time_et"))
     if event_time is None:
-        event["post_rejection_tracking"] = None
+        event["post_evaluation_tracking"] = None
         event["outcome_classification"] = "scratch/no meaningful move"
         event["estimated_option_outcome"] = {
             "is_estimate": True,
@@ -146,7 +140,7 @@ def _enrich_rejected_event(event: Dict[str, Any], candles: List[Dict[str, Any]])
     future = [c for c in candles if c["datetime"] > event_time and c["datetime"] <= window_end]
 
     if not future or entry_price <= 0:
-        event["post_rejection_tracking"] = {
+        event["post_evaluation_tracking"] = {
             "window_minutes": 15,
             "future_candles_used": 0,
             "max_favorable_spy_move": 0.0,
@@ -205,14 +199,39 @@ def _enrich_rejected_event(event: Dict[str, Any], candles: List[Dict[str, Any]])
     else:
         outcome = "scratch/no meaningful move"
 
-    event["post_rejection_tracking"] = {
+    horizon_outcomes = {}
+    for minutes in (1, 3, 5, 10, 15):
+        horizon_candles = [c for c in future if c["datetime"] <= event_time + timedelta(minutes=minutes)]
+        if not horizon_candles:
+            horizon_outcomes[str(minutes)] = None
+            continue
+        close_return = _estimate_option_returns(direction, entry_price, horizon_candles[-1]["close"])
+        high_returns = [
+            _estimate_option_returns(direction, entry_price, c["high"] if direction == "CALL" else c["low"])
+            for c in horizon_candles
+        ]
+        low_returns = [
+            _estimate_option_returns(direction, entry_price, c["low"] if direction == "CALL" else c["high"])
+            for c in horizon_candles
+        ]
+        horizon_outcomes[str(minutes)] = {
+            "estimated_option_return_pct": round(close_return, 4),
+            "estimated_option_mfe_pct": round(max(high_returns), 4),
+            "estimated_option_mae_pct": round(min(low_returns), 4),
+            "future_candles_used": len(horizon_candles),
+        }
+
+    event["post_evaluation_tracking"] = {
         "window_minutes": 15,
         "future_candles_used": len(future),
         "max_favorable_spy_move": round(max_favorable, 6),
         "max_adverse_spy_move": round(max_adverse, 6),
         "first_threshold_hit": first_hit,
         "first_threshold_hit_time_et": first_hit_time.isoformat() if first_hit_time else None,
+        "fixed_horizon_outcomes": horizon_outcomes,
     }
+    if not event.get("entered"):
+        event["post_rejection_tracking"] = event["post_evaluation_tracking"]
     event["outcome_classification"] = outcome
     event["estimated_option_outcome"] = {
         "is_estimate": True,
@@ -433,7 +452,7 @@ def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
     enriched: List[Dict[str, Any]] = []
     for event in events:
         event["setup_type"] = _classify_setup_type(event)
-        enriched.append(_enrich_rejected_event(event, candles))
+        enriched.append(_enrich_event_outcomes(event, candles))
 
     summary = _build_summary(enriched)
     csv_rows = _to_csv_rows(enriched)

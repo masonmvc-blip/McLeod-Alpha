@@ -129,12 +129,15 @@ INTERNET_TREND_BAR_POINTS = max(10, int(os.getenv("INTERNET_TREND_BAR_POINTS", "
 STATUS_SNAPSHOT_CACHE_SECONDS = float(os.getenv("STATUS_SNAPSHOT_CACHE_SECONDS", "1.5"))
 BROKER_PNL_REFRESH_SECONDS = float(os.getenv("BROKER_PNL_REFRESH_SECONDS", "15"))
 DAILY_LEARNING_CACHE_SECONDS = float(os.getenv("DAILY_LEARNING_CACHE_SECONDS", "30"))
-CANONICAL_RUNTIME_HOST = os.getenv("MCLEOD_CANONICAL_RUNTIME_HOST", "Masons-iMac.local").strip()
+CANONICAL_RUNTIME_HOST = os.getenv("MCLEOD_CANONICAL_RUNTIME_HOST", "Desktop").strip()
 CANONICAL_CONTROL_CENTER_URL = os.getenv(
     "MCLEOD_CANONICAL_CONTROL_CENTER_URL",
-    "https://masons-imac.tailb88bd7.ts.net/",
+    "https://masons-macbook-pro.tailb88bd7.ts.net/",
 ).strip()
 CANONICAL_REPO_BASENAME = os.getenv("MCLEOD_CANONICAL_REPO_BASENAME", "McLeod-Alpha-New").strip()
+CANONICAL_REPO_PATH = Path(
+    os.getenv("MCLEOD_CANONICAL_REPO_PATH", str(Path.home() / "GitHub" / CANONICAL_REPO_BASENAME))
+).expanduser().resolve()
 ENFORCE_CANONICAL_REPO_PATH = str(
     os.getenv("MCLEOD_ENFORCE_CANONICAL_REPO_PATH", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
@@ -2484,11 +2487,11 @@ def _runtime_host_allows_bot_start() -> tuple[bool, str, str]:
 
 
 def _runtime_repo_path_allows_start() -> tuple[bool, str, str]:
-    current_repo = PROJECT_ROOT.name.strip()
-    expected_repo = CANONICAL_REPO_BASENAME.strip()
-    if not ENFORCE_CANONICAL_REPO_PATH or not expected_repo:
+    current_repo = str(PROJECT_ROOT.resolve())
+    expected_repo = str(CANONICAL_REPO_PATH)
+    if not ENFORCE_CANONICAL_REPO_PATH:
         return True, current_repo, expected_repo
-    allowed = current_repo.lower() == expected_repo.lower()
+    allowed = PROJECT_ROOT.resolve() == CANONICAL_REPO_PATH
     return allowed, current_repo, expected_repo
 
 
@@ -3337,6 +3340,7 @@ def parse_bot_status():
         "trade_entry_reason_code": "NOT_RUNNING",
         "trade_entry_reason_short": "Bot is not running",
         "decision_contract": {},
+        "trend": "UNKNOWN",
         "market_trend": "UNKNOWN",
         "spy_price": None,
         "spy_change": None,
@@ -3469,8 +3473,6 @@ def parse_bot_status():
         status["spy_quote_state"] = "UNAVAILABLE"
 
     _apply_spy_close_baseline(status)
-
-    # Trend hints from historical logs are intentionally disabled to avoid stale banner context.
 
     if active_log.exists():
         try:
@@ -3686,11 +3688,10 @@ def parse_bot_status():
         # Parse latest decision line + no-trade reason from recent logs.
         recent_lines = [ln.strip() for ln in lines if ln.strip()]
 
-        # Parse market trend from explicit market line and normalize to
-        # BULLISH/BEARISH/NEUTRAL for banner clarity.
+        # Use the exact trend classification emitted for the latest evaluated candle.
         for line in reversed(recent_lines):
             text = str(line or "").strip()
-            if not text or text.lower().startswith("volume trend:"):
+            if not text:
                 continue
             if not text.lower().startswith("trend:"):
                 continue
@@ -3700,14 +3701,8 @@ def parse_bot_status():
                 continue
 
             raw_trend = str(m_trend.group(1) or "UNKNOWN").upper()
-            if raw_trend in {"BULL", "BULLISH", "UP", "INCREASING", "UPTREND"}:
-                status["market_trend"] = "BULLISH"
-            elif raw_trend in {"BEAR", "BEARISH", "DOWN", "DECREASING", "DOWNTREND"}:
-                status["market_trend"] = "BEARISH"
-            elif raw_trend in {"NEUTRAL", "SIDEWAYS", "RANGE", "FLAT"}:
-                status["market_trend"] = "NEUTRAL"
-            else:
-                status["market_trend"] = "NEUTRAL"
+            status["trend"] = raw_trend
+            status["market_trend"] = raw_trend
             break
 
         def _extract_side_reasons(reason_text: str):
@@ -3861,14 +3856,10 @@ def parse_bot_status():
     }
     status["problem_messages"] = _build_problem_messages(status)
     status["problem_summary"] = status["problem_messages"][0] if status["problem_messages"] else None
-    hist = status.get("internet_quality_history") or {}
     internet_quality = str((status.get("internet_quality") or {}).get("quality") or "UNKNOWN").upper()
-    stability = str(hist.get("stability") or "UNKNOWN").upper()
-    if _is_market_hours_now_et() and (stability == "CHOPPY" or internet_quality in {"DEGRADED", "DOWN"}):
+    if _is_market_hours_now_et() and internet_quality in {"DEGRADED", "DOWN"}:
         status["internet_market_warning"] = True
-        status["internet_market_warning_message"] = (
-            f"Market-hours internet warning: {internet_quality}, {stability.replace('_', ' ').lower()} latency"
-        )
+        status["internet_market_warning_message"] = f"Market-hours internet warning: {internet_quality}"
     else:
         status["internet_market_warning"] = False
         status["internet_market_warning_message"] = None
@@ -4243,6 +4234,70 @@ def _filter_synthetic_test_trade_rows(trades):
     return [t for t in (trades or []) if not _is_synthetic_test_trade_row(t)]
 
 
+def _indicator_labels_from_trade(trade):
+    payload = {}
+    for field in ("entry_diagnostic_snapshot", "feature_payload"):
+        raw = str((trade or {}).get(field) or "").strip()
+        if not raw:
+            continue
+        try:
+            parsed = json.loads(raw)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(parsed, dict):
+            payload = parsed
+            break
+
+    direction = str(trade.get("direction") or "").strip().lower()
+    labels = []
+    for key in ("entry_reasons", f"entry_reasons_{direction}", "positive_signals", "penalties"):
+        values = payload.get(key)
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            label = str(value or "").strip()
+            if label and label not in labels:
+                labels.append(label)
+    return labels
+
+
+def _indicator_performance_summary(trades, minimum_sample_size=10):
+    grouped = {}
+    for trade in _filter_synthetic_test_trade_rows(trades):
+        if not trade.get("exit_time"):
+            continue
+        try:
+            pnl = float(trade.get("option_pnl_dollars") if trade.get("option_pnl_dollars") is not None else trade.get("pnl") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        for label in _indicator_labels_from_trade(trade):
+            bucket = grouped.setdefault(label, {"indicator": label, "trades": 0, "wins": 0, "losses": 0, "breakeven": 0, "return_total": 0.0})
+            bucket["trades"] += 1
+            bucket["return_total"] += pnl
+            if pnl > 0:
+                bucket["wins"] += 1
+            elif pnl < 0:
+                bucket["losses"] += 1
+            else:
+                bucket["breakeven"] += 1
+
+    rows = []
+    for bucket in grouped.values():
+        trades_count = bucket["trades"]
+        win_rate = round((bucket["wins"] / trades_count) * 100.0, 1) if trades_count else 0.0
+        average_return = round(bucket["return_total"] / trades_count, 2) if trades_count else 0.0
+        if trades_count < minimum_sample_size:
+            guidance = "Collect more data"
+        elif win_rate >= 55.0 and average_return > 0:
+            guidance = "Candidate to increase weight"
+        elif win_rate <= 45.0 and average_return < 0:
+            guidance = "Review for reduction"
+        else:
+            guidance = "Keep monitoring"
+        rows.append({"indicator": bucket["indicator"], "trades": trades_count, "wins": bucket["wins"], "losses": bucket["losses"], "breakeven": bucket["breakeven"], "win_rate_pct": win_rate, "average_return": average_return, "guidance": guidance})
+    return sorted(rows, key=lambda row: (-row["trades"], row["indicator"].lower()))
+
+
 def _broker_verified_trade_signatures(trading_date: str):
     _, payload = _load_latest_schwab_transaction_export()
     if not payload:
@@ -4349,7 +4404,7 @@ def _realized_spy_option_pnl_for_date(trading_date: str):
 
 
 def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
-    """Return realized P&L for broker-linked SPY option exits in an inclusive date range."""
+    """Return realized SPY option P&L for an inclusive date range from trade_log exits."""
     if not start_date or not end_date:
         return None
 
@@ -4367,8 +4422,6 @@ def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
             SELECT ROUND(SUM(COALESCE(option_pnl_dollars, pnl, 0)), 2) AS realized
             FROM trade_log
             WHERE exit_time IS NOT NULL
-                            AND TRIM(COALESCE(broker_entry_order_id, '')) <> ''
-                            AND TRIM(COALESCE(broker_exit_order_id, '')) <> ''
               AND substr(exit_time, 1, 10) >= ?
               AND substr(exit_time, 1, 10) <= ?
             """,
@@ -5435,6 +5488,35 @@ def api_daily_learning_insights():
             "actionable_lessons": [],
             "error": str(e),
         })
+
+
+@app.route('/api/cio/dashboard', methods=['GET'])
+def api_cio_dashboard():
+    from cio_dashboard import build_cio_dashboard_payload
+
+    return jsonify(build_cio_dashboard_payload(PROJECT_ROOT))
+
+
+@app.route('/api/indicator-performance', methods=['GET'])
+def api_indicator_performance():
+    """Return closed-trade win rates attributed to each recorded entry indicator."""
+    try:
+        db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
+        if not db_path.exists():
+            return jsonify({"minimum_sample_size": 10, "indicators": [], "closed_trades": 0})
+        with sqlite3.connect(str(db_path)) as con:
+            con.row_factory = sqlite3.Row
+            rows = [dict(row) for row in con.execute("""
+                SELECT id, direction, exit_time, pnl, option_pnl_dollars, option_pnl_pct,
+                       feature_payload, entry_diagnostic_snapshot, option_symbol,
+                       broker_entry_order_id, broker_exit_order_id
+                FROM trade_log
+                WHERE exit_time IS NOT NULL AND TRIM(exit_time) <> ''
+            """).fetchall()]
+        closed_trades = _filter_synthetic_test_trade_rows(rows)
+        return jsonify({"minimum_sample_size": 10, "closed_trades": len(closed_trades), "indicators": _indicator_performance_summary(closed_trades)})
+    except Exception as exc:
+        return jsonify({"minimum_sample_size": 10, "closed_trades": 0, "indicators": [], "error": str(exc)})
 
 
 def _bot_order_ids_from_audit():
@@ -7044,8 +7126,8 @@ HTML_DASHBOARD = """
             margin: 0;
         }
 
-        .bot-toggle.running { background: #dc3545; color: white; }
-        .bot-toggle.stopped { background: #28a745; color: white; }
+        .bot-toggle.running { background: #28a745; color: white; }
+        .bot-toggle.stopped { background: #dc3545; color: white; }
 
         button {
             padding: 9px 14px;
@@ -7662,7 +7744,7 @@ HTML_DASHBOARD = """
             .connectivity-summary-meta,
             .connectivity-summary-strip .connectivity-main {
                 width: 100%;
-                text-align: center;
+                text-align: left;
                 white-space: normal;
             }
 
@@ -8186,19 +8268,6 @@ HTML_DASHBOARD = """
             return String(timeText).replace(/\\s?[AP]M$/i, '');
         }
 
-        function formatEntryTimeAMPM(dateValue) {
-            const d = new Date(dateValue);
-            if (Number.isNaN(d.getTime())) return '-';
-            const timeText = d.toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true,
-                timeZone: 'America/New_York',
-            });
-            return String(timeText).replace(/\\s?[AP]M$/i, '');
-        }
-
         function formatDateTimeAMPM(dateValue) {
             const d = new Date(dateValue);
             if (Number.isNaN(d.getTime())) return 'unknown';
@@ -8384,30 +8453,18 @@ HTML_DASHBOARD = """
                 const tradeEntryBanner = document.getElementById('tradeEntryBanner');
                 const tradeEntryBannerTitle = document.getElementById('tradeEntryBannerTitle');
                 const tradeEntryBannerMeta = document.getElementById('tradeEntryBannerMeta');
-                const marketTrendRaw = String(status.market_trend || 'NEUTRAL').toUpperCase();
+                const trendRaw = String(status.trend || 'UNKNOWN').toUpperCase();
                 const trendMap = {
-                    'INCREASING': 'BULLISH',
-                    'UP': 'BULLISH',
-                    'BULL': 'BULLISH',
-                    'BULLISH': 'BULLISH',
-                    'DECREASING': 'BEARISH',
-                    'DOWN': 'BEARISH',
-                    'BEAR': 'BEARISH',
-                    'BEARISH': 'BEARISH',
+                    'BULL_TREND': 'BULL_TREND',
+                    'BEAR_TREND': 'BEAR_TREND',
                     'NEUTRAL': 'NEUTRAL',
-                    'SIDEWAYS': 'NEUTRAL',
-                    'RANGE': 'NEUTRAL',
-                    'FLAT': 'NEUTRAL',
-                    'UNKNOWN': 'NEUTRAL',
                 };
-                const marketTrend = trendMap[marketTrendRaw] || 'NEUTRAL';
-                let trendText = `${marketTrend}`;
+                const trend = trendMap[trendRaw] || 'UNKNOWN';
+                let trendText = trend.replaceAll('_', ' ');
                 let trendToneClass = 'trend-tone-neutral';
-                if (marketTrend === 'BEARISH') {
-                    trendText = `🐻 BEARISH 🐻`;
+                if (trend === 'BEAR_TREND') {
                     trendToneClass = 'trend-tone-bearish';
-                } else if (marketTrend === 'BULLISH') {
-                    trendText = `🐂 BULLISH 🐂`;
+                } else if (trend === 'BULL_TREND') {
                     trendToneClass = 'trend-tone-bullish';
                 }
 
@@ -9090,7 +9147,7 @@ HTML_DASHBOARD = """
                 
                 data.trades.forEach(trade => {
                     // Use shared AM/PM formatter so trade time stays in regular time format.
-                    const entryTime = trade.entry_time ? formatEntryTimeAMPM(trade.entry_time) : '-';
+                    const entryTime = trade.entry_time ? formatTimeAMPM(trade.entry_time) : '-';
                     const exitTime = trade.exit_time ? formatTimeAMPM(trade.exit_time) : '-';
                     const timeRange = `${entryTime} - ${exitTime}`;
                     const pnl = trade.pnl || 0;

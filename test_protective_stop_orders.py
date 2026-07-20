@@ -114,7 +114,8 @@ def test_1_entry_fill_triggers_protective_stop():
         option={
             "symbol": "SPY 260724C00754000",
             "mark": 5.68,
-            "delta": 0.5
+                "delta": 0.5,
+                "volume": 500,
         },
         feature_payload="test"
     )
@@ -133,7 +134,7 @@ def test_1_entry_fill_triggers_protective_stop():
     # Verify position has protective stop details
     assert live_engine.current_position is not None, "Position should exist"
     assert live_engine.current_position.protective_stop_order_id == "222", "Stop order ID should be stored"
-    assert live_engine.current_position.protective_stop_price == 5.40, "Stop price should be -5% of 5.68"
+    assert live_engine.current_position.protective_stop_price == 5.41, "Stop trigger should activate before the 5% loss floor"
     assert live_engine.current_position.protective_stop_status == "PLACED", "Stop status should be PLACED"
     
     print("✓ PASS: Entry fill triggers protective stop submission")
@@ -264,7 +265,8 @@ def test_4_position_not_marked_protected_until_accepted():
         option={
             "symbol": "SPY 260724C00754000",
             "mark": 5.68,
-            "delta": 0.5
+                "delta": 0.5,
+                "volume": 500,
         }
     )
     

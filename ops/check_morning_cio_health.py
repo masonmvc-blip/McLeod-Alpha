@@ -37,6 +37,7 @@ def main() -> int:
     parser.add_argument("--max-age-hours", type=int, default=26)
     parser.add_argument("--min-data-quality", type=int, default=0)
     parser.add_argument("--require-smtp", action="store_true")
+    parser.add_argument("--require-approved-transport", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
 
@@ -60,6 +61,8 @@ def main() -> int:
 
         if args.require_smtp and send_event.get("transport") != "smtp":
             issues.append("non_smtp_transport")
+        if args.require_approved_transport and send_event.get("transport") not in {"smtp", "outlook", "outlook_fallback"}:
+            issues.append("unapproved_transport")
 
     report_payload: Dict[str, Any] = {}
     if LATEST_JSON.exists():

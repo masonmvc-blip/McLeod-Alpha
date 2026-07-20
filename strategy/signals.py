@@ -8,6 +8,7 @@ All functions are deterministic and have no side effects.
 """
 
 import pandas as pd
+import math
 from datetime import datetime, timedelta, time as dt_time
 from zoneinfo import ZoneInfo
 
@@ -121,12 +122,13 @@ def calculate_fibonacci_levels(swing_high, swing_low, price):
     }
 
 
-def build_feature_snapshot(df):
+def build_feature_snapshot(df, *, exclude_last_candle=True):
     """
     Build support/resistance and MACD analysis snapshot.
     
     Args:
         df: DataFrame with complete indicators (EMA, VWAP, MACD)
+        exclude_last_candle: Whether the final row may be an incomplete candle.
         
     Returns:
         Dict with support_resistance and macd data
@@ -134,13 +136,18 @@ def build_feature_snapshot(df):
     if df is None or df.empty:
         return {}
 
-    completed_df = df.iloc[:-1].copy() if len(df) > 1 else df.copy()
+    completed_df = df.iloc[:-1].copy() if exclude_last_candle and len(df) > 1 else df.copy()
     if completed_df.empty:
         return {}
 
     current_row = completed_df.iloc[-1]
     prev_row = completed_df.iloc[-2] if len(completed_df) > 1 else current_row
     price = float(current_row.get("close", 0.0) or 0.0)
+
+    half_dollar_support = math.floor(price * 2.0) / 2.0
+    half_dollar_resistance = math.ceil(price * 2.0) / 2.0
+    whole_dollar_support = math.floor(price)
+    whole_dollar_resistance = math.ceil(price)
 
     if "timestamp" in completed_df.columns:
         # Assume timestamp is already timezone-aware
@@ -260,6 +267,12 @@ def build_feature_snapshot(df):
             "closed_below_support": close_below_support,
             "breakout_volume_confirmed": breakout_confirmation,
             "breakdown_volume_confirmed": breakdown_confirmation,
+            "psychological_levels": {
+                "half_dollar_support": float(half_dollar_support),
+                "half_dollar_resistance": float(half_dollar_resistance),
+                "whole_dollar_support": float(whole_dollar_support),
+                "whole_dollar_resistance": float(whole_dollar_resistance),
+            },
         },
         "fibonacci_levels": fibonacci_data,
         "macd": {

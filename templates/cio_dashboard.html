@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>McLeod CIO Command Center</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #06101c;
+      --panel: rgba(13, 28, 47, 0.86);
+      --panel-strong: #10243a;
+      --line: rgba(154, 180, 205, 0.18);
+      --text: #eef6ff;
+      --muted: #91a8bd;
+      --blue: #54a8ff;
+      --cyan: #5ee9d2;
+      --green: #47d792;
+      --amber: #ffbf5b;
+      --red: #ff7285;
+      --radius: 18px;
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(43, 116, 189, 0.24), transparent 32rem),
+        radial-gradient(circle at 92% 18%, rgba(38, 187, 164, 0.12), transparent 28rem),
+        linear-gradient(160deg, #07111f 0%, #071522 46%, #040b13 100%);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    a { color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    .shell { width: min(1440px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .mark { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border-radius: 13px; background: linear-gradient(145deg, #2d83db, #38c7b1); color: #03101c; font-weight: 900; box-shadow: 0 10px 30px rgba(63, 176, 227, .24); }
+    .brand-copy { min-width: 0; }
+    .eyebrow { margin: 0; color: var(--cyan); font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .brand h1 { margin: 2px 0 0; font-size: clamp(1.12rem, 2vw, 1.45rem); letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top-actions { display: flex; gap: 9px; }
+    .button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border: 1px solid var(--line); border-radius: 12px; background: rgba(16, 36, 58, .78); color: var(--text); font: inherit; font-size: .85rem; font-weight: 750; text-decoration: none; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+    .button:hover { transform: translateY(-1px); border-color: rgba(94, 233, 210, .5); background: #15304c; }
+    .button.primary { border-color: rgba(84, 168, 255, .5); background: linear-gradient(135deg, #176bbb, #1b8a9f); }
+    .button:focus-visible { outline: 3px solid rgba(84, 168, 255, .42); outline-offset: 2px; }
+
+    .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(270px, .6fr); gap: 24px; padding: clamp(22px, 4vw, 38px); border: 1px solid var(--line); border-radius: 24px; background: linear-gradient(135deg, rgba(18, 47, 77, .95), rgba(9, 26, 43, .95)); box-shadow: var(--shadow); }
+    .hero::after { content: ""; position: absolute; width: 340px; height: 340px; border: 1px solid rgba(94, 233, 210, .12); border-radius: 50%; right: -160px; top: -190px; box-shadow: 0 0 0 44px rgba(84, 168, 255, .025), 0 0 0 90px rgba(84, 168, 255, .02); pointer-events: none; }
+    .status-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; min-height: 29px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 12px currentColor; }
+    .pill.positive { color: var(--green); background: rgba(71, 215, 146, .08); }
+    .pill.warning { color: var(--amber); background: rgba(255, 191, 91, .08); }
+    .pill.neutral { color: var(--muted); }
+    .hero h2 { margin: 0; max-width: 760px; font-size: clamp(2rem, 5vw, 4.3rem); line-height: .98; letter-spacing: -.055em; }
+    .hero-copy { margin: 17px 0 0; max-width: 720px; color: #b9cad9; font-size: clamp(.95rem, 1.7vw, 1.08rem); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .quality-panel { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; padding: 22px; border: 1px solid rgba(154, 180, 205, .16); border-radius: 18px; background: rgba(5, 15, 26, .42); }
+    .quality-label { color: var(--muted); font-size: .76rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .quality-number { margin-top: 8px; font-size: clamp(3.2rem, 8vw, 5.8rem); font-weight: 850; line-height: .9; letter-spacing: -.07em; }
+    .quality-number span { color: var(--muted); font-size: 1rem; letter-spacing: 0; }
+    .meter { height: 9px; overflow: hidden; margin-top: 18px; border-radius: 999px; background: rgba(255, 255, 255, .08); }
+    .meter > div { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--amber), var(--cyan)); transition: width .5s ease; }
+    .quality-meta { display: grid; gap: 9px; color: var(--muted); font-size: .82rem; }
+    .quality-meta strong { color: var(--text); font-weight: 720; }
+
+    .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+    .metric, .panel { border: 1px solid var(--line); background: var(--panel); box-shadow: 0 14px 40px rgba(0,0,0,.15); }
+    .metric { min-height: 116px; padding: 17px; border-radius: 16px; }
+    .metric-label { color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .metric-value { margin-top: 9px; font-size: 1.18rem; font-weight: 820; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .metric-note { margin-top: 5px; color: var(--muted); font-size: .75rem; }
+
+    .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, .75fr); gap: 14px; margin-top: 14px; }
+    .stack { display: grid; gap: 14px; align-content: start; }
+    .panel { border-radius: var(--radius); overflow: hidden; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .panel-head h3 { margin: 0; font-size: 1rem; letter-spacing: -.015em; }
+    .panel-kicker { margin: 2px 0 0; color: var(--muted); font-size: .75rem; }
+    .panel-body { padding: 18px 20px 20px; }
+    .actions-list { display: grid; gap: 10px; }
+    .action-card { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 13px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(5, 15, 26, .34); }
+    .action-rank { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: rgba(255, 191, 91, .12); color: var(--amber); font-weight: 850; }
+    .action-title { margin: 0; font-size: .92rem; }
+    .action-detail { margin: 4px 0 0; color: var(--muted); font-size: .8rem; }
+    .empty { padding: 18px; border: 1px dashed rgba(154, 180, 205, .24); border-radius: 14px; color: var(--muted); text-align: center; }
+
+    .stage-list { display: grid; gap: 8px; }
+    .stage { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border-radius: 12px; background: rgba(5, 15, 26, .34); }
+    .stage-name { font-size: .84rem; font-weight: 720; text-transform: capitalize; }
+    .stage-status { color: var(--muted); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+    .stage-status.completed, .stage-status.success { color: var(--green); }
+    .stage-status.failed { color: var(--red); }
+
+    .split-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .split-stat { padding: 13px 10px; border-radius: 12px; background: rgba(5, 15, 26, .34); text-align: center; }
+    .split-stat strong { display: block; font-size: 1.35rem; }
+    .split-stat span { color: var(--muted); font-size: .68rem; font-weight: 750; text-transform: uppercase; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .79rem; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-size: .67rem; letter-spacing: .08em; text-transform: uppercase; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .tag { display: inline-flex; padding: 4px 7px; border-radius: 999px; background: rgba(84, 168, 255, .1); color: var(--blue); font-size: .67rem; font-weight: 800; text-transform: uppercase; }
+    .tag.good { background: rgba(71, 215, 146, .1); color: var(--green); }
+    .tag.warn { background: rgba(255, 191, 91, .1); color: var(--amber); }
+    .archives { display: grid; gap: 8px; }
+    .archive { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(5, 15, 26, .34); }
+    .archive-date { font-weight: 760; }
+    .archive-meta { color: var(--muted); font-size: .72rem; }
+    .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; color: var(--muted); font-size: .72rem; }
+    .skeleton { min-height: 16px; border-radius: 7px; background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.1), rgba(255,255,255,.04)); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    @media (max-width: 1050px) {
+      .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 1440px); padding-top: 14px; }
+      .topbar { align-items: flex-start; }
+      .top-actions .button:first-child { display: none; }
+      .hero { grid-template-columns: 1fr; padding: 22px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric { min-height: 102px; }
+      .footer { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 430px) {
+      .brand h1 { max-width: 220px; }
+      .metrics { grid-template-columns: 1fr; }
+      .hero-actions .button { width: 100%; }
+      .panel-head, .panel-body { padding-left: 15px; padding-right: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="topbar" aria-label="CIO navigation">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">MC</div>
+        <div class="brand-copy">
+          <p class="eyebrow">McLeod Capital</p>
+          <h1>CIO Command Center</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="button" href="/">Trading dashboard</a>
+        <button class="button" id="refreshButton" type="button">Refresh</button>
+      </div>
+    </nav>
+
+    <section class="hero" aria-labelledby="postureTitle">
+      <div>
+        <div class="status-line">
+          <span class="pill neutral" id="posturePill">Loading</span>
+          <span class="pill neutral" id="freshnessPill">Checking data</span>
+        </div>
+        <h2 id="postureTitle">Building your CIO view…</h2>
+        <p class="hero-copy" id="heroCopy">Loading the latest report, decisions, evidence, and delivery history from the canonical reporting engine.</p>
+        <div class="hero-actions">
+          <a class="button primary" id="fullReportButton" href="/cio/report/latest">Open full CIO report</a>
+          <a class="button" href="#decision-system">Review decision system</a>
+        </div>
+      </div>
+      <aside class="quality-panel" aria-label="Data quality">
+        <div>
+          <div class="quality-label">Data quality</div>
+          <div class="quality-number"><span id="qualityScore">—</span><span>/100</span></div>
+          <div class="meter" aria-hidden="true"><div id="qualityMeter"></div></div>
+        </div>
+        <div class="quality-meta">
+          <div>Report date <strong id="reportDate">—</strong></div>
+          <div>Data as of <strong id="dataAsOf">—</strong></div>
+          <div>Source <strong id="dataSource">—</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="metrics" aria-label="CIO metrics">
+      <article class="metric"><div class="metric-label">Email delivery</div><div class="metric-value" id="deliveryStatus">—</div><div class="metric-note" id="deliveryNote">Loading</div></article>
+      <article class="metric"><div class="metric-label">Decision records</div><div class="metric-value" id="decisionCount">—</div><div class="metric-note" id="decisionNote">Loading</div></article>
+      <article class="metric"><div class="metric-label">Evidence ledger</div><div class="metric-value" id="evidenceCount">—</div><div class="metric-note" id="evidenceNote">Loading</div></article>
+      <article class="metric"><div class="metric-label">Advisory pipeline</div><div class="metric-value" id="pipelineStatus">—</div><div class="metric-note" id="pipelineNote">Loading</div></article>
+      <article class="metric"><div class="metric-label">Next delivery</div><div class="metric-value">7:00 AM CT</div><div class="metric-note">XNYS market sessions</div></article>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <article class="panel">
+          <header class="panel-head"><div><h3>Priority actions</h3><p class="panel-kicker">Strict-gated recommendations from the latest report</p></div><span class="tag" id="actionCount">0 items</span></header>
+          <div class="panel-body"><div class="actions-list" id="actionsList"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        </article>
+
+        <article class="panel" id="decision-system">
+          <header class="panel-head"><div><h3>Decision system</h3><p class="panel-kicker">Deterministic advisory pipeline and tracked outcomes</p></div><span class="tag" id="pipelineRun">No run</span></header>
+          <div class="panel-body">
+            <div class="stage-list" id="stageList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div style="height:14px"></div>
+            <div class="split-stats">
+              <div class="split-stat"><strong id="openRecords">—</strong><span>Open</span></div>
+              <div class="split-stat"><strong id="closedRecords">—</strong><span>Closed</span></div>
+              <div class="split-stat"><strong id="lineageCount">—</strong><span>Lineage</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><div><h3>Delivery history</h3><p class="panel-kicker">Append-only report delivery registry</p></div></header>
+          <div class="panel-body table-wrap">
+            <table>
+              <thead><tr><th>Report date</th><th>Status</th><th>Transport</th><th>Logged</th><th>Fingerprint</th></tr></thead>
+              <tbody id="deliveryTable"><tr><td colspan="5">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <aside class="stack">
+        <article class="panel">
+          <header class="panel-head"><div><h3>Report archive</h3><p class="panel-kicker">Daily immutable report snapshots</p></div></header>
+          <div class="panel-body"><div class="archives" id="archiveList"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><div><h3>Coverage</h3><p class="panel-kicker">What the current brief contains</p></div></header>
+          <div class="panel-body"><div class="stage-list" id="sectionList"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+        </article>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>Private CIO view served by the canonical GitHub control center over Tailscale.</span>
+      <span id="lastRefreshed" aria-live="polite">Waiting for data…</span>
+    </footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    const labelize = (value) => String(value || 'n/a').replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const compactDate = (value) => {
+      if (!value) return 'Not available';
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return String(value);
+      return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}).format(parsed);
+    };
+
+    function render(payload) {
+      const report = payload.report || {};
+      const delivery = payload.delivery || {};
+      const journal = payload.decision_journal || {};
+      const evidence = payload.evidence_ledger || {};
+      const pipeline = payload.advisory_pipeline || {};
+      const score = Number(report.data_quality_score || 0);
+
+      $('posturePill').textContent = payload.posture || 'No report';
+      $('posturePill').className = `pill ${payload.posture_tone || 'neutral'}`;
+      $('freshnessPill').textContent = report.stale ? 'Stale snapshot' : 'Live portfolio data';
+      $('freshnessPill').className = `pill ${report.stale ? 'warning' : 'positive'}`;
+      $('postureTitle').textContent = report.investment_grade ? 'Portfolio intelligence is decision-ready.' : 'The portfolio brief needs attention.';
+      $('heroCopy').textContent = report.investment_grade
+        ? 'The latest CIO review passed freshness, evidence, news, and data-quality gates.'
+        : (payload.actions?.[0]?.detail || 'The strict recommendation gate is protecting decisions until required evidence is complete.');
+      $('qualityScore').textContent = score;
+      $('qualityMeter').style.width = `${Math.max(0, Math.min(100, score))}%`;
+      $('reportDate').textContent = report.report_date || 'Not generated';
+      $('dataAsOf').textContent = compactDate(report.data_as_of);
+      $('dataSource').textContent = labelize(report.source_label);
+      $('fullReportButton').hidden = !payload.report_available;
+
+      const latestDelivery = delivery.latest || {};
+      $('deliveryStatus').textContent = latestDelivery.status ? labelize(latestDelivery.status) : 'No delivery';
+      $('deliveryNote').textContent = latestDelivery.logged_at ? `${labelize(latestDelivery.transport)} · ${compactDate(latestDelivery.logged_at)}` : delivery.schedule || 'No delivery recorded';
+      $('decisionCount').textContent = journal.total_records ?? 0;
+      $('decisionNote').textContent = `${journal.open_records ?? 0} open · ${journal.closed_records ?? 0} closed`;
+      $('evidenceCount').textContent = evidence.total_evidence ?? 0;
+      $('evidenceNote').textContent = `${evidence.total_lineage ?? 0} lineage links`;
+      $('pipelineStatus').textContent = labelize(pipeline.overall_status || 'No run');
+      $('pipelineNote').textContent = pipeline.as_of_date ? `As of ${pipeline.as_of_date}` : 'No deterministic run found';
+
+      const actions = Array.isArray(payload.actions) ? payload.actions : [];
+      $('actionCount').textContent = `${actions.length} ${actions.length === 1 ? 'item' : 'items'}`;
+      $('actionsList').innerHTML = actions.length ? actions.map((action, index) => `
+        <article class="action-card">
+          <div class="action-rank">${index + 1}</div>
+          <div><h4 class="action-title">${escapeHtml(action.summary || action.type || 'Review')}</h4><p class="action-detail">${escapeHtml(action.detail || 'No additional detail.')}</p></div>
+        </article>`).join('') : '<div class="empty">No priority actions were published.</div>';
+
+      const stages = Array.isArray(pipeline.stage_statuses) ? pipeline.stage_statuses : [];
+      $('pipelineRun').textContent = pipeline.run_id || 'No run';
+      $('stageList').innerHTML = stages.length ? stages.map((stage) => `
+        <div class="stage"><span class="stage-name">${escapeHtml(labelize(stage.stage))}</span><span class="stage-status ${escapeHtml(stage.status)}">${escapeHtml(stage.status)}</span></div>`).join('') : '<div class="empty">No advisory pipeline run found.</div>';
+      $('openRecords').textContent = journal.open_records ?? 0;
+      $('closedRecords').textContent = journal.closed_records ?? 0;
+      $('lineageCount').textContent = evidence.total_lineage ?? 0;
+
+      const history = Array.isArray(delivery.history) ? delivery.history : [];
+      $('deliveryTable').innerHTML = history.length ? history.map((row) => `
+        <tr><td>${escapeHtml(row.report_date || '—')}</td><td><span class="tag ${row.status === 'accepted' ? 'good' : 'warn'}">${escapeHtml(row.status || row.event || '—')}</span></td><td>${escapeHtml(labelize(row.transport))}</td><td>${escapeHtml(compactDate(row.logged_at))}</td><td>${escapeHtml(row.content_sha256 || '—')}</td></tr>`).join('') : '<tr><td colspan="5">No delivery events recorded.</td></tr>';
+
+      const archives = Array.isArray(payload.archives) ? payload.archives : [];
+      $('archiveList').innerHTML = archives.length ? archives.map((row) => `
+        <div class="archive"><div><div class="archive-date">${escapeHtml(row.report_date)}</div><div class="archive-meta">Quality ${row.data_quality_score}/100 · ${row.stale ? 'stale' : 'fresh'}</div></div><span class="tag ${row.investment_grade ? 'good' : 'warn'}">${row.investment_grade ? 'ready' : 'review'}</span></div>`).join('') : '<div class="empty">No archived reports yet.</div>';
+
+      const sections = Array.isArray(report.sections) ? report.sections : [];
+      $('sectionList').innerHTML = sections.length ? sections.map((section) => `<div class="stage"><span class="stage-name">${escapeHtml(section)}</span><span class="stage-status completed">Included</span></div>`).join('') : '<div class="empty">No report coverage available.</div>';
+      $('lastRefreshed').textContent = `Dashboard refreshed ${compactDate(payload.generated_at)}`;
+    }
+
+    async function refresh() {
+      const button = $('refreshButton');
+      button.disabled = true;
+      button.textContent = 'Refreshing…';
+      try {
+        const response = await fetch('/api/cio/dashboard', {cache: 'no-store'});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        render(await response.json());
+      } catch (error) {
+        $('postureTitle').textContent = 'CIO data is temporarily unavailable.';
+        $('heroCopy').textContent = 'The dashboard could not read the reporting artifacts. The trading system is unaffected.';
+        $('lastRefreshed').textContent = `Refresh failed: ${error.message}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Refresh';
+      }
+    }
+
+    $('refreshButton').addEventListener('click', refresh);
+    refresh();
+    window.setInterval(refresh, 60000);
+  </script>
+</body>
+</html>

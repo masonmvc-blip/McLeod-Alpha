@@ -746,7 +746,7 @@ def _send_via_smtp(to_email: str, subject: str, body: str, attachments: List[Pat
         return False
 
 
-def _send_via_mailapp(to_email: str, subject: str, body: str, attachments: List[Path]) -> bool:
+def _send_via_outlook(to_email: str, subject: str, body: str, attachments: List[Path]) -> bool:
     def esc(text: str) -> str:
         return text.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -759,7 +759,7 @@ def _send_via_mailapp(to_email: str, subject: str, body: str, attachments: List[
     attach_script = "\n            ".join(attach_cmds)
 
     applescript = f'''
-    tell application "Mail"
+    tell application "Microsoft Outlook"
         set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
         tell newMessage
             make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
@@ -779,10 +779,10 @@ def _send_via_mailapp(to_email: str, subject: str, body: str, attachments: List[
         if result.returncode == 0:
             return True
         err = (result.stderr or "").strip() or (result.stdout or "").strip()
-        print(f"Daily trade-log email failed (Mail.app): {err}")
+        print(f"Daily trade-log email failed (Outlook): {err}")
         return False
     except Exception as exc:
-        print(f"Daily trade-log email failed (Mail.app): {exc}")
+        print(f"Daily trade-log email failed (Outlook): {exc}")
         return False
 
 
@@ -896,18 +896,18 @@ def _attempt_send_for_date(trade_date: str) -> bool:
                 f" | csv={csv_path} | json={json_path}"
             )
         return sent
-    if transport == "mailapp":
-        sent = _send_via_mailapp(to_email, subject, body, attachments)
+    if transport == "outlook":
+        sent = _send_via_outlook(to_email, subject, body, attachments)
         if not sent:
             _append_delivery_log(
                 f"{datetime.now(tz=CENTRAL_TZ).isoformat()} | send_failed"
-                f" | date={trade_date} | recipient={to_email} | transport=mailapp"
+                f" | date={trade_date} | recipient={to_email} | transport=outlook"
                 f" | csv={csv_path} | json={json_path}"
             )
         return sent
 
     # auto transport fallback
-    sent = _send_via_mailapp(to_email, subject, body, attachments) or _send_via_smtp(to_email, subject, body, attachments)
+    sent = _send_via_outlook(to_email, subject, body, attachments) or _send_via_smtp(to_email, subject, body, attachments)
     if not sent:
         _append_delivery_log(
             f"{datetime.now(tz=CENTRAL_TZ).isoformat()} | send_failed"

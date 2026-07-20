@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [[ -x "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14" ]]; then
-  PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14"
+if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
+  PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
 elif [[ -x "$PROJECT_DIR/.venv/bin/python3" ]]; then
   PYTHON_BIN="$PROJECT_DIR/.venv/bin/python3"
 elif [[ -x "$PROJECT_DIR/venv/bin/python3" ]]; then

@@ -154,14 +154,23 @@ def _fake_news(symbols):
     return "complete", findings, ""
 
 
-def test_dry_run_generates_html_and_text(monkeypatch, tmp_path):
-    monkeypatch.setattr(morning_report, "REPORT_DIR", tmp_path)
-    monkeypatch.setattr(morning_report, "LATEST_HTML", tmp_path / "latest_morning_cio_report.html")
-    monkeypatch.setattr(morning_report, "LATEST_TEXT", tmp_path / "latest_morning_cio_report.txt")
-    monkeypatch.setattr(morning_report, "LATEST_JSON", tmp_path / "latest_morning_cio_report.json")
-    monkeypatch.setattr(morning_report, "STATE_PATH", tmp_path / "latest_morning_cio_state.json")
+def _redirect_runtime_paths(monkeypatch, tmp_path):
+    report_dir = tmp_path / "reports"
+    monkeypatch.setattr(morning_report, "LOG_DIR", tmp_path / "logs")
+    monkeypatch.setattr(morning_report, "REPORT_DIR", report_dir)
+    monkeypatch.setattr(morning_report, "ARCHIVE_DIR", report_dir / "archive")
+    monkeypatch.setattr(morning_report, "LATEST_HTML", report_dir / "latest_morning_cio_report.html")
+    monkeypatch.setattr(morning_report, "LATEST_TEXT", report_dir / "latest_morning_cio_report.txt")
+    monkeypatch.setattr(morning_report, "LATEST_JSON", report_dir / "latest_morning_cio_report.json")
+    monkeypatch.setattr(morning_report, "DELIVERY_REGISTRY_PATH", report_dir / "delivery_registry.jsonl")
+    monkeypatch.setattr(morning_report, "LEGACY_MARKDOWN_PATH", tmp_path / "morning_cio_report_latest.md")
+    monkeypatch.setattr(morning_report, "STATE_PATH", report_dir / "latest_morning_cio_state.json")
     monkeypatch.setattr(morning_report, "RUN_LOG_PATH", tmp_path / "morning_cio_email.jsonl")
     monkeypatch.setattr(morning_report, "LOCK_PATH", tmp_path / "morning_cio_email.lock")
+
+
+def test_dry_run_generates_html_and_text(monkeypatch, tmp_path):
+    _redirect_runtime_paths(monkeypatch, tmp_path)
     monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": False, "returncode": 1, "stdout": "", "stderr": "offline"})
     monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
     monkeypatch.setattr(morning_report, "_check_news", _fake_news)
@@ -196,6 +205,41 @@ def test_dry_run_generates_html_and_text(monkeypatch, tmp_path):
     assert html_body.startswith("<!DOCTYPE html>")
     assert "McLeod Morning CIO Report" in html_body
     assert "Executive Summary" in html_body
+
+    morning_report._write_artifacts(bundle, text_body, html_body, payload)
+    archive_dir = morning_report.ARCHIVE_DIR / bundle.report_date
+    assert (archive_dir / "morning_cio_report.md").exists()
+    assert (archive_dir / "morning_cio_report.html").exists()
+    assert (archive_dir / "morning_cio_report.json").exists()
+
+
+def test_report_rendering_is_deterministic_for_same_bundle(monkeypatch):
+    monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": False, "returncode": 1, "stdout": "", "stderr": "offline"})
+    monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
+    monkeypatch.setattr(morning_report, "_check_news", _fake_news)
+    bundle = morning_report._build_bundle(
+        force=True,
+        logger=morning_report._configure_logger("determinism"),
+        previous_state={"thesis_health": {"AAA": "HEALTHY", "BBB": "HEALTHY"}},
+        report_date="2026-07-17",
+    )
+    first = morning_report.build_report(bundle)
+    second = morning_report.build_report(bundle)
+    assert first[:3] == second[:3]
+
+
+def test_cli_dry_run_writes_artifacts_without_delivery(monkeypatch, tmp_path):
+    _redirect_runtime_paths(monkeypatch, tmp_path)
+    monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": True, "returncode": 0, "stdout": "", "stderr": ""})
+    monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
+    monkeypatch.setattr(morning_report, "_check_news", _fake_news)
+    monkeypatch.setattr(morning_report, "_smtp_send", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("dry run sent email")))
+
+    assert morning_report.main(["--dry-run", "--date", "2026-07-17"]) == 0
+    assert morning_report.LATEST_HTML.exists()
+    assert morning_report.LATEST_JSON.exists()
+    assert (morning_report.ARCHIVE_DIR / "2026-07-17" / "morning_cio_report.md").exists()
+    assert not morning_report.DELIVERY_REGISTRY_PATH.exists()
 
 
 def test_smtp_password_is_stripped_before_login(monkeypatch):
@@ -284,14 +328,7 @@ def test_smtp_only_mode_fails_without_fallback(monkeypatch, tmp_path):
     monkeypatch.setenv("EMAIL_APP_PASSWORD", "aaaaaaaaaaaaaaaa")
     monkeypatch.setenv("EMAIL_TO", "dest@example.com")
 
-    monkeypatch.setattr(morning_report, "REPORT_DIR", tmp_path)
-    monkeypatch.setattr(morning_report, "LATEST_HTML", tmp_path / "latest_morning_cio_report.html")
-    monkeypatch.setattr(morning_report, "LATEST_TEXT", tmp_path / "latest_morning_cio_report.txt")
-    monkeypatch.setattr(morning_report, "LATEST_JSON", tmp_path / "latest_morning_cio_report.json")
-    monkeypatch.setattr(morning_report, "LEGACY_MARKDOWN_PATH", tmp_path / "morning_cio_report_latest.md")
-    monkeypatch.setattr(morning_report, "STATE_PATH", tmp_path / "latest_morning_cio_state.json")
-    monkeypatch.setattr(morning_report, "RUN_LOG_PATH", tmp_path / "morning_cio_email.jsonl")
-    monkeypatch.setattr(morning_report, "LOCK_PATH", tmp_path / "morning_cio_email.lock")
+    _redirect_runtime_paths(monkeypatch, tmp_path)
     monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": True, "returncode": 0, "stdout": "", "stderr": ""})
     monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
     monkeypatch.setattr(morning_report, "_check_news", _fake_news)
@@ -300,17 +337,107 @@ def test_smtp_only_mode_fails_without_fallback(monkeypatch, tmp_path):
         raise RuntimeError("smtp fail")
 
     monkeypatch.setattr(morning_report, "_smtp_send", fail_smtp)
-    mail_called = {"used": False}
+    outlook_called = {"used": False}
 
-    def mail_stub(*args, **kwargs):
-        mail_called["used"] = True
+    def outlook_stub(*args, **kwargs):
+        outlook_called["used"] = True
         return {"accepted": True}
 
-    monkeypatch.setattr(morning_report, "_mailapp_send", mail_stub)
+    monkeypatch.setattr(morning_report, "_outlook_send", outlook_stub)
 
     rc = morning_report.main(["--send", "--force"])
     assert rc == 4
-    assert mail_called["used"] is False
+    assert outlook_called["used"] is False
+
+
+def test_outlook_fallback_never_targets_mail_app(monkeypatch):
+    calls = {}
+
+    def fake_run(command, **kwargs):
+        calls["command"] = command
+        return type("Result", (), {"returncode": 0, "stderr": "", "stdout": ""})()
+
+    monkeypatch.setattr(morning_report.subprocess, "run", fake_run)
+
+    result = morning_report._outlook_send(
+        "dest@example.com",
+        "Morning CIO",
+        "Report body",
+        morning_report._configure_logger("outlook-test"),
+    )
+
+    assert result["transport"] == "outlook"
+    assert "Microsoft Outlook" in calls["command"][-1]
+    assert "Mail\"" not in calls["command"][-1]
+
+
+def test_missing_credentials_fail_closed(monkeypatch, tmp_path):
+    _redirect_runtime_paths(monkeypatch, tmp_path)
+    for name in ("EMAIL_ADDRESS", "EMAIL_APP_PASSWORD", "EMAIL_TO", "EXPECTED_EMAIL_ADDRESS"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": True, "returncode": 0, "stdout": "", "stderr": ""})
+    monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
+    monkeypatch.setattr(morning_report, "_check_news", _fake_news)
+
+    assert morning_report.main(["--send", "--date", "2026-07-17", "--force"]) == 3
+    rows = [json.loads(line) for line in morning_report.DELIVERY_REGISTRY_PATH.read_text(encoding="utf-8").splitlines()]
+    assert rows[-1]["event"] == "send_failed"
+    assert set(rows[-1]) <= {
+        "run_id", "report_date", "event", "status", "transport", "recipient",
+        "subject", "content_sha256", "error", "logged_at",
+    }
+
+
+def test_same_report_date_is_not_sent_twice(monkeypatch, tmp_path):
+    _redirect_runtime_paths(monkeypatch, tmp_path)
+    monkeypatch.setenv("EMAIL_ADDRESS", "cio@gmail.com")
+    monkeypatch.setenv("EMAIL_APP_PASSWORD", "aaaaaaaaaaaaaaaa")
+    monkeypatch.setenv("EMAIL_TO", "dest@example.com")
+    monkeypatch.setenv("MORNING_CIO_REQUIRE_SMTP_ONLY", "true")
+    monkeypatch.setattr(morning_report, "_run_portfolio_refresh", lambda: {"attempted": True, "succeeded": True, "returncode": 0, "stdout": "", "stderr": ""})
+    monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
+    monkeypatch.setattr(morning_report, "_check_news", _fake_news)
+
+    sends = []
+
+    def smtp_stub(*args, **kwargs):
+        sends.append(kwargs.get("subject") or args[3])
+        return {"accepted": True, "attempt": 1, "refused": {}}
+
+    monkeypatch.setattr(morning_report, "_smtp_send", smtp_stub)
+    assert morning_report.main(["--send", "--date", "2026-07-17"]) == 0
+    assert morning_report.main(["--send", "--date", "2026-07-17"]) == 0
+    assert len(sends) == 1
+
+    rows = [json.loads(line) for line in morning_report.DELIVERY_REGISTRY_PATH.read_text(encoding="utf-8").splitlines()]
+    assert [row["event"] for row in rows] == ["send_succeeded", "send_skipped_duplicate"]
+
+
+def test_reporting_module_does_not_import_production_execution_engine():
+    source = Path(morning_report.__file__).read_text(encoding="utf-8")
+    assert "execution.live_engine" not in source
+    assert "phase3_monitor" not in source
+    assert "place_order" not in source
+
+
+def test_portfolio_refresh_output_is_not_logged(monkeypatch):
+    class CaptureLogger:
+        def __init__(self):
+            self.calls = []
+
+        def info(self, message, *args):
+            self.calls.append((message, args))
+
+    secret_marker = "account-secret-marker"
+    monkeypatch.setattr(
+        morning_report,
+        "_run_portfolio_refresh",
+        lambda: {"attempted": True, "succeeded": True, "returncode": 0, "stdout": secret_marker, "stderr": secret_marker},
+    )
+    monkeypatch.setattr(morning_report, "_load_engine", FakeEngine)
+    logger = CaptureLogger()
+    morning_report.get_current_portfolio(logger=logger)
+    assert secret_marker not in repr(logger.calls)
 
 
 def test_contract_script_passes_current_files():

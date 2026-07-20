@@ -14,8 +14,8 @@ FILES = [
     ROOT / "scripts" / "run_morning_cio_email.sh",
     ROOT / "scripts" / "install_morning_cio_email_launchagent.sh",
 ]
-FORBIDDEN = ["reports/morning_cio_report.py"]
-REQUIRED = ["-m cio_email.morning_report --send"]
+FORBIDDEN = ["reports/morning_cio_report.py", "Dropbox"]
+REQUIRED = ["tools/send_cio_report.py", "--send"]
 
 
 def main() -> int:

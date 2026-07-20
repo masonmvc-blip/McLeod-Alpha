@@ -11,10 +11,9 @@ python_has_waitress() {
 }
 
 for candidate in \
-	"/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14" \
+	"/opt/homebrew/opt/python@3.11/bin/python3.11" \
 	"$PROJECT_DIR/.venv/bin/python3" \
 	"$PROJECT_DIR/venv/bin/python3" \
-	"/opt/homebrew/bin/python3.11" \
 	"/opt/homebrew/bin/python3" \
 	"python3"; do
 	if [[ "$candidate" == "python3" ]]; then

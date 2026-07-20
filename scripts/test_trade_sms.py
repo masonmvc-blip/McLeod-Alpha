@@ -22,7 +22,7 @@ def main():
     if ok:
         print("SMS test sent successfully")
     else:
-        print("SMS test not sent. Check ENABLE_TRADE_SMS_ALERTS and transport config (mailapp_sms, email_sms, or twilio).")
+        print("SMS test not sent. Check ENABLE_TRADE_SMS_ALERTS and transport config (outlook_sms, email_sms, or twilio).")
 
 
 if __name__ == "__main__":

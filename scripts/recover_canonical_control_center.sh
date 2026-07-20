@@ -1,22 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Recover canonical control center when Tailnet URL returns 502.
-ROOT_CANDIDATES=(
-  "$HOME/Documents/GitHub/McLeod-Alpha-New"
-  "$HOME/Documents/GitHub/McLeod-Alpha"
-)
+PROJECT_ROOT="${MCLEOD_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-PROJECT_ROOT=""
-for d in "${ROOT_CANDIDATES[@]}"; do
-  if [[ -f "$d/control_center.py" ]]; then
-    PROJECT_ROOT="$d"
-    break
-  fi
-done
-
-if [[ -z "$PROJECT_ROOT" ]]; then
-  echo "ERROR: Could not find control_center.py in expected GitHub folders."
+if [[ ! -f "$PROJECT_ROOT/control_center.py" ]]; then
+  echo "ERROR: Canonical control_center.py not found at $PROJECT_ROOT"
   exit 1
 fi
 
@@ -70,7 +58,7 @@ curl -sf -X POST "http://127.0.0.1:5001/api/parity/baseline" >/dev/null
 curl -sf -X POST "http://127.0.0.1:5001/api/start" >/dev/null
 
 # Print concise health snapshot.
-python3 - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 import json, urllib.request
 base='http://127.0.0.1:5001'
 with urllib.request.urlopen(base+'/api/status', timeout=10) as r:

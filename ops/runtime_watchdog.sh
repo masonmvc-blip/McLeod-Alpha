@@ -8,10 +8,10 @@ CC_PID_FILE="$PROJECT_DIR/.control_center_pid"
 MANUAL_STOP_MARKER="$PROJECT_DIR/data/bot_manual_stop_marker.json"
 RUNTIME_EVENTS_FILE="$PROJECT_DIR/data/reports/runtime_events.jsonl"
 RUNTIME_ALERT_FLAG_FILE="$PROJECT_DIR/data/runtime_alert_flag.json"
-CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Masons-iMac.local}"
+CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 
-if [[ -x "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14" ]]; then
-  PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14"
+if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
+  PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
 elif [[ -x "$PROJECT_DIR/.venv/bin/python3" ]]; then
   PYTHON_BIN="$PROJECT_DIR/.venv/bin/python3"
 elif [[ -x "$PROJECT_DIR/venv/bin/python3" ]]; then

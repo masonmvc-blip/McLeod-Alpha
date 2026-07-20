@@ -11,9 +11,26 @@ Tests verify:
 
 import sys
 import json
+import inspect
+from pathlib import Path
 from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch, call
 import time
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def isolated_entry_process_lock(tmp_path):
+    import execution.live_engine as live_engine
+
+    original_path = live_engine.ENTRY_PROCESS_LOCK_PATH
+    live_engine._release_entry_process_lock()
+    live_engine.ENTRY_PROCESS_LOCK_PATH = tmp_path / "live_entry.lock"
+    try:
+        yield
+    finally:
+        live_engine._release_entry_process_lock()
+        live_engine.ENTRY_PROCESS_LOCK_PATH = original_path
 
 # Test fixtures
 class MockSchwabResponse:
@@ -104,6 +121,40 @@ class MockSchwabClient:
                 }
             }
         )
+
+
+def test_live_entry_process_lock_blocks_overlapping_monitor_processes():
+    """A second monitor process must not reach broker prechecks or submission."""
+    import execution.live_engine as live_engine
+
+    live_engine._entry_process_lock_handle = None
+    with patch.object(live_engine, "_acquire_entry_process_lock", return_value=False), patch.object(
+        live_engine, "_release_entry_process_lock"
+    ), patch.object(live_engine, "check_spy_option_exposure") as exposure_check:
+        result = live_engine.open_trade(
+            direction="CALL",
+            price=100.0,
+            stop=99.0,
+            target=102.0,
+            quantity=4,
+            reason="test",
+            option={"symbol": "SPY   260731C00750000", "mark": 1.0},
+        )
+
+    assert result is False
+    assert exposure_check.call_count == 0
+    assert live_engine.get_last_open_trade_metrics()["block_reason"] == "entry_process_lock"
+
+
+def test_live_entry_fallback_is_limit_reprice_not_market_order():
+    """Fast participation must retain an explicit maximum buy price."""
+    import execution.live_engine as live_engine
+
+    source = inspect.getsource(live_engine.open_trade)
+
+    assert "_compute_fast_entry_limit_price(option_symbol, option_mark)" in source
+    assert "_submit_option_entry_market_order(" not in source
+    assert "limit_reprice" in source
 
 
 def test_live_order_calls_schwab_api():

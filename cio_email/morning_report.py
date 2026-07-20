@@ -3,12 +3,13 @@
 
 This module builds an independent morning portfolio report, optionally
 refreshes the latest Schwab snapshot, and sends the result through Gmail SMTP
-with a Mail.app fallback.
+with a Microsoft Outlook fallback.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -18,7 +19,7 @@ import sys
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, time as datetime_time, timedelta
 from email.message import EmailMessage
 from html import escape
 from pathlib import Path
@@ -37,9 +38,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_DIR = PROJECT_ROOT / "logs"
 REPORT_DIR = DATA_DIR / "reports" / "morning_cio_email"
+ARCHIVE_DIR = REPORT_DIR / "archive"
 LATEST_HTML = REPORT_DIR / "latest_morning_cio_report.html"
 LATEST_TEXT = REPORT_DIR / "latest_morning_cio_report.txt"
 LATEST_JSON = REPORT_DIR / "latest_morning_cio_report.json"
+DELIVERY_REGISTRY_PATH = REPORT_DIR / "delivery_registry.jsonl"
 LEGACY_MARKDOWN_PATH = PROJECT_ROOT / "reports" / "morning_cio_report_latest.md"
 STATE_PATH = REPORT_DIR / "latest_morning_cio_state.json"
 RUN_LOG_PATH = LOG_DIR / "morning_cio_email.jsonl"
@@ -138,6 +141,7 @@ class NewsFinding:
 
 @dataclass
 class ReportBundle:
+    report_date: str
     generated_at: str
     data_as_of: str
     source_label: str
@@ -278,7 +282,7 @@ def _pick_refresh_python() -> str:
 
 def _save_state(state: Dict[str, Any]) -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    _atomic_write_text(STATE_PATH, json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
 def _append_run_log(payload: Dict[str, Any]) -> None:
@@ -287,6 +291,55 @@ def _append_run_log(payload: Dict[str, Any]) -> None:
     record.setdefault("logged_at", _now_ct().isoformat())
     with RUN_LOG_PATH.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def _append_delivery_registry(payload: Dict[str, Any]) -> None:
+    """Append delivery metadata without persisting credentials or message bodies."""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    record = dict(payload)
+    record.setdefault("logged_at", _now_ct().isoformat())
+    allowed = {
+        "run_id",
+        "report_date",
+        "event",
+        "status",
+        "transport",
+        "recipient",
+        "subject",
+        "content_sha256",
+        "error",
+        "logged_at",
+    }
+    safe_record = {key: value for key, value in record.items() if key in allowed}
+    with DELIVERY_REGISTRY_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(safe_record, sort_keys=True) + "\n")
+
+
+def _delivery_succeeded_for_date(report_date: str) -> bool:
+    if not DELIVERY_REGISTRY_PATH.exists():
+        return False
+    for line in DELIVERY_REGISTRY_PATH.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if (
+            row.get("report_date") == report_date
+            and row.get("event") == "send_succeeded"
+            and row.get("status") == "accepted"
+        ):
+            return True
+    return False
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    try:
+        temp_path.write_text(content, encoding="utf-8")
+        os.replace(temp_path, path)
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 def _configure_logger(run_id: str) -> logging.Logger:
@@ -381,7 +434,14 @@ def get_current_portfolio(logger: Optional[logging.Logger] = None, timeout_secon
         # with a zero-argument callable.
         refresh_result = _run_portfolio_refresh()
     if logger:
-        logger.info("portfolio refresh result: %s", json.dumps(refresh_result, sort_keys=True))
+        # Never emit subprocess stdout/stderr here: broker tools may print account
+        # identifiers or other sensitive portfolio metadata.
+        logger.info(
+            "portfolio refresh result: attempted=%s succeeded=%s returncode=%s",
+            bool(refresh_result.get("attempted")),
+            bool(refresh_result.get("succeeded")),
+            refresh_result.get("returncode"),
+        )
 
     engine = _load_engine()
     data_as_of, stale_from_file = _extract_portfolio_timestamp(engine)
@@ -755,8 +815,14 @@ def _critical_blockers(gaps_by_holding: Sequence[Gap], gaps_by_source: Sequence[
     return blockers
 
 
-def _build_bundle(force: bool, logger: logging.Logger, previous_state: Dict[str, Any]) -> ReportBundle:
+def _build_bundle(
+    force: bool,
+    logger: logging.Logger,
+    previous_state: Dict[str, Any],
+    report_date: Optional[str] = None,
+) -> ReportBundle:
     generated_at = _now_ct().isoformat()
+    effective_report_date = report_date or generated_at[:10]
     portfolio = get_current_portfolio(logger=logger)
     refresh_result = portfolio.refresh_result
     engine = portfolio.engine
@@ -846,6 +912,7 @@ def _build_bundle(force: bool, logger: logging.Logger, previous_state: Dict[str,
 
     # If there is no prior snapshot, the thesis change section remains explicit about that.
     current_state = {
+        "report_date": effective_report_date,
         "generated_at": generated_at,
         "data_as_of": data_as_of,
         "source_label": portfolio.source_label,
@@ -854,6 +921,7 @@ def _build_bundle(force: bool, logger: logging.Logger, previous_state: Dict[str,
     }
 
     return ReportBundle(
+        report_date=effective_report_date,
         generated_at=generated_at,
         data_as_of=data_as_of,
         source_label=portfolio.source_label,
@@ -1322,10 +1390,11 @@ def build_report(bundle: ReportBundle) -> Tuple[str, str, Dict[str, Any], List[S
         text_parts.append(f"## {section.title}\n{section.text}")
         html_parts.append(_section_html(section.title, section.html))
 
-    subject = f"McLeod Morning CIO Report | {bundle.generated_at[:10]} | {bundle.subject}"
+    subject = f"McLeod Morning CIO Report | {bundle.report_date} | {bundle.subject}"
     text_body = "\n\n".join(text_parts)
     html_body = _render_html_page(bundle, html_parts)
     payload = {
+        "report_date": bundle.report_date,
         "generated_at": bundle.generated_at,
         "data_as_of": bundle.data_as_of,
         "source_label": bundle.source_label,
@@ -1483,12 +1552,12 @@ def _smtp_send(report: ReportBundle, html_body: str, text_body: str, subject: st
     raise RuntimeError(f"SMTP delivery failed after {SMTP_MAX_ATTEMPTS} attempts: {last_error}")
 
 
-def _mailapp_send(to_email: str, subject: str, text_body: str, logger: logging.Logger) -> Dict[str, Any]:
+def _outlook_send(to_email: str, subject: str, text_body: str, logger: logging.Logger) -> Dict[str, Any]:
     def esc(text: str) -> str:
         return text.replace("\\", "\\\\").replace('"', '\\"')
 
     applescript = f'''
-    tell application "Mail"
+    tell application "Microsoft Outlook"
         set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(text_body)}", visible:false}}
         tell newMessage
             make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
@@ -1506,29 +1575,36 @@ def _mailapp_send(to_email: str, subject: str, text_body: str, logger: logging.L
         )
         if result.returncode != 0:
             err = (result.stderr or "").strip() or (result.stdout or "").strip()
-            raise RuntimeError(err or "Mail.app send failed")
-        logger.info("mailapp send accepted")
-        return {"accepted": True, "transport": "mailapp"}
+            raise RuntimeError(err or "Microsoft Outlook send failed")
+        logger.info("outlook send accepted")
+        return {"accepted": True, "transport": "outlook"}
     except Exception as exc:
-        logger.exception("mailapp send failed")
-        raise RuntimeError(f"Mail.app delivery failed: {exc}")
+        logger.exception("outlook send failed")
+        raise RuntimeError(f"Microsoft Outlook delivery failed: {exc}")
 
 
 def _write_artifacts(bundle: ReportBundle, text_body: str, html_body: str, payload: Dict[str, Any]) -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     LEGACY_MARKDOWN_PATH.parent.mkdir(parents=True, exist_ok=True)
-    LATEST_TEXT.write_text(text_body, encoding="utf-8")
-    LATEST_HTML.write_text(html_body, encoding="utf-8")
-    LATEST_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    archive_dir = ARCHIVE_DIR / bundle.report_date
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    json_body = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     legacy_md = (
         "# McLeod Morning CIO Report\n\n"
+        f"Report date: {bundle.report_date}\n"
         f"Generated: {bundle.generated_at}\n"
         f"Data as of: {bundle.data_as_of}\n"
         f"Source: {bundle.source_label}{' (stale snapshot)' if bundle.stale else ''}\n\n"
         "---\n\n"
         f"{text_body}\n"
     )
-    LEGACY_MARKDOWN_PATH.write_text(legacy_md, encoding="utf-8")
+    _atomic_write_text(LATEST_TEXT, text_body)
+    _atomic_write_text(LATEST_HTML, html_body)
+    _atomic_write_text(LATEST_JSON, json_body)
+    _atomic_write_text(LEGACY_MARKDOWN_PATH, legacy_md)
+    _atomic_write_text(archive_dir / "morning_cio_report.md", legacy_md)
+    _atomic_write_text(archive_dir / "morning_cio_report.html", html_body)
+    _atomic_write_text(archive_dir / "morning_cio_report.json", json_body)
 
 
 def _update_state(bundle: ReportBundle) -> None:
@@ -1540,8 +1616,23 @@ def _parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="Generate the report without sending email.")
     mode.add_argument("--send", action="store_true", help="Send the report by email.")
+    parser.add_argument("--date", dest="report_date", help="Logical report date in YYYY-MM-DD format (defaults to today in Chicago).")
     parser.add_argument("--force", action="store_true", help="Ignore market-calendar gating for manual tests.")
     return parser.parse_args(argv)
+
+
+def _validated_report_date(value: Optional[str]) -> str:
+    if not value:
+        return _now_ct().date().isoformat()
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError as exc:
+        raise ValueError("--date must use YYYY-MM-DD format") from exc
+
+
+def _market_gate_datetime(report_date: str) -> datetime:
+    parsed = date.fromisoformat(report_date)
+    return datetime.combine(parsed, datetime_time(hour=7), tzinfo=CHICAGO_TZ)
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -1549,10 +1640,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.dry_run and not args.send:
         args.dry_run = True
 
+    try:
+        report_date = _validated_report_date(args.report_date)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
     run_id = uuid.uuid4().hex[:12]
     logger = _configure_logger(run_id)
     started_at = _now_ct().isoformat()
-    _append_run_log({"run_id": run_id, "event": "run_started", "started_at": started_at, "mode": "send" if args.send else "dry_run", "force": bool(args.force)})
+    _append_run_log({"run_id": run_id, "report_date": report_date, "event": "run_started", "started_at": started_at, "mode": "send" if args.send else "dry_run", "force": bool(args.force)})
 
     try:
         _acquire_lock()
@@ -1563,18 +1660,26 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     try:
         if args.send and not args.force:
-            if not _is_market_day():
+            if not _is_market_day(_market_gate_datetime(report_date)):
                 logger.info("market-day gate skipped send because today is not an XNYS session")
-                _append_run_log({"run_id": run_id, "event": "market_day_skipped", "status": "skipped"})
+                _append_run_log({"run_id": run_id, "report_date": report_date, "event": "market_day_skipped", "status": "skipped"})
                 return 0
 
         previous_state = _load_previous_state()
-        bundle = _build_bundle(force=args.force, logger=logger, previous_state=previous_state)
+        bundle = _build_bundle(
+            force=args.force,
+            logger=logger,
+            previous_state=previous_state,
+            report_date=report_date,
+        )
         text_body, html_body, payload, sections = build_report(bundle)
-        message_subject = str(payload.get("subject") or f"McLeod Morning CIO Report | {bundle.generated_at[:10]} | {bundle.subject}")
+        message_subject = str(payload.get("subject") or f"McLeod Morning CIO Report | {bundle.report_date} | {bundle.subject}")
+        content_sha256 = hashlib.sha256((text_body + "\n" + html_body).encode("utf-8")).hexdigest()
         payload.update(
             {
                 "run_id": run_id,
+                "report_date": report_date,
+                "content_sha256": content_sha256,
                 "sections": [section.title for section in sections],
                 "account_display": bundle.account_display,
                 "account_type": bundle.account_type,
@@ -1587,27 +1692,48 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         _update_state(bundle)
 
         if args.send:
-            smtp_only_mode = _env_flag("MORNING_CIO_REQUIRE_SMTP_ONLY", False)
+            recipient = os.getenv("EMAIL_TO", "").strip()
+            if not args.force and _delivery_succeeded_for_date(report_date):
+                logger.info("delivery skipped because report date %s was already accepted", report_date)
+                event = {
+                    "run_id": run_id,
+                    "report_date": report_date,
+                    "event": "send_skipped_duplicate",
+                    "status": "skipped",
+                    "recipient": recipient,
+                    "subject": message_subject,
+                    "content_sha256": content_sha256,
+                }
+                _append_run_log(event)
+                _append_delivery_registry(event)
+                return 0
+
+            smtp_only_mode = _env_flag("MORNING_CIO_REQUIRE_SMTP_ONLY", True)
             hygiene_ok, hygiene_issues = _validate_email_secret_hygiene(logger)
             if not hygiene_ok:
-                _append_run_log(
-                    {
-                        "run_id": run_id,
-                        "event": "send_failed",
-                        "status": "secret_hygiene_failed",
-                        "issues": hygiene_issues,
-                        "data_as_of": bundle.data_as_of,
-                    }
-                )
+                event = {
+                    "run_id": run_id,
+                    "report_date": report_date,
+                    "event": "send_failed",
+                    "status": "secret_hygiene_failed",
+                    "error": "; ".join(hygiene_issues),
+                    "recipient": recipient,
+                    "subject": message_subject,
+                    "content_sha256": content_sha256,
+                    "data_as_of": bundle.data_as_of,
+                }
+                _append_run_log({**event, "issues": hygiene_issues})
+                _append_delivery_registry(event)
                 logger.error("email secret hygiene validation failed: %s", "; ".join(hygiene_issues))
                 return 3
 
-            recipient = os.getenv("EMAIL_TO", "").strip()
             if not recipient:
                 ok, missing, _ = _ensure_email_config()
                 msg = "Missing required email lines in .env: " + ", ".join(missing)
                 logger.error(msg)
-                _append_run_log({"run_id": run_id, "event": "send_failed", "status": "missing_credentials", "missing": missing, "data_as_of": bundle.data_as_of})
+                event = {"run_id": run_id, "report_date": report_date, "event": "send_failed", "status": "missing_credentials", "error": msg, "subject": message_subject, "content_sha256": content_sha256, "data_as_of": bundle.data_as_of}
+                _append_run_log({**event, "missing": missing})
+                _append_delivery_registry(event)
                 return 3
 
             ok, missing, _ = _ensure_email_config()
@@ -1618,12 +1744,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 else:
                     if smtp_only_mode:
                         raise RuntimeError("SMTP-only mode enabled and SMTP credentials are incomplete")
-                    logger.warning("SMTP config missing (%s); attempting Mail.app fallback", ", ".join(missing))
-                    send_result = _mailapp_send(recipient, message_subject, text_body, logger)
-                    transport = "mailapp"
-                _append_run_log(
-                    {
+                    logger.warning("SMTP config missing (%s); attempting Outlook fallback", ", ".join(missing))
+                    send_result = _outlook_send(recipient, message_subject, text_body, logger)
+                    transport = "outlook"
+                event = {
                         "run_id": run_id,
+                        "report_date": report_date,
                         "event": "send_succeeded",
                         "status": "accepted",
                         "recipient": recipient,
@@ -1631,45 +1757,56 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         "subject": message_subject,
                         "transport": transport,
                         "smtp_result": send_result,
+                        "content_sha256": content_sha256,
                     }
-                )
+                _append_run_log(event)
+                _append_delivery_registry(event)
                 logger.info("email accepted via %s for %s", transport, recipient)
             except Exception as exc:
                 if ok:
                     if smtp_only_mode:
                         logger.exception("smtp send failed in SMTP-only mode")
-                        _append_run_log({"run_id": run_id, "event": "send_failed", "status": "smtp_only_failure", "error": str(exc), "recipient": recipient, "data_as_of": bundle.data_as_of})
+                        event = {"run_id": run_id, "report_date": report_date, "event": "send_failed", "status": "smtp_only_failure", "error": str(exc), "recipient": recipient, "subject": message_subject, "content_sha256": content_sha256, "data_as_of": bundle.data_as_of}
+                        _append_run_log(event)
+                        _append_delivery_registry(event)
                         return 4
 
-                    logger.exception("smtp send failed; attempting Mail.app fallback")
+                    logger.exception("smtp send failed; attempting Outlook fallback")
                     try:
-                        send_result = _mailapp_send(recipient, message_subject, text_body, logger)
-                        _append_run_log(
-                            {
+                        send_result = _outlook_send(recipient, message_subject, text_body, logger)
+                        event = {
                                 "run_id": run_id,
+                                "report_date": report_date,
                                 "event": "send_succeeded",
                                 "status": "accepted",
                                 "recipient": recipient,
                                 "data_as_of": bundle.data_as_of,
                                 "subject": message_subject,
-                                "transport": "mailapp_fallback",
+                                "transport": "outlook_fallback",
                                 "smtp_result": send_result,
                                 "fallback_from": "smtp",
+                                "content_sha256": content_sha256,
                             }
-                        )
-                        logger.info("email accepted via Mail.app fallback for %s", recipient)
-                    except Exception as mail_exc:
+                        _append_run_log(event)
+                        _append_delivery_registry(event)
+                        logger.info("email accepted via Outlook fallback for %s", recipient)
+                    except Exception as outlook_exc:
                         logger.exception("send failed")
-                        _append_run_log({"run_id": run_id, "event": "send_failed", "status": "error", "error": str(mail_exc), "recipient": recipient, "data_as_of": bundle.data_as_of})
+                        event = {"run_id": run_id, "report_date": report_date, "event": "send_failed", "status": "error", "error": str(outlook_exc), "recipient": recipient, "subject": message_subject, "content_sha256": content_sha256, "data_as_of": bundle.data_as_of}
+                        _append_run_log(event)
+                        _append_delivery_registry(event)
                         return 4
                 else:
                     logger.exception("send failed")
-                    _append_run_log({"run_id": run_id, "event": "send_failed", "status": "error", "error": str(exc), "recipient": recipient, "data_as_of": bundle.data_as_of})
+                    event = {"run_id": run_id, "report_date": report_date, "event": "send_failed", "status": "error", "error": str(exc), "recipient": recipient, "subject": message_subject, "content_sha256": content_sha256, "data_as_of": bundle.data_as_of}
+                    _append_run_log(event)
+                    _append_delivery_registry(event)
                     return 4
         else:
             _append_run_log(
                 {
                     "run_id": run_id,
+                    "report_date": report_date,
                     "event": "dry_run_completed",
                     "status": "ok",
                     "data_as_of": bundle.data_as_of,

@@ -7,9 +7,10 @@ CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 PYTHON_BIN="${PYTHON_BIN:-}"
 RUN_BACKGROUND="${RUN_BACKGROUND:-0}"
 REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}"
-REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1}"
+REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1:8182}"
 REQUIRED_REDIRECT_FLAG="${MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER:-0}"
 TRADE_DB_PATH="$ROOT/data/mcleod_alpha.db"
+CONTROL_CENTER_PID_FILE="$ROOT/.control_center_pid"
 
 db_has_trade_log_table() {
   local db_path="$1"
@@ -121,7 +122,6 @@ resolve_python_bin() {
     "/opt/homebrew/opt/python@3.11/bin/python3.11"
     "$ROOT/.venv/bin/python"
     "$ROOT/.venv/bin/python3"
-    "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
   )
 
   local py
@@ -212,7 +212,9 @@ if [[ "$RUN_BACKGROUND" == "1" ]]; then
   ACCOUNT_MODE="$REQUIRED_ACCOUNT_MODE" \
   SCHWAB_CALLBACK_URL="$REQUIRED_SCHWAB_CALLBACK_URL" \
   nohup "$PYTHON_BIN" "$ROOT/control_center.py" > "$ROOT/control_center_stdout.log" 2>&1 &
-  echo "control_center started in background"
+  control_center_pid=$!
+  echo "$control_center_pid" > "$CONTROL_CENTER_PID_FILE"
+  echo "control_center started in background pid=$control_center_pid"
 else
   AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE=0 \
   MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \

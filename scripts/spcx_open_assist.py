@@ -270,7 +270,7 @@ def _smtp_send(subject: str, body: str, logger: logging.Logger) -> tuple[bool, s
 
 
 
-def _mailapp_send(subject: str, body: str, logger: logging.Logger) -> tuple[bool, str]:
+def _outlook_send(subject: str, body: str, logger: logging.Logger) -> tuple[bool, str]:
     to_email = os.getenv("EMAIL_TO", "").strip()
     if not to_email:
         return False, "missing EMAIL_TO"
@@ -279,7 +279,7 @@ def _mailapp_send(subject: str, body: str, logger: logging.Logger) -> tuple[bool
         return text.replace("\\", "\\\\").replace('"', '\\"')
 
     applescript = f'''
-    tell application "Mail"
+    tell application "Microsoft Outlook"
         set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
         tell newMessage
             make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
@@ -292,8 +292,8 @@ def _mailapp_send(subject: str, body: str, logger: logging.Logger) -> tuple[bool
         result = subprocess.run(["osascript", "-e", applescript], capture_output=True, text=True, timeout=20)
         if result.returncode != 0:
             err = (result.stderr or "").strip() or (result.stdout or "").strip()
-            return False, err or "Mail.app failed"
-        logger.info("Mail.app alert accepted")
+            return False, err or "Microsoft Outlook failed"
+        logger.info("Microsoft Outlook alert accepted")
         return True, "accepted"
     except Exception as exc:
         return False, str(exc)
@@ -306,11 +306,11 @@ def _send_alert(subject: str, body: str, logger: logging.Logger) -> tuple[bool, 
         return ok, "smtp"
     logger.warning("SMTP alert failed: %s", detail)
 
-    ok2, detail2 = _mailapp_send(subject, body, logger)
+    ok2, detail2 = _outlook_send(subject, body, logger)
     if ok2:
-        return ok2, "mailapp"
-    logger.warning("Mail.app alert failed: %s", detail2)
-    return False, f"smtp={detail}; mailapp={detail2}"
+        return ok2, "outlook"
+    logger.warning("Microsoft Outlook alert failed: %s", detail2)
+    return False, f"smtp={detail}; outlook={detail2}"
 
 
 

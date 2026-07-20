@@ -22,6 +22,7 @@ def save_position(position):
         "feature_payload": getattr(position, "feature_payload", ""),
         "option_stop": getattr(position, "option_stop", 0),
         "option_initial_stop": getattr(position, "option_initial_stop", 0),
+        "active_stop_reason": getattr(position, "active_stop_reason", "STOP"),
         "schwab_order_id": getattr(position, "schwab_order_id", ""),
         "schwab_fill_price": getattr(position, "schwab_fill_price", 0.0),
         "schwab_fill_timestamp": getattr(position, "schwab_fill_timestamp", ""),
@@ -60,6 +61,7 @@ def load_position(Position):
     pos.feature_payload = data.get("feature_payload", "")
     pos.option_stop = data.get("option_stop", 0)
     pos.option_initial_stop = data.get("option_initial_stop", 0)
+    pos.active_stop_reason = data.get("active_stop_reason", "STOP")
     pos.schwab_order_id = data.get("schwab_order_id", "")
     pos.schwab_fill_price = data.get("schwab_fill_price", 0.0)
     pos.schwab_fill_timestamp = data.get("schwab_fill_timestamp", "")

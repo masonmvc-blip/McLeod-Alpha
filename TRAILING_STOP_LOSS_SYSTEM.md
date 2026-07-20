@@ -21,6 +21,8 @@ Use this as the quick-reference source of truth for live stops.
 | Profit >= 6% and < 7% | Stop = Current option quote x 0.98 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
 | Profit >= 7% and < 8% | Stop = Current option quote x 0.985 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
 | Profit >= 8% | Stop = Current option quote x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
+| Trade held for 20 minutes | Close through normal broker-safe exit path | Cancel stop, submit/confirm exit, then clear local position | Elapsed holding time >= 20 minutes | MAX_HOLD_20_MIN |
+| Time in trade | No live maximum-hold rule configured | No broker action | Not applicable | Not applicable |
 
 ### Quick Math
 
@@ -35,6 +37,7 @@ Use this as the quick-reference source of truth for live stops.
 3. Confirm broker stop sync happened after each ratchet.
 4. Confirm stop-hit exits are OPTION_STOP.
 5. Confirm any failed exit attempt re-protects position.
+6. Confirm a live trade exits at 20 minutes via MAX_HOLD_20_MIN.
 
 ## Stop Loss Strategy
 
@@ -119,7 +122,7 @@ option_initial_stop: float      # Initial stop set at entry (for tracking)
 - **TRAILING_STOP** - Trailing stop hit when stop > initial_stop and profitable
 - **TARGET_HIT** - SPY price reached target
 - **END_OF_DAY_EXIT** - Market close at 3:59 PM
-- **MAX_HOLD_15_MIN** - Position held for 15 minutes
+- **MAX_HOLD_15_MIN** - Paper/backtest-only time exit; not currently enforced by `execution/live_engine.py`
 
 ## Testing
 

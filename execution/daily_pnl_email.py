@@ -1,7 +1,7 @@
 """Daily market-close P&L email sender.
 
 Sends one email per day after configured market-close time.
-Supports Mail.app transport (default) and SMTP transport.
+Supports Microsoft Outlook transport (default) and SMTP transport.
 """
 
 import json
@@ -234,12 +234,12 @@ def _build_body(stats: Dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _send_via_mailapp(to_email: str, subject: str, body: str) -> bool:
+def _send_via_outlook(to_email: str, subject: str, body: str) -> bool:
     def esc(text: str) -> str:
         return text.replace("\\", "\\\\").replace('"', '\\"')
 
     applescript = f'''
-    tell application "Mail"
+    tell application "Microsoft Outlook"
         set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
         tell newMessage
             make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
@@ -258,10 +258,10 @@ def _send_via_mailapp(to_email: str, subject: str, body: str) -> bool:
         if result.returncode == 0:
             return True
         err = (result.stderr or "").strip() or (result.stdout or "").strip()
-        print(f"Daily P&L email failed (Mail.app): {err}")
+        print(f"Daily P&L email failed (Outlook): {err}")
         return False
     except Exception as exc:
-        print(f"Daily P&L email failed (Mail.app): {exc}")
+        print(f"Daily P&L email failed (Outlook): {exc}")
         return False
 
 
@@ -330,11 +330,11 @@ def maybe_send_daily_pnl_email() -> bool:
 
     if transport == "smtp":
         sent = _send_via_smtp(to_email, subject, body)
-    elif transport == "mailapp":
-        sent = _send_via_mailapp(to_email, subject, body)
+    elif transport == "outlook":
+        sent = _send_via_outlook(to_email, subject, body)
     else:
-        # auto: try Mail.app first, then SMTP fallback
-        sent = _send_via_mailapp(to_email, subject, body) or _send_via_smtp(to_email, subject, body)
+        # auto: try Outlook first, then SMTP fallback.
+        sent = _send_via_outlook(to_email, subject, body) or _send_via_smtp(to_email, subject, body)
 
     if sent:
         state["last_sent_date"] = today_str

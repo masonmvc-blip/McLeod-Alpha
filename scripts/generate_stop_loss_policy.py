@@ -62,6 +62,7 @@ def _build_policy() -> Dict[str, object]:
     paper_consts = _parse_constants(paper_text)
 
     initial_stop_loss_pct = live_consts.get("OPTION_STOP_LOSS_PCT", paper_consts.get("INITIAL_STOP_LOSS_PCT", -5.0))
+    max_trade_hold_minutes = live_consts.get("MAX_TRADE_HOLD_MINUTES")
     t1 = live_consts.get("TRAIL_1_TRIGGER_PCT", paper_consts.get("TRAIL_1_TRIGGER_PCT", 8.0))
     t2 = live_consts.get("TRAIL_2_TRIGGER_PCT", paper_consts.get("TRAIL_2_TRIGGER_PCT", 7.0))
     t3 = live_consts.get("TRAIL_3_TRIGGER_PCT", paper_consts.get("TRAIL_3_TRIGGER_PCT", 6.0))
@@ -94,6 +95,7 @@ def _build_policy() -> Dict[str, object]:
     return {
         "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "initial_stop_loss_pct": float(initial_stop_loss_pct),
+        "max_trade_hold_minutes": int(max_trade_hold_minutes) if max_trade_hold_minutes is not None else None,
         "trail_1_trigger": float(t1),
         "trail_2_trigger": float(t2),
         "trail_3_trigger": float(t3),
@@ -313,6 +315,7 @@ def _build_html(policy: Dict[str, object]) -> str:
           <li>At +2% and +3%, stop labels are 2% Stop and 3% Stop before trail tiers take over.</li>
           <li>Protective broker order uses STOP_LIMIT.</li>
           <li>Stop checks use option bid first, mark as fallback.</li>
+          <li>Maximum live trade hold: {policy['max_trade_hold_minutes']} minutes; engine exits through the normal broker-safe close path.</li>
           <li>If broker stop sync fails, engine closes position to avoid unprotected exposure.</li>
         </ul>
       </div>

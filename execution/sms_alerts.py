@@ -146,7 +146,7 @@ def _send_via_email_sms(body: str) -> bool:
         return False
 
 
-def _send_via_mailapp_sms(body: str) -> bool:
+def _send_via_outlook_sms(body: str) -> bool:
     to_addr = os.getenv("TRADE_ALERT_TO_GATEWAY", "").strip()
     if not to_addr:
         return False
@@ -158,7 +158,7 @@ def _send_via_mailapp_sms(body: str) -> bool:
         return text.replace("\\", "\\\\").replace('"', '\\"')
 
     applescript = f'''
-tell application "Mail"
+tell application "Microsoft Outlook"
     set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
     tell newMessage
         make new to recipient at end of to recipients with properties {{address:"{esc(to_addr)}"}}
@@ -178,10 +178,10 @@ end tell
             return True
 
         err = (result.stderr or "").strip() or (result.stdout or "").strip()
-        print(f"SMS alert (Mail.app gateway) failed: {err}")
+        print(f"SMS alert (Outlook gateway) failed: {err}")
         return False
     except Exception as exc:
-        print(f"SMS alert (Mail.app gateway) failed: {exc}")
+        print(f"SMS alert (Outlook gateway) failed: {exc}")
         return False
 
 
@@ -220,10 +220,10 @@ def _send_sms(body: str) -> bool:
 
     transport = _transport()
 
-    if transport == "mailapp_sms":
-        if _send_via_mailapp_sms(body):
+    if transport == "outlook_sms":
+        if _send_via_outlook_sms(body):
             return True
-        print("SMS alert skipped: Mail.app transport not configured or failed")
+        print("SMS alert skipped: Outlook transport not configured or failed")
         return False
 
     if transport == "email_sms":
@@ -238,8 +238,8 @@ def _send_sms(body: str) -> bool:
         print("SMS alert skipped: Twilio vars missing or failed")
         return False
 
-    # auto: try Mail.app gateway, then SMTP gateway, then Twilio fallback.
-    if _send_via_mailapp_sms(body):
+    # auto: try Outlook gateway, then SMTP gateway, then Twilio fallback.
+    if _send_via_outlook_sms(body):
         return True
     if _send_via_email_sms(body):
         return True
