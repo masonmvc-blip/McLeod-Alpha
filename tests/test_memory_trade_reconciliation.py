@@ -299,6 +299,7 @@ def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monk
     snapshot = {
         "checklist": {"passed": 5, "total": 5},
         "trend_stage": {"stage": 3},
+        "momentum_phase": "ESTABLISHED",
         "continuation_quality_score": 4.2,
         "momentum_acceleration_score": 3.7,
         "absorption_score": 2.9,
@@ -336,6 +337,7 @@ def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monk
     assert trade["indicator_count"] == 5
     assert trade["indicator_total"] == 5
     assert trade["trend_stage"] == 3
+    assert trade["momentum_phase"] == "ESTABLISHED"
     assert trade["continuation_quality_score"] == 4.2
     assert trade["momentum_acceleration_score"] == 3.7
     assert trade["absorption_score"] == 2.9

@@ -337,6 +337,13 @@ def test_entry_payload_persists_closed_candle_support_resistance() -> None:
     assert snapshot["vwap"]["value"] == float(indicators.iloc[-1]["vwap"])
     assert snapshot["vwap"]["underlying_close"] == float(indicators.iloc[-1]["close"])
     assert "fibonacci_levels" in snapshot
+    assert snapshot["momentum_phase"] in {
+        "INITIATION",
+        "EARLY_CONTINUATION",
+        "ESTABLISHED",
+        "MATURE",
+        "LATE_EXHAUSTION",
+    }
 
 
 def test_entry_snapshot_preserves_support_resistance() -> None:

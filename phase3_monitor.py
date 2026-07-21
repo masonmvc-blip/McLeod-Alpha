@@ -852,6 +852,17 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
     frame = completed_candles.copy()
     lifecycle = trend_lifecycle_engine(frame, direction=direction)
     stage = trend_stage_engine(lifecycle)
+    phase_by_stage = {
+        1: "INITIATION",
+        2: "EARLY_CONTINUATION",
+        3: "ESTABLISHED",
+        4: "MATURE",
+        5: "LATE_EXHAUSTION",
+    }
+    try:
+        momentum_phase = phase_by_stage.get(int(stage.get("stage")), str(stage.get("label") or "").upper() or None)
+    except (TypeError, ValueError):
+        momentum_phase = str(stage.get("label") or "").upper() or None
     continuation_quality = continuation_quality_score(frame, direction=direction)
     momentum_acceleration = momentum_acceleration_score(frame, direction=direction)
     trend_efficiency = trend_efficiency_score(frame, direction=direction)
@@ -906,6 +917,7 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
         "indicator_count": entry_score,
         "indicator_total": 5,
         "trend_stage": stage,
+        "momentum_phase": momentum_phase,
         "continuation_quality_score": continuation_quality.get("score"),
         "momentum_acceleration_score": momentum_acceleration.get("score"),
         "absorption_score": absorption.get("score"),

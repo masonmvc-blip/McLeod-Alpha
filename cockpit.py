@@ -5168,6 +5168,7 @@ def api_today_trades():
         if not trade_log_columns:
             return jsonify({"trades": [], "summary": {}, "error": "trade_log is unavailable"}), 503
         absorption_select = "absorption_score" if "absorption_score" in trade_log_columns else "NULL AS absorption_score"
+        momentum_phase_select = "momentum_phase" if "momentum_phase" in trade_log_columns else "NULL AS momentum_phase"
         
         # First try today's date
         today = datetime.now(EASTERN_TZ).date().isoformat()
@@ -5190,11 +5191,15 @@ def api_today_trades():
                 feature_payload,
                 entry_diagnostic_snapshot,
                 exit_diagnostic_snapshot,
-                {absorption_select}
+                {absorption_select},
+                {momentum_phase_select}
             FROM trade_log
             WHERE substr(entry_time, 1, 10) = ?
             ORDER BY entry_time DESC
-        """.format(absorption_select=absorption_select), (today,))
+        """.format(
+            absorption_select=absorption_select,
+            momentum_phase_select=momentum_phase_select,
+        ), (today,))
         
         trades = [dict(row) for row in cur.fetchall()]
         trades = _filter_synthetic_test_trade_rows(trades)
@@ -5224,10 +5229,11 @@ def api_today_trades():
                         exit_reason,
                         feature_payload,
                         entry_diagnostic_snapshot,
-                        exit_diagnostic_snapshot
+                        exit_diagnostic_snapshot,
+                        {momentum_phase_select}
                     FROM trade_log
                     WHERE substr(entry_time, 1, 10) = ?
-                    """,
+                    """.format(momentum_phase_select=momentum_phase_select),
                     (trading_date,),
                 )
                 diag_rows = [dict(row) for row in cur.fetchall()]
@@ -5283,6 +5289,7 @@ def api_today_trades():
                     trade["feature_payload"] = matched.get("feature_payload")
                     trade["entry_diagnostic_snapshot"] = matched.get("entry_diagnostic_snapshot")
                     trade["exit_diagnostic_snapshot"] = matched.get("exit_diagnostic_snapshot")
+                    trade["momentum_phase"] = matched.get("momentum_phase")
                     local_exit_reason = str(matched.get("exit_reason") or "").upper()
                     if local_exit_reason.startswith("MANUAL_EXIT"):
                         trade["exit_reason"] = local_exit_reason
@@ -5377,6 +5384,7 @@ def api_today_trades():
             confidence_score = None
             indicator_count = None
             indicator_total = None
+            momentum_phase = trade.get('momentum_phase')
 
             snapshot_text = trade.get('entry_diagnostic_snapshot') or trade.get('feature_payload')
             if snapshot_text:
@@ -5394,6 +5402,9 @@ def api_today_trades():
 
                     if not isinstance(snap, dict):
                         snap = {}
+
+                    if not momentum_phase:
+                        momentum_phase = snap.get('momentum_phase')
 
                     trend_stage_obj = snap.get('trend_stage') or snap.get('trend_stage_call') or snap.get('trend_stage_put')
                     if isinstance(trend_stage_obj, dict):
@@ -5498,6 +5509,19 @@ def api_today_trades():
                 indicator_count = fallback_scores.get('indicator_count', indicator_count)
                 indicator_total = fallback_scores.get('indicator_total', indicator_total)
 
+            if not momentum_phase:
+                phase_by_stage = {
+                    1: 'INITIATION',
+                    2: 'EARLY_CONTINUATION',
+                    3: 'ESTABLISHED',
+                    4: 'MATURE',
+                    5: 'LATE_EXHAUSTION',
+                }
+                try:
+                    momentum_phase = phase_by_stage.get(int(trend_stage))
+                except (TypeError, ValueError):
+                    momentum_phase = None
+
             if absorption_score is None:
                 entry_order_id = str(trade.get('broker_entry_order_id') or '')
                 exit_order_id = str(trade.get('broker_exit_order_id') or '')
@@ -5514,6 +5538,7 @@ def api_today_trades():
             trade['confidence_score'] = confidence_score
             trade['indicator_count'] = indicator_count
             trade['indicator_total'] = indicator_total
+            trade['momentum_phase'] = str(momentum_phase or '').upper() or None
 
             option_entry = trade.get('option_entry')
             option_exit = trade.get('option_exit')
@@ -8430,7 +8455,7 @@ HTML_DASHBOARD = """
                 todayPnl.textContent = `${totalPnlText} (${totalReturnPctText})`;
                 
                 html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
-                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
+                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>Phase</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
@@ -8466,11 +8491,13 @@ HTML_DASHBOARD = """
                         indicators = `${formatNumber(indicatorCountRaw)} / ${formatNumber(indicatorTotalRaw)}`;
                     }
                     const cq = (trade.continuation_quality_score === null || trade.continuation_quality_score === undefined) ? '-' : formatNumber(trade.continuation_quality_score, 2);
+                    const momentumPhase = String(trade.momentum_phase || '').replaceAll('_', ' ') || '-';
                     const mas = (trade.momentum_acceleration_score === null || trade.momentum_acceleration_score === undefined) ? '-' : formatNumber(trade.momentum_acceleration_score, 2);
                     const abs = (trade.absorption_score === null || trade.absorption_score === undefined) ? '-' : formatNumber(trade.absorption_score, 2);
                     const conf = (trade.confidence_score === null || trade.confidence_score === undefined) ? '-' : formatNumber(trade.confidence_score, 2);
                     html += `<td data-label="Checklist">${indicators}</td>`;
                     html += `<td data-label="Stage">${stage}</td>`;
+                    html += `<td data-label="Phase">${momentumPhase}</td>`;
                     html += `<td data-label="CQ">${cq}</td>`;
                     html += `<td data-label="MAS">${mas}</td>`;
                     html += `<td data-label="ABS">${abs}</td>`;
