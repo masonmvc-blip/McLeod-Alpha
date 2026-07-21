@@ -7743,7 +7743,8 @@ HTML_DASHBOARD = """
                 const putPassed = Number(status.continuation_put_passed || 0);
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
-                const startupGuardReason = /startup guard/i.test(tradeEntryReason) ? tradeEntryReason : '';
+                const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
+                    || /startup guard/i.test(tradeEntryReason);
                 const indicatorRegime = String(status.continuation_regime || status.trend || 'UNKNOWN').toUpperCase();
 
                 function escapeHtml(value) {
@@ -7761,6 +7762,10 @@ HTML_DASHBOARD = """
                         return base;
                     }
 
+                    if (startupGuardActive && isNoTrade) {
+                        return `${base}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                    }
+
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
                         const regimeLabel = indicatorRegime.replaceAll('_', ' ');
@@ -7771,8 +7776,7 @@ HTML_DASHBOARD = """
                     if (!isNoTrade) {
                         return base;
                     }
-                    const conciseReasonRaw = startupGuardReason
-                        || tradeEntryReason
+                    const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);

@@ -88,3 +88,10 @@ def test_active_stop_reason_uses_the_actual_stop_price():
 def test_option_label_includes_strike_for_calls_and_puts():
     assert cockpit._position_label_from_option_symbol("SPY   260720C00755000") == "$755 Call"
     assert cockpit._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"
+
+
+def test_qualifying_indicator_cards_show_startup_guard_reason():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "tradeEntryReasonCodeRaw === 'STARTUP_GUARD'" in source
+    assert "Blocked: Start Up Guard" in source
