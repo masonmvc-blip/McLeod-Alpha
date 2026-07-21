@@ -33,7 +33,7 @@ Python consumers load this file with `dotenv`; shell consumers source it. Public
 - `scripts/maintenance/post_deploy_smoke_check.sh`
 - `scripts/maintenance/promote_canonical_runtime.sh`
 - `scripts/maintenance/sync_and_restart_from_start_button.sh`
-- `scripts/install_nightly_sync_restart_launchagent.sh`: use the shared public URL configuration.
+- `scripts/install_nightly_sync_restart_launchagent.sh`: removes the retired 3:00 AM sync-and-restart LaunchAgent; the runtime watchdog maintains service availability instead.
 - `scripts/maintenance/start_cockpit_guarded.sh`: removes obsolete redirect enforcement.
 - `scripts/recover_canonical_cockpit.sh`: removes obsolete redirect setup and legacy recovery guidance.
 - `COCKPIT_README.md`, `STARTUP_CHECKLIST.md`, and `docs/ARCHITECTURE_V1.0_RELEASE.md`: replace legacy public access guidance with the canonical Cloudflare Cockpit.
