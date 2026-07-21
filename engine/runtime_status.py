@@ -710,10 +710,11 @@ def _build_runtime_status():
             text = str(line or "").strip()
             if not text:
                 continue
-            if not text.lower().startswith("trend:"):
-                continue
-
-            m_trend = re.search(r"^Trend:\s*([A-Z_]+)", text, re.IGNORECASE)
+            m_trend = re.search(
+                r"(?:^Trend:\s*|\|\s*)(BULL_TREND|BEAR_TREND|NEUTRAL)\b",
+                text,
+                re.IGNORECASE,
+            )
             if not m_trend:
                 continue
 
