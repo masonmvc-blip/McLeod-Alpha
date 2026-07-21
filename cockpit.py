@@ -3968,10 +3968,6 @@ def _schwab_transaction_day_net_pnl(trading_date: str):
     if not trading_date:
         return None
 
-    realized = _realized_spy_option_pnl_for_date(trading_date)
-    if realized is not None:
-        return round(float(realized), 2)
-
     try:
         target_day = datetime.strptime(str(trading_date), "%Y-%m-%d").date()
     except Exception:
@@ -4002,19 +3998,19 @@ def _schwab_transaction_day_net_pnl(trading_date: str):
         return None
 
     def _tx_cash_amount(tx):
+        from decimal import Decimal, InvalidOperation
+
         for key in ("netAmount", "amount"):
             try:
-                value = float((tx or {}).get(key))
-                return value
-            except (TypeError, ValueError):
+                return Decimal(str((tx or {}).get(key)))
+            except (InvalidOperation, TypeError, ValueError):
                 continue
 
         transfer_items = (tx or {}).get("transferItems") or []
         for item in transfer_items:
             try:
-                value = float((item or {}).get("amount"))
-                return value
-            except (TypeError, ValueError):
+                return Decimal(str((item or {}).get("amount")))
+            except (InvalidOperation, TypeError, ValueError):
                 continue
         return None
 
@@ -4034,7 +4030,9 @@ def _schwab_transaction_day_net_pnl(trading_date: str):
             resp.raise_for_status()
             txs = resp.json() or []
 
-            net = 0.0
+            from decimal import Decimal
+
+            net = Decimal("0")
             matched = 0
             for tx in txs:
                 tx_ts = _tx_time_et(tx)
@@ -4045,13 +4043,17 @@ def _schwab_transaction_day_net_pnl(trading_date: str):
                 amount = _tx_cash_amount(tx)
                 if amount is None:
                     continue
-                net += float(amount)
+                net += amount
                 matched += 1
 
             if matched > 0:
-                return round(net, 2)
+                return round(float(net), 2)
     except Exception:
         pass
+
+    realized = _realized_spy_option_pnl_for_date(trading_date)
+    if realized is not None:
+        return round(float(realized), 2)
 
     # 2) Fallback: latest Schwab transaction export in Downloads.
     try:
