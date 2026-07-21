@@ -84,6 +84,51 @@ def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
     }]
 
 
+def test_indicator_performance_summary_ranks_more_wins_before_sample_size():
+    trades = [
+        {
+            "exit_time": "2026-07-20T10:05:00-04:00",
+            "pnl": 10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-1",
+            "broker_exit_order_id": "rank-exit-1",
+            "feature_payload": json.dumps({"entry_reasons": ["two_wins"]}),
+        },
+        {
+            "exit_time": "2026-07-20T10:10:00-04:00",
+            "pnl": 10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-2",
+            "broker_exit_order_id": "rank-exit-2",
+            "feature_payload": json.dumps({"entry_reasons": ["two_wins"]}),
+        },
+        {
+            "exit_time": "2026-07-20T10:15:00-04:00",
+            "pnl": 10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-3",
+            "broker_exit_order_id": "rank-exit-3",
+            "feature_payload": json.dumps({"entry_reasons": ["one_win_many_trades"]}),
+        },
+        {
+            "exit_time": "2026-07-20T10:20:00-04:00",
+            "pnl": -10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-4",
+            "broker_exit_order_id": "rank-exit-4",
+            "feature_payload": json.dumps({"entry_reasons": ["one_win_many_trades"]}),
+        },
+    ]
+
+    summary = cockpit._indicator_performance_summary(trades, minimum_sample_size=2)
+
+    assert [row["indicator"] for row in summary] == ["two_wins", "one_win_many_trades"]
+
+
 def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_path):
     database_path = tmp_path / "data" / "mcleod_alpha.db"
     memory = Memory(db_path=database_path)

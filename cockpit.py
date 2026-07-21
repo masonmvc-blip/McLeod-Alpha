@@ -3268,7 +3268,10 @@ def _indicator_performance_summary(trades, minimum_sample_size=10):
         else:
             guidance = "Keep monitoring"
         rows.append({"indicator": bucket["indicator"], "trades": trades_count, "wins": bucket["wins"], "losses": bucket["losses"], "breakeven": bucket["breakeven"], "win_rate_pct": win_rate, "average_return": average_return, "guidance": guidance})
-    return sorted(rows, key=lambda row: (-row["trades"], row["indicator"].lower()))
+    return sorted(
+        rows,
+        key=lambda row: (-row["wins"], row["losses"], -row["average_return"], row["indicator"].lower()),
+    )
 
 
 def _broker_verified_trade_signatures(trading_date: str):
@@ -5818,7 +5821,7 @@ HTML_DASHBOARD = """
 
         .indicator-performance-row {
             display: grid;
-            grid-template-columns: minmax(145px, 1.25fr) minmax(130px, 2fr) minmax(170px, 1.25fr);
+            grid-template-columns: minmax(145px, 1.4fr) minmax(130px, 1fr) minmax(170px, 1.25fr);
             align-items: center;
             gap: 10px;
             padding: 8px 0;
@@ -5836,21 +5839,6 @@ HTML_DASHBOARD = """
             font-weight: 700;
             overflow-wrap: anywhere;
         }
-
-        .indicator-winrate-track {
-            height: 10px;
-            overflow: hidden;
-            border-radius: 5px;
-            background: #e6eaf0;
-        }
-
-        .indicator-winrate-fill {
-            height: 100%;
-            background: #d14b4b;
-        }
-
-        .indicator-winrate-fill.positive { background: #27834c; }
-        .indicator-winrate-fill.neutral { background: #c58a15; }
 
         .indicator-performance-stats {
             color: #4f5d70;
@@ -8119,6 +8107,11 @@ HTML_DASHBOARD = """
                     const amount = Number(value || 0);
                     return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toFixed(2)}`;
                 };
+                const formatIndicatorName = (value) => String(value || '')
+                    .split('_')
+                    .filter(Boolean)
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
 
                 meta.textContent = `${closedTrades} closed trades | minimum ${minimumSampleSize} per indicator`;
                 if (!rows.length) {
@@ -8127,16 +8120,14 @@ HTML_DASHBOARD = """
                 }
 
                 container.innerHTML = rows.map((row) => {
-                    const winRate = Math.max(0, Math.min(100, Number(row.win_rate_pct || 0)));
                     const averageReturn = Number(row.average_return || 0);
                     const guidance = String(row.guidance || 'Keep monitoring');
                     const tone = guidance === 'Candidate to increase weight'
                         ? 'candidate'
                         : (guidance === 'Review for reduction' ? 'review' : (guidance === 'Collect more data' ? 'collect' : ''));
-                    const barTone = winRate >= 55 ? 'positive' : (winRate <= 45 ? '' : 'neutral');
                     return `<article class="indicator-performance-row">
-                        <div class="indicator-performance-name">${escapeText(row.indicator)}</div>
-                        <div><div class="indicator-winrate-track"><div class="indicator-winrate-fill ${barTone}" style="width:${winRate}%"></div></div><div class="indicator-performance-stats"><strong>${winRate.toFixed(1)}% win rate</strong> | ${Number(row.wins || 0)}W / ${Number(row.losses || 0)}L / ${Number(row.breakeven || 0)} BE</div></div>
+                        <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
+                        <div class="indicator-performance-stats"><strong>Wins ${Number(row.wins || 0)}</strong> | Losses ${Number(row.losses || 0)}</div>
                         <div class="indicator-performance-stats"><strong>${Number(row.trades || 0)} trades</strong> | Avg P&L ${money(averageReturn)}<br><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
                     </article>`;
                 }).join('');
