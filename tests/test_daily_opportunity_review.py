@@ -218,6 +218,50 @@ def test_top_missed_opportunities_prioritize_near_misses_and_exclude_no_trade():
     assert top[0]["research_status"] == "exploratory_insufficient_sample"
 
 
+def test_repeatable_near_miss_outranks_one_off_move_and_reports_regret():
+    repeatable = [
+        {
+            "event_id": f"repeat-{index}", "entered": False, "direction": "CALL",
+            "rejection_reason": "CALL score below threshold by 1", "market_regime": "BULL_TREND",
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 12.0, "estimated_option_mae_pct": -4.0},
+        }
+        for index in range(10)
+    ]
+    today = [
+        {
+            "event_id": "repeat-today", "entered": False, "direction": "CALL",
+            "rejection_reason": "CALL score below threshold by 1", "market_regime": "BULL_TREND",
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 12.0, "estimated_option_mae_pct": -4.0},
+        },
+        {
+            "event_id": "one-off", "entered": False, "direction": "PUT",
+            "rejection_reason": "PUT score below threshold by 2", "market_regime": "BEAR_TREND",
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 30.0, "estimated_option_mae_pct": -4.0},
+        },
+    ]
+
+    ranked = dor._top_missed_opportunities(today, repeatable + today)
+    recurring = dor._recurring_near_misses(repeatable + today)
+
+    assert ranked[0]["event_id"] == "repeat-today"
+    assert ranked[0]["learning_value_components"]["pattern_repeatability"] == 40.0
+    assert ranked[0]["learning_value_components"]["subsequent_opportunity"] == 12.0
+    cohort = next(row for row in recurring if row["pattern"] == "CALL missed by 1 point")
+    assert cohort["count"] == 11
+    assert cohort["research_status"] == "candidate_for_validation"
+    assert cohort["research_regret_pct"] == 12.0
+    assert cohort["promotion_eligible"] is False
+
+
+def test_not_entered_stage_pattern_normalizes_structured_stage():
+    pattern = dor._near_miss_pattern(
+        {"direction": "CALL", "stage": {"stage": 2, "label": "EARLY_CONTINUATION"}},
+        "Not entered",
+    )
+
+    assert pattern == "Stage 2 Not Entered"
+
+
 def test_live_decision_predicates_unchanged():
     source = Path("engine/brain/live_rules.py").read_text(encoding="utf-8")
 

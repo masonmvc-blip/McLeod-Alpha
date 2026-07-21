@@ -304,9 +304,47 @@ def _research_status(observations: int) -> str:
     return "exploratory_insufficient_sample"
 
 
-def _top_missed_opportunities(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _number(value: Any) -> float | None:
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _near_miss_pattern(event: Dict[str, Any], reason: str) -> str:
+    normalized = reason.lower()
+    direction = str(event.get("direction") or "UNKNOWN").upper()
+    stage = event.get("stage")
+    if isinstance(stage, dict):
+        stage = stage.get("stage") or stage.get("value") or stage.get("label")
+    if "score below threshold by 1" in normalized:
+        return f"{direction} missed by 1 point"
+    if "score below threshold by 2" in normalized:
+        return f"{direction} missed by 2 points"
+    if normalized in {"not entered", "entry not entered"}:
+        return f"Stage {stage if stage is not None else 'unknown'} Not Entered"
+    return f"{direction} {reason}"
+
+
+def _eligible_near_miss_events(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    eligible_events: List[Dict[str, Any]] = []
+    for event in events:
+        if event.get("entered") or str(event.get("market_regime") or "").upper() == "NO_TRADE":
+            continue
+        eligible, _ = _near_miss_reason(str(event.get("rejection_reason") or "UNKNOWN"))
+        if eligible:
+            eligible_events.append(event)
+    return eligible_events
+
+
+def _top_missed_opportunities(events: List[Dict[str, Any]], cohort_events: List[Dict[str, Any]] | None = None) -> List[Dict[str, Any]]:
     rejected = [event for event in events if not event.get("entered")]
-    reason_counts = Counter(str(event.get("rejection_reason") or "UNKNOWN") for event in rejected)
+    eligible_cohort = _eligible_near_miss_events(cohort_events if cohort_events is not None else events)
+    reason_counts = Counter(str(event.get("rejection_reason") or "UNKNOWN") for event in eligible_cohort)
+    pattern_counts = Counter(
+        _near_miss_pattern(event, str(event.get("rejection_reason") or "UNKNOWN"))
+        for event in eligible_cohort
+    )
     ranked: List[Dict[str, Any]] = []
 
     for event in rejected:
@@ -319,20 +357,17 @@ def _top_missed_opportunities(events: List[Dict[str, Any]]) -> List[Dict[str, An
 
         estimated = event.get("estimated_option_outcome") or {}
         tracking = event.get("post_rejection_tracking") or {}
-        mfe = estimated.get("estimated_option_mfe_pct")
-        mae = estimated.get("estimated_option_mae_pct")
-        try:
-            mfe_value = float(mfe) if mfe is not None else 0.0
-        except (TypeError, ValueError):
-            mfe_value = 0.0
-        try:
-            mae_value = float(mae) if mae is not None else 0.0
-        except (TypeError, ValueError):
-            mae_value = 0.0
+        mfe_value = _number(estimated.get("estimated_option_mfe_pct")) or 0.0
+        mae_value = _number(estimated.get("estimated_option_mae_pct")) or 0.0
 
         cohort_size = int(reason_counts[reason])
-        learning_score = max(0.0, mfe_value) * (1.0 + (0.25 * proximity_weight))
-        learning_score += min(cohort_size, 30) * 0.1
+        pattern = _near_miss_pattern(event, reason)
+        pattern_count = int(pattern_counts[pattern])
+        repeatability_component = min(pattern_count / RESEARCH_CANDIDATE_MINIMUM_SAMPLE_SIZE, 1.0) * 40.0
+        proximity_component = (proximity_weight / 3.0) * 25.0
+        opportunity_component = min(max(mfe_value, 0.0) / 20.0, 1.0) * 20.0
+        cohort_component = min(cohort_size / 30.0, 1.0) * 15.0
+        learning_score = repeatability_component + proximity_component + opportunity_component + cohort_component
         research_rating = "research_candidate" if mfe_value >= 4.0 else "borderline"
 
         research = event.get("research") or {}
@@ -354,7 +389,15 @@ def _top_missed_opportunities(events: List[Dict[str, Any]]) -> List[Dict[str, An
             "max_adverse_spy_move": tracking.get("max_adverse_spy_move"),
             "first_threshold_hit": tracking.get("first_threshold_hit"),
             "first_threshold_hit_time_et": tracking.get("first_threshold_hit_time_et"),
+            "pattern": pattern,
+            "pattern_observations": pattern_count,
             "rejection_cohort_observations": cohort_size,
+            "learning_value_components": {
+                "pattern_repeatability": round(repeatability_component, 4),
+                "threshold_proximity": round(proximity_component, 4),
+                "subsequent_opportunity": round(opportunity_component, 4),
+                "cohort_size": round(cohort_component, 4),
+            },
             "research_rating": research_rating,
             "manual_review_label": "unreviewed",
             "research_status": _research_status(cohort_size),
@@ -370,7 +413,53 @@ def _top_missed_opportunities(events: List[Dict[str, Any]]) -> List[Dict[str, An
     )[:TOP_MISSED_OPPORTUNITIES_LIMIT]
 
 
-def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _recurring_near_misses(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    groups: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for event in _eligible_near_miss_events(events):
+        reason = str(event.get("rejection_reason") or "UNKNOWN")
+        groups[_near_miss_pattern(event, reason)].append(event)
+
+    rows: List[Dict[str, Any]] = []
+    for pattern, members in groups.items():
+        mfes = [_number((event.get("estimated_option_outcome") or {}).get("estimated_option_mfe_pct")) for event in members]
+        maes = [_number((event.get("estimated_option_outcome") or {}).get("estimated_option_mae_pct")) for event in members]
+        valid_mfes = [value for value in mfes if value is not None]
+        valid_maes = [value for value in maes if value is not None]
+        if not valid_mfes:
+            continue
+        observations = len(members)
+        average_mfe = sum(valid_mfes) / len(valid_mfes)
+        average_mae = sum(valid_maes) / len(valid_maes) if valid_maes else None
+        rows.append({
+            "pattern": pattern,
+            "count": observations,
+            "avg_estimated_option_mfe_pct": round(average_mfe, 4),
+            "avg_estimated_option_mae_pct": round(average_mae, 4) if average_mae is not None else None,
+            "research_regret_pct": round(average_mfe, 4),
+            "rejected_realized_value_pct": 0.0,
+            "research_status": _research_status(observations),
+            "recommendation": "formal validation candidate" if observations >= 30 else "continue observation",
+            "promotion_eligible": False,
+            "outcome_note": "Expected value and research regret use estimated SPY-proxy option MFE, not executable option P&L.",
+        })
+    return sorted(rows, key=lambda row: (row["count"], row["avg_estimated_option_mfe_pct"]), reverse=True)
+
+
+def _load_prior_review_events(trade_date: str) -> List[Dict[str, Any]]:
+    prior_events: List[Dict[str, Any]] = []
+    current_name = f"daily_opportunity_review_{trade_date}.json"
+    for path in REPORTS_DIR.glob("daily_opportunity_review_*.json"):
+        if path.name == current_name:
+            continue
+        try:
+            payload = json.loads(get_memory().read_report_text(path, encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        prior_events.extend(payload.get("evaluated_setups") or [])
+    return prior_events
+
+
+def _build_summary(events: List[Dict[str, Any]], historical_events: List[Dict[str, Any]] | None = None) -> Dict[str, Any]:
     entered = [e for e in events if e.get("entered")]
     rejected = [e for e in events if not e.get("entered")]
 
@@ -404,7 +493,9 @@ def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
     ]
 
     buckets = {name: _win_rate_and_avg_return(events, name) for name in metric_fields}
-    top_missed_opportunities = _top_missed_opportunities(events)
+    cohort_events = (historical_events or []) + events
+    top_missed_opportunities = _top_missed_opportunities(events, cohort_events)
+    recurring_near_misses = _recurring_near_misses(cohort_events)
 
     return {
         "total_evaluations": len(events),
@@ -425,6 +516,12 @@ def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
             for e in largest_missed
         ],
         "top_missed_opportunities": top_missed_opportunities,
+        "recurring_near_misses": recurring_near_misses,
+        "decision_regret_rate": {
+            "definition": "Average estimated post-rejection option MFE for each rejected pattern; rejected realized value is recorded as zero.",
+            "outcome_note": "Research-only SPY-proxy estimate. It is not actual executable option P&L or an instruction to change live rules.",
+            "cohorts": recurring_near_misses,
+        },
         "buckets": buckets,
     }
 
@@ -506,6 +603,7 @@ def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, 
 
     largest_missed = table_from_rows("Largest missed moves (ET)", summary.get("largest_missed_moves") or [])
     top_missed = table_from_rows("Top 10 Missed Opportunities (research-only)", summary.get("top_missed_opportunities") or [])
+    recurring = table_from_rows("Recurring Near Misses (research-only)", summary.get("recurring_near_misses") or [])
 
     all_rows_preview = table_from_rows("Evaluated setups (sample)", rows[:50])
 
@@ -524,6 +622,7 @@ def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, 
         f"<h2>9. Three most costly rejection reasons today</h2><p>{', '.join(summary.get('three_most_costly_rejection_reasons') or [])}</p>"
         f"<h2>10. Exact timestamps of the largest missed moves in Eastern Time</h2>{largest_missed}"
         f"<h2>11. Top 10 Missed Opportunities</h2><p>Ranked by expected learning value, not raw profit. NO_TRADE regime rejections are excluded. Ratings are observational and never change live entry policy.</p>{top_missed}"
+        f"<h2>12. Recurring Near Misses</h2><p>Patterns accumulate across prior daily reviews and use the 10, 30, and 100 observation governance thresholds. Decision regret is an estimated research measure, not realized trade P&amp;L.</p>{recurring}"
         f"{all_rows_preview}"
         "</body></html>"
     )
@@ -536,13 +635,14 @@ def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
 
     events = _load_events(trade_date)
     candles = _load_spy_candles(trade_date)
+    historical_events = _load_prior_review_events(trade_date)
 
     enriched: List[Dict[str, Any]] = []
     for event in events:
         event["setup_type"] = _classify_setup_type(event)
         enriched.append(_enrich_event_outcomes(event, candles))
 
-    summary = _build_summary(enriched)
+    summary = _build_summary(enriched, historical_events)
     csv_rows = _to_csv_rows(enriched)
 
     _write_csv(out_csv, csv_rows)
