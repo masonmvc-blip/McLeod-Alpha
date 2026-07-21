@@ -45,7 +45,7 @@ class TestBuilderGeneratedOrder(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            4
+            5
         )
         
         # Verify builder was called
@@ -78,7 +78,7 @@ class TestBuilderGeneratedOrder(unittest.TestCase):
         ]
         
         for symbol in test_symbols:
-            order_id = live_engine._submit_option_order(symbol, "CALL", 5.41, 4)
+            order_id = live_engine._submit_option_order(symbol, "CALL", 5.41, 5)
             self.assertIsNotNone(order_id)
             print(f"✓ TEST 1b: Exact symbol preserved: {repr(symbol)}")
 
@@ -106,7 +106,7 @@ class TestAccountHashUsage(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            4
+            5
         )
         
         # Verify place_order was called with hash
@@ -143,7 +143,7 @@ class TestSubmissionLock(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            4
+            5
         )
         
         self.assertIsNone(order_id)
@@ -190,7 +190,7 @@ class TestSubmissionLock(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=4,
+            quantity=5,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )
@@ -229,7 +229,7 @@ class TestPositionSafety(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=4,
+            quantity=5,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )
@@ -274,7 +274,7 @@ class TestPositionSafety(unittest.TestCase):
             price=756.00,
             stop=750.00,
             target=765.00,
-            quantity=4,
+            quantity=5,
             reason="TEST",
             option={"symbol": "SPY 260724C00756000", "mark": 5.36, "delta": 0.50}
         )
@@ -286,10 +286,10 @@ class TestPositionSafety(unittest.TestCase):
 
 
 class TestEntryQuantityGuard(unittest.TestCase):
-    """TEST 5: Every entry submission path requires exactly four contracts."""
+    """TEST 5: Every entry submission path requires exactly five contracts."""
 
     @patch('execution.live_engine._schwab_client')
-    def test_direct_submission_rejects_non_four_quantity(self, mock_client):
+    def test_direct_submission_rejects_non_five_quantity(self, mock_client):
         live_engine._schwab_account_hash = "HASH123"
         live_engine._submission_rejected = False
 
@@ -302,7 +302,7 @@ class TestEntryQuantityGuard(unittest.TestCase):
 
         self.assertIsNone(order_id)
         mock_client.place_order.assert_not_called()
-        print("✓ TEST 5.1: Non-four direct submission blocked before Schwab")
+        print("✓ TEST 5.1: Non-five direct submission blocked before Schwab")
 
 
 class TestBuilderStructure(unittest.TestCase):

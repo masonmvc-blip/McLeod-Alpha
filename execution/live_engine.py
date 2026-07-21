@@ -1560,6 +1560,13 @@ def _submit_option_order(option_symbol, direction, limit_price, quantity):
     if not _schwab_client or not _schwab_account_hash:
         print("ERROR: Schwab client or account hash not configured")
         return None
+
+    if int(quantity) != MAX_OPEN_CONTRACTS:
+        print(
+            f"ERROR: Entry quantity {quantity} does not match the configured "
+            f"contract limit {MAX_OPEN_CONTRACTS}"
+        )
+        return None
     
     try:
         from schwab.orders.options import option_buy_to_open_limit
