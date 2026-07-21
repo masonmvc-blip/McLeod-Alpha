@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-McLeod SPY Options Trader Alpha 1.3 - Local dashboard for live bot management
+McLeod SPY Options Trader Cockpit 1.4 - Local dashboard for live bot management
 Provides one-click controls for starting, stopping, and monitoring the trading bot
 """
 
@@ -7760,7 +7760,7 @@ HTML_DASHBOARD = """
 <body>
     <div class="container">
         <div class="header">
-            <h1><span class="title-rockets"><span>🚀</span><span>McLeod SPY Options Trader Alpha 1.3</span><span>🚀</span></span></h1>
+            <h1><span class="title-rockets"><span>🚀</span><span>McLeod SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></h1>
         </div>
         
         <div id="message" class="message"></div>
@@ -9403,7 +9403,7 @@ if __name__ == '__main__':
     
     # Display startup info
     print("\n" + "="*70)
-    print("🚀 McLeod SPY Options Trader Alpha 1.3 🚀")
+    print("🚀 McLeod SPY Options Trader Cockpit 1.4 🚀")
     print("="*70)
     print(f"Project: {PROJECT_ROOT}")
     print(f"Bot Script: {BOT_SCRIPT}")
