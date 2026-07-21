@@ -7934,6 +7934,9 @@ HTML_DASHBOARD = """
             architectureHealthRefreshInFlight = true;
             try {
                 const res = await fetch('/api/architecture-health');
+                if (!res.ok) {
+                    throw new Error(`Architecture Health request failed: HTTP ${res.status}`);
+                }
                 const report = await res.json();
                 const overall = report.overall || {};
                 const brain = report.brain || {};
@@ -7982,6 +7985,11 @@ HTML_DASHBOARD = """
                 lastArchitectureHealthRefreshMs = Date.now();
             } catch (err) {
                 console.error('Error loading architecture health:', err);
+                ['architectureBrain', 'architectureMemory', 'architectureCockpit'].forEach((prefix) => {
+                    document.getElementById(`${prefix}Score`).textContent = 'Unavailable';
+                    document.getElementById(`${prefix}Summary`).textContent = 'Architecture Health API unavailable';
+                    document.getElementById(`${prefix}Blockers`).innerHTML = '<li>Refresh your Cloudflare Access session and retry.</li>';
+                });
                 document.getElementById('architectureOverallScore').textContent = 'Unavailable';
             } finally {
                 architectureHealthRefreshInFlight = false;
