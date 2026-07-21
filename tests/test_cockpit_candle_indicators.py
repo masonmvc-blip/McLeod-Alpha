@@ -171,6 +171,11 @@ def test_qualifying_indicator_cards_show_startup_guard_reason():
 def test_indicator_cards_show_current_trend_without_direction_requirement_copy():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
+    assert "const phaseText = momentumStage" in source
+    assert "${escapeHtml(momentumStage)}" in source
+    assert "callMomentumStrength" not in source
+    assert "putMomentumStrength" not in source
+    assert "Momentum ${momentumStrength.toFixed(1)}/5" not in source
     assert "const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();" in source
     assert "const trend = trendMap[trendRaw] || 'NEUTRAL';" in source
     assert "const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';" in source

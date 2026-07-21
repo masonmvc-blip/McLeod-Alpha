@@ -7898,8 +7898,6 @@ HTML_DASHBOARD = """
                 const indicatorTotal = Number(status.continuation_indicators_total || 5);
                 const callPassed = Number(status.continuation_call_passed || 0);
                 const putPassed = Number(status.continuation_put_passed || 0);
-                const callMomentumStrength = Number(status.call_momentum_strength);
-                const putMomentumStrength = Number(status.put_momentum_strength);
                 const callMomentumStage = String(status.call_momentum_stage || '').replaceAll('_', ' ');
                 const putMomentumStage = String(status.put_momentum_stage || '').replaceAll('_', ' ');
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
@@ -7932,35 +7930,34 @@ HTML_DASHBOARD = """
 
                 function renderIndicatorText(passed, side) {
                     const base = `${passed}/${indicatorTotal} Passed`;
-                    const momentumStrength = side === 'CALL' ? callMomentumStrength : putMomentumStrength;
                     const momentumStage = side === 'CALL' ? callMomentumStage : putMomentumStage;
-                    const momentumText = Number.isFinite(momentumStrength)
-                        ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Momentum ${momentumStrength.toFixed(1)}/5${momentumStage ? ` | ${escapeHtml(momentumStage)}` : ''}</span>`
+                    const phaseText = momentumStage
+                        ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">${escapeHtml(momentumStage)}</span>`
                         : '';
                     if (passed < 5) {
-                        return `${base}${momentumText}`;
+                        return `${base}${phaseText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return `${base}${momentumText}`;
+                        return `${base}${phaseText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return `${base}${momentumText}`;
+                    return `${base}${phaseText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');
