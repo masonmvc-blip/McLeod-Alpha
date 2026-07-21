@@ -4,6 +4,8 @@ import pytest
 
 from backtesting.stop_policy_simulator import SimulatedPosition
 from engine.brain import Brain, TradeAction
+from engine.brain.live_rules import build_entry_risk_plan
+from execution.contract_limits import MAX_OPEN_CONTRACTS
 import execution.live_engine as live_engine
 
 
@@ -83,6 +85,17 @@ def test_entry_runtime_guard_owns_quantity_and_lifecycle_locks():
     assert invalid_quantity.allowed is False
     assert invalid_quantity.reason == "contract_quantity_must_equal_max"
     assert protected_lock.reason == "protective_stop_failed_lock"
+
+
+def test_live_entry_contract_cap_is_six_for_planning_and_submission(monkeypatch):
+    _stop, _target, quantity = build_entry_risk_plan("CALL", 500.0)
+    assert MAX_OPEN_CONTRACTS == 6
+    assert quantity == 6
+
+    monkeypatch.setattr(live_engine, "_schwab_client", object())
+    monkeypatch.setattr(live_engine, "_schwab_account_hash", "test-account")
+    monkeypatch.setattr(live_engine, "_submission_rejected", False)
+    assert live_engine._submit_option_order("SPY TEST", "CALL", 1.0, 5) is None
 
 
 def test_entry_admission_and_quote_quality_are_brain_decisions():

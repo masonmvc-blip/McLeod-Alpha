@@ -1,3 +1,3 @@
 """Single source of truth for live SPY option contract limits."""
 
-MAX_OPEN_CONTRACTS = 5
+MAX_OPEN_CONTRACTS = 6

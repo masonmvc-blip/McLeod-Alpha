@@ -439,34 +439,18 @@ def test_8_broker_query_failure_enters_safe_mode():
     print(f"  - Trading: Blocked until connection restored")
 
 
-def test_9_max_contract_cap_enforced():
+def test_9_max_contract_cap_enforced(monkeypatch):
     """Test: Maximum configured SPY option contract cap is enforced."""
     print("\n" + "="*70)
     print("TEST 9: Maximum contract cap enforced")
     print("="*70)
     
-    mock_client = MagicMock()
-    
-    # Setup: Existing position with qty above MAX_OPEN_CONTRACTS (4).
-    account_response = Mock()
-    account_response.status_code = 200
-    account_response.json.return_value = {
-        "securitiesAccount": {
-            "positions": [
-                {
-                    "instrument": {"assetType": "OPTION", "symbol": "SPY 260724C00754000"},
-                    "longQuantity": 5,
-                    "averagePrice": 5.50
-                }
-            ],
-            "orderStrategies": []
-        }
-    }
-    account_response.raise_for_status = Mock()
-    
-    mock_client.get_account.return_value = account_response
-    
-    set_schwab_client(mock_client, "33310903", "96636430645ADE50C1234567890ABCDEF")
+    positions = [{
+        "instrument": {"assetType": "OPTION", "symbol": "SPY 260724C00754000"},
+        "longQuantity": 7,
+        "averagePrice": 5.50,
+    }]
+    monkeypatch.setattr(live_engine, "get_schwab_positions", lambda: (positions, [], 200, None))
     live_engine._max_quantity_exceeded = False
     
     # Run startup reconciliation
@@ -477,7 +461,7 @@ def test_9_max_contract_cap_enforced():
     assert live_engine._max_quantity_exceeded == True, "Should set max quantity exceeded"
     
     print("✓ PASS: Maximum contract cap enforced")
-    print(f"  - Position Qty: 5")
+    print(f"  - Position Qty: 7")
     print(f"  - Max Allowed: 4")
     print(f"  - Status: BLOCKED")
     print(f"  - Manual reconciliation required")
