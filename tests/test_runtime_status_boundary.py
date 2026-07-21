@@ -1,3 +1,5 @@
+import inspect
+
 from engine.memory import Memory
 from engine import runtime_status
 
@@ -35,3 +37,10 @@ def test_cockpit_parse_status_remains_a_compatible_adapter(monkeypatch):
 
     assert cockpit.parse_bot_status() is expected
     assert received["PROJECT_ROOT"] == cockpit.PROJECT_ROOT
+
+
+def test_period_pnl_refreshes_immediately_when_trade_signature_changes():
+    source_text = inspect.getsource(runtime_status._build_runtime_status)
+
+    assert "trade_posted_since_cache" in source_text
+    assert "and not trade_posted_since_cache" in source_text

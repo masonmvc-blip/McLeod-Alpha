@@ -147,9 +147,15 @@ def _build_runtime_status():
         today_date = now_et.date()
         today_key = today_date.isoformat()
         now_ts = time.time()
+        closed_trade_signature = _closed_trade_signature()
+        trade_posted_since_cache = (
+            _BROKER_PNL_CACHE.get("as_of_date") == today_key
+            and _BROKER_PNL_CACHE.get("closed_trade_signature") != closed_trade_signature
+        )
 
         if (
             _BROKER_PNL_CACHE.get("as_of_date") == today_key
+            and not trade_posted_since_cache
             and (now_ts - float(_BROKER_PNL_CACHE.get("timestamp", 0.0))) < max(1.0, BROKER_PNL_REFRESH_SECONDS)
         ):
             return (
@@ -169,7 +175,6 @@ def _build_runtime_status():
             day=week_start_date.day,
         )
 
-        closed_trade_signature = _closed_trade_signature()
         if (
             _BROKER_PNL_CACHE.get("as_of_date") == today_key
             and _BROKER_PNL_CACHE.get("closed_trade_signature") == closed_trade_signature
@@ -201,57 +206,58 @@ def _build_runtime_status():
         mtd_source = "trade_log_realized"
         ytd_source = "trade_log_realized"
 
-        # Live Schwab transaction history is authoritative for all dashboard periods.
-        # Local completed trades remain an outage fallback only.
-        try:
-            from schwab.auth import easy_client
+        # A newly posted exit is immediately reflected from its persisted trade
+        # record. Schwab transaction history remains authoritative after it catches up.
+        if not trade_posted_since_cache:
+            try:
+                from schwab.auth import easy_client
 
-            account_hash = os.getenv("SCHWAB_ACCOUNT_HASH")
-            app_key = os.getenv("SCHWAB_APP_KEY")
-            app_secret = os.getenv("SCHWAB_APP_SECRET")
-            callback = os.getenv("SCHWAB_CALLBACK_URL")
-            if all([account_hash, app_key, app_secret, callback]):
-                client = easy_client(
-                    api_key=app_key,
-                    app_secret=app_secret,
-                    callback_url=callback,
-                    token_path=_resolve_schwab_token_path(),
-                    enforce_enums=False,
-                )
+                account_hash = os.getenv("SCHWAB_ACCOUNT_HASH")
+                app_key = os.getenv("SCHWAB_APP_KEY")
+                app_secret = os.getenv("SCHWAB_APP_SECRET")
+                callback = os.getenv("SCHWAB_CALLBACK_URL")
+                if all([account_hash, app_key, app_secret, callback]):
+                    client = easy_client(
+                        api_key=app_key,
+                        app_secret=app_secret,
+                        callback_url=callback,
+                        token_path=_resolve_schwab_token_path(),
+                        enforce_enums=False,
+                    )
 
-                pnl_scope_symbol = str(os.getenv("BROKER_PNL_SCOPE_SYMBOL", "SPY")).strip().upper()
-                pnl_scope_asset = str(os.getenv("BROKER_PNL_SCOPE_ASSET", "OPTION")).strip().upper()
-                ext_today, ext_wtd, ext_mtd, ext_ytd = _api_period_net_after(
-                    year_start_dt,
-                    now_et,
-                    pnl_scope_symbol,
-                    pnl_scope_asset,
-                )
+                    pnl_scope_symbol = str(os.getenv("BROKER_PNL_SCOPE_SYMBOL", "SPY")).strip().upper()
+                    pnl_scope_asset = str(os.getenv("BROKER_PNL_SCOPE_ASSET", "OPTION")).strip().upper()
+                    ext_today, ext_wtd, ext_mtd, ext_ytd = _api_period_net_after(
+                        year_start_dt,
+                        now_et,
+                        pnl_scope_symbol,
+                        pnl_scope_asset,
+                    )
 
-                source_parts = ["asset", pnl_scope_asset or "ALL"]
-                if pnl_scope_symbol:
-                    source_parts.extend(["symbol", pnl_scope_symbol])
-                source_suffix = "_" + "_".join(source_parts)
-                ext_today_source = f"schwab_transactions_net{source_suffix}"
-                ext_wtd_source = f"schwab_transactions_net{source_suffix}"
-                ext_mtd_source = f"schwab_transactions_net{source_suffix}"
-                ext_ytd_source = f"schwab_transactions_net{source_suffix}"
+                    source_parts = ["asset", pnl_scope_asset or "ALL"]
+                    if pnl_scope_symbol:
+                        source_parts.extend(["symbol", pnl_scope_symbol])
+                    source_suffix = "_" + "_".join(source_parts)
+                    ext_today_source = f"schwab_transactions_net{source_suffix}"
+                    ext_wtd_source = f"schwab_transactions_net{source_suffix}"
+                    ext_mtd_source = f"schwab_transactions_net{source_suffix}"
+                    ext_ytd_source = f"schwab_transactions_net{source_suffix}"
 
-                today_total, used_ext_today = _prefer_external(ext_today, today_total)
-                wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total)
-                mtd_total, used_ext_mtd = _prefer_external(ext_mtd, mtd_total)
-                ytd_total, used_ext_ytd = _prefer_external(ext_ytd, ytd_total)
+                    today_total, used_ext_today = _prefer_external(ext_today, today_total)
+                    wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total)
+                    mtd_total, used_ext_mtd = _prefer_external(ext_mtd, mtd_total)
+                    ytd_total, used_ext_ytd = _prefer_external(ext_ytd, ytd_total)
 
-                if used_ext_today:
-                    today_source = ext_today_source
-                if used_ext_wtd:
-                    wtd_source = ext_wtd_source
-                if used_ext_mtd:
-                    mtd_source = ext_mtd_source
-                if used_ext_ytd:
-                    ytd_source = ext_ytd_source
-        except Exception as exc:
-            print(f"Broker P&L refresh unavailable: {exc}")
+                    if used_ext_today:
+                        today_source = ext_today_source
+                    if used_ext_wtd:
+                        wtd_source = ext_wtd_source
+                    if used_ext_mtd:
+                        mtd_source = ext_mtd_source
+                    if used_ext_ytd:
+                        ytd_source = ext_ytd_source
+            except Exception as exc:
+                print(f"Broker P&L refresh unavailable: {exc}")
 
         _BROKER_PNL_CACHE = {
             "timestamp": now_ts,
