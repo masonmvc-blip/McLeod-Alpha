@@ -46,8 +46,9 @@ def test_period_pnl_refreshes_immediately_when_trade_signature_changes():
     assert "and not trade_posted_since_cache" in source_text
 
 
-def test_empty_broker_transaction_history_does_not_override_local_pnl():
+def test_empty_broker_period_does_not_override_local_pnl():
     source_text = inspect.getsource(runtime_status._build_runtime_status)
 
-    assert "has_scoped_transactions" in source_text
-    assert "candidate is None or not has_scoped_transactions" in source_text
+    assert "has_today_transactions" in source_text
+    assert "has_wtd_transactions" in source_text
+    assert "_prefer_external(ext_today, today_total, has_today_transactions)" in source_text
