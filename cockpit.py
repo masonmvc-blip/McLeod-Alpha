@@ -6274,6 +6274,10 @@ HTML_DASHBOARD = """
             white-space: nowrap;
         }
 
+        .trade-entry-banner .mobile-price-rocket {
+            display: none;
+        }
+
         .trade-entry-banner .banner-price {
             font-weight: 900;
         }
@@ -6893,6 +6897,15 @@ HTML_DASHBOARD = """
                 gap: 4px;
             }
 
+            .title-rockets .title-rocket {
+                display: none;
+            }
+
+            .trade-entry-banner .mobile-price-rocket {
+                display: inline-block;
+                margin: 0 6px;
+            }
+
             .trade-entry-banner {
                 display: flex;
                 flex-direction: column;
@@ -7082,8 +7095,8 @@ HTML_DASHBOARD = """
         <div id="message" class="message"></div>
 
         <div id="tradeEntryBanner" class="trade-entry-banner disabled">
-            <div class="banner-price-slot" id="tradeEntryBannerPrice">--</div>
-            <div class="banner-title"><span class="title-rockets"><span>🚀</span><span>SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></div>
+            <div class="banner-price-slot"><span class="mobile-price-rocket" aria-hidden="true">🚀</span><span id="tradeEntryBannerPrice">--</span><span class="mobile-price-rocket" aria-hidden="true">🚀</span></div>
+            <div class="banner-title"><span class="title-rockets"><span class="title-rocket">🚀</span><span>SPY Options Trader Cockpit 1.4</span><span class="title-rocket">🚀</span></span></div>
             <div class="banner-meta" id="tradeEntryBannerMeta">
                 <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">🛑 Schwab 903</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
             </div>

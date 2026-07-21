@@ -261,6 +261,12 @@ def test_top_banner_combines_title_price_and_inline_status_meta():
 
     assert 'id="tradeEntryBannerPrice"' in source
     assert '<span>SPY Options Trader Cockpit 1.4</span>' in source
+    assert 'class="mobile-price-rocket"' in source
+    assert 'class="title-rocket"' in source
+    assert '.title-rockets .title-rocket {' in source
+    assert '.trade-entry-banner .mobile-price-rocket {' in source
+    assert 'display: none;' in source
+    assert 'display: inline-block;' in source
     assert 'grid-template-columns: repeat(3, minmax(0, 1fr));' in source
     assert 'gap: 8px;' in source
     assert 'justify-self: center;' in source
