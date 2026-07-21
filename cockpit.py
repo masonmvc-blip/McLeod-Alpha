@@ -7083,6 +7083,7 @@ HTML_DASHBOARD = """
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
             <div class="status-card position-secondary-card" id="trendCard">
+                <h3>Trend</h3>
                 <div class="status-value" id="trendStatus">Loading...</div>
             </div>
             <div class="status-card" id="currentPositionCard">
