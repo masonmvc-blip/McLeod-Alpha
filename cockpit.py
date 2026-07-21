@@ -7718,11 +7718,11 @@ HTML_DASHBOARD = """
 
                 const entryPauseButton = document.getElementById('exitTradeBtn');
                 const canControlEntries = !!(status.bot_running && status.mode === 'LIVE TRADING');
-                const marketClosed = String(status.trade_entry_reason_code || '').toUpperCase() === 'MARKET_CLOSED';
+                const entryMarketClosed = String(status.trade_entry_reason_code || '').toUpperCase() === 'MARKET_CLOSED';
                 entryPauseButton.disabled = !canControlEntries;
                 entryPauseButton.innerHTML = status.has_open_position
                     ? '⏏ Exit Trade'
-                    : (marketClosed ? 'Market Closed' : (status.entry_paused ? '▶ Resume Entries' : '⏸ Pause Entries'));
+                    : (entryMarketClosed ? 'Market Closed' : (status.entry_paused ? '▶ Resume Entries' : '⏸ Pause Entries'));
                 
                 // Schwab is ready only for reconciled live trading.
                 const modeText = String(status.mode || '').toUpperCase();
