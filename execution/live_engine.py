@@ -604,8 +604,9 @@ def reconcile_startup():
     
     # Check for SPY option pending/open orders
     spy_orders = []
+    terminal_order_statuses = {"FILLED", "CANCELED", "CANCELLED", "REJECTED", "EXPIRED", "REPLACED"}
     for order in orders:
-        if order.get("status") not in ["FILLED", "CANCELLED", "REJECTED"]:
+        if str(order.get("status") or "").upper() not in terminal_order_statuses:
             legs = order.get("orderLegCollection", [])
             for leg in legs:
                 instr = leg.get("instrument", {})

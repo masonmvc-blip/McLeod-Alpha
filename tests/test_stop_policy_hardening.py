@@ -187,6 +187,21 @@ def test_reconciliation_clears_stale_local_position_when_broker_is_flat(monkeypa
     assert snapshot["spy_option_orders"] == []
 
 
+def test_reconciliation_excludes_canceled_spy_orders_from_snapshot(monkeypatch, tmp_path):
+    snapshot_path = tmp_path / "broker_reconciliation_snapshot.json"
+    monkeypatch.setattr(live_engine, "BROKER_RECONCILIATION_SNAPSHOT_PATH", snapshot_path)
+    monkeypatch.setattr(live_engine, "current_position", None)
+    canceled_order = {
+        "status": "CANCELED",
+        "orderLegCollection": [{"quantity": 1, "instrument": {"assetType": "OPTION", "symbol": "SPY TEST"}}],
+    }
+    monkeypatch.setattr(live_engine, "get_schwab_positions", lambda: ([], [canceled_order], 200, None))
+
+    assert live_engine.reconcile_startup() is True
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    assert snapshot["spy_option_orders"] == []
+
+
 def test_broker_governor_blocks_all_calls_after_rate_limit(monkeypatch, tmp_path):
     class RateLimitedResponse:
         status_code = 429
