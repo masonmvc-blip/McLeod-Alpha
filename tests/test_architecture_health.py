@@ -48,7 +48,7 @@ def test_scores_are_capability_based_not_ast_finding_counts(tmp_path):
     assert len(report["memory"]["evidence"]) == 2
     assert report["memory"]["score"] == 100
     assert report["brain"]["score"] == 100
-    assert report["overall"]["score"] == 96
+    assert report["overall"]["score"] == 100
 
 
 def test_capabilities_publish_exit_criteria_and_calculated_priorities(tmp_path):
@@ -56,19 +56,17 @@ def test_capabilities_publish_exit_criteria_and_calculated_priorities(tmp_path):
 
     trade_management = next(item for item in report["brain"]["capabilities"] if item["id"] == "trade_management")
     entry_decisions = next(item for item in report["brain"]["capabilities"] if item["id"] == "entry_decisions")
+    runtime_status = next(item for item in report["cockpit"]["capabilities"] if item["id"] == "duplicate_runtime_state")
     assert "The live execution adapter and historical replay consume Brain decisions." in trade_management["definition_of_complete"]
     assert "Brain owns entry eligibility, trade planning, startup lifecycle locks, broker-fact admission, quote-quality, and option-contract selection decisions." in entry_decisions["definition_of_complete"]
-    assert report["priorities"]["priorities"][0] == {
-        "id": "consolidate_cockpit_runtime",
-        "label": "Consolidate Cockpit runtime state",
-        "blocker": "cockpit.py",
-        "targets": ["duplicate_runtime_state"],
-        "impact_percent": 2,
-    }
+    assert runtime_status["owner"] == "engine/runtime_status.py"
+    assert runtime_status["status"] == "complete"
+    assert runtime_status["remaining_files"] == []
+    assert report["priorities"]["priorities"] == []
     assert report["brain"]["score"] == 100
-    assert report["cockpit"]["score"] == 78
-    assert report["overall"]["score"] == 96
-    assert report["priorities"]["estimated_completion_after_next_milestone"] == 98
+    assert report["cockpit"]["score"] == 100
+    assert report["overall"]["score"] == 100
+    assert report["priorities"]["estimated_completion_after_next_milestone"] == 100
 
 
 def test_version_history_is_not_a_memory_persistence_capability(tmp_path):

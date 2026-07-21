@@ -461,6 +461,31 @@ class Memory:
                 """
             ).fetchall()]
 
+    def load_trade_log_status_summary(self, db_path=None):
+        """Return the small read-only trade-log summary needed by runtime status."""
+        target_db_path = Path(db_path or self.db_path)
+        if not target_db_path.exists():
+            return None
+        try:
+            with sqlite3.connect(target_db_path) as connection:
+                columns = {row[1] for row in connection.execute("PRAGMA table_info(trade_log)")}
+                row = connection.execute(
+                    """
+                    SELECT COUNT(1) AS closed_count, MAX(exit_time) AS max_exit_time
+                    FROM trade_log
+                    WHERE exit_time IS NOT NULL AND TRIM(exit_time) <> ''
+                    """
+                ).fetchone()
+        except sqlite3.Error:
+            return None
+
+        closed_count = int(row[0] or 0) if row else 0
+        max_exit_time = str(row[1] or "none") if row else "none"
+        return {
+            "closed_trade_signature": f"{closed_count}:{max_exit_time}",
+            "has_absorption_score": "absorption_score" in columns,
+        }
+
     def load_trade_log_export_inputs(self, trade_date):
         self.initialize_live_trade_store()
         with sqlite3.connect(self.db_path) as connection:

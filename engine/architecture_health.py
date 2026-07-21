@@ -9,7 +9,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_GLOBS = ("cockpit.py", "phase3_monitor.py", "execution/**/*.py")
+RUNTIME_GLOBS = ("cockpit.py", "phase3_monitor.py", "engine/runtime_status.py", "execution/**/*.py")
 PERSISTENCE_METHODS = {"write_text", "write_bytes", "to_csv", "to_json", "writerow", "writerows"}
 POLICY_FUNCTIONS = {"manage_trade", "evaluate_entry", "evaluate_exit", "should_enter", "should_exit"}
 COCKPIT_POLICY_PREFIXES = ("_active_stop_", "_classify_exit_", "_indicator_no_entry_")
@@ -52,9 +52,9 @@ CAPABILITY_MATRIX = {
     "cockpit": (
         ("business_logic", "Business logic", 30, "engine/brain", "complete", []),
         ("direct_persistence", "Direct persistence", 25, "engine/memory/Memory", "complete", []),
-        ("duplicate_runtime_state", "Duplicate runtime state", 20, "cockpit.py", "partial", ["cockpit.py", "phase3_monitor.py"]),
-        ("brain_boundary", "Calls that bypass Brain", 15, "cockpit.py", "partial", ["cockpit.py"]),
-        ("memory_boundary", "Calls that bypass Memory", 10, "cockpit.py", "partial", ["cockpit.py"]),
+        ("duplicate_runtime_state", "Duplicate runtime state", 20, "engine/runtime_status.py", "complete", []),
+        ("brain_boundary", "Calls that bypass Brain", 15, "engine/brain", "complete", []),
+        ("memory_boundary", "Calls that bypass Memory", 10, "engine/memory/Memory", "complete", []),
     ),
 }
 
@@ -83,11 +83,7 @@ EXIT_CRITERIA = {
     "memory_boundary": ("Cockpit invokes Memory for persistence operations.", "No Cockpit path bypasses Memory for durable state."),
 }
 
-PRIORITY_MILESTONES = (
-    ("complete_exit_decisions", "Complete canonical exit decisions", "brain", ("exit_decisions",), "engine/brain/engine.py:evaluate_exit"),
-    ("consolidate_feature_vectors", "Consolidate feature-vector persistence", "memory", ("feature_vectors",), "execution/live_engine.py"),
-    ("consolidate_cockpit_runtime", "Consolidate Cockpit runtime state", "cockpit", ("duplicate_runtime_state",), "cockpit.py"),
-)
+PRIORITY_MILESTONES = ()
 
 
 def _call_name(node: ast.Call) -> str:
