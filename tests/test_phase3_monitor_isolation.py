@@ -78,6 +78,15 @@ def test_post_exit_cooling_blocks_one_qualifying_entry(monkeypatch):
     assert module.LAST_ENTRY_EXECUTION_METRICS["block_reason"] == "Cooling Period"
 
 
+def test_directional_spy_run_resets_after_a_reversal():
+    module = importlib.import_module("phase3_monitor")
+    candles = pd.DataFrame({"close": [700.00, 700.30, 700.55, 700.40, 700.75, 701.10]})
+
+    assert module._directional_spy_run(candles) == {
+        "direction": "UP", "dollars": 0.7, "call_dollars": 0.7, "put_dollars": 0.0,
+    }
+
+
 def test_import_has_no_runtime_initialization(monkeypatch) -> None:
     import execution.equity_stream
     import schwab.auth

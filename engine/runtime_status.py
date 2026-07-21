@@ -358,6 +358,9 @@ def _build_runtime_status():
         "call_momentum_stage": None,
         "put_momentum_strength": None,
         "put_momentum_stage": None,
+        "call_run_dollars": 0.0,
+        "put_run_dollars": 0.0,
+        "spy_run_entry_min_dollars": 0.70,
         "entry_paused": False,
         "last_decision": None,
         "last_decision_reason": None,
@@ -439,6 +442,10 @@ def _build_runtime_status():
         status["call_momentum_stage"] = call_momentum.get("stage")
         status["put_momentum_strength"] = put_momentum.get("strength")
         status["put_momentum_stage"] = put_momentum.get("stage")
+        spy_run = candle_indicator_snapshot.get("spy_run") or {}
+        status["call_run_dollars"] = float(spy_run.get("call_dollars") or 0.0)
+        status["put_run_dollars"] = float(spy_run.get("put_dollars") or 0.0)
+        status["spy_run_entry_min_dollars"] = float(os.getenv("SPY_RUN_ENTRY_MIN_DOLLARS", "0.70"))
 
     try:
         status["entry_paused"] = bool((get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}).get("paused"))

@@ -55,6 +55,7 @@ DECISION_AUDIT_ENABLED = str(os.getenv("DECISION_AUDIT_ENABLED", "true")).strip(
 DECISION_AUDIT_PATH = Path(os.getenv("DECISION_AUDIT_PATH", "data/reports/decision_audit_history.jsonl"))
 CONTROL_COMMAND_PATH = Path("data") / "control_command.json"
 POST_EXIT_COOLING_PATH = Path("data") / "post_exit_cooling.json"
+SPY_RUN_ENTRY_MIN_DOLLARS = max(0.01, float(os.getenv("SPY_RUN_ENTRY_MIN_DOLLARS", "0.70")))
 LAST_ENTRY_EXECUTION_METRICS = {
     "attempted": False,
     "opened": False,
@@ -747,6 +748,34 @@ def score_closed_candle_frame(candles):
         "timestamp": indicators.index[-1],
         "call_momentum": momentum_snapshot("CALL"),
         "put_momentum": momentum_snapshot("PUT"),
+        "spy_run": _directional_spy_run(indicators),
+    }
+
+
+def _directional_spy_run(candles):
+    """Measure the uninterrupted latest one-minute close-to-close run."""
+    closes = pd.to_numeric(candles.get("close"), errors="coerce").dropna().tolist()
+    if len(closes) < 2:
+        return {"direction": "NONE", "dollars": 0.0, "call_dollars": 0.0, "put_dollars": 0.0}
+
+    latest_move = closes[-1] - closes[-2]
+    if latest_move == 0:
+        return {"direction": "NONE", "dollars": 0.0, "call_dollars": 0.0, "put_dollars": 0.0}
+
+    direction = 1 if latest_move > 0 else -1
+    run_start = closes[-2]
+    for index in range(len(closes) - 1, 0, -1):
+        move = closes[index] - closes[index - 1]
+        if move == 0 or (move > 0) != (direction > 0):
+            break
+        run_start = closes[index - 1]
+
+    dollars = round(abs(closes[-1] - run_start), 2)
+    return {
+        "direction": "UP" if direction > 0 else "DOWN",
+        "dollars": dollars,
+        "call_dollars": dollars if direction > 0 else 0.0,
+        "put_dollars": dollars if direction < 0 else 0.0,
     }
 
 
@@ -1057,6 +1086,31 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
     print(f"Put reasons: {put_reasons}")
 
     log_signal(float(last.close), regime, call_score, put_score)
+
+    candidate_direction = entry_decision["direction"]
+    spy_run = _directional_spy_run(completed_candles)
+    run_dollars = float(spy_run["call_dollars"] if candidate_direction == "CALL" else spy_run["put_dollars"] if candidate_direction == "PUT" else 0.0)
+    if candidate_direction in {"CALL", "PUT"} and run_dollars < SPY_RUN_ENTRY_MIN_DOLLARS:
+        run_reason = f"Range filter: SPY {candidate_direction.lower()} run ${run_dollars:.2f}/${SPY_RUN_ENTRY_MIN_DOLLARS:.2f}"
+        print(f"ENTRY BLOCKED: {run_reason}")
+        _log_shadow_opportunities(
+            last=last, prev=prev, completed_candles=completed_candles, regime=regime,
+            call_score=call_score, call_reasons=call_reasons, put_score=put_score,
+            put_reasons=put_reasons, entered_call=False, entered_put=False,
+        )
+        return {
+            "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+            "decision_reason": "range_bound_run_filter", "entry_block_reason": run_reason,
+            "regime": regime, "call_score": call_score, "put_score": put_score,
+            "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
+            "signal_threshold": min_score_threshold, "candidate_direction": candidate_direction,
+            "candidate_entry": float(last.close), "candidate_stop": None, "candidate_target": None,
+            "candidate_quantity": None, "candidate_option_symbol": None, "chain_fetch_ms": None,
+            "option_select_ms": None, "open_trade_ms": None, "precheck_ms": None,
+            "quote_compute_ms": None, "submit_order_ms": None, "wait_fill_ms": None,
+            "market_fallback_submit_ms": None, "market_fallback_wait_ms": None,
+            "protective_stop_ms": None, "persist_ms": None, "filled_via": None,
+        }
 
     if entry_decision["direction"] == "CALL":
         trade_plan = LIVE_BRAIN.build_trade("CALL", float(last.close))

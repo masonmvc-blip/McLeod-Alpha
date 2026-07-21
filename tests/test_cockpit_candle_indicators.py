@@ -110,6 +110,13 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
 
 
+def test_cockpit_shows_spy_run_filter_and_flat_position_none():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "posEl.textContent = 'None';" in source
+    assert "SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}" in source
+
+
 def test_current_position_has_live_candle_indicator_column():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

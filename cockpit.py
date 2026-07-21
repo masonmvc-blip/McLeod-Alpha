@@ -2868,6 +2868,7 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
         "regime": score["regime"],
         "call_momentum": score.get("call_momentum") or {},
         "put_momentum": score.get("put_momentum") or {},
+        "spy_run": score.get("spy_run") or {},
     }
 
 
@@ -5220,6 +5221,7 @@ def api_today_trades():
                         direction,
                         CASE WHEN option_entry IS NOT NULL THEN option_entry ELSE entry_price END AS entry_price,
                         CASE WHEN option_exit IS NOT NULL THEN option_exit ELSE exit_price END AS exit_price,
+                        exit_reason,
                         feature_payload,
                         entry_diagnostic_snapshot,
                         exit_diagnostic_snapshot
@@ -5281,6 +5283,10 @@ def api_today_trades():
                     trade["feature_payload"] = matched.get("feature_payload")
                     trade["entry_diagnostic_snapshot"] = matched.get("entry_diagnostic_snapshot")
                     trade["exit_diagnostic_snapshot"] = matched.get("exit_diagnostic_snapshot")
+                    local_exit_reason = str(matched.get("exit_reason") or "").upper()
+                    if local_exit_reason.startswith("MANUAL_EXIT"):
+                        trade["exit_reason"] = local_exit_reason
+                        trade["manual_label"] = "Mason"
             except Exception:
                 pass
 
@@ -7780,7 +7786,7 @@ HTML_DASHBOARD = """
                         posEl.className = 'position-summary-main warning';
                     }
                 } else {
-                    posEl.textContent = 'No Open Trade';
+                    posEl.textContent = 'None';
                     posEl.className = 'position-summary-main info';
                 }
 
@@ -7860,6 +7866,9 @@ HTML_DASHBOARD = """
                 const putMomentumStrength = Number(status.put_momentum_strength);
                 const callMomentumStage = String(status.call_momentum_stage || '').replaceAll('_', ' ');
                 const putMomentumStage = String(status.put_momentum_stage || '').replaceAll('_', ' ');
+                const callRunDollars = Number(status.call_run_dollars || 0);
+                const putRunDollars = Number(status.put_run_dollars || 0);
+                const runThreshold = Number(status.spy_run_entry_min_dollars || 0.70);
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
@@ -7882,32 +7891,34 @@ HTML_DASHBOARD = """
                     const momentumText = Number.isFinite(momentumStrength)
                         ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Momentum ${momentumStrength.toFixed(1)}/5${momentumStage ? ` | ${escapeHtml(momentumStage)}` : ''}</span>`
                         : '';
+                    const runDollars = side === 'CALL' ? callRunDollars : putRunDollars;
+                    const runText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}</span>`;
                     if (passed < 5) {
-                        return `${base}${momentumText}`;
+                        return `${base}${momentumText}${runText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
                         const regimeLabel = indicatorRegime.replaceAll('_', ' ');
                         const requiredLabel = requiredRegime.replaceAll('_', ' ');
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
+                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return `${base}${momentumText}`;
+                        return `${base}${momentumText}${runText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return `${base}${momentumText}`;
+                    return `${base}${momentumText}${runText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');

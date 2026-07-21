@@ -342,6 +342,40 @@ def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monk
     assert trade["confidence_score"] == 88.0
 
 
+def test_today_trades_preserves_local_manual_exit_label_for_broker_rows(monkeypatch, tmp_path):
+    database_path = tmp_path / "data" / "mcleod_alpha.db"
+    memory = Memory(db_path=database_path)
+    today = datetime.now(cockpit.EASTERN_TZ).date().isoformat()
+    memory.record_trade(
+        entry_time=f"{today}T09:30:00-04:00",
+        exit_time=f"{today}T09:35:00-04:00",
+        direction="CALL",
+        entry_price=1.0,
+        exit_price=1.2,
+        pnl=20.0,
+        exit_reason="MANUAL_EXIT_LIMIT",
+        option_symbol="SPY  260720C00600000",
+        option_entry=1.0,
+        option_exit=1.2,
+        option_quantity=1,
+        broker_entry_order_id="broker-entry",
+        broker_exit_order_id="broker-exit",
+    )
+
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
+    monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
+    monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
+    monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
+    monkeypatch.setattr(cockpit, "_log_daily_trades_chart_snapshot", lambda *args: None)
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"todays_pnl": 0.0})
+
+    trade = cockpit.app.test_client().get("/api/today-trades").get_json()["trades"][0]
+
+    assert trade["exit_reason"] == "MANUAL_EXIT_LIMIT"
+    assert trade["manual_label"] == "Mason"
+
+
 def test_cockpit_has_no_direct_trade_log_mutation():
     tree = ast.parse(Path("cockpit.py").read_text(encoding="utf-8"))
     forbidden_prefixes = ("INSERT INTO TRADE_LOG", "UPDATE TRADE_LOG", "DELETE FROM TRADE_LOG", "REPLACE INTO TRADE_LOG")
