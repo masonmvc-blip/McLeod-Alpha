@@ -6344,6 +6344,19 @@ def api_today_trades():
                     indicator_count = cq_by_side.get('indicators_passed')
                     indicator_total = cq_by_side.get('indicators_total')
 
+                    # Live entry snapshots record the selected-side checklist
+                    # at the root; side-specific fields are legacy fallbacks.
+                    if indicator_count is None:
+                        indicator_count = snap.get('indicator_count')
+                    if indicator_total is None:
+                        indicator_total = snap.get('indicator_total')
+                    checklist = snap.get('checklist')
+                    if isinstance(checklist, dict):
+                        if indicator_count is None:
+                            indicator_count = checklist.get('passed')
+                        if indicator_total is None:
+                            indicator_total = checklist.get('total')
+
                     # Backward-compatible fallback for older snapshots.
                     if indicator_count is None or indicator_total is None:
                         primary = (cq_by_side.get('components') or {}).get('primary_indicators')
