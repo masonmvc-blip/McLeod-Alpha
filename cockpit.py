@@ -6200,10 +6200,10 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner {
-            display: grid;
-            grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) minmax(120px, 1fr);
+            display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
             border-radius: 10px;
             padding: 10px 12px;
             margin-bottom: var(--hero-stack-gap);
@@ -6840,7 +6840,7 @@ HTML_DASHBOARD = """
             }
 
             .trade-entry-banner {
-                grid-template-columns: 1fr;
+                flex-direction: column;
                 gap: 4px;
             }
 
