@@ -295,6 +295,7 @@ def _build_runtime_status():
         "current_trade_pnl_pct": None,
         "current_trade_mark": None,
         "active_stop_category": None,
+        "active_protective_stop_price": None,
         "has_open_position": False,
         "protective_stop_status": None,
         "pending_orders": 0,
@@ -498,6 +499,10 @@ def _build_runtime_status():
 
                 status["protective_stop_status"] = str(pos_data.get("protective_stop_status") or "").strip() or None
                 status["active_stop_category"] = active_stop_category(option_entry, stop_price=option_stop)
+                status["active_protective_stop_price"] = _active_broker_protective_stop_price(
+                    option_symbol,
+                    pos_data.get("protective_stop_order_id"),
+                )
 
                 if option_symbol and option_entry > 0 and quantity > 0:
                     try:

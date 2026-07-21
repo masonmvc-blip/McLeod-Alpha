@@ -94,6 +94,12 @@ _BROKER_PNL_CACHE = {
     "ytd": 0.0,
     "today_source": "schwab_transactions",
 }
+_ACTIVE_PROTECTIVE_STOP_CACHE = {
+    "timestamp": 0.0,
+    "symbol": None,
+    "preferred_order_id": None,
+    "price": None,
+}
 
 _EXECUTION_QUALITY_CACHE = {
     "timestamp": 0.0,
@@ -4116,6 +4122,72 @@ def _position_label_from_option_symbol(symbol: str, fallback_direction: str = ""
     return "Unknown"
 
 
+def _active_broker_protective_stop_price(option_symbol: str, preferred_order_id: str = ""):
+    """Return the live broker stop trigger for an open option position, if confirmed."""
+    symbol = str(option_symbol or "").strip()
+    preferred_id = str(preferred_order_id or "").strip()
+    if not symbol or not os.getenv("SCHWAB_ACCOUNT_HASH"):
+        return None
+
+    now = time.time()
+    if (
+        _ACTIVE_PROTECTIVE_STOP_CACHE.get("symbol") == symbol
+        and _ACTIVE_PROTECTIVE_STOP_CACHE.get("preferred_order_id") == preferred_id
+        and (now - float(_ACTIVE_PROTECTIVE_STOP_CACHE.get("timestamp") or 0.0)) < 5.0
+    ):
+        return _ACTIVE_PROTECTIVE_STOP_CACHE.get("price")
+
+    active_statuses = {
+        "PENDING_ACTIVATION", "ACCEPTED", "QUEUED", "WORKING",
+        "PENDING_REPLACEMENT", "PARTIALLY_FILLED", "AWAITING_PARENT_ORDER",
+        "AWAITING_CONDITION",
+    }
+    stop_orders = []
+    try:
+        client = _get_broker_client()
+        response = client.get_orders_for_account(os.getenv("SCHWAB_ACCOUNT_HASH"))
+        response.raise_for_status()
+        orders = response.json() if isinstance(response.json(), list) else []
+        for order in orders:
+            if str(order.get("status") or "").upper() not in active_statuses:
+                continue
+            if str(order.get("orderType") or "").upper() not in {"STOP", "STOP_LIMIT", "TRAILING_STOP", "TRAILING_STOP_LIMIT"}:
+                continue
+            for leg in order.get("orderLegCollection") or []:
+                instrument = (leg or {}).get("instrument") or {}
+                if str(instrument.get("assetType") or "").upper() != "OPTION":
+                    continue
+                if str(instrument.get("symbol") or "") != symbol:
+                    continue
+                if str((leg or {}).get("instruction") or "").upper() != "SELL_TO_CLOSE":
+                    continue
+                try:
+                    stop_price = float(order.get("stopPrice"))
+                except (TypeError, ValueError):
+                    continue
+                if stop_price > 0:
+                    stop_orders.append(order)
+                break
+    except Exception:
+        return None
+
+    selected = next(
+        (order for order in stop_orders if str(order.get("orderId") or "") == preferred_id),
+        None,
+    )
+    if selected is None and stop_orders:
+        selected = max(stop_orders, key=lambda order: str(order.get("enteredTime") or ""))
+
+    price = round(float(selected.get("stopPrice")), 3) if selected is not None else None
+    _ACTIVE_PROTECTIVE_STOP_CACHE.update({
+        "timestamp": now,
+        "symbol": symbol,
+        "preferred_order_id": preferred_id,
+        "price": price,
+    })
+    return price
+
+
 def _filled_price_from_order(order):
     total_qty = 0.0
     total_notional = 0.0
@@ -5825,18 +5897,6 @@ HTML_DASHBOARD = """
             background: #fbfcfe;
         }
 
-        .indicator-performance-header {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 6px;
-        }
-
-        .indicator-performance-meta {
-            color: #607083;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
         .indicator-performance-list {
             display: grid;
             gap: 0;
@@ -6862,9 +6922,6 @@ HTML_DASHBOARD = """
         </div>
 
         <section class="indicator-performance-wrap" aria-label="Indicator performance">
-            <div class="indicator-performance-header">
-                <span class="indicator-performance-meta" id="indicatorPerformanceMeta">Loading closed-trade history...</span>
-            </div>
             <div class="indicator-performance-list" id="indicatorPerformanceContainer">
                 <div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
@@ -7707,7 +7764,7 @@ HTML_DASHBOARD = """
                 const stopCategoryEl = document.getElementById('currentStopCategory');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
-                const activeStopCategory = String(status.active_stop_category || '').trim();
+                const activeStopPrice = Number(status.active_protective_stop_price);
                 if (status.has_open_position && tradePnlDollars !== null && tradePnlDollars !== undefined && tradePnlPct !== null && tradePnlPct !== undefined) {
                     const dollarsText = formatMoney(tradePnlDollars);
                     const pctText = `${tradePnlPct >= 0 ? '+' : ''}${formatNumber(Math.abs(tradePnlPct), 1)}%`;
@@ -7728,9 +7785,12 @@ HTML_DASHBOARD = """
                     if (posCardEl) posCardEl.classList.add('position-neutral');
                 }
 
-                if (status.has_open_position && activeStopCategory && stopCategoryEl) {
-                    stopCategoryEl.textContent = `Stop Category: ${activeStopCategory}`;
+                if (status.has_open_position && Number.isFinite(activeStopPrice) && activeStopPrice > 0 && stopCategoryEl) {
+                    stopCategoryEl.textContent = `Stop Loss: ${formatMoney(activeStopPrice)}`;
                     stopCategoryEl.className = 'position-summary-stop active';
+                } else if (status.has_open_position && stopCategoryEl) {
+                    stopCategoryEl.textContent = 'Stop Loss: unavailable';
+                    stopCategoryEl.className = 'position-summary-stop';
                 } else if (stopCategoryEl) {
                     stopCategoryEl.textContent = '';
                     stopCategoryEl.className = 'position-summary-stop';
@@ -7959,15 +8019,12 @@ HTML_DASHBOARD = """
                 const data = await response.json();
                 const rows = Array.isArray(data.indicators) ? data.indicators : [];
                 const container = document.getElementById('indicatorPerformanceContainer');
-                const meta = document.getElementById('indicatorPerformanceMeta');
                 const columns = `<div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>W / L (Win %)</span>
                     <span>Avg P&amp;L</span>
                     <span>Guidance</span>
                 </div>`;
-                const minimumSampleSize = Number(data.minimum_sample_size || 10);
-                const closedTrades = Number(data.closed_trades || 0);
                 const escapeText = (value) => String(value || '')
                     .replaceAll('&', '&amp;')
                     .replaceAll('<', '&lt;')
@@ -7984,7 +8041,6 @@ HTML_DASHBOARD = """
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                     .join(' ');
 
-                meta.textContent = `${closedTrades} closed trades | minimum ${minimumSampleSize} per indicator`;
                 if (!rows.length) {
                     container.innerHTML = `${columns}<div style="text-align: center; color: #999; padding: 12px;">No closed trades with recorded entry indicators yet.</div>`;
                     return;
@@ -8209,7 +8265,6 @@ HTML_DASHBOARD = """
             refreshStatus();
             refreshLogs();
             updateTodaysTrades();
-            updateDailyLearningInsights();
             updateIndicatorPerformance();
         });
 

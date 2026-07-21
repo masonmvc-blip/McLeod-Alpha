@@ -28,6 +28,36 @@ def _broker_trade(entry_order_id="entry-1", exit_order_id="exit-1"):
     }
 
 
+def test_active_broker_protective_stop_price_uses_live_stop_order(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [{
+                "orderId": "active-stop",
+                "status": "WORKING",
+                "orderType": "STOP_LIMIT",
+                "stopPrice": 5.42,
+                "enteredTime": "2026-07-20T10:00:00-04:00",
+                "orderLegCollection": [{
+                    "instruction": "SELL_TO_CLOSE",
+                    "instrument": {"assetType": "OPTION", "symbol": "SPY  260720C00600000"},
+                }],
+            }]
+
+    class Client:
+        def get_orders_for_account(self, account_hash):
+            assert account_hash == "test-account"
+            return Response()
+
+    monkeypatch.setenv("SCHWAB_ACCOUNT_HASH", "test-account")
+    monkeypatch.setattr(cockpit, "_get_broker_client", lambda: Client())
+    monkeypatch.setattr(cockpit, "_ACTIVE_PROTECTIVE_STOP_CACHE", {"timestamp": 0.0, "symbol": None, "preferred_order_id": None, "price": None})
+
+    assert cockpit._active_broker_protective_stop_price("SPY  260720C00600000", "active-stop") == 5.42
+
+
 def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_path):
     memory = Memory(db_path=tmp_path / "memory.sqlite")
     trade = _broker_trade()
