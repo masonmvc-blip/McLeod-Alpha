@@ -162,6 +162,31 @@ def _build_runtime_status():
             except Exception:
                 return "unknown"
 
+        def _local_completed_session_dates(start_date, end_date):
+            db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
+            if not db_path.exists():
+                return set()
+
+            try:
+                with sqlite3.connect(db_path) as con:
+                    rows = con.execute(
+                        """
+                        SELECT DISTINCT substr(exit_time, 1, 10)
+                        FROM trade_log
+                        WHERE exit_time IS NOT NULL
+                          AND substr(exit_time, 1, 10) >= ?
+                          AND substr(exit_time, 1, 10) <= ?
+                        """,
+                        (start_date, end_date),
+                    ).fetchall()
+                return {
+                    datetime.fromisoformat(str(row[0])).date()
+                    for row in rows
+                    if row and row[0]
+                }
+            except Exception:
+                return set()
+
         now_et = datetime.now(ZoneInfo("America/New_York"))
         today_date = now_et.date()
         today_key = today_date.isoformat()
@@ -210,6 +235,10 @@ def _build_runtime_status():
         )
         local_mtd = _realized_spy_option_pnl_for_period(month_start_dt.date().isoformat(), today_key)
         local_ytd = _realized_spy_option_pnl_for_period(year_start_dt.date().isoformat(), today_key)
+        local_wtd_session_dates = _local_completed_session_dates(
+            week_start_date.isoformat(),
+            today_key,
+        )
 
         today_total = _safe_amount(local_today, 0.0)
         wtd_total = _safe_amount(local_wtd, 0.0)
@@ -219,6 +248,14 @@ def _build_runtime_status():
         wtd_source = "trade_log_realized"
         mtd_source = "trade_log_realized"
         ytd_source = "trade_log_realized"
+
+        if _should_present_latest_session_as_today(
+            now_et,
+            today_date in local_wtd_session_dates,
+            local_wtd_session_dates,
+        ):
+            today_total = wtd_total
+            today_source = "trade_log_realized_preopen_latest_session"
 
         # Live Schwab transaction history is authoritative for all dashboard periods.
         # Local completed trades remain an outage fallback only.
