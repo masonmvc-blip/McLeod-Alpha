@@ -650,8 +650,10 @@ def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
     get_memory().write_report_text(out_html, _render_html(trade_date, summary, csv_rows), "daily_opportunity_review", source="daily_opportunity_review", correlation_id=f"daily-opportunity-review:{trade_date}")
     from reports.trend_quality_report import build_trend_quality_report
     from reports.research_validation import build_research_validation_reports
+    from reports.daily_research_advisory import build_daily_research_advisory
 
     build_trend_quality_report(REPORTS_DIR)
     build_research_validation_reports(REPORTS_DIR)
+    build_daily_research_advisory(trade_date, REPORTS_DIR)
 
     return ReviewPaths(html=out_html, csv=out_csv, json=out_json)
