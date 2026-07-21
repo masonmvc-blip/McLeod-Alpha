@@ -30,8 +30,7 @@ fi
 pkill -f "cockpit.py" || true
 pkill -f "phase3_monitor.py" || true
 
-# Start cockpit in canonical-friendly local mode.
-export MCLEOD_CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
+# Start Cockpit using the canonical public URL configuration.
 export ACCOUNT_MODE=live
 export SCHWAB_CALLBACK_URL="https://127.0.0.1"
 

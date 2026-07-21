@@ -8,7 +8,6 @@ CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 MANUAL_STOP_MARKER="$PROJECT_DIR/data/bot_manual_stop_marker.json"
 RUNTIME_EVENTS_FILE="$PROJECT_DIR/data/reports/runtime_events.jsonl"
 RUNTIME_ALERT_FLAG_FILE="$PROJECT_DIR/data/runtime_alert_flag.json"
-CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 
 if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
   PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
@@ -87,12 +86,6 @@ path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 PY
 }
 
-runtime_host_allows_bot_start() {
-  local current_host
-  current_host="$(hostname)"
-  [[ -z "$CANONICAL_RUNTIME_HOST" || "${current_host:l}" == "${CANONICAL_RUNTIME_HOST:l}" ]]
-}
-
 restart_cockpit_process() {
   nohup "$SCRIPT_DIR/run_cockpit_waitress.sh" >> "$PROJECT_DIR/logs/cockpit.log" 2>&1 < /dev/null &
   cc_pid=$!
@@ -153,11 +146,6 @@ restart_cockpit() {
 }
 
 maybe_restart_bot() {
-  if ! runtime_host_allows_bot_start; then
-    emit_event "watchdog_bot_start_blocked_host" "info" "Bot restart skipped on non-canonical host" "current_host=$(hostname) allowed_host=$CANONICAL_RUNTIME_HOST"
-    return 0
-  fi
-
   if [[ -f "$MANUAL_STOP_MARKER" ]]; then
     return 0
   fi

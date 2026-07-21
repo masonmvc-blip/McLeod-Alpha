@@ -7,15 +7,9 @@ source "$ROOT/config/cockpit.env"
 REMOTE="${MCLEOD_GIT_REMOTE:-origin}"
 BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
-CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 
 cd "$ROOT"
 "$ROOT/scripts/maintenance/assert_canonical_repo.sh" "$ROOT"
-
-if [[ "$(hostname | tr '[:upper:]' '[:lower:]')" != "$(echo "$CANONICAL_HOST" | tr '[:upper:]' '[:lower:]')" ]]; then
-  echo "ERROR: sync and restart must run on $CANONICAL_HOST; current host is $(hostname)"
-  exit 1
-fi
 
 echo "start_button_sync=starting at $(date '+%Y-%m-%d %H:%M:%S %Z')"
 git fetch "$REMOTE" "$BRANCH"

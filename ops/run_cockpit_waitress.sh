@@ -12,6 +12,7 @@ python_has_waitress() {
 
 for candidate in \
 	"/opt/homebrew/opt/python@3.11/bin/python3.11" \
+	"$PROJECT_DIR/.venv-1/bin/python3" \
 	"$PROJECT_DIR/.venv/bin/python3" \
 	"$PROJECT_DIR/venv/bin/python3" \
 	"/opt/homebrew/bin/python3" \

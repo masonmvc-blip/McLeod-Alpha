@@ -133,7 +133,6 @@ INTERNET_TREND_BAR_POINTS = max(10, int(os.getenv("INTERNET_TREND_BAR_POINTS", "
 STATUS_SNAPSHOT_CACHE_SECONDS = float(os.getenv("STATUS_SNAPSHOT_CACHE_SECONDS", "1.5"))
 BROKER_PNL_REFRESH_SECONDS = float(os.getenv("BROKER_PNL_REFRESH_SECONDS", "15"))
 DAILY_LEARNING_CACHE_SECONDS = float(os.getenv("DAILY_LEARNING_CACHE_SECONDS", "30"))
-CANONICAL_RUNTIME_HOST = os.getenv("MCLEOD_CANONICAL_RUNTIME_HOST", "Desktop").strip()
 COCKPIT_PUBLIC_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/")
 CANONICAL_REPO_BASENAME = os.getenv("MCLEOD_CANONICAL_REPO_BASENAME", "McLeod-Alpha-New").strip()
 CANONICAL_REPO_PATH = Path(
@@ -2474,13 +2473,6 @@ def get_bot_pid():
     return _find_running_bot_pid()
 
 
-def _runtime_host_allows_bot_start() -> tuple[bool, str, str]:
-    current_host = socket.gethostname().strip()
-    allowed_host = CANONICAL_RUNTIME_HOST
-    allowed = not allowed_host or current_host.lower() == allowed_host.lower()
-    return allowed, current_host, allowed_host
-
-
 def _runtime_repo_path_allows_start() -> tuple[bool, str, str]:
     current_repo = str(PROJECT_ROOT.resolve())
     expected_repo = str(CANONICAL_REPO_PATH)
@@ -2510,10 +2502,6 @@ def start_canonical_sync_and_restart():
     repo_allowed, current_repo, expected_repo = _runtime_repo_path_allows_start()
     if not repo_allowed:
         return {"status": "error", "message": f"Start blocked in repo {current_repo}; canonical repo is {expected_repo}"}
-
-    host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
-    if not host_allowed:
-        return {"status": "error", "message": f"Start blocked on host {current_host}; canonical runtime host is {allowed_host}"}
 
     if not CANONICAL_DEPLOY_SCRIPT.is_file() or not os.access(CANONICAL_DEPLOY_SCRIPT, os.X_OK):
         return {"status": "error", "message": f"Canonical deploy script is unavailable: {CANONICAL_DEPLOY_SCRIPT}"}
@@ -2548,7 +2536,6 @@ def start_canonical_sync_and_restart():
 
     try:
         env = os.environ.copy()
-        env["MCLEOD_CANONICAL_RUNTIME_HOST"] = CANONICAL_RUNTIME_HOST
         env["COCKPIT_PUBLIC_URL"] = COCKPIT_PUBLIC_URL
         env["PYTHONUNBUFFERED"] = "1"
         with get_memory().open_runtime_log(CANONICAL_DEPLOY_LOG_FILE, mode="a") as log_fp:
@@ -2573,13 +2560,6 @@ def start_bot():
         return {
             "status": "error",
             "message": f"Bot start blocked in repo {current_repo}; canonical repo is {expected_repo}",
-        }
-
-    host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
-    if not host_allowed:
-        return {
-            "status": "error",
-            "message": f"Bot start blocked on host {current_host}; canonical runtime host is {allowed_host}",
         }
 
     if BOT_SCRIPT.name != EXPECTED_BOT_SCRIPT_NAME:
@@ -2750,13 +2730,6 @@ def trigger_go_live() -> dict:
         return {
             "status": "error",
             "message": f"Go-live blocked in repo {current_repo}; canonical repo is {expected_repo}",
-        }
-
-    host_allowed, current_host, allowed_host = _runtime_host_allows_bot_start()
-    if not host_allowed:
-        return {
-            "status": "error",
-            "message": f"Go-live blocked on host {current_host}; canonical runtime host is {allowed_host}",
         }
 
     if not GO_LIVE_SCRIPT.exists():

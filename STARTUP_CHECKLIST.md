@@ -6,7 +6,7 @@
 - Stop stack: `ops/stack_stop.sh`
 - Cockpit direct launch: `ops/run_cockpit_waitress.sh`
 
-### Standard Go-Live Command (Desktop)
+### Standard Go-Live Command
 
 Use this single command before/after edits to deploy and verify live runtime:
 
@@ -16,15 +16,12 @@ cd ~/Documents/GitHub/McLeod-Alpha-New
 ```
 
 This command enforces:
-- Desktop-only live runtime execution.
 - Parity state `MATCH` and `parity_block_start=False`.
 - Bot effective running state after restart/start.
 
 Do not use direct `python3 cockpit.py` for live operations.
 
-Desktop-only runtime rule:
-- Canonical bot host is `Masons-iMac.local` unless `MCLEOD_CANONICAL_RUNTIME_HOST` is explicitly changed.
-- Do not run the trading bot from the laptop; non-canonical hosts should be treated as read-only dashboards.
+Cockpit access rule:
 - Canonical Cockpit URL: `https://cockpit.mcleodalpha.com`
 - The Cloudflare-protected Cockpit is the only supported management interface.
 

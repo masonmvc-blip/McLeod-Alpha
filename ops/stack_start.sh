@@ -7,7 +7,6 @@ CC_LOG="$PROJECT_DIR/logs/cockpit.log"
 WATCHDOG_LOG="$PROJECT_DIR/logs/runtime_watchdog.log"
 CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
-CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Masons-iMac.local}"
 
 if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
   PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
@@ -24,12 +23,6 @@ mkdir -p logs
 
 is_port_open() {
   lsof -nP -iTCP:5001 -sTCP:LISTEN >/dev/null 2>&1
-}
-
-runtime_host_allows_bot_start() {
-  local current_host
-  current_host="$(hostname)"
-  [[ -z "$CANONICAL_RUNTIME_HOST" || "${current_host:l}" == "${CANONICAL_RUNTIME_HOST:l}" ]]
 }
 
 start_cockpit_waitress() {
@@ -60,11 +53,6 @@ start_cockpit() {
 }
 
 start_bot_via_api() {
-  if ! runtime_host_allows_bot_start; then
-    echo "Skipping bot start on $(hostname); canonical runtime host is $CANONICAL_RUNTIME_HOST"
-    return 0
-  fi
-
   bot_pid=""
   if [[ -f .bot_pid ]]; then
     bot_pid="$(cat .bot_pid 2>/dev/null || true)"

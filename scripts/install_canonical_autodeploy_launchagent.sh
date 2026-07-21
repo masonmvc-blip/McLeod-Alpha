@@ -69,8 +69,6 @@ cat > "$PLIST_PATH" <<PLIST
 
     <key>EnvironmentVariables</key>
     <dict>
-      <key>MCLEOD_CANONICAL_RUNTIME_HOST</key>
-      <string>${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}</string>
       <key>MCLEOD_AUTODEPLOY_POLL_SECONDS</key>
       <string>$POLL_SECONDS</string>
       <key>PYTHONUNBUFFERED</key>

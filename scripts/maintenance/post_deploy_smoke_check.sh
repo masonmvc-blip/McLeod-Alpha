@@ -5,11 +5,10 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 source "$ROOT_DIR/config/cockpit.env"
 BASE_URL="${1:-http://127.0.0.1:5001}"
 CANONICAL_URL="${2:-$COCKPIT_PUBLIC_URL}"
-EXPECTED_CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 EXPECTED_REPO_BASENAME="${MCLEOD_CANONICAL_REPO_BASENAME:-McLeod-Alpha-New}"
 REQUIRE_BOT_RUNNING="${MCLEOD_SMOKE_REQUIRE_BOT_RUNNING:-0}"
 
-python3 - <<'PY' "$BASE_URL" "$CANONICAL_URL" "$EXPECTED_CANONICAL_HOST" "$EXPECTED_REPO_BASENAME" "$REQUIRE_BOT_RUNNING"
+python3 - <<'PY' "$BASE_URL" "$CANONICAL_URL" "$EXPECTED_REPO_BASENAME" "$REQUIRE_BOT_RUNNING"
 import json
 import ssl
 import sys
@@ -17,9 +16,8 @@ import urllib.request
 
 base_url = sys.argv[1].rstrip('/')
 canonical_url = sys.argv[2].rstrip('/')
-expected_host = sys.argv[3]
-expected_repo = sys.argv[4]
-require_bot = sys.argv[5] in {'1', 'true', 'yes', 'on'}
+expected_repo = sys.argv[3]
+require_bot = sys.argv[4] in {'1', 'true', 'yes', 'on'}
 
 def fetch_json(url: str) -> dict:
     secure = url.startswith('https://')
@@ -35,14 +33,8 @@ def check_status(name: str, status: dict, failures: list[str]) -> None:
         failures.append(f"{name}: parity_state is {status.get('parity_state')}, expected MATCH")
     if bool(status.get('parity_block_start')):
         failures.append(f"{name}: parity_block_start is true")
-    if status.get('runtime_host_is_canonical') is not True:
-        failures.append(f"{name}: runtime_host_is_canonical is not true")
     if status.get('runtime_repo_path_ok') is not True:
         failures.append(f"{name}: runtime_repo_path_ok is not true")
-
-    runtime_host = str((status.get('runtime_fingerprint') or {}).get('hostname') or '')
-    if expected_host and runtime_host and runtime_host.lower() != expected_host.lower():
-        failures.append(f"{name}: runtime host {runtime_host} != expected {expected_host}")
 
     runtime_repo = str(status.get('runtime_repo_basename') or '')
     if expected_repo and runtime_repo and runtime_repo.lower() != expected_repo.lower():

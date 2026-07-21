@@ -412,9 +412,7 @@ def _build_runtime_status():
         "parity_enforce_on_start": _env_flag("PARITY_ENFORCE_ON_START", default=True),
         "parity_block_start": False,
         "runtime_fingerprint": {},
-        "canonical_runtime_host": CANONICAL_RUNTIME_HOST,
         "cockpit_public_url": COCKPIT_PUBLIC_URL,
-        "runtime_host_is_canonical": False,
         "runtime_repo_basename": current_repo,
         "canonical_repo_basename": expected_repo,
         "runtime_repo_path_ok": bool(repo_path_ok),
@@ -441,11 +439,6 @@ def _build_runtime_status():
         status["parity_block_start"] = bool(
             status.get("parity_enforce_on_start")
             and str(status.get("parity_state") or "UNKNOWN").upper() != "MATCH"
-        )
-        current_host = str((status.get("runtime_fingerprint") or {}).get("hostname") or "").strip()
-        allowed_host = str(status.get("canonical_runtime_host") or "").strip()
-        status["runtime_host_is_canonical"] = bool(
-            current_host and allowed_host and current_host.lower() == allowed_host.lower()
         )
     except Exception:
         pass

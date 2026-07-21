@@ -38,8 +38,6 @@ cat > "$PLIST_PATH" <<PLIST
 
     <key>EnvironmentVariables</key>
     <dict>
-      <key>MCLEOD_CANONICAL_RUNTIME_HOST</key>
-      <string>${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}</string>
       <key>COCKPIT_PUBLIC_URL</key>
       <string>$COCKPIT_PUBLIC_URL</string>
       <key>PYTHONUNBUFFERED</key>

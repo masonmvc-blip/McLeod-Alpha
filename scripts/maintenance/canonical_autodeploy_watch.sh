@@ -8,7 +8,6 @@ BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 INTERVAL_SECONDS="${MCLEOD_AUTODEPLOY_POLL_SECONDS:-15}"
 STATE_FILE="${MCLEOD_AUTODEPLOY_STATE_FILE:-$ROOT/data/autodeploy_last_sha.txt}"
 LOCK_SCRIPT="$ROOT/scripts/maintenance/lock_canonical_runtime.sh"
-CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 LOCK_RETRY_ATTEMPTS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_ATTEMPTS:-3}"
 LOCK_RETRY_SLEEP_SECONDS="${MCLEOD_AUTODEPLOY_LOCK_RETRY_SLEEP_SECONDS:-8}"
 SESSION_GUARD="$ROOT/scripts/maintenance/market_session_guard.sh"
@@ -19,12 +18,6 @@ cd "$ROOT"
 
 if [[ ! -x "$LOCK_SCRIPT" ]]; then
   echo "ERROR: lock script not executable: $LOCK_SCRIPT"
-  exit 1
-fi
-
-if [[ "$(hostname | tr '[:upper:]' '[:lower:]')" != "$(echo "$CANONICAL_HOST" | tr '[:upper:]' '[:lower:]')" ]]; then
-  echo "ERROR: this watcher must run on canonical host"
-  echo "current_host=$(hostname) expected_host=$CANONICAL_HOST"
   exit 1
 fi
 

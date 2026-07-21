@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DEFAULT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT="${MCLEOD_ROOT:-$ROOT_DEFAULT}"
-CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
 PYTHON_BIN="${PYTHON_BIN:-}"
 RUN_BACKGROUND="${RUN_BACKGROUND:-0}"
 REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}"
@@ -150,7 +149,6 @@ cd "$ROOT"
 
 echo "root=$ROOT"
 echo "hostname=$(hostname)"
-echo "canonical_host=$CANONICAL_HOST"
 echo "python=$PYTHON_BIN"
 
 if [[ ! -f "$ROOT/cockpit.py" ]]; then
@@ -165,11 +163,6 @@ fi
 
 if [[ ! -f "$ROOT/token.json" ]]; then
   echo "ERROR: token.json missing in $ROOT"
-  exit 1
-fi
-
-if [[ "$(hostname)" != "$CANONICAL_HOST" ]]; then
-  echo "ERROR: host mismatch (current=$(hostname), expected=$CANONICAL_HOST)"
   exit 1
 fi
 
@@ -199,7 +192,6 @@ pkill -f "phase3_monitor.py" || true
 
 if [[ "$RUN_BACKGROUND" == "1" ]]; then
   AUTO_REEXEC_ON_COCKPIT_CHANGE=0 \
-  MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \
   ENFORCE_RUNTIME_CONFIG_ON_START=1 \
   ENFORCE_CLEAN_GIT_ON_START="${ENFORCE_CLEAN_GIT_ON_START:-1}" \
   ACCOUNT_MODE="$REQUIRED_ACCOUNT_MODE" \
@@ -210,7 +202,6 @@ if [[ "$RUN_BACKGROUND" == "1" ]]; then
   echo "cockpit started in background pid=$cockpit_pid"
 else
   AUTO_REEXEC_ON_COCKPIT_CHANGE=0 \
-  MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \
   ENFORCE_RUNTIME_CONFIG_ON_START=1 \
   ENFORCE_CLEAN_GIT_ON_START="${ENFORCE_CLEAN_GIT_ON_START:-1}" \
   ACCOUNT_MODE="$REQUIRED_ACCOUNT_MODE" \
