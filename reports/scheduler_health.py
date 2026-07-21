@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, time as dt_time
+from datetime import datetime, time as dt_time, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 CENTRAL_TZ = ZoneInfo("America/Chicago")
 REPORTS_DIR = Path("reports")
 EMAIL_STATE_PATH = Path("data/daily_trade_log_email_state.json")
+WATCHDOG_STATE_PATH = Path("data/scheduler_health_watchdog_state.json")
+MISSED_EMAIL_ALERT_DELAY_MINUTES = 15
 _LAST_REFRESH_MINUTE: str | None = None
 
 
@@ -21,6 +23,11 @@ def _load_json(path: Path) -> dict[str, Any]:
         return payload if isinstance(payload, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def _save_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 def _email_target_time() -> dt_time:
@@ -36,12 +43,49 @@ def _artifact_status(path: Path, trade_date: str) -> dict[str, Any]:
     return {"status": "artifact_present", "last_result": f"generated for {trade_date}", "last_run": modified}
 
 
+def _missed_email_alert_is_due(now_ct: datetime, target: dt_time, email_status: str) -> bool:
+    if email_status != "missed" or now_ct.weekday() >= 5:
+        return False
+    target_at = now_ct.replace(hour=target.hour, minute=target.minute, second=0, microsecond=0)
+    return now_ct >= target_at + timedelta(minutes=MISSED_EMAIL_ALERT_DELAY_MINUTES)
+
+
+def _maybe_alert_missed_daily_email(now_ct: datetime, target: dt_time, email_status: str) -> None:
+    if not _missed_email_alert_is_due(now_ct, target, email_status):
+        return
+
+    trade_date = now_ct.date().isoformat()
+    state = _load_json(WATCHDOG_STATE_PATH)
+    if state.get("alert_date") == trade_date:
+        return
+
+    from execution.sms_alerts import send_emergency_alert
+
+    delivered = send_emergency_alert(
+        "DAILY TRADE EMAIL MISSED",
+        (
+            f"The {target.strftime('%H:%M')} CT daily trade email remains unsent after "
+            f"{MISSED_EMAIL_ALERT_DELAY_MINUTES} minutes. Check Scheduler Health and SMTP delivery."
+        ),
+    )
+    _save_json(
+        WATCHDOG_STATE_PATH,
+        {
+            "alert_date": trade_date,
+            "alert_at": now_ct.isoformat(),
+            "alert_delivered": delivered,
+            "reason": "daily_trade_email_missed",
+        },
+    )
+
+
 def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir: Path = REPORTS_DIR) -> tuple[Path, Path]:
     now = now_ct or datetime.now(CENTRAL_TZ)
     now = now.replace(tzinfo=CENTRAL_TZ) if now.tzinfo is None else now.astimezone(CENTRAL_TZ)
     trade_date = now.date().isoformat()
     target = _email_target_time()
     state = _load_json(EMAIL_STATE_PATH)
+    watchdog_state = _load_json(WATCHDOG_STATE_PATH)
     if state.get("last_sent_date") == trade_date:
         email_status = "healthy"
         email_result = "sent"
@@ -76,6 +120,13 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
         "trade_date": trade_date,
         "tasks": tasks,
         "health_summary": "attention_required" if any(task["status"] in {"missed", "not_run"} for task in tasks) else "healthy",
+        "missed_email_watchdog": {
+            "delay_minutes": MISSED_EMAIL_ALERT_DELAY_MINUTES,
+            "alert_due": _missed_email_alert_is_due(now, target, email_status),
+            "alert_date": watchdog_state.get("alert_date"),
+            "alert_at": watchdog_state.get("alert_at"),
+            "alert_delivered": watchdog_state.get("alert_delivered"),
+        },
         "note": "Artifact presence confirms generation only; email delivery is confirmed only by a recorded send state.",
     }
     json_path = reports_dir / "scheduler_health.json"
@@ -94,10 +145,16 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
     return json_path, html_path
 
 
-def maybe_generate_scheduler_health_dashboard() -> None:
+def maybe_generate_scheduler_health_dashboard(now_ct: datetime | None = None) -> None:
     global _LAST_REFRESH_MINUTE
-    minute = datetime.now(CENTRAL_TZ).strftime("%Y-%m-%dT%H:%M")
+    now = now_ct or datetime.now(CENTRAL_TZ)
+    now = now.replace(tzinfo=CENTRAL_TZ) if now.tzinfo is None else now.astimezone(CENTRAL_TZ)
+    minute = now.strftime("%Y-%m-%dT%H:%M")
     if minute == _LAST_REFRESH_MINUTE:
         return
     _LAST_REFRESH_MINUTE = minute
-    build_scheduler_health_dashboard()
+    target = _email_target_time()
+    state = _load_json(EMAIL_STATE_PATH)
+    email_status = "healthy" if state.get("last_sent_date") == now.date().isoformat() else "missed"
+    _maybe_alert_missed_daily_email(now, target, email_status)
+    build_scheduler_health_dashboard(now)
