@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ast
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import sqlite3
 from pathlib import Path
@@ -252,6 +252,44 @@ def test_today_trades_uses_broker_net_status_total_including_commissions(monkeyp
 
     assert response.status_code == 200
     assert response.get_json()["summary"]["total_pnl"] == -644.62
+
+
+def test_today_trades_never_falls_back_to_a_previous_calendar_day(monkeypatch, tmp_path):
+    database_path = tmp_path / "data" / "mcleod_alpha.db"
+    memory = Memory(db_path=database_path)
+    today = datetime.now(cockpit.EASTERN_TZ).date()
+    previous_day = (today - timedelta(days=1)).isoformat()
+    memory.record_trade(
+        entry_time=f"{previous_day}T09:30:00-04:00",
+        exit_time=f"{previous_day}T09:35:00-04:00",
+        direction="CALL",
+        entry_price=1.0,
+        exit_price=1.5,
+        pnl=50.0,
+        exit_reason="TARGET",
+        option_symbol="SPY  260720C00600000",
+        option_entry=1.0,
+        option_exit=1.5,
+        option_quantity=1,
+        broker_entry_order_id="previous-entry",
+        broker_exit_order_id="previous-exit",
+    )
+
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [])
+    monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
+    monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
+    monkeypatch.setattr(cockpit, "_log_daily_trades_chart_snapshot", lambda *args: None)
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"todays_pnl": 0.0})
+
+    response = cockpit.app.test_client().get("/api/today-trades")
+    payload = response.get_json()
+
+    assert response.status_code == 200
+    assert payload["trading_date"] == today.isoformat()
+    assert payload["is_fallback_day"] is False
+    assert payload["trades"] == []
+    assert payload["summary"]["total_pnl"] == 0.0
 
 
 def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monkeypatch, tmp_path):

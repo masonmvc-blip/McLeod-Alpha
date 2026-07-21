@@ -5116,7 +5116,7 @@ def api_logs():
 
 @app.route('/api/today-trades', methods=['GET'])
 def api_today_trades():
-    """Get all trades from the most recent trading day (defaults to today, falls back to previous day if no trades)"""
+    """Get all trades and broker net P&L for the current Eastern calendar day."""
     try:
         import sqlite3
         from datetime import date
@@ -5161,93 +5161,10 @@ def api_today_trades():
         trades = [dict(row) for row in cur.fetchall()]
         trades = _filter_synthetic_test_trade_rows(trades)
         trading_date = today
-        
-        # If no trades today, get the most recent trading day
-        if not trades:
-            is_fallback_day = True
-            cur.execute("""
-                SELECT
-                    id,
-                    entry_time,
-                    exit_time,
-                    direction,
-                    option_symbol,
-                    CASE WHEN option_entry IS NOT NULL THEN option_entry ELSE entry_price END AS entry_price,
-                    CASE WHEN option_exit IS NOT NULL THEN option_exit ELSE exit_price END AS exit_price,
-                    CASE WHEN option_pnl_dollars IS NOT NULL THEN option_pnl_dollars ELSE pnl END AS pnl,
-                    exit_reason,
-                    option_entry,
-                    option_exit,
-                    option_quantity,
-                    broker_entry_order_id,
-                    broker_exit_order_id,
-                    feature_payload,
-                    entry_diagnostic_snapshot,
-                    exit_diagnostic_snapshot,
-                    {absorption_select}
-                FROM trade_log
-                WHERE substr(entry_time, 1, 10) = (SELECT MAX(substr(entry_time, 1, 10)) FROM trade_log)
-                ORDER BY entry_time DESC
-            """.format(absorption_select=absorption_select))
-            trades = [dict(row) for row in cur.fetchall()]
-            trades = _filter_synthetic_test_trade_rows(trades)
-            if not trades:
-                cur.execute(
-                    """
-                    SELECT
-                        id,
-                        entry_time,
-                        exit_time,
-                        direction,
-                        option_symbol,
-                        CASE WHEN option_entry IS NOT NULL THEN option_entry ELSE entry_price END AS entry_price,
-                        CASE WHEN option_exit IS NOT NULL THEN option_exit ELSE exit_price END AS exit_price,
-                        CASE WHEN option_pnl_dollars IS NOT NULL THEN option_pnl_dollars ELSE pnl END AS pnl,
-                        exit_reason,
-                        option_entry,
-                        option_exit,
-                        option_quantity,
-                        broker_entry_order_id,
-                        broker_exit_order_id,
-                        feature_payload,
-                        entry_diagnostic_snapshot,
-                        exit_diagnostic_snapshot,
-                        {absorption_select}
-                    FROM trade_log
-                    ORDER BY entry_time DESC
-                    """.format(absorption_select=absorption_select)
-                )
-                candidate_rows = _filter_synthetic_test_trade_rows([dict(row) for row in cur.fetchall()])
-                candidate_by_day = {}
-                for row in candidate_rows:
-                    dt = _parse_iso_datetime(row.get("entry_time"))
-                    if dt is None:
-                        continue
-                    day_key = dt.astimezone(EASTERN_TZ).date().isoformat()
-                    candidate_by_day.setdefault(day_key, []).append(row)
 
-                if candidate_by_day:
-                    trading_date = max(candidate_by_day.keys())
-                    trades = candidate_by_day.get(trading_date) or []
-            
-            # Get the actual trading date
-            if trades:
-                try:
-                    parsed_dates = []
-                    for trade in trades:
-                        dt = _parse_iso_datetime(trade.get("entry_time"))
-                        if dt is None:
-                            continue
-                        parsed_dates.append(dt.astimezone(EASTERN_TZ).date().isoformat())
-                    trading_date = max(parsed_dates) if parsed_dates else None
-                except Exception:
-                    cur.execute("SELECT MAX(substr(entry_time, 1, 10)) as max_date FROM trade_log")
-                    result = cur.fetchone()
-                    trading_date = result['max_date'] if result else None
-
-        # Canonical source for same-day rows: broker-filled pairings for today.
-        # For fallback days, keep DB rows and canonicalize through export verification below.
-        broker_trades = _broker_transaction_trades_for_date(trading_date) if trading_date else []
+        # The dashboard's Today card is never allowed to roll back to a prior
+        # trading day. An empty calendar day must remain an empty, zero-P&L day.
+        broker_trades = _broker_transaction_trades_for_date(today)
         using_broker_trades = bool(broker_trades)
         if using_broker_trades:
             trades = broker_trades
