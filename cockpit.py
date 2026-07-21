@@ -6251,15 +6251,18 @@ HTML_DASHBOARD = """
             font-weight: 900;
         }
 
-        .trade-entry-banner .trend-tone-neutral {
+        .trade-entry-banner .trend-tone-neutral,
+        #trendStatus .trend-tone-neutral {
             color: #1565c0;
         }
 
-        .trade-entry-banner .trend-tone-bearish {
+        .trade-entry-banner .trend-tone-bearish,
+        #trendStatus .trend-tone-bearish {
             color: #c62828;
         }
 
-        .trade-entry-banner .trend-tone-bullish {
+        .trade-entry-banner .trend-tone-bullish,
+        #trendStatus .trend-tone-bullish {
             color: #1f8f3a;
         }
 
@@ -7648,7 +7651,7 @@ HTML_DASHBOARD = """
                     'BEAR_TREND': 'BEAR_TREND',
                     'NEUTRAL': 'NEUTRAL',
                 };
-                const trend = trendMap[trendRaw] || 'UNKNOWN';
+                const trend = trendMap[trendRaw] || 'NEUTRAL';
                 let trendText = trend.replaceAll('_', ' ');
                 let trendToneClass = 'trend-tone-neutral';
                 if (trend === 'BEAR_TREND') {
@@ -7899,7 +7902,14 @@ HTML_DASHBOARD = """
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
                     || /startup guard/i.test(tradeEntryReason);
                 const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();
-                const candleTrendLabel = indicatorRegime.replaceAll('_', ' ');
+                const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';
+                const candleTrendLabel = candleTrend.replaceAll('_', ' ');
+                let candleTrendToneClass = 'trend-tone-neutral';
+                if (candleTrend === 'BEAR_TREND') {
+                    candleTrendToneClass = 'trend-tone-bearish';
+                } else if (candleTrend === 'BULL_TREND') {
+                    candleTrendToneClass = 'trend-tone-bullish';
+                }
 
                 function escapeHtml(value) {
                     return String(value || '')
@@ -7912,7 +7922,7 @@ HTML_DASHBOARD = """
 
                 const trendStatusEl = document.getElementById('trendStatus');
                 if (trendStatusEl) {
-                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span style="font-size:11px;font-weight:500;opacity:0.85;">Candle: ${escapeHtml(candleTrendLabel)}</span>`;
+                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span class="${candleTrendToneClass}" style="font-size:11px;font-weight:500;opacity:0.85;">Candle: ${escapeHtml(candleTrendLabel)}</span>`;
                 }
 
                 function renderIndicatorText(passed, side) {
