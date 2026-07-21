@@ -122,6 +122,41 @@ def test_candles_between_minute_fetches_use_closed_cache_without_quote_requests(
     assert module.LAST_CANDLE_SOURCE == "closed_candle_cache"
 
 
+def test_history_fetch_requests_extended_hours_candles(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "candles": [
+                    {"datetime": 1784581200000, "open": 100, "high": 101, "low": 99, "close": 100, "volume": 1_000},
+                ],
+            }
+
+    class Client:
+        def get_price_history_every_minute(self, symbol, **kwargs):
+            calls.append((symbol, kwargs))
+            return Response()
+
+    monkeypatch.setattr(module, "client", Client())
+    monkeypatch.setattr(module, "_history_fetch_due", lambda _: True)
+    monkeypatch.setattr(module, "_load_cached_candles", lambda: pd.DataFrame())
+    monkeypatch.setattr(module, "_persist_cached_candles", lambda _: None)
+    monkeypatch.setattr(module, "_is_regular_market_hours_now", lambda: False)
+    monkeypatch.setattr(module, "LAST_NONEMPTY_CANDLES", None)
+
+    result = module.get_candles()
+
+    assert not result.empty
+    assert calls[0][0] == module.SYMBOL
+    assert calls[0][1]["need_extended_hours_data"] is True
+    assert calls[0][1]["need_previous_close"] is True
+
+
 def test_shared_closed_candle_score_does_not_emit_volume_log(capsys) -> None:
     module = importlib.import_module("phase3_monitor")
     timestamps = pd.date_range("2026-07-20 13:30:00", periods=6, freq="min", tz="UTC")

@@ -469,11 +469,11 @@ def get_candles():
         LAST_CANDLE_SOURCE = "waiting_for_closed_candle_fetch"
         return pd.DataFrame()
 
-    # Pull the complete regular session so indicator calculations use official
-    # Schwab OHLCV bars. This is the only candle request for the current minute.
+    # Pull official Schwab OHLCV bars, including extended-hours candles for
+    # continuous overnight diagnostics and the next regular-session context.
     primary_start = _regular_session_start(end) if _is_regular_market_hours_now() else end - timedelta(days=5)
     _LAST_HISTORY_FETCH_MINUTE = end.replace(second=0, microsecond=0)
-    df = _fetch_window(primary_start, end)
+    df = _fetch_window(primary_start, end, include_previous_close=True)
     if not df.empty:
         df = _merge_candle_history(cached_history, df)
         LAST_CANDLE_SOURCE = "live_window"
