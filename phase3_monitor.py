@@ -705,12 +705,46 @@ def score_closed_candle_frame(candles):
     last = indicators.iloc[-1]
     prev = indicators.iloc[-2]
     decision = LIVE_BRAIN.evaluate_entry(last, prev, indicators)
+    from backtesting.signal_replay import (
+        confidence_score_engine,
+        continuation_quality_score,
+        momentum_acceleration_score,
+        momentum_expansion_score_engine,
+        trend_efficiency_score,
+        trend_lifecycle_engine,
+        trend_stage_engine,
+    )
+
+    def momentum_snapshot(direction):
+        lifecycle = trend_lifecycle_engine(indicators, direction=direction)
+        stage = trend_stage_engine(lifecycle)
+        continuation = continuation_quality_score(indicators, direction=direction)
+        acceleration = momentum_acceleration_score(indicators, direction=direction)
+        efficiency = trend_efficiency_score(indicators, direction=direction)
+        expansion = momentum_expansion_score_engine(indicators, direction=direction)
+        score = decision["call_score"] if direction == "CALL" else decision["put_score"]
+        aligned = (direction == "CALL" and decision["regime"] == "BULL_TREND") or (
+            direction == "PUT" and decision["regime"] == "BEAR_TREND"
+        )
+        strength = confidence_score_engine(
+            score, aligned, continuation, acceleration, efficiency, expansion, lifecycle, stage
+        )
+        return {
+            "strength": strength.get("score"),
+            "stage": stage.get("label"),
+            "stage_number": stage.get("stage"),
+            "trend_age_minutes": lifecycle.get("trend_age_minutes"),
+            "continuation_legs": lifecycle.get("continuation_legs"),
+            "acceleration": acceleration.get("score"),
+        }
 
     return {
         "call_score": decision["call_score"],
         "put_score": decision["put_score"],
         "regime": decision["regime"],
         "timestamp": indicators.index[-1],
+        "call_momentum": momentum_snapshot("CALL"),
+        "put_momentum": momentum_snapshot("PUT"),
     }
 
 
@@ -832,10 +866,28 @@ def _refresh_option_chain_cache(*, force=False):
 STARTUP_GUARD_BLOCKED_ATTEMPTS = 1
 startup_entry_attempts = 0
 
+
+def _entries_are_paused():
+    try:
+        pause_file = Path("data") / "entry_pause.json"
+        return bool((get_memory().load_setting(pause_file, {}) or {}).get("paused"))
+    except Exception:
+        return False
+
 def open_trade(*args, **kwargs):
     global startup_entry_attempts, LAST_ENTRY_EXECUTION_METRICS
 
     start_ms = _perf_ms_now()
+
+    if _entries_are_paused():
+        print("ENTRY PAUSED: Cockpit is monitoring but new trade entries are disabled")
+        LAST_ENTRY_EXECUTION_METRICS = {
+            "attempted": True,
+            "opened": False,
+            "open_trade_ms": _elapsed_ms(start_ms),
+            "block_reason": "entry_paused",
+        }
+        return False
 
     startup_admission = LIVE_BRAIN.evaluate_startup_entry_admission(
         attempted_entries=startup_entry_attempts,

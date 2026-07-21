@@ -71,6 +71,7 @@ BOT_STOP_ALERT_STATE_FILE = PROJECT_ROOT / "data" / "bot_stop_alert_state.json"
 CONTINUATION_STATUS_FILE = PROJECT_ROOT / "data" / "continuation_last_test.json"
 CONTINUATION_CALIBRATION_FILE = PROJECT_ROOT / "data" / "reports" / "continuation_calibration.jsonl"
 CONTROL_COMMAND_FILE = PROJECT_ROOT / "data" / "control_command.json"
+ENTRY_PAUSE_FILE = PROJECT_ROOT / "data" / "entry_pause.json"
 BOT_MANUAL_STOP_MARKER_FILE = PROJECT_ROOT / "data" / "bot_manual_stop_marker.json"
 LATEST_REJECTION_FILE = PROJECT_ROOT / "output" / "latest_rejection_reason.json"
 RUNTIME_ALERT_FLAG_FILE = PROJECT_ROOT / "data" / "runtime_alert_flag.json"
@@ -2811,6 +2812,19 @@ def queue_exit_trade_command():
     return command
 
 
+def toggle_entry_pause_command():
+    """Toggle entry admission while the monitor continues processing candles."""
+    current = get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}
+    paused = not bool(current.get("paused"))
+    payload = {
+        "paused": paused,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "source": "COCKPIT",
+    }
+    get_memory().save_setting("entry_pause", payload, ENTRY_PAUSE_FILE)
+    return payload
+
+
 # ============================================================================
 # Status Monitoring
 # ============================================================================
@@ -2844,6 +2858,8 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
         "total": 5,
         "timestamp": latest_ts,
         "regime": score["regime"],
+        "call_momentum": score.get("call_momentum") or {},
+        "put_momentum": score.get("put_momentum") or {},
     }
 
 
@@ -5001,7 +5017,7 @@ def api_stop():
 
 @app.route('/api/exit-trade', methods=['POST'])
 def api_exit_trade():
-    """Queue a manual EXIT TRADE request for the running monitor."""
+    """Exit an open trade, or toggle entry pause while flat."""
     try:
         status = parse_bot_status()
         if not status.get("bot_running"):
@@ -5009,12 +5025,17 @@ def api_exit_trade():
         if status.get("mode") != "LIVE TRADING":
             return jsonify({"status": "error", "message": "EXIT TRADE is only available in LIVE TRADING mode"}), 400
         if not status.get("has_open_position"):
-            return jsonify({"status": "error", "message": "No open trade to exit"}), 400
+            pause = toggle_entry_pause_command()
+            return jsonify({
+                "status": "success",
+                "message": "Trade entries paused; monitor remains active" if pause["paused"] else "Trade entries resumed; monitor remains active",
+                "entry_paused": pause["paused"],
+            })
 
         command = queue_exit_trade_command()
         return jsonify({
             "status": "success",
-            "message": "EXIT TRADE command queued. Bot will cancel stop and submit fast limit exit.",
+            "message": "EXIT TRADE command queued. Bot will submit the close while protection remains active.",
             "command_id": command.get("id"),
         })
     except Exception as e:
@@ -7496,8 +7517,9 @@ HTML_DASHBOARD = """
 
         async function exitTrade() {
             const btn = document.getElementById('exitTradeBtn');
+            const hasOpenPosition = !!(lastStatusSnapshot && lastStatusSnapshot.has_open_position);
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Exiting...';
+            btn.innerHTML = hasOpenPosition ? '<span class="spinner"></span> Exiting...' : '<span class="spinner"></span> Updating entries...';
 
             try {
                 const res = await fetch('/api/exit-trade', { method: 'POST' });
@@ -7507,7 +7529,6 @@ HTML_DASHBOARD = """
                 showMessage(`Error: ${err.message}`, 'error');
             }
 
-            btn.innerHTML = '⏏ Exit Trade';
             setTimeout(refreshStatus, 500);
         }
 
@@ -7535,8 +7556,12 @@ HTML_DASHBOARD = """
                 botToggleBtn.className = `bot-toggle ${botRunning ? 'running' : 'stopped'}`;
                 botToggleBtn.innerHTML = botRunning ? '⏹ Stop Bot' : '▶ Start Bot';
 
-                const canManualExit = !!(status.bot_running && status.mode === 'LIVE TRADING' && status.has_open_position);
-                document.getElementById('exitTradeBtn').disabled = !canManualExit;
+                const entryPauseButton = document.getElementById('exitTradeBtn');
+                const canControlEntries = !!(status.bot_running && status.mode === 'LIVE TRADING');
+                entryPauseButton.disabled = !canControlEntries;
+                entryPauseButton.innerHTML = status.has_open_position
+                    ? '⏏ Exit Trade'
+                    : (status.entry_paused ? '▶ Resume Entries' : '⏸ Pause Entries');
                 
                 // Schwab is ready only for reconciled live trading.
                 const modeText = String(status.mode || '').toUpperCase();
@@ -7791,6 +7816,10 @@ HTML_DASHBOARD = """
                 const indicatorTotal = Number(status.continuation_indicators_total || 5);
                 const callPassed = Number(status.continuation_call_passed || 0);
                 const putPassed = Number(status.continuation_put_passed || 0);
+                const callMomentumStrength = Number(status.call_momentum_strength);
+                const putMomentumStrength = Number(status.put_momentum_strength);
+                const callMomentumStage = String(status.call_momentum_stage || '').replaceAll('_', ' ');
+                const putMomentumStage = String(status.put_momentum_stage || '').replaceAll('_', ' ');
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
@@ -7808,32 +7837,37 @@ HTML_DASHBOARD = """
 
                 function renderIndicatorText(passed, side) {
                     const base = `${passed}/${indicatorTotal} Passed`;
+                    const momentumStrength = side === 'CALL' ? callMomentumStrength : putMomentumStrength;
+                    const momentumStage = side === 'CALL' ? callMomentumStage : putMomentumStage;
+                    const momentumText = Number.isFinite(momentumStrength)
+                        ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Momentum ${momentumStrength.toFixed(1)}/5${momentumStage ? ` | ${escapeHtml(momentumStage)}` : ''}</span>`
+                        : '';
                     if (passed < 5) {
-                        return base;
+                        return `${base}${momentumText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
                         const regimeLabel = indicatorRegime.replaceAll('_', ' ');
                         const requiredLabel = requiredRegime.replaceAll('_', ' ');
-                        return `${base}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return base;
+                        return `${base}${momentumText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return base;
+                    return `${base}${momentumText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');

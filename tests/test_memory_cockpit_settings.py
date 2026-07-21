@@ -62,3 +62,12 @@ def test_cockpit_operator_actions_delegate_to_memory(monkeypatch, tmp_path):
     assert calls[0][:3] == ("save", "parity_baseline", {"cockpit_sha256": "abc"})
     assert calls[1][0:2] == ("save", "control_command")
     assert calls[1][2] == command
+
+
+def test_entry_pause_toggle_is_persisted(monkeypatch, tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    monkeypatch.setattr(cockpit, "ENTRY_PAUSE_FILE", tmp_path / "entry_pause.json")
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
+
+    assert cockpit.toggle_entry_pause_command()["paused"] is True
+    assert cockpit.toggle_entry_pause_command()["paused"] is False

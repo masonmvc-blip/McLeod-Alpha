@@ -130,3 +130,10 @@ def test_indicator_snapshot_does_not_cap_qualifying_scores(monkeypatch, tmp_path
     assert snapshot["call_passed"] == 7
     assert snapshot["put_passed"] == 6
     assert snapshot["total"] == 5
+
+
+def test_indicator_snapshot_includes_side_specific_momentum():
+    source = (cockpit.PROJECT_ROOT / "phase3_monitor.py").read_text(encoding="utf-8")
+
+    assert '"call_momentum": momentum_snapshot("CALL")' in source
+    assert '"put_momentum": momentum_snapshot("PUT")' in source

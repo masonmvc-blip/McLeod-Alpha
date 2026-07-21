@@ -351,6 +351,11 @@ def _build_runtime_status():
         "continuation_indicators_total": 5,
         "continuation_last_test_at": None,
         "continuation_regime": "UNKNOWN",
+        "call_momentum_strength": None,
+        "call_momentum_stage": None,
+        "put_momentum_strength": None,
+        "put_momentum_stage": None,
+        "entry_paused": False,
         "last_decision": None,
         "last_decision_reason": None,
         "last_no_trade_call_reason": None,
@@ -425,6 +430,17 @@ def _build_runtime_status():
         status["continuation_call_passed"] = int(candle_indicator_snapshot.get("call_passed") or 0)
         status["continuation_put_passed"] = int(candle_indicator_snapshot.get("put_passed") or 0)
         status["continuation_indicators_total"] = int(candle_indicator_snapshot.get("total") or 5)
+        call_momentum = candle_indicator_snapshot.get("call_momentum") or {}
+        put_momentum = candle_indicator_snapshot.get("put_momentum") or {}
+        status["call_momentum_strength"] = call_momentum.get("strength")
+        status["call_momentum_stage"] = call_momentum.get("stage")
+        status["put_momentum_strength"] = put_momentum.get("strength")
+        status["put_momentum_stage"] = put_momentum.get("stage")
+
+    try:
+        status["entry_paused"] = bool((get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}).get("paused"))
+    except Exception:
+        status["entry_paused"] = False
         status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
         status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
 
@@ -838,6 +854,9 @@ def _build_runtime_status():
         elif status.get("current_position"):
             enabled = False
             reason = "Already in an open position"
+        elif status.get("entry_paused"):
+            enabled = False
+            reason = "Entries paused by Cockpit"
         else:
             # Check only most recent lines so stale historical lock messages don't dominate.
             recent = [ln.strip() for ln in lines[-80:] if ln.strip()]
