@@ -7391,6 +7391,7 @@ HTML_DASHBOARD = """
                 let trendText = trend.replaceAll('_', ' ');
                 let trendToneClass = 'trend-tone-neutral';
                 if (trend === 'BEAR_TREND') {
+                    trendText = '🐻 BEAR TREND 🐻';
                     trendToneClass = 'trend-tone-bearish';
                 } else if (trend === 'BULL_TREND') {
                     trendToneClass = 'trend-tone-bullish';
