@@ -87,9 +87,10 @@ def test_directional_spy_run_resets_after_a_reversal():
     }
 
 
-def test_continuation_forecast_blocks_initiation_and_exhaustion():
+def test_continuation_forecast_requires_strong_confirmation_for_initiation():
     module = importlib.import_module("phase3_monitor")
     metrics = {
+        "base_score": 5.0,
         "aligned": True,
         "continuation_quality": 5.0,
         "acceleration": 5.0,
@@ -98,7 +99,11 @@ def test_continuation_forecast_blocks_initiation_and_exhaustion():
         "confidence": 5.0,
     }
 
-    assert module._continuation_forecast_admission({**metrics, "stage": 1}) == (False, "Forecast: trend initiation is not confirmed")
+    assert module._continuation_forecast_admission({**metrics, "stage": 1}) == (True, "Forecast: initiation approved")
+    assert module._continuation_forecast_admission({**metrics, "stage": 1, "expansion": 3.0}) == (
+        False,
+        "Forecast: initiation not confirmed (expansion)",
+    )
     assert module._continuation_forecast_admission({**metrics, "stage": 5}) == (False, "Forecast: Late Exhaustion")
 
 

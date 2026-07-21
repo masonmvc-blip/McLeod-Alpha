@@ -802,6 +802,7 @@ def _continuation_forecast(candles, direction, base_score, regime):
         base_score, aligned, continuation, acceleration, efficiency, expansion, lifecycle, stage
     )
     return {
+        "base_score": float(base_score or 0.0),
         "stage": int(stage.get("stage") or 5),
         "stage_label": str(stage.get("label") or "UNKNOWN"),
         "continuation_quality": float(continuation.get("score") or 0.0),
@@ -819,7 +820,18 @@ def _continuation_forecast_admission(forecast):
     if not forecast.get("aligned"):
         return False, "Forecast: regime is not aligned"
     if stage <= 1:
-        return False, "Forecast: trend initiation is not confirmed"
+        floors = {
+            "base_score": 5.0,
+            "continuation_quality": 3.5,
+            "acceleration": 3.5,
+            "efficiency": 3.5,
+            "expansion": 3.5,
+            "confidence": 3.5,
+        }
+        weak = [name for name, floor in floors.items() if float(forecast.get(name) or 0.0) < floor]
+        if weak:
+            return False, f"Forecast: initiation not confirmed ({', '.join(weak)})"
+        return True, "Forecast: initiation approved"
     if stage >= 5:
         return False, "Forecast: Late Exhaustion"
 
