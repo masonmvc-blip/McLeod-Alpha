@@ -51,7 +51,7 @@ def test_evaluate_exit_returns_max_hold_stop_target_and_hold_instructions():
 def test_normalize_exit_reason_uses_canonical_stop_bands_and_vocabulary():
     brain = Brain()
 
-    assert brain.normalize_exit_reason("TRAILING_STOP", 5.00, 5.27) == "4% TRAIL"
+    assert brain.normalize_exit_reason("TRAILING_STOP", 5.00, 5.27) == "4% Stop"
     assert brain.normalize_exit_reason("MANUAL_EXIT_LIMIT", 5.00, 5.27) == "MANUAL_EXIT_LIMIT"
     assert brain.normalize_exit_reason("unknown", 5.00, 5.27) == "TARGET_HIT"
 

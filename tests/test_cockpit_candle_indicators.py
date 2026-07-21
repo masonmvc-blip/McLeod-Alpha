@@ -83,7 +83,7 @@ def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
 
 def test_active_stop_reason_uses_the_actual_stop_price():
     assert active_stop_category(5.00, stop_price=4.80) == "Stop"
-    assert active_stop_category(5.00, stop_price=5.15) == "4% Trail"
+    assert active_stop_category(5.00, stop_price=5.15) == "4% Stop"
 
 
 def test_current_position_shows_stop_category_and_protective_stop_price():

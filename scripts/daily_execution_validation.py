@@ -78,7 +78,7 @@ def _build_checks(status: Dict[str, Any], execq: Dict[str, Any], trades: List[Di
         slippage = float(avg_slippage_bps)
         add("Average slippage", slippage <= 25.0, f"avg_slippage_bps={slippage:.1f}")
 
-    stop_like = {"STOP", "1% STOP", "2% STOP", "3% STOP", "4% TRAIL", "PROTECTIVE_STOP_SYNC_FAILED"}
+    stop_like = {"STOP", "1% STOP", "2% STOP", "3% STOP", "4% STOP", "PROTECTIVE_STOP_SYNC_FAILED"}
     sync_fail_exits = 0
     for trade in trades:
         reason = str(trade.get("exit_reason") or "").upper()

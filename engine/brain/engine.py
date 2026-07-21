@@ -22,7 +22,7 @@ ALLOWED_EXIT_REASONS = {
     "1% Stop",
     "2% Stop",
     "3% Stop",
-    "4% TRAIL",
+    "4% Stop",
     "MANUAL_EXIT_LIMIT",
     "MANUAL_EXIT_MARKET",
     "TARGET_HIT",
@@ -494,7 +494,7 @@ class Brain:
     @staticmethod
     def _trailing_stop(entry, initial_stop, quote, profit_pct) -> tuple[float, str]:
         if profit_pct >= 4:
-            return quote * 0.99, "4% TRAIL"
+            return quote * 0.99, "4% Stop"
         if profit_pct >= 3:
             return quote * 0.985, "3% Stop"
         if profit_pct >= 2:
@@ -507,7 +507,7 @@ class Brain:
     def _stop_exit_reason(entry, exit_price) -> str:
         profit_pct = ((float(exit_price) - float(entry)) / float(entry)) * 100.0
         if profit_pct >= 4:
-            return "4% TRAIL"
+            return "4% Stop"
         if profit_pct >= 3:
             return "3% Stop"
         if profit_pct >= 2:

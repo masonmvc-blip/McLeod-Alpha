@@ -49,11 +49,11 @@ def _live_position(entry=5.0):
 
 def test_live_stop_reason_uses_active_broker_stop_tier():
     pos = _live_position(entry=5.89)
-    pos.active_stop_reason = "4% TRAIL"
+    pos.active_stop_reason = "4% Stop"
 
     # A trailing stop can fill below its trigger after the option reverses.
     # The label must remain the tier sent to Schwab, not be reclassified as STOP.
-    assert live_engine._stop_reason_for_active_stop(pos) == "4% TRAIL"
+    assert live_engine._stop_reason_for_active_stop(pos) == "4% Stop"
 
 
 def test_end_of_day_exit_boundary_is_345_pm_eastern():
@@ -358,7 +358,7 @@ def test_live_ratchet_does_not_wait_for_recent_stop_health_check(monkeypatch):
 
     assert submitted["existing_stop_order_id"] == "existing-stop"
     assert pos.protective_stop_order_id == "replacement-stop"
-    assert pos.active_stop_reason == "4% TRAIL"
+    assert pos.active_stop_reason == "4% Stop"
 
 
 def test_live_closes_at_twenty_minute_maximum_hold(monkeypatch):
@@ -386,9 +386,9 @@ def test_live_closes_at_twenty_minute_maximum_hold(monkeypatch):
         ("1% Stop", 5.00, 5.05, "1% Stop"),
         ("2% Stop", 5.00, 4.85, "2% Stop"),
         ("3% Stop", 5.00, 4.95, "3% Stop"),
-        ("4% TRAIL", 5.00, 5.27, "4% TRAIL"),
-        ("TRAILING_STOP", 5.00, 5.27, "4% TRAIL"),
-        ("TRAILING_STOP", 5.00, 5.40, "4% TRAIL"),
+        ("4% Stop", 5.00, 5.27, "4% Stop"),
+        ("TRAILING_STOP", 5.00, 5.27, "4% Stop"),
+        ("TRAILING_STOP", 5.00, 5.40, "4% Stop"),
     ],
 )
 def test_live_exit_reason_guard(reason, entry, exit_px, expected):

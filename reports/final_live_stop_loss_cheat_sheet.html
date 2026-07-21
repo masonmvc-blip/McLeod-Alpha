@@ -143,10 +143,19 @@
       .table-wrap { border-right: none; border-bottom: 1px solid var(--line); }
     }
     @media print {
-      body { padding: 0; background: #fff; }
+      @page { size: Letter landscape; margin: 0.2in; }
+      body { padding: 0; background: #fff; zoom: 0.64; }
       .sheet { box-shadow: none; border: none; border-radius: 0; }
       .table-wrap { overflow: visible; }
       th { position: static; }
+      .header { padding: 10px 14px 6px; }
+      .badge { margin-bottom: 4px; }
+      h1 { font-size: 22px; }
+      .sub, .note, li, .callout, .footer { font-size: 11px; }
+      .side { padding: 10px 12px; }
+      .chart-title { padding: 6px 8px; }
+      th, td { padding: 5px 6px; font-size: 10px; }
+      .chart-section, .side { break-inside: avoid; }
     }
   </style>
 </head>
@@ -179,7 +188,6 @@
             <tr><td>STOP</td><td>Entry to &lt; +1.0%</td><td>Trail 4.0% below quote</td><td>quote x 0.96</td><td>$5.00 → $4.80</td><td>$0.200 (4.000%) down</td><td>(4,800 - 5,000)/5,000 = -4.000%</td><td>-$120.00</td></tr>
             <tr><td>1% Stop</td><td>&gt;= +1.0%</td><td>Trail 3.0% below quote</td><td>quote x 0.97</td><td>$5.05 → $4.90</td><td>$0.152 (3.000%) down</td><td>(4,899 - 5,000)/5,000 = -2.030%</td><td>-$60.90</td></tr>
             <tr><td>2% Stop</td><td>&gt;= +2.0%</td><td>Trail 2.0% below quote</td><td>quote x 0.98</td><td>$5.10 → $5.00</td><td>$0.102 (2.000%) down</td><td>(4,998 - 5,000)/5,000 = -0.040%</td><td>-$1.20</td></tr>
-            <tr><td>3% Stop</td><td>&gt;= +3.0%</td><td>Trail 1.5% below quote</td><td>quote x 0.985</td><td>$5.15 → $5.07</td><td>$0.077 (1.500%) down</td><td>(5,073 - 5,000)/5,000 = +1.455%</td><td>+$43.65</td></tr>
           </tbody>
           </table>
         </section>
@@ -199,7 +207,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>4% TRAIL</td><td>&gt;= +4.0%</td><td>Trail 1.0% below quote</td><td>quote x 0.99</td><td>$5.20 → $5.15</td><td>$0.052 (1.000%) down</td><td>(5,148 - 5,000)/5,000 = +2.960%</td><td>+$88.80</td></tr>
+            <tr><td>3% Stop</td><td>&gt;= +3.0%</td><td>Trail 1.5% below quote</td><td>quote x 0.985</td><td>$5.15 → $5.07</td><td>$0.077 (1.500%) down</td><td>(5,073 - 5,000)/5,000 = +1.455%</td><td>+$43.65</td></tr>
+            <tr><td>4% Stop</td><td>&gt;= +4.0%</td><td>Trail 1.0% below quote</td><td>quote x 0.99</td><td>$5.20 → $5.15</td><td>$0.052 (1.000%) down</td><td>(5,148 - 5,000)/5,000 = +2.960%</td><td>+$88.80</td></tr>
           </tbody>
           </table>
         </section>
@@ -210,7 +219,7 @@
         <p class="note">These are the live enforcement rules pulled from the current engine.</p>
         <ul>
           <li>Stops ratchet upward only; they never move down.</li>
-          <li>At +1%, +2%, +3%, and +4%, the live exit reasons are <strong>1% Stop</strong>, <strong>2% Stop</strong>, <strong>3% Stop</strong>, and <strong>4% TRAIL</strong>.</li>
+          <li>At +1%, +2%, +3%, and +4%, the live exit reasons are <strong>1% Stop</strong>, <strong>2% Stop</strong>, <strong>3% Stop</strong>, and <strong>4% Stop</strong>.</li>
           <li>Protective broker order uses <strong>SELL_TO_CLOSE STOP_LIMIT</strong>.</li>
           <li>Stop checks use option <strong>bid</strong> first, then mark as fallback.</li>
           <li>Maximum holding period is <strong>20 minutes</strong>; close through the broker-safe exit path with reason <strong>MAX_HOLD_20_MIN</strong>.</li>

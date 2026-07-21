@@ -20,7 +20,7 @@ def active_stop_category(option_entry, current_mark=None, stop_price=None):
     if current_mark is not None and current_mark > 0:
         profit_pct = ((current_mark - option_entry) / option_entry) * 100.0
         for threshold, label in (
-            (4.0, "4% Trail"), (3.0, "3% Stop"), (2.0, "2% Stop"), (1.0, "1% Stop"),
+            (4.0, "4% Stop"), (3.0, "3% Stop"), (2.0, "2% Stop"), (1.0, "1% Stop"),
         ):
             if profit_pct >= threshold:
                 return label
@@ -33,7 +33,7 @@ def active_stop_category(option_entry, current_mark=None, stop_price=None):
     if stop_price > 0:
         stop_return_pct = ((stop_price - option_entry) / option_entry) * 100.0
         for threshold, label in (
-            (2.5, "4% Trail"), (1.4, "3% Stop"), (-0.1, "2% Stop"), (-2.1, "1% Stop"),
+            (2.5, "4% Stop"), (1.4, "3% Stop"), (-0.1, "2% Stop"), (-2.1, "1% Stop"),
         ):
             if stop_return_pct >= threshold:
                 return label
@@ -50,7 +50,7 @@ def classify_exit_reason(buy_event, sell_event):
     except (TypeError, ValueError):
         realized_pct = 0.0
     if realized_pct >= 4.0:
-        return "4% TRAIL"
+        return "4% Stop"
     if realized_pct >= 3.0:
         return "3% Stop"
     if realized_pct >= 2.0:
@@ -58,7 +58,7 @@ def classify_exit_reason(buy_event, sell_event):
     if realized_pct >= 1.0:
         return "1% Stop"
     if order_type in {"STOP", "STOP_LIMIT", "TRAILING_STOP", "TRAILING_STOP_LIMIT"} and realized_pct > 0.0:
-        return "4% TRAIL"
+        return "4% Stop"
     return "STOP"
 
 
