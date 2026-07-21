@@ -8232,11 +8232,14 @@ HTML_DASHBOARD = """
                     const pnl = trade.pnl || 0;
                     const pnlClass = pnl > 0 ? 'positive' : pnl < 0 ? 'negative' : 'neutral';
                     const strikePrice = Number(trade.strike_price);
-                    const strikeText = Number.isFinite(strikePrice) ? ` ${formatNumber(strikePrice, strikePrice % 1 === 0 ? 0 : 3)}` : '';
+                    const optionDirection = trade.direction || '-';
+                    const optionLabel = Number.isFinite(strikePrice)
+                        ? `$${formatNumber(strikePrice, strikePrice % 1 === 0 ? 0 : 3)} ${optionDirection}`
+                        : optionDirection;
                     
                     html += '<tr>';
                     html += `<td data-label="Time">${timeRange}</td>`;
-                    html += `<td data-label="Option"><span class="trade-direction ${trade.direction || ''}">${trade.direction || '-'}${strikeText}</span></td>`;
+                    html += `<td data-label="Option"><span class="trade-direction ${trade.direction || ''}">${optionLabel}</span></td>`;
                     html += `<td data-label="#">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
                     html += `<td data-label="Entry">${formatMoney(trade.entry_price || 0)}</td>`;
                     html += `<td data-label="Exit">${formatMoney(trade.exit_price || 0)}</td>`;
