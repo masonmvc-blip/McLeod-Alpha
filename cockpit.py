@@ -5827,15 +5827,8 @@ HTML_DASHBOARD = """
 
         .indicator-performance-header {
             display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-
-        .indicator-performance-header h2 {
-            color: #273142;
-            font-size: 16px;
+            justify-content: flex-end;
+            margin-bottom: 6px;
         }
 
         .indicator-performance-meta {
@@ -5860,7 +5853,7 @@ HTML_DASHBOARD = """
         .indicator-performance-columns {
             color: #607083;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 0.04em;
             padding: 0 0 4px;
             text-transform: uppercase;
@@ -5878,7 +5871,7 @@ HTML_DASHBOARD = """
         .indicator-performance-name {
             color: #273142;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 400;
             overflow-wrap: anywhere;
         }
 
@@ -6601,38 +6594,6 @@ HTML_DASHBOARD = """
 
         .problem-item.ok { color: #1e7e34; }
 
-        .parity-warning {
-            margin-top: 6px;
-            padding: 5px 7px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 700;
-            line-height: 1.25;
-            display: none;
-        }
-
-        .parity-warning.show {
-            display: block;
-        }
-
-        .parity-warning.match {
-            background: #eaf8ec;
-            border: 1px solid #b8e3bf;
-            color: #1f6a2e;
-        }
-
-        .parity-warning.mismatch {
-            background: #fff3cd;
-            border: 1px solid #ffe69c;
-            color: #8a6d00;
-        }
-
-        .parity-warning.unset {
-            background: #f8f9fa;
-            border: 1px solid #e2e6ea;
-            color: #495057;
-        }
-
         .daily-learning-meta {
             color: #4a5568;
             font-size: 12px;
@@ -6850,7 +6811,6 @@ HTML_DASHBOARD = """
             <div class="banner-meta" id="tradeEntryBannerMeta">
                 <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">🛑 Schwab 903</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
             </div>
-            <div class="parity-warning" id="parityWarning"></div>
         </div>
         
         <div class="status-grid primary-status-grid" id="statusGrid">
@@ -6901,9 +6861,8 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <section class="indicator-performance-wrap" aria-labelledby="indicatorPerformanceTitle">
+        <section class="indicator-performance-wrap" aria-label="Indicator performance">
             <div class="indicator-performance-header">
-                <h2 id="indicatorPerformanceTitle">Indicator Performance</h2>
                 <span class="indicator-performance-meta" id="indicatorPerformanceMeta">Loading closed-trade history...</span>
             </div>
             <div class="indicator-performance-list" id="indicatorPerformanceContainer">
@@ -7594,26 +7553,6 @@ HTML_DASHBOARD = """
                     }
                     tradeEntryBannerMetaRight.classList.toggle('stale', isStaleClock);
                 }
-                const parityWarningEl = document.getElementById('parityWarning');
-                if (parityWarningEl) {
-                    const parityState = String(status.parity_state || 'UNSET').toUpperCase();
-                    const parityEnforced = !!status.parity_block_start;
-                    const issues = Array.isArray(status.parity_issues) ? status.parity_issues : [];
-                    if (parityState === 'MISMATCH') {
-                        const firstIssue = String(issues[0] || status.parity_summary || 'Runtime differs from baseline').trim();
-                        const lockText = parityEnforced ? ' Start is locked until baseline is updated.' : '';
-                        parityWarningEl.textContent = `⚠ ENVIRONMENT MISMATCH: ${firstIssue}.${lockText}`;
-                        parityWarningEl.className = 'parity-warning show mismatch';
-                    } else if (parityState === 'UNSET') {
-                        const lockText = parityEnforced ? ' Start is locked until a baseline is set.' : '';
-                        parityWarningEl.textContent = `Parity baseline not set yet.${lockText}`;
-                        parityWarningEl.className = 'parity-warning show unset';
-                    } else {
-                        parityWarningEl.textContent = '';
-                        parityWarningEl.className = 'parity-warning';
-                    }
-                }
-                
                 // Current position
                 const posEl = document.getElementById('currentPosition');
                 const posCardEl = document.getElementById('currentPositionCard');
@@ -7938,14 +7877,7 @@ HTML_DASHBOARD = """
                 let html = '';
                 const internetTone = internetQualityTone(internetQuality);
                 const internetSummary = safeEscape(String(internet.summary || 'Unknown'));
-                const internetIcon = internetQualityIcon(internetQuality);
-                const rollingAverage = Number(internet.rolling_avg_latency_ms);
-                const rollingAverageText = Number.isFinite(rollingAverage)
-                    ? ` | ${formatNumber(rollingAverage, 0)} ms avg / 30 min`
-                    : '';
-                const internetTitle = internetQuality === 'EXCELLENT'
-                    ? `${internetIcon} ${safeEscape(internetQuality)}${rollingAverageText} ${internetIcon}`
-                    : `${internetIcon ? `${internetIcon} ` : ''}${safeEscape(internetQuality)}${rollingAverageText}`;
+                const internetTitle = safeEscape(internetQuality);
                 const pointsRaw = Array.isArray(history.recent_points_ms) ? history.recent_points_ms : [];
                 const pointTimestampsRaw = Array.isArray(history.recent_point_timestamps) ? history.recent_point_timestamps : [];
                 const points = [...pointsRaw].reverse();
