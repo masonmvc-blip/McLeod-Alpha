@@ -209,6 +209,8 @@ def test_top_banner_combines_title_price_and_stacked_status_meta():
     assert "tradeEntryBannerPrice.innerHTML = priceBannerHtml;" in source
     assert "tradeEntryBannerTitle" not in source
     assert "OPEN FOR BUSINESS" not in source
+    assert source.count("const pctSign = spyChangePct > 0 ? '+' : (spyChangePct < 0 ? '-' : '');") == 2
+    assert source.count("pctText = `(${pctSign}${pctRaw})`;") == 2
 
 
 def test_indicator_snapshot_does_not_cap_qualifying_scores(monkeypatch, tmp_path):

@@ -7713,7 +7713,8 @@ HTML_DASHBOARD = """
                     let toneClass = 'banner-tone-flat';
                     if (Number.isFinite(spyChangePct)) {
                         const pctRaw = `${Math.abs(spyChangePct).toFixed(2)}%`;
-                        pctText = spyChangePct < 0 ? `(${pctRaw})` : pctRaw;
+                        const pctSign = spyChangePct > 0 ? '+' : (spyChangePct < 0 ? '-' : '');
+                        pctText = `(${pctSign}${pctRaw})`;
                         if (spyChangePct > 0) {
                             toneClass = 'banner-tone-up';
                         } else if (spyChangePct < 0) {
@@ -7733,7 +7734,8 @@ HTML_DASHBOARD = """
                     let toneClass = 'banner-tone-flat';
                     if (Number.isFinite(spyChangePct)) {
                         const pctRaw = `${Math.abs(spyChangePct).toFixed(2)}%`;
-                        pctText = spyChangePct < 0 ? `(${pctRaw})` : pctRaw;
+                        const pctSign = spyChangePct > 0 ? '+' : (spyChangePct < 0 ? '-' : '');
+                        pctText = `(${pctSign}${pctRaw})`;
                         if (spyChangePct > 0) {
                             toneClass = 'banner-tone-up';
                         } else if (spyChangePct < 0) {
