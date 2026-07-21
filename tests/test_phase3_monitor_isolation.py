@@ -179,6 +179,14 @@ def test_market_cycle_wakes_at_closed_candle_evaluation_second(monkeypatch) -> N
     assert module._cycle_sleep_seconds(datetime(2026, 7, 20, 10, 15, 1, 100_000, tzinfo=eastern)) == 1.0
 
 
+def test_entry_window_closes_at_345_pm_eastern() -> None:
+    module = importlib.import_module("phase3_monitor")
+    eastern = ZoneInfo("America/New_York")
+
+    assert module._is_entry_window_now(datetime(2026, 7, 20, 15, 44, 59, tzinfo=eastern)) is True
+    assert module._is_entry_window_now(datetime(2026, 7, 20, 15, 45, 0, tzinfo=eastern)) is False
+
+
 def test_open_option_quote_uses_held_contract_direct_quote(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
 

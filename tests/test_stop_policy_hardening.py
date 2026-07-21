@@ -55,6 +55,24 @@ def test_live_stop_reason_uses_active_broker_stop_tier():
     assert live_engine._stop_reason_for_active_stop(pos) == "4% TRAIL"
 
 
+def test_end_of_day_exit_boundary_is_345_pm_eastern():
+    eastern = live_engine.EASTERN_TZ
+
+    assert live_engine._is_end_of_day_exit_due(datetime(2026, 7, 17, 15, 44, 59, tzinfo=eastern)) is False
+    assert live_engine._is_end_of_day_exit_due(datetime(2026, 7, 17, 15, 45, 0, tzinfo=eastern)) is True
+
+
+def test_live_manager_exits_open_position_at_end_of_day(monkeypatch):
+    live_engine.current_position = _live_position()
+    close_calls = []
+    monkeypatch.setattr(live_engine, "_is_end_of_day_exit_due", lambda: True)
+    monkeypatch.setattr(live_engine, "close_trade", lambda *args: close_calls.append(args))
+
+    live_engine.manage_trade(current_price=500.0, option_mark=5.0, option_bid=4.99)
+
+    assert close_calls == [(500.0, "END_OF_DAY_EXIT", 5.0)]
+
+
 def test_protective_stop_limit_keeps_the_intended_loss_floor():
     trigger_price, limit_price = live_engine._protective_stop_order_prices(5.87)
 
@@ -99,6 +117,7 @@ def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
     monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
     monkeypatch.setattr(live_engine, "close_trade", lambda *args, **kwargs: close_calls.append((args, kwargs)))
     monkeypatch.setattr(live_engine, "MAX_TRADE_HOLD_MINUTES", 999_999)
+    monkeypatch.setattr(live_engine, "_is_end_of_day_exit_due", lambda: False)
     live_engine._last_protective_stop_check_epoch = live_engine.time.time()
     live_engine._last_protective_stop_check_ok = True
 

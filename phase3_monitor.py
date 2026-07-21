@@ -344,12 +344,19 @@ def _merge_candle_history(*frames):
     return merged.sort_index().tail(390).copy()
 
 
-def _is_regular_market_hours_now():
-    now_et = datetime.now(EASTERN_TZ)
+def _is_regular_market_hours_now(now_et=None):
+    now_et = now_et or datetime.now(EASTERN_TZ)
     if now_et.weekday() >= 5:
         return False
     minutes = now_et.hour * 60 + now_et.minute
     return (9 * 60 + 30) <= minutes < (16 * 60)
+
+
+def _is_entry_window_now(now_et=None):
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    if not _is_regular_market_hours_now(now_et):
+        return False
+    return now_et.time() < dt_time(15, 45)
 
 
 def _is_extended_market_hours_now(now_et=None):
@@ -1152,6 +1159,39 @@ def open_trade(*args, **kwargs):
 def maybe_enter_trade(last, prev, regime, completed_candles):
     cycle_entry_start_ms = _perf_ms_now()
     min_score_threshold = LIVE_ENTRY_MIN_SCORE
+
+    if not _is_entry_window_now():
+        return {
+            "attempted": False,
+            "opened": False,
+            "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+            "decision_reason": "entry_cutoff",
+            "entry_block_reason": "No new entries at or after 3:45 PM ET",
+            "regime": regime,
+            "call_score": None,
+            "put_score": None,
+            "call_reasons": [],
+            "put_reasons": [],
+            "volume_trend": None,
+            "signal_threshold": min_score_threshold,
+            "candidate_direction": None,
+            "candidate_entry": None,
+            "candidate_stop": None,
+            "candidate_target": None,
+            "candidate_quantity": None,
+            "candidate_option_symbol": None,
+            "chain_fetch_ms": None,
+            "option_select_ms": None,
+            "open_trade_ms": None,
+            "precheck_ms": None,
+            "quote_compute_ms": None,
+            "submit_order_ms": None,
+            "market_fallback_submit_ms": None,
+            "market_fallback_wait_ms": None,
+            "protective_stop_ms": None,
+            "persist_ms": None,
+            "filled_via": None,
+        }
 
     if in_trade():
         print("Entry skipped: already in trade")

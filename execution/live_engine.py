@@ -30,6 +30,9 @@ import sqlite3
 import threading
 from pathlib import Path
 
+EASTERN_TZ = ZoneInfo("America/New_York")
+ENTRY_CUTOFF_TIME = dt_time(15, 45)
+
 # Global Schwab client and account configuration
 # Set by phase3_monitor.py after client creation
 _schwab_client = None
@@ -2799,6 +2802,9 @@ def manage_trade(current_price, option_mark=None, option_bid=None):
 
     if not in_trade():
         return
+    if _is_end_of_day_exit_due():
+        close_trade(current_price, "END_OF_DAY_EXIT", option_mark)
+        return
     _sync_position_with_broker(current_price)
     if not in_trade():
         return
@@ -2896,3 +2902,8 @@ def manage_trade(current_price, option_mark=None, option_bid=None):
 
     if decision.metadata.get("state_updates"):
         save_position(current_position)
+
+
+def _is_end_of_day_exit_due(now_et=None):
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    return now_et.weekday() < 5 and now_et.time() >= ENTRY_CUTOFF_TIME

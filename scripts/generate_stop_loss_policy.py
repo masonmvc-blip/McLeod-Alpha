@@ -299,6 +299,8 @@ def _build_html(policy: Dict[str, object]) -> str:
           <li>At +2% and +3%, stop labels are 2% Stop and 3% Stop before trail tiers take over.</li>
           <li>Protective broker order uses STOP_LIMIT.</li>
           <li>Stop checks use option bid first, mark as fallback.</li>
+          <li>No new entries are allowed at or after 3:45 PM ET.</li>
+          <li>At 3:45 PM ET, the engine immediately exits any open option position through the normal broker-safe close path.</li>
           <li>Maximum live trade hold: {policy['max_trade_hold_minutes']} minutes; engine exits through the normal broker-safe close path.</li>
           <li>If broker stop sync fails, engine closes position to avoid unprotected exposure.</li>
         </ul>
