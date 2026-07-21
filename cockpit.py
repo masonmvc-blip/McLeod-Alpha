@@ -8477,7 +8477,7 @@ HTML_DASHBOARD = """
                 todayPnl.textContent = `${totalPnlText} (${totalReturnPctText})`;
                 
                 html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
-                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>Phase</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
+                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Phase</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
@@ -8498,7 +8498,6 @@ HTML_DASHBOARD = """
                     html += `<td data-label="#">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
                     html += `<td data-label="Entry">${formatMoney(trade.entry_price || 0)}</td>`;
                     html += `<td data-label="Exit">${formatMoney(trade.exit_price || 0)}</td>`;
-                    const stage = (trade.trend_stage === null || trade.trend_stage === undefined) ? '-' : String(trade.trend_stage);
                     const entryGateRaw = trade.entry_gate_score;
                     const indicatorCountRaw = trade.indicator_count;
                     const indicatorTotalRaw = trade.indicator_total;
@@ -8518,7 +8517,6 @@ HTML_DASHBOARD = """
                     const abs = (trade.absorption_score === null || trade.absorption_score === undefined) ? '-' : formatNumber(trade.absorption_score, 2);
                     const conf = (trade.confidence_score === null || trade.confidence_score === undefined) ? '-' : formatNumber(trade.confidence_score, 2);
                     html += `<td data-label="Checklist">${indicators}</td>`;
-                    html += `<td data-label="Stage">${stage}</td>`;
                     html += `<td data-label="Phase">${momentumPhase}</td>`;
                     html += `<td data-label="CQ">${cq}</td>`;
                     html += `<td data-label="MAS">${mas}</td>`;
