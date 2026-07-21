@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from types import FunctionType
 from typing import Any, MutableMapping
+
+
+def _should_present_latest_session_as_today(now_et, current_day_has_transactions, week_transaction_dates) -> bool:
+    """Keep pre-open Today P&L aligned with the sole completed weekly session."""
+    market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+    completed_session_dates = {date for date in week_transaction_dates if date < now_et.date()}
+    return (
+        now_et < market_open
+        and not current_day_has_transactions
+        and len(completed_session_dates) == 1
+    )
 
 
 def parse_bot_status(runtime_globals: MutableMapping[str, Any]) -> dict[str, Any]:
@@ -55,10 +67,12 @@ def _build_runtime_status():
             resp.raise_for_status()
             transactions = resp.json() or []
 
-            period_today = 0.0
-            period_wtd = 0.0
-            period_mtd = 0.0
-            period_ytd = 0.0
+            period_today = Decimal("0")
+            period_wtd = Decimal("0")
+            period_mtd = Decimal("0")
+            period_ytd = Decimal("0")
+            week_transaction_dates = set()
+            current_day_has_transactions = False
 
             def _tx_timestamp(tx):
                 for key in ("transactionDate", "tradeDate", "time"):
@@ -81,10 +95,12 @@ def _build_runtime_status():
                     return None
 
             def _parse_cash_amount(tx):
-                value = _to_float((tx or {}).get("netAmount"))
-                if value is not None:
-                    return value
-                return _to_float((tx or {}).get("amount"))
+                for value in ((tx or {}).get("netAmount"), (tx or {}).get("amount")):
+                    try:
+                        return Decimal(str(value))
+                    except (InvalidOperation, TypeError, ValueError):
+                        continue
+                return None
 
             for tx in transactions:
                 tx_ts = _tx_timestamp(tx)
@@ -116,12 +132,26 @@ def _build_runtime_status():
                 period_ytd += amount
                 if tx_ts is not None and tx_ts >= week_start_dt:
                     period_wtd += amount
+                    week_transaction_dates.add(tx_ts.date())
                 if tx_ts is not None and tx_ts >= month_start_dt:
                     period_mtd += amount
                 if tx_ts is not None and tx_ts >= day_start_dt:
                     period_today += amount
+                    current_day_has_transactions = True
 
-            return period_today, period_wtd, period_mtd, period_ytd
+            if _should_present_latest_session_as_today(
+                now_et,
+                current_day_has_transactions,
+                week_transaction_dates,
+            ):
+                period_today = period_wtd
+
+            return (
+                float(period_today),
+                float(period_wtd),
+                float(period_mtd),
+                float(period_ytd),
+            )
 
         def _closed_trade_signature():
             try:
