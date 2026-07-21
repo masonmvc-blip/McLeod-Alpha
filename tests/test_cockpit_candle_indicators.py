@@ -128,11 +128,13 @@ def test_flat_position_hides_current_position_and_splits_indicator_row():
     assert "statusGrid.classList.toggle('position-flat', !hasOpenPosition);" in source
 
 
-def test_cockpit_shows_spy_run_filter_and_flat_position_none():
-    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+def test_cockpit_hides_spy_run_telemetry_but_keeps_flat_position_none():
+    cockpit_source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+    monitor_source = (cockpit.PROJECT_ROOT / "phase3_monitor.py").read_text(encoding="utf-8")
 
-    assert "posEl.textContent = 'None';" in source
-    assert "SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}" in source
+    assert "posEl.textContent = 'None';" in cockpit_source
+    assert "SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}" not in cockpit_source
+    assert '"spy_run": _directional_spy_run(indicators)' in monitor_source
 
 
 def test_current_position_has_live_candle_indicator_column():

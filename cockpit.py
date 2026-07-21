@@ -7890,9 +7890,6 @@ HTML_DASHBOARD = """
                 const putMomentumStrength = Number(status.put_momentum_strength);
                 const callMomentumStage = String(status.call_momentum_stage || '').replaceAll('_', ' ');
                 const putMomentumStage = String(status.put_momentum_stage || '').replaceAll('_', ' ');
-                const callRunDollars = Number(status.call_run_dollars || 0);
-                const putRunDollars = Number(status.put_run_dollars || 0);
-                const runThreshold = Number(status.spy_run_entry_min_dollars || 0.70);
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
@@ -7916,33 +7913,31 @@ HTML_DASHBOARD = """
                     const momentumText = Number.isFinite(momentumStrength)
                         ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Momentum ${momentumStrength.toFixed(1)}/5${momentumStage ? ` | ${escapeHtml(momentumStage)}` : ''}</span>`
                         : '';
-                    const runDollars = side === 'CALL' ? callRunDollars : putRunDollars;
-                    const runText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}</span>`;
                     const candleTrendText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Candle Trend: ${escapeHtml(candleTrendLabel)}</span>`;
                     if (passed < 5) {
-                        return `${base}${momentumText}${runText}${candleTrendText}`;
+                        return `${base}${momentumText}${candleTrendText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
+                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return `${base}${momentumText}${runText}${candleTrendText}`;
+                        return `${base}${momentumText}${candleTrendText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return `${base}${momentumText}${runText}${candleTrendText}`;
+                    return `${base}${momentumText}${candleTrendText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');
