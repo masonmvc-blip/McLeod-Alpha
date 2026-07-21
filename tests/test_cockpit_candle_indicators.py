@@ -211,7 +211,7 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "${side} requires ${requiredLabel}" not in source
 
 
-def test_top_banner_combines_title_price_and_stacked_status_meta():
+def test_top_banner_combines_title_price_and_inline_status_meta():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="tradeEntryBannerPrice"' in source
@@ -221,7 +221,9 @@ def test_top_banner_combines_title_price_and_stacked_status_meta():
     assert 'justify-self: center;' in source
     assert 'text-align: center;' in source
     assert 'display: flex;' in source
-    assert 'flex-direction: column;' in source
+    assert '.trade-entry-banner .banner-meta-divider.show {' in source
+    assert 'display: inline;' in source
+    assert 'white-space: nowrap;' in source
     assert "const tradeEntryBannerPrice = document.getElementById('tradeEntryBannerPrice');" in source
     assert "tradeEntryBannerPrice.innerHTML = priceBannerHtml;" in source
     assert "tradeEntryBannerTitle" not in source

@@ -6291,9 +6291,10 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner .banner-meta {
-            display: grid;
+            display: flex;
+            align-items: center;
             justify-self: center;
-            gap: 2px;
+            gap: 6px;
             text-align: right;
             font-size: 11px;
             font-weight: 600;
@@ -6303,20 +6304,24 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner .banner-meta-left {
-            display: block;
+            display: inline;
         }
 
         .trade-entry-banner .banner-meta-divider {
             display: none;
         }
 
+        .trade-entry-banner .banner-meta-divider.show {
+            display: inline;
+        }
+
         .trade-entry-banner .banner-meta-right {
-            display: block;
+            display: inline;
             font-size: inherit;
             font-weight: inherit;
             letter-spacing: inherit;
             text-transform: none;
-            white-space: normal;
+            white-space: nowrap;
         }
 
         .trade-entry-banner .banner-meta-right .quote-source {
@@ -6960,12 +6965,15 @@ HTML_DASHBOARD = """
 
             .trade-entry-banner .banner-meta-left,
             .trade-entry-banner .banner-meta-right {
-                display: block;
+                display: inline;
             }
 
-            .trade-entry-banner .banner-meta-divider,
-            .trade-entry-banner .banner-meta-divider.show {
+            .trade-entry-banner .banner-meta-divider {
                 display: none;
+            }
+
+            .trade-entry-banner .banner-meta-divider.show {
+                display: inline;
             }
 
             .connectivity-summary-strip {
