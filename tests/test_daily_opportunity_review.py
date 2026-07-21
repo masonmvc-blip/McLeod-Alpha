@@ -184,6 +184,40 @@ def test_estimated_outcomes_are_labeled_estimates(tmp_path, monkeypatch):
     assert outcome["label"] == "estimated_from_spy_proxy"
 
 
+def test_top_missed_opportunities_prioritize_near_misses_and_exclude_no_trade():
+    events = [
+        {
+            "event_id": "near-miss", "entered": False, "direction": "CALL",
+            "candle_time_et": "2026-07-17T10:00:00-04:00",
+            "rejection_reason": "CALL score below threshold by 1",
+            "market_regime": "BULL_TREND", "stage": 2, "cq": 2.9, "adx_14": 31.0,
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 8.0, "estimated_option_mae_pct": -1.0},
+            "post_rejection_tracking": {"max_favorable_spy_move": 0.8},
+        },
+        {
+            "event_id": "no-trade", "entered": False, "direction": "CALL",
+            "candle_time_et": "2026-07-17T10:01:00-04:00",
+            "rejection_reason": "CALL score below threshold by 1",
+            "market_regime": "NO_TRADE",
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 30.0, "estimated_option_mae_pct": -1.0},
+        },
+        {
+            "event_id": "qualified-skip", "entered": False, "direction": "PUT",
+            "candle_time_et": "2026-07-17T10:02:00-04:00",
+            "rejection_reason": "Qualified signal skipped: rate limit",
+            "market_regime": "BEAR_TREND",
+            "estimated_option_outcome": {"estimated_option_mfe_pct": 5.0, "estimated_option_mae_pct": -2.0},
+        },
+    ]
+
+    top = dor._top_missed_opportunities(events)
+
+    assert [row["event_id"] for row in top] == ["near-miss", "qualified-skip"]
+    assert top[0]["research_rating"] == "research_candidate"
+    assert top[0]["promotion_eligible"] is False
+    assert top[0]["research_status"] == "exploratory_insufficient_sample"
+
+
 def test_live_decision_predicates_unchanged():
     source = Path("engine/brain/live_rules.py").read_text(encoding="utf-8")
 

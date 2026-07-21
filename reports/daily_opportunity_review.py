@@ -16,6 +16,8 @@ SPY_HISTORY_PATH = Path("data/spy_1min_history.csv")
 REPORTS_DIR = Path("reports")
 
 ESTIMATED_OPTION_MOVE_MULTIPLIER = 5.0
+TOP_MISSED_OPPORTUNITIES_LIMIT = 10
+RESEARCH_CANDIDATE_MINIMUM_SAMPLE_SIZE = 10
 
 
 @dataclass
@@ -277,6 +279,97 @@ def _win_rate_and_avg_return(events: List[Dict[str, Any]], field_name: str) -> L
     return rows
 
 
+def _near_miss_reason(reason: str) -> tuple[bool, int]:
+    normalized = str(reason or "").strip().lower()
+    if "regime mismatch (no_trade)" in normalized:
+        return False, 0
+    if "score below threshold by 1" in normalized:
+        return True, 3
+    if "score below threshold by 2" in normalized:
+        return True, 2
+    if normalized in {"not entered", "entry not entered"}:
+        return True, 2
+    if any(marker in normalized for marker in ("qualified", "operational", "stale", "rate limit", "pending fill")):
+        return True, 1
+    return False, 0
+
+
+def _research_status(observations: int) -> str:
+    if observations >= 100:
+        return "promotion_review_requires_cross_regime_validation"
+    if observations >= 30:
+        return "eligible_for_deep_validation"
+    if observations >= RESEARCH_CANDIDATE_MINIMUM_SAMPLE_SIZE:
+        return "candidate_for_validation"
+    return "exploratory_insufficient_sample"
+
+
+def _top_missed_opportunities(events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    rejected = [event for event in events if not event.get("entered")]
+    reason_counts = Counter(str(event.get("rejection_reason") or "UNKNOWN") for event in rejected)
+    ranked: List[Dict[str, Any]] = []
+
+    for event in rejected:
+        if str(event.get("market_regime") or "").upper() == "NO_TRADE":
+            continue
+        reason = str(event.get("rejection_reason") or "UNKNOWN")
+        eligible, proximity_weight = _near_miss_reason(reason)
+        if not eligible:
+            continue
+
+        estimated = event.get("estimated_option_outcome") or {}
+        tracking = event.get("post_rejection_tracking") or {}
+        mfe = estimated.get("estimated_option_mfe_pct")
+        mae = estimated.get("estimated_option_mae_pct")
+        try:
+            mfe_value = float(mfe) if mfe is not None else 0.0
+        except (TypeError, ValueError):
+            mfe_value = 0.0
+        try:
+            mae_value = float(mae) if mae is not None else 0.0
+        except (TypeError, ValueError):
+            mae_value = 0.0
+
+        cohort_size = int(reason_counts[reason])
+        learning_score = max(0.0, mfe_value) * (1.0 + (0.25 * proximity_weight))
+        learning_score += min(cohort_size, 30) * 0.1
+        research_rating = "research_candidate" if mfe_value >= 4.0 else "borderline"
+
+        research = event.get("research") or {}
+        shadow_state = event.get("shadow_market_state") or {}
+        ranked.append({
+            "event_id": event.get("event_id"),
+            "time_et": event.get("candle_time_et") or event.get("evaluation_time_et"),
+            "direction": event.get("direction"),
+            "reason_not_taken": reason,
+            "market_state": research.get("trend_state") or shadow_state.get("state") or event.get("market_regime"),
+            "market_regime": event.get("market_regime"),
+            "trend_stage": event.get("stage"),
+            "cq": event.get("cq"),
+            "adx_14": event.get("adx_14"),
+            "score_distance_to_threshold": event.get("score_distance_to_threshold"),
+            "estimated_option_mfe_pct": round(mfe_value, 4),
+            "estimated_option_mae_pct": round(mae_value, 4),
+            "max_favorable_spy_move": tracking.get("max_favorable_spy_move"),
+            "max_adverse_spy_move": tracking.get("max_adverse_spy_move"),
+            "first_threshold_hit": tracking.get("first_threshold_hit"),
+            "first_threshold_hit_time_et": tracking.get("first_threshold_hit_time_et"),
+            "rejection_cohort_observations": cohort_size,
+            "research_rating": research_rating,
+            "manual_review_label": "unreviewed",
+            "research_status": _research_status(cohort_size),
+            "promotion_eligible": False,
+            "learning_score": round(learning_score, 4),
+            "outcome_note": "Estimated from the underlying SPY path; no historical option quotes are reconstructed.",
+        })
+
+    return sorted(
+        ranked,
+        key=lambda row: (row["learning_score"], row["estimated_option_mfe_pct"]),
+        reverse=True,
+    )[:TOP_MISSED_OPPORTUNITIES_LIMIT]
+
+
 def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
     entered = [e for e in events if e.get("entered")]
     rejected = [e for e in events if not e.get("entered")]
@@ -311,6 +404,7 @@ def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
     ]
 
     buckets = {name: _win_rate_and_avg_return(events, name) for name in metric_fields}
+    top_missed_opportunities = _top_missed_opportunities(events)
 
     return {
         "total_evaluations": len(events),
@@ -330,6 +424,7 @@ def _build_summary(events: List[Dict[str, Any]]) -> Dict[str, Any]:
             }
             for e in largest_missed
         ],
+        "top_missed_opportunities": top_missed_opportunities,
         "buckets": buckets,
     }
 
@@ -410,6 +505,7 @@ def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, 
         bucket_sections += table_from_rows(f"Win rate and avg return by {metric_name}", bucket_rows)
 
     largest_missed = table_from_rows("Largest missed moves (ET)", summary.get("largest_missed_moves") or [])
+    top_missed = table_from_rows("Top 10 Missed Opportunities (research-only)", summary.get("top_missed_opportunities") or [])
 
     all_rows_preview = table_from_rows("Evaluated setups (sample)", rows[:50])
 
@@ -427,6 +523,7 @@ def _render_html(trade_date: str, summary: Dict[str, Any], rows: List[Dict[str, 
         f"<h2>8. Three most valuable rules today</h2><p>{', '.join(summary.get('three_most_valuable_rules') or [])}</p>"
         f"<h2>9. Three most costly rejection reasons today</h2><p>{', '.join(summary.get('three_most_costly_rejection_reasons') or [])}</p>"
         f"<h2>10. Exact timestamps of the largest missed moves in Eastern Time</h2>{largest_missed}"
+        f"<h2>11. Top 10 Missed Opportunities</h2><p>Ranked by expected learning value, not raw profit. NO_TRADE regime rejections are excluded. Ratings are observational and never change live entry policy.</p>{top_missed}"
         f"{all_rows_preview}"
         "</body></html>"
     )
