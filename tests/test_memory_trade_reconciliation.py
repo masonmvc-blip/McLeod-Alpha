@@ -78,6 +78,59 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
     assert json.loads(events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
+def test_broker_period_trade_pairing_uses_closed_trade_cash_pnl(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [
+                {
+                    "transactionDate": "2026-07-20T14:00:00+00:00",
+                    "netAmount": -101.0,
+                    "orderId": "entry-1",
+                    "transferItems": [{
+                        "amount": 1,
+                        "cost": 100.0,
+                        "positionEffect": "OPENING",
+                        "instrument": {"assetType": "OPTION", "symbol": "SPY  260720C00600000"},
+                    }],
+                },
+                {
+                    "transactionDate": "2026-07-20T14:05:00+00:00",
+                    "netAmount": 119.0,
+                    "orderId": "exit-1",
+                    "transferItems": [{
+                        "amount": 1,
+                        "cost": 120.0,
+                        "positionEffect": "CLOSING",
+                        "instrument": {"assetType": "OPTION", "symbol": "SPY  260720C00600000"},
+                    }],
+                },
+            ]
+
+    class Client:
+        def get_transactions(self, account_hash, start_date, end_date, transaction_types):
+            assert account_hash == "test-account"
+            assert start_date.date().isoformat() == "2026-07-20"
+            assert end_date.date().isoformat() == "2026-07-21"
+            assert transaction_types == ["TRADE"]
+            return Response()
+
+        def get_orders_for_account(self, account_hash):
+            return Response()
+
+    monkeypatch.setenv("SCHWAB_ACCOUNT_HASH", "test-account")
+    monkeypatch.setattr(cockpit, "_get_broker_client", lambda: Client())
+    monkeypatch.setattr(cockpit, "_bot_order_ids_from_audit", lambda: set())
+
+    trades = cockpit._broker_transaction_trades_for_period("2026-07-20", "2026-07-21")
+
+    assert len(trades) == 1
+    assert trades[0]["exit_time"].startswith("2026-07-20")
+    assert trades[0]["pnl"] == 18.0
+
+
 def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
     trades = [
         {

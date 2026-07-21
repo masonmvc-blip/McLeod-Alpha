@@ -3637,17 +3637,20 @@ def _fallback_scores_from_calibration(entry_time_value, direction):
     }
 
 
-def _broker_transaction_trades_for_date(trading_date: str):
-    """Build completed SPY option trades from Schwab transaction history for a day.
+def _broker_transaction_trades_for_period(start_date: str, end_date: str):
+    """Build completed SPY option trades from Schwab transaction history for an inclusive period.
 
     Uses transaction cash flows (netAmount) as source of truth for per-trade P&L.
     """
-    if not trading_date:
+    if not start_date or not end_date:
         return []
 
     try:
-        target_day = datetime.strptime(str(trading_date), "%Y-%m-%d").date()
+        period_start = datetime.strptime(str(start_date), "%Y-%m-%d").date()
+        period_end = datetime.strptime(str(end_date), "%Y-%m-%d").date()
     except Exception:
+        return []
+    if period_end < period_start:
         return []
 
     account_hash = os.getenv("SCHWAB_ACCOUNT_HASH")
@@ -3680,8 +3683,8 @@ def _broker_transaction_trades_for_date(trading_date: str):
         return None
 
     try:
-        day_start = datetime.combine(target_day, datetime.min.time(), tzinfo=EASTERN_TZ)
-        day_end = datetime.combine(target_day, datetime.max.time(), tzinfo=EASTERN_TZ)
+        day_start = datetime.combine(period_start, datetime.min.time(), tzinfo=EASTERN_TZ)
+        day_end = datetime.combine(period_end, datetime.max.time(), tzinfo=EASTERN_TZ)
         client = _get_broker_client()
         resp = client.get_transactions(
             account_hash,
@@ -3711,7 +3714,7 @@ def _broker_transaction_trades_for_date(trading_date: str):
     events = []
     for tx in txs:
         tx_time = _tx_time_et(tx)
-        if tx_time is None or tx_time.date() != target_day:
+        if tx_time is None or not (period_start <= tx_time.date() <= period_end):
             continue
 
         item = _option_item(tx)
@@ -3805,7 +3808,7 @@ def _broker_transaction_trades_for_date(trading_date: str):
             manual_label = "Mason" if _is_manual_exit_trade(sell_event, bot_order_ids) else ""
             entry_et = lot["entry_time"].astimezone(EASTERN_TZ)
             exit_et = event["time"].astimezone(EASTERN_TZ)
-            manual_label = _manual_label_override(trading_date, entry_et, exit_et, manual_label)
+            manual_label = _manual_label_override(exit_et.date().isoformat(), entry_et, exit_et, manual_label)
             manual_label = _local_exit_manual_label(
                 lot.get("entry_order_id"),
                 event.get("order_id"),
@@ -3912,6 +3915,11 @@ def _broker_transaction_trades_for_date(trading_date: str):
         merged.append(row)
 
     return sorted(merged, key=lambda t: str(t.get("entry_time") or ""), reverse=True)
+
+
+def _broker_transaction_trades_for_date(trading_date: str):
+    """Build completed SPY option trades from Schwab transaction history for one day."""
+    return _broker_transaction_trades_for_period(trading_date, trading_date)
 
 
 def _collapse_split_trade_rows(rows):

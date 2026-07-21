@@ -46,12 +46,13 @@ def test_period_pnl_refreshes_immediately_when_trade_signature_changes():
     assert "and not trade_posted_since_cache" in source_text
 
 
-def test_empty_broker_period_does_not_override_local_pnl():
+def test_period_pnl_uses_paired_schwab_closed_trades():
     source_text = inspect.getsource(runtime_status._build_runtime_status)
 
-    assert "has_today_transactions" in source_text
-    assert "has_wtd_transactions" in source_text
-    assert "_prefer_external(ext_today, today_total, has_today_transactions)" in source_text
+    assert "_broker_transaction_trades_for_period(" in source_text
+    assert "schwab_paired_closed_spy_options" in source_text
+    assert "_broker_total_since(today_date)" in source_text
+    assert "schwab_transactions_net" not in source_text
 
 
 def test_local_period_pnl_includes_commissions_and_closing_regulatory_fee():

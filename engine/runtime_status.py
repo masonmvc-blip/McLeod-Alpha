@@ -39,113 +39,6 @@ def _build_runtime_status():
             except (TypeError, ValueError):
                 return round(float(fallback), 2)
 
-        def _prefer_external(candidate, baseline, has_scoped_transactions):
-            """Use Schwab totals only when its response contains matching transaction legs."""
-            if candidate is None or not has_scoped_transactions:
-                return _safe_amount(baseline, 0.0), False
-            return _safe_amount(candidate, 0.0), True
-
-        def _api_period_net_after(start_dt, end_dt, symbol_scope, asset_scope):
-            from decimal import Decimal
-
-            resp = client.get_transactions(
-                account_hash,
-                start_date=start_dt,
-                end_date=end_dt,
-                transaction_types=["TRADE", "RECEIVE_AND_DELIVER"],
-            )
-            resp.raise_for_status()
-            transactions = resp.json() or []
-
-            period_today = Decimal("0")
-            period_wtd = Decimal("0")
-            period_mtd = Decimal("0")
-            period_ytd = Decimal("0")
-            has_today_transactions = False
-            has_wtd_transactions = False
-            has_mtd_transactions = False
-            has_ytd_transactions = False
-
-            def _tx_timestamp(tx):
-                for key in ("transactionDate", "tradeDate", "time"):
-                    raw = tx.get(key)
-                    if not raw:
-                        continue
-                    try:
-                        return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone(ZoneInfo("America/New_York"))
-                    except Exception:
-                        try:
-                            return datetime.strptime(str(raw), "%Y-%m-%dT%H:%M:%S%z").astimezone(ZoneInfo("America/New_York"))
-                        except Exception:
-                            continue
-                return None
-
-            def _to_float(value):
-                try:
-                    return float(value)
-                except (TypeError, ValueError):
-                    return None
-
-            def _parse_cash_amount(tx):
-                from decimal import Decimal, InvalidOperation
-
-                for value in ((tx or {}).get("netAmount"), (tx or {}).get("amount")):
-                    try:
-                        return Decimal(str(value))
-                    except (InvalidOperation, TypeError, ValueError):
-                        continue
-                return None
-
-            for tx in transactions:
-                tx_ts = _tx_timestamp(tx)
-                tx_type = str(tx.get("type") or "").upper()
-                if tx_type and tx_type != "TRADE":
-                    continue
-
-                transfer_items = tx.get("transferItems") or []
-                in_scope = False
-                for item in transfer_items:
-                    item = item or {}
-                    inst = item.get("instrument") or {}
-                    asset_type = str(inst.get("assetType") or "").upper()
-                    if asset_scope and asset_type != asset_scope:
-                        continue
-                    symbol = str(inst.get("symbol") or "").upper()
-                    underlying = str(inst.get("underlyingSymbol") or "").upper()
-                    if symbol_scope and (symbol_scope not in symbol and symbol_scope != underlying):
-                        continue
-                    in_scope = True
-                    break
-                if not in_scope:
-                    continue
-
-                amount = _parse_cash_amount(tx)
-                if amount is None:
-                    continue
-
-                period_ytd += amount
-                has_ytd_transactions = True
-                if tx_ts is not None and tx_ts >= week_start_dt:
-                    period_wtd += amount
-                    has_wtd_transactions = True
-                if tx_ts is not None and tx_ts >= month_start_dt:
-                    period_mtd += amount
-                    has_mtd_transactions = True
-                if tx_ts is not None and tx_ts >= day_start_dt:
-                    period_today += amount
-                    has_today_transactions = True
-
-            return (
-                float(period_today),
-                float(period_wtd),
-                float(period_mtd),
-                float(period_ytd),
-                has_today_transactions,
-                has_wtd_transactions,
-                has_mtd_transactions,
-                has_ytd_transactions,
-            )
-
         def _closed_trade_signature():
             try:
                 summary = get_memory().load_trade_log_status_summary(
@@ -187,19 +80,7 @@ def _build_runtime_status():
             day=week_start_date.day,
         )
 
-        if (
-            _BROKER_PNL_CACHE.get("as_of_date") == today_key
-            and _BROKER_PNL_CACHE.get("closed_trade_signature") == closed_trade_signature
-            and (now_ts - float(_BROKER_PNL_CACHE.get("timestamp", 0.0))) < MTD_PNL_CACHE_SECONDS
-        ):
-            return (
-                float(_BROKER_PNL_CACHE.get("today", 0.0)),
-                float(_BROKER_PNL_CACHE.get("wtd", 0.0)),
-                float(_BROKER_PNL_CACHE.get("mtd", 0.0)),
-                float(_BROKER_PNL_CACHE.get("ytd", 0.0)),
-            )
-
-        # Baseline from local completed trades so dashboard always reflects actual filled exits.
+        # Fall back only when Schwab transaction history is unavailable.
         local_today = _realized_spy_option_pnl_for_period(today_key, today_key)
         local_wtd_end = min(today_date, week_end_date)
         local_wtd = _realized_spy_option_pnl_for_period(
@@ -218,67 +99,39 @@ def _build_runtime_status():
         mtd_source = "trade_log_realized"
         ytd_source = "trade_log_realized"
 
-        # A newly posted exit is immediately reflected from its persisted trade
-        # record. Schwab transaction history remains authoritative after it catches up.
-        if not trade_posted_since_cache:
-            try:
-                from schwab.auth import easy_client
+        try:
+            broker_trades = _broker_transaction_trades_for_period(
+                year_start_dt.date().isoformat(),
+                today_key,
+            )
 
-                account_hash = os.getenv("SCHWAB_ACCOUNT_HASH")
-                app_key = os.getenv("SCHWAB_APP_KEY")
-                app_secret = os.getenv("SCHWAB_APP_SECRET")
-                callback = os.getenv("SCHWAB_CALLBACK_URL")
-                if all([account_hash, app_key, app_secret, callback]):
-                    client = easy_client(
-                        api_key=app_key,
-                        app_secret=app_secret,
-                        callback_url=callback,
-                        token_path=_resolve_schwab_token_path(),
-                        enforce_enums=False,
-                    )
+            def _broker_total_since(period_start):
+                total = 0.0
+                count = 0
+                for trade in broker_trades:
+                    exit_at = _parse_iso_datetime(trade.get("exit_time"))
+                    if exit_at is None or exit_at.date() < period_start:
+                        continue
+                    total += float(trade.get("pnl") or 0.0)
+                    count += 1
+                return _safe_amount(total), count
 
-                    pnl_scope_symbol = str(os.getenv("BROKER_PNL_SCOPE_SYMBOL", "SPY")).strip().upper()
-                    pnl_scope_asset = str(os.getenv("BROKER_PNL_SCOPE_ASSET", "OPTION")).strip().upper()
-                    (
-                        ext_today,
-                        ext_wtd,
-                        ext_mtd,
-                        ext_ytd,
-                        has_today_transactions,
-                        has_wtd_transactions,
-                        has_mtd_transactions,
-                        has_ytd_transactions,
-                    ) = _api_period_net_after(
-                        year_start_dt,
-                        now_et,
-                        pnl_scope_symbol,
-                        pnl_scope_asset,
-                    )
-
-                    source_parts = ["asset", pnl_scope_asset or "ALL"]
-                    if pnl_scope_symbol:
-                        source_parts.extend(["symbol", pnl_scope_symbol])
-                    source_suffix = "_" + "_".join(source_parts)
-                    ext_today_source = f"schwab_transactions_net{source_suffix}"
-                    ext_wtd_source = f"schwab_transactions_net{source_suffix}"
-                    ext_mtd_source = f"schwab_transactions_net{source_suffix}"
-                    ext_ytd_source = f"schwab_transactions_net{source_suffix}"
-
-                    today_total, used_ext_today = _prefer_external(ext_today, today_total, has_today_transactions)
-                    wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total, has_wtd_transactions)
-                    mtd_total, used_ext_mtd = _prefer_external(ext_mtd, mtd_total, has_mtd_transactions)
-                    ytd_total, used_ext_ytd = _prefer_external(ext_ytd, ytd_total, has_ytd_transactions)
-
-                    if used_ext_today:
-                        today_source = ext_today_source
-                    if used_ext_wtd:
-                        wtd_source = ext_wtd_source
-                    if used_ext_mtd:
-                        mtd_source = ext_mtd_source
-                    if used_ext_ytd:
-                        ytd_source = ext_ytd_source
-            except Exception as exc:
-                print(f"Broker P&L refresh unavailable: {exc}")
+            if broker_trades:
+                today_total, today_count = _broker_total_since(today_date)
+                wtd_total, wtd_count = _broker_total_since(week_start_date)
+                mtd_total, mtd_count = _broker_total_since(month_start_dt.date())
+                ytd_total, ytd_count = _broker_total_since(year_start_dt.date())
+                source = "schwab_paired_closed_spy_options"
+                if today_count:
+                    today_source = source
+                if wtd_count:
+                    wtd_source = source
+                if mtd_count:
+                    mtd_source = source
+                if ytd_count:
+                    ytd_source = source
+        except Exception as exc:
+            print(f"Broker P&L refresh unavailable: {exc}")
 
         _BROKER_PNL_CACHE = {
             "timestamp": now_ts,
