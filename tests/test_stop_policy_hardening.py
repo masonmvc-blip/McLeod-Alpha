@@ -145,6 +145,17 @@ def test_exit_submission_cooldown_keeps_existing_protective_stop(monkeypatch):
     assert live_engine.close_trade(500.0, "MANUAL_EXIT") is False
 
 
+def test_reconciliation_clears_stale_local_position_when_broker_is_flat(monkeypatch):
+    live_engine.current_position = _live_position()
+    cleared = []
+    monkeypatch.setattr(live_engine, "get_schwab_positions", lambda: ([], [], 200, None))
+    monkeypatch.setattr(live_engine, "clear_position", lambda: cleared.append(True))
+
+    assert live_engine.reconcile_startup() is True
+    assert cleared == [True]
+    assert live_engine.current_position is None
+
+
 @pytest.mark.parametrize(
     "option_mark, expected_stop",
     [

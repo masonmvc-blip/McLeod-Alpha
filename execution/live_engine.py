@@ -627,6 +627,10 @@ def reconcile_startup():
     # Summary
     if not spy_positions and not spy_orders:
         print("✓ Clean state: No existing SPY option positions or orders")
+        if current_position is not None:
+            print("[RECONCILIATION] Clearing stale local position; Schwab confirms no SPY exposure")
+            clear_position()
+            current_position = None
     
     print("="*70 + "\n")
     return True
