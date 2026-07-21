@@ -6843,28 +6843,6 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <div class="status-grid">
-            <details class="architecture-evidence">
-                <summary id="architectureEvidenceSummary">Supporting scanner evidence</summary>
-                <ul class="architecture-evidence-list" id="architectureEvidenceList"></ul>
-            </details>
-            <p class="architecture-health-summary" id="architectureBaseline">Known baseline issues load separately.</p>
-        </div>
-
-        <div class="status-grid">
-            <div class="status-card">
-                <h3>Current Architecture Priorities</h3>
-                <ol class="architecture-health-blockers" id="architecturePriorityList">
-                    <li>Loading prioritized milestones...</li>
-                </ol>
-                <p class="architecture-health-summary" id="architecturePriorityEstimate"></p>
-            </div>
-            <details class="architecture-evidence">
-                <summary>Completion contracts</summary>
-                <ul class="architecture-evidence-list" id="architectureContractList"></ul>
-            </details>
-        </div>
-
         <div class="trades-actions">
             <button class="bot-toggle stopped" id="botToggleBtn" onclick="toggleBot()">▶ Start Bot</button>
             <div class="trade-summary-card neutral" id="todayPnlCard"><h4>Today's P&L</h4><div class="trade-summary-value" id="todayPnl">Loading...</div></div>
@@ -6906,17 +6884,14 @@ HTML_DASHBOARD = """
         let logsRefreshInFlight = false;
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
-        let architectureHealthRefreshInFlight = false;
         let indicatorPerformanceRefreshInFlight = false;
         let lastLogsRefreshMs = 0;
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
-        let lastArchitectureHealthRefreshMs = 0;
         let lastIndicatorPerformanceRefreshMs = 0;
         const LOGS_REFRESH_INTERVAL_MS = 5000;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
-        const ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS = 30000;
         const INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1500;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
@@ -7981,56 +7956,6 @@ HTML_DASHBOARD = """
         }
         
         
-        async function updateArchitectureHealth() {
-            if (architectureHealthRefreshInFlight || (Date.now() - lastArchitectureHealthRefreshMs) < ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS) {
-                return;
-            }
-
-            architectureHealthRefreshInFlight = true;
-            try {
-                const res = await fetch('/api/architecture-health');
-                if (!res.ok) {
-                    throw new Error(`Architecture Health request failed: HTTP ${res.status}`);
-                }
-                const report = await res.json();
-                const overall = report.overall || {};
-                const brain = report.brain || {};
-                const memory = report.memory || {};
-                const cockpit = report.cockpit || {};
-                const baseline = report.baseline || {};
-                const baselineCount = Array.isArray(baseline.known_issues) ? baseline.known_issues.length : 0;
-                const components = [
-                    ['Brain', brain, 'architectureBrain'],
-                    ['Memory', memory, 'architectureMemory'],
-                    ['Cockpit', cockpit, 'architectureCockpit'],
-                ];
-                const escapeArchitectureText = (value) => safeEscape(String(value || ''));
-                const evidence = components.flatMap(([label, component]) => (Array.isArray(component.evidence) ? component.evidence : []).map((item) => ({label, ...item})));
-                const incompleteCapabilities = components.flatMap(([label, component]) => (Array.isArray(component.capabilities) ? component.capabilities : [])
-                    .filter((capability) => capability.status !== 'complete')
-                    .map((capability) => ({label, ...capability})));
-                const priorities = report.priorities || {};
-                const roadmap = Array.isArray(priorities.priorities) ? priorities.priorities : [];
-
-                document.getElementById('architectureEvidenceSummary').textContent = `Supporting scanner evidence (${evidence.length} finding${evidence.length === 1 ? '' : 's'})`;
-                document.getElementById('architectureEvidenceList').innerHTML = evidence.map((item) => `<li><strong>${escapeArchitectureText(item.label)}</strong> | ${escapeArchitectureText(item.path)}:${Number(item.line || 0)} | ${escapeArchitectureText(item.category)} | ${escapeArchitectureText(item.why)}</li>`).join('') || '<li>No runtime boundary findings.</li>';
-                document.getElementById('architectureBaseline').textContent = baselineCount
-                    ? `Known baseline issue${baselineCount === 1 ? '' : 's'}: ${(baseline.known_issues || []).map((item) => item.summary).join(' | ')} Not included in architecture scoring.`
-                    : 'No known baseline issues.';
-                document.getElementById('architecturePriorityList').innerHTML = roadmap.map((priority) => `<li><strong>${escapeArchitectureText(priority.label)}</strong> | Impact: +${Number(priority.impact_percent || 0)}% | Blocker: ${escapeArchitectureText(priority.blocker)}</li>`).join('') || '<li>No remaining prioritized milestones.</li>';
-                document.getElementById('architecturePriorityEstimate').textContent = `Estimated completion after next milestone: ${Number(priorities.estimated_completion_after_next_milestone || overall.completion_percent || 0)}%`;
-                document.getElementById('architectureContractList').innerHTML = incompleteCapabilities.map((capability) => {
-                    const criteria = Array.isArray(capability.definition_of_complete) ? capability.definition_of_complete.join(' ') : '';
-                    return `<li><strong>${escapeArchitectureText(capability.label)}</strong> | Owner: ${escapeArchitectureText(capability.owner)} | Complete when: ${escapeArchitectureText(criteria)}</li>`;
-                }).join('') || '<li>All capability contracts are complete.</li>';
-                lastArchitectureHealthRefreshMs = Date.now();
-            } catch (err) {
-                console.error('Error loading architecture health:', err);
-            } finally {
-                architectureHealthRefreshInFlight = false;
-            }
-        }
-
         async function updateIndicatorPerformance() {
             if (indicatorPerformanceRefreshInFlight) {
                 return;
@@ -8286,7 +8211,6 @@ HTML_DASHBOARD = """
             updateTodaysTrades();
             updateExecutionQuality(lastStatusSnapshot);
             updateDailyLearningInsights();
-            updateArchitectureHealth();
             updateIndicatorPerformance();
         });
 
@@ -8307,10 +8231,8 @@ HTML_DASHBOARD = """
             lastTradesRefreshMs = 0;
             lastExecutionQualityRefreshMs = 0;
             lastDailyLearningRefreshMs = 0;
-            lastArchitectureHealthRefreshMs = 0;
             lastIndicatorPerformanceRefreshMs = 0;
             refreshStatus();
-            updateArchitectureHealth();
             updateIndicatorPerformance();
         });
 
