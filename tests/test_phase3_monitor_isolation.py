@@ -161,9 +161,12 @@ def test_bounded_runner_uses_injected_runtime_and_never_sleeps(monkeypatch) -> N
     module = importlib.import_module("phase3_monitor")
     initialized: list[bool] = []
     sleeps: list[float] = []
+    scheduler_calls: list[bool] = []
     monkeypatch.setattr(module, "get_candles", lambda: pd.DataFrame())
+    monkeypatch.setattr(module, "maybe_send_daily_trade_log_email", lambda: scheduler_calls.append(True))
     module.run_monitor(max_cycles=1, runtime_initializer=lambda: initialized.append(True), sleep_fn=sleeps.append)
     assert initialized == [True]
+    assert scheduler_calls == [True]
     assert len(sleeps) == 1
     assert sleeps[0] > 0
 

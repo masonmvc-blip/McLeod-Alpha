@@ -1,8 +1,10 @@
 from execution.option_selector import select_option_from_chain, find_option_mark, find_option_bid
 from execution.equity_stream import SchwabEquityQuoteStream
+from execution.daily_trade_log_email import maybe_send_daily_trade_log_email
 from execution.opportunity_logger import log_evaluated_setups
 from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
+from reports.scheduler_health import maybe_generate_scheduler_health_dashboard
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
 from engine.memory import get_memory
 from spy_bot_reviewer import SpyBotReviewer
@@ -1472,6 +1474,14 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
     while max_cycles is None or completed_cycles < max_cycles:
         completed_cycles += 1
         cycle_start_ms = _perf_ms_now()
+        try:
+            maybe_send_daily_trade_log_email()
+        except Exception as exc:
+            print(f"Daily trade-log scheduler warning: {exc}")
+        try:
+            maybe_generate_scheduler_health_dashboard()
+        except Exception as exc:
+            print(f"Scheduler health warning: {exc}")
         try:
             candles_fetch_start_ms = _perf_ms_now()
             df = get_candles()
