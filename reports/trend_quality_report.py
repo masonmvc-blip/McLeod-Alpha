@@ -113,6 +113,17 @@ def _combination_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _market_state_adx_trend_age_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return _group(
+        rows,
+        lambda row: " | ".join((
+            row["market_state"],
+            f"ADX {_bucket(row['adx'], (18, 25, 30, 35))}",
+            f"trend_age {_bucket(row['trend_age'], (3, 6, 9))}",
+        )),
+    )
+
+
 def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Path | None = None) -> Path:
     """Aggregate immutable daily reviews without changing live-trading behavior."""
     quality_rows: list[dict[str, Any]] = []
@@ -137,6 +148,11 @@ def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Pat
             -row["avg_estimated_option_mae_pct"],
         ),
     )
+    state_adx_age_rows = _market_state_adx_trend_age_rows(quality_rows)
+    qualified_state_adx_age_rows = [
+        row for row in state_adx_age_rows
+        if row["research_status"] == "candidate_for_validation"
+    ]
     output = {
         "generated_at": datetime.now(EASTERN_TZ).isoformat(),
         "research_only": True,
@@ -151,6 +167,8 @@ def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Pat
         "market_states": _group(quality_rows, lambda row: row["market_state"]),
         "quality_combinations": ranked_combinations,
         "top_candidate_combinations": [row for row in ranked_combinations if row["research_status"] == "candidate_for_validation"][:10],
+        "market_state_adx_trend_age_interactions": qualified_state_adx_age_rows,
+        "market_state_adx_trend_age_deferred_sparse_combinations": len(state_adx_age_rows) - len(qualified_state_adx_age_rows),
     }
     destination = output_path or reports_dir / "trend_quality_report.json"
     destination.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")

@@ -46,3 +46,20 @@ def test_trend_quality_report_includes_entered_rejected_features_and_combination
     assert report["market_states"][0]["cohort"] == "FRESH_TREND"
     assert report["quality_combinations"][0]["avg_estimated_option_mfe_pct"] == 3.0
     assert report["quality_combinations"][0]["research_status"] == "exploratory_insufficient_sample"
+    assert report["market_state_adx_trend_age_interactions"] == []
+    assert report["market_state_adx_trend_age_deferred_sparse_combinations"] == 1
+
+
+def test_state_adx_trend_age_interactions_require_minimum_sample(tmp_path):
+    payload = {"evaluated_setups": [_event(entered=index % 2 == 0, mfe=4.0, mae=-1.0) for index in range(10)]}
+    (tmp_path / "daily_opportunity_review_2026-07-21.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = json.loads(build_trend_quality_report(tmp_path).read_text(encoding="utf-8"))
+
+    interaction = report["market_state_adx_trend_age_interactions"]
+    assert len(interaction) == 1
+    assert interaction[0]["cohort"] == "FRESH_TREND | ADX <30 | trend_age <3"
+    assert interaction[0]["observations"] == 10
+    assert interaction[0]["entered"] == 5
+    assert interaction[0]["research_status"] == "candidate_for_validation"
+    assert report["market_state_adx_trend_age_deferred_sparse_combinations"] == 0
