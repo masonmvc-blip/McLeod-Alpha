@@ -70,6 +70,13 @@ class Memory:
                 ("momentum_freshness_score", "REAL"), ("momentum_phase", "TEXT"),
                 ("entry_diagnostic_snapshot", "TEXT"), ("exit_diagnostic_snapshot", "TEXT"),
                 ("absorption_score", "REAL"),
+                ("option_high_since_entry", "REAL"), ("option_low_since_entry", "REAL"),
+                ("option_high_timestamp", "TEXT"), ("option_low_timestamp", "TEXT"),
+                ("spy_price_at_option_high", "REAL"), ("spy_price_at_option_low", "REAL"),
+                ("mfe_pct", "REAL"), ("mae_pct", "REAL"), ("exit_efficiency_pct", "REAL"),
+                ("peak_capture_pct", "REAL"), ("profit_left_on_table_dollars", "REAL"),
+                ("minutes_to_peak", "REAL"), ("minutes_after_peak_until_exit", "REAL"),
+                ("entry_efficiency_pct", "REAL"), ("trade_quality_grade", "TEXT"),
             ):
                 if name not in columns:
                     connection.execute(f"ALTER TABLE trade_log ADD COLUMN {name} {type_name}")
@@ -126,6 +133,11 @@ class Memory:
             "option_pnl_pct", "broker_entry_order_id", "broker_exit_order_id",
             "momentum_freshness_score", "momentum_phase", "absorption_score",
             "entry_diagnostic_snapshot", "exit_diagnostic_snapshot",
+            "option_high_since_entry", "option_low_since_entry", "option_high_timestamp",
+            "option_low_timestamp", "spy_price_at_option_high", "spy_price_at_option_low",
+            "mfe_pct", "mae_pct", "exit_efficiency_pct", "peak_capture_pct",
+            "profit_left_on_table_dollars", "minutes_to_peak", "minutes_after_peak_until_exit",
+            "entry_efficiency_pct", "trade_quality_grade",
         )
         values = tuple(trade.get(column) for column in columns)
         placeholders = ", ".join("?" for _ in columns)
@@ -502,7 +514,12 @@ class Memory:
                     option_entry, option_exit, option_quantity, option_pnl_pct,
                     COALESCE(option_pnl_dollars, pnl, 0) AS dollar_pnl,
                     broker_entry_order_id, broker_exit_order_id, feature_payload,
-                    entry_diagnostic_snapshot, exit_diagnostic_snapshot
+                    entry_diagnostic_snapshot, exit_diagnostic_snapshot,
+                    option_high_since_entry, option_low_since_entry, option_high_timestamp,
+                    option_low_timestamp, spy_price_at_option_high, spy_price_at_option_low,
+                    mfe_pct, mae_pct, exit_efficiency_pct, peak_capture_pct,
+                    profit_left_on_table_dollars, minutes_to_peak, minutes_after_peak_until_exit,
+                    entry_efficiency_pct, trade_quality_grade
                 FROM trade_log
                 WHERE substr(entry_time, 1, 10) = ?
                 ORDER BY entry_time ASC
@@ -510,6 +527,30 @@ class Memory:
                 (str(trade_date),),
             ).fetchall()]
         return order_ids, trades
+
+    def load_exit_quality_export_inputs(self, start_date, end_date):
+        """Read completed trade quality fields for a reporting period."""
+        self.initialize_live_trade_store()
+        with sqlite3.connect(self.db_path) as connection:
+            connection.row_factory = sqlite3.Row
+            return [dict(row) for row in connection.execute(
+                """
+                SELECT
+                    id, entry_time, exit_time, direction, exit_reason, option_symbol,
+                    option_entry, option_exit, option_quantity,
+                    COALESCE(option_pnl_dollars, pnl, 0) AS dollar_pnl,
+                    option_high_since_entry, option_low_since_entry,
+                    option_high_timestamp, option_low_timestamp,
+                    spy_price_at_option_high, spy_price_at_option_low,
+                    mfe_pct, mae_pct, exit_efficiency_pct, peak_capture_pct,
+                    profit_left_on_table_dollars, minutes_to_peak,
+                    minutes_after_peak_until_exit, entry_efficiency_pct, trade_quality_grade
+                FROM trade_log
+                WHERE substr(exit_time, 1, 10) BETWEEN ? AND ?
+                ORDER BY exit_time ASC, id ASC
+                """,
+                (str(start_date), str(end_date)),
+            ).fetchall()]
 
     def _record_report_projection(self, path, report_type, format_name, source, correlation_id):
         return self.record_report(

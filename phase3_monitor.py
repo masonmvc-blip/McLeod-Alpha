@@ -440,8 +440,9 @@ def get_open_option_quote(option_symbol):
             return None
 
     bid = _positive_float(quote.get("bidPrice") or quote.get("bid"))
-    mark = _positive_float(quote.get("mark")) or _positive_float(quote.get("lastPrice"))
-    return mark, bid
+    last = _positive_float(quote.get("lastPrice"))
+    mark = _positive_float(quote.get("mark"))
+    return mark, bid, last
 
 
 def _quote_continuity_candles(history_df, source_label):
@@ -1522,18 +1523,19 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
 
         option_mark = None
         option_bid = None
+        option_last = None
 
         try:
             current_position = getattr(ENGINE_MODULE, "current_position", None)
             if current_position and getattr(current_position, "option_symbol", None):
-                option_mark, option_bid = get_open_option_quote(current_position.option_symbol)
+                option_mark, option_bid, option_last = get_open_option_quote(current_position.option_symbol)
 
         except Exception as e:
             print(f"Option mark error: {e}")
         manage_start_ms = _perf_ms_now()
         manual_exit_requested = _process_manual_exit_command(float(latest.close), option_mark)
         if not manual_exit_requested:
-            manage_trade(float(latest.close), option_mark, option_bid)
+            manage_trade(float(latest.close), option_mark, option_bid, option_last)
         manage_trade_ms = _elapsed_ms(manage_start_ms)
         try:
             SpyBotReviewer(Path(__file__).resolve().parent).maybe_run_after_session()

@@ -23,6 +23,7 @@ from engine.brain import Brain, TradeAction, can_open_trade, record_trade, recor
 from engine.brain.engine import MAX_TRADE_HOLD_MINUTES
 from engine.memory import get_memory
 from execution.trade_logger import log_trade, log_bot_order, log_trade_diagnostic_event
+from execution.exit_quality import exit_quality_metrics, update_option_extrema
 import os
 import time
 import json
@@ -827,6 +828,12 @@ class Position:
     protective_stop_price: float = 0.0  # Stop trigger price (-5% of fill)
     protective_stop_status: str = ""    # PENDING, PLACED, FAILED, CANCELED
     protective_stop_restore_count: int = 0  # Number of in-trade restore operations
+    option_high_since_entry: float = 0.0
+    option_low_since_entry: float = 0.0
+    option_high_timestamp: str = ""
+    option_low_timestamp: str = ""
+    spy_price_at_option_high: float = 0.0
+    spy_price_at_option_low: float = 0.0
 
 
 current_position = None
@@ -2488,6 +2495,12 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_order_id=protective_stop_id,
         protective_stop_price=protective_stop_price,
         protective_stop_status="PLACED" if protective_stop_id else "FAILED",
+        option_high_since_entry=float(fill_price),
+        option_low_since_entry=float(fill_price),
+        option_high_timestamp=fill_timestamp,
+        option_low_timestamp=fill_timestamp,
+        spy_price_at_option_high=float(price),
+        spy_price_at_option_low=float(price),
     )
 
     persist_start_ms = _perf_ms_now()
@@ -2543,7 +2556,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     return _finalize(True, None)
 
 
-def close_trade(price, reason, option_mark=None, execution_mode="market", limit_price=None, fallback_to_market=True):
+def close_trade(price, reason, option_mark=None, execution_mode="market", limit_price=None, fallback_to_market=True, option_bid=None, option_last=None):
     """
     Close a live trade on Schwab.
     
@@ -2669,6 +2682,25 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
 
     option_entry_price = float(current_position.option_entry or 0)
     option_exit_price = float(option_mark or 0)
+    exit_timestamp = datetime.now(EASTERN_TZ)
+    update_option_extrema(
+        saved_position,
+        spy_price=price,
+        bid=option_bid,
+        last=option_last,
+        mark=option_exit_price,
+        observed_at=exit_timestamp,
+    )
+    quality = exit_quality_metrics(
+        option_entry=option_entry_price,
+        option_exit=option_exit_price,
+        option_high=saved_position.option_high_since_entry,
+        option_low=saved_position.option_low_since_entry,
+        quantity=saved_position.quantity,
+        entry_time=saved_position.opened,
+        exit_time=exit_timestamp,
+        high_timestamp=saved_position.option_high_timestamp,
+    )
     reason = _guard_exit_reason(reason, option_entry_price, option_exit_price)
     momentum_freshness_score, momentum_phase = _extract_momentum_fields(getattr(saved_position, "feature_payload", ""))
     entry_diagnostic_snapshot = _extract_entry_diagnostic_snapshot(getattr(saved_position, "feature_payload", ""))
@@ -2750,7 +2782,7 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
 
         safe_log_trade(
             entry_time=saved_position.opened.isoformat(),
-            exit_time=datetime.now().isoformat(),
+            exit_time=exit_timestamp.isoformat(),
             direction=saved_position.direction,
             entry_price=saved_position.entry_price,
             exit_price=price,
@@ -2772,6 +2804,15 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
             absorption_score=absorption_score,
             entry_diagnostic_snapshot=entry_diagnostic_snapshot,
             exit_diagnostic_snapshot=exit_diagnostic_snapshot,
+            option_high_since_entry=saved_position.option_high_since_entry,
+            option_low_since_entry=saved_position.option_low_since_entry,
+            option_high_timestamp=saved_position.option_high_timestamp,
+            option_low_timestamp=saved_position.option_low_timestamp,
+            spy_price_at_option_high=saved_position.spy_price_at_option_high,
+            spy_price_at_option_low=saved_position.spy_price_at_option_low,
+            entry_efficiency_pct=None,
+            trade_quality_grade=None,
+            **quality,
         )
     except Exception as log_exc:
         print(f"\n⚠️  LOGGING ERROR (position already closed): {log_exc}")
@@ -2796,12 +2837,20 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     return True
 
 
-def manage_trade(current_price, option_mark=None, option_bid=None):
+def manage_trade(current_price, option_mark=None, option_bid=None, option_last=None):
     """Execute the canonical Brain management decision against Schwab."""
     global current_position, _protective_stop_failed, _protective_stop_failure_reason
 
     if not in_trade():
         return
+    extrema_updated = update_option_extrema(
+        current_position,
+        spy_price=current_price,
+        bid=option_bid,
+        last=option_last,
+        mark=option_mark,
+        observed_at=datetime.now(EASTERN_TZ),
+    )
     if _is_end_of_day_exit_due():
         close_trade(current_price, "END_OF_DAY_EXIT", option_mark)
         return
@@ -2900,7 +2949,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None):
         close_trade(current_price, decision.reason, decision.metadata.get("exit_option_mark"))
         return
 
-    if decision.metadata.get("state_updates"):
+    if decision.metadata.get("state_updates") or extrema_updated:
         save_position(current_position)
 
 

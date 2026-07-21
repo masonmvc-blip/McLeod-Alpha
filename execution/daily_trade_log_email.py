@@ -18,6 +18,7 @@ import json
 import os
 import re
 import smtplib
+import statistics
 import subprocess
 from datetime import date, datetime, time as dt_time, timedelta
 from email.message import EmailMessage
@@ -524,6 +525,21 @@ def _build_export_rows(trades: List[Dict[str, Any]], trade_date: str) -> List[Di
             "option_symbol": trade.get("option_symbol"),
             "option_entry_price": trade.get("option_entry"),
             "option_exit_price": trade.get("option_exit"),
+            "option_high_since_entry": trade.get("option_high_since_entry"),
+            "option_low_since_entry": trade.get("option_low_since_entry"),
+            "option_high_timestamp": _to_iso(trade.get("option_high_timestamp")),
+            "option_low_timestamp": _to_iso(trade.get("option_low_timestamp")),
+            "spy_price_at_option_high": trade.get("spy_price_at_option_high"),
+            "spy_price_at_option_low": trade.get("spy_price_at_option_low"),
+            "mfe_pct": trade.get("mfe_pct"),
+            "mae_pct": trade.get("mae_pct"),
+            "exit_efficiency_pct": trade.get("exit_efficiency_pct"),
+            "peak_capture_pct": trade.get("peak_capture_pct"),
+            "profit_left_on_table_dollars": trade.get("profit_left_on_table_dollars"),
+            "minutes_to_peak": trade.get("minutes_to_peak"),
+            "minutes_after_peak_until_exit": trade.get("minutes_after_peak_until_exit"),
+            "entry_efficiency_pct": trade.get("entry_efficiency_pct"),
+            "trade_quality_grade": trade.get("trade_quality_grade"),
             "dollar_pnl": round(float(trade.get("dollar_pnl") or 0.0), 4),
             "percent_pnl": _normalize_option_pnl_pct(
                 raw_pct=trade.get("option_pnl_pct"),
@@ -559,6 +575,21 @@ def _csv_row_from_export_row(row: Dict[str, Any]) -> Dict[str, Any]:
         "option_symbol": row.get("option_symbol"),
         "option_entry_price": row.get("option_entry_price"),
         "option_exit_price": row.get("option_exit_price"),
+        "option_high_since_entry": row.get("option_high_since_entry"),
+        "option_low_since_entry": row.get("option_low_since_entry"),
+        "option_high_timestamp": row.get("option_high_timestamp"),
+        "option_low_timestamp": row.get("option_low_timestamp"),
+        "spy_price_at_option_high": row.get("spy_price_at_option_high"),
+        "spy_price_at_option_low": row.get("spy_price_at_option_low"),
+        "mfe_pct": row.get("mfe_pct"),
+        "mae_pct": row.get("mae_pct"),
+        "exit_efficiency_pct": row.get("exit_efficiency_pct"),
+        "peak_capture_pct": row.get("peak_capture_pct"),
+        "profit_left_on_table_dollars": row.get("profit_left_on_table_dollars"),
+        "minutes_to_peak": row.get("minutes_to_peak"),
+        "minutes_after_peak_until_exit": row.get("minutes_after_peak_until_exit"),
+        "entry_efficiency_pct": row.get("entry_efficiency_pct"),
+        "trade_quality_grade": row.get("trade_quality_grade"),
         "dollar_pnl": row.get("dollar_pnl"),
         "percent_pnl": row.get("percent_pnl"),
         "hold_duration_minutes": row.get("hold_duration_minutes"),
@@ -578,6 +609,47 @@ def _csv_row_from_export_row(row: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _exit_quality_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    measured = [row for row in rows if row.get("exit_efficiency_pct") is not None]
+    efficiencies = [float(row["exit_efficiency_pct"]) for row in measured]
+    captures = [float(row["peak_capture_pct"]) for row in rows if row.get("peak_capture_pct") is not None]
+    profit_left = sum(float(row.get("profit_left_on_table_dollars") or 0.0) for row in rows)
+
+    def _trade_ref(row: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "trade_id": row.get("id") or row.get("trade_id"),
+            "option_symbol": row.get("option_symbol"),
+            "exit_reason": row.get("exit_reason"),
+            "exit_efficiency_pct": row.get("exit_efficiency_pct"),
+            "peak_capture_pct": row.get("peak_capture_pct"),
+            "profit_left_on_table_dollars": row.get("profit_left_on_table_dollars"),
+        }
+
+    return {
+        "measured_trades": len(measured),
+        "average_exit_efficiency_pct": round(statistics.fmean(efficiencies), 4) if efficiencies else None,
+        "median_exit_efficiency_pct": round(statistics.median(efficiencies), 4) if efficiencies else None,
+        "average_peak_capture_pct": round(statistics.fmean(captures), 4) if captures else None,
+        "aggregate_profit_left_on_table_dollars": round(profit_left, 4),
+        "best_exit": _trade_ref(max(measured, key=lambda row: float(row["exit_efficiency_pct"]))) if measured else None,
+        "worst_exit": _trade_ref(min(measured, key=lambda row: float(row["exit_efficiency_pct"]))) if measured else None,
+        "trades_below_30_pct_capture": [_trade_ref(row) for row in rows if row.get("peak_capture_pct") is not None and float(row["peak_capture_pct"]) < 30.0],
+        "trades_above_90_pct_capture": [_trade_ref(row) for row in rows if row.get("peak_capture_pct") is not None and float(row["peak_capture_pct"]) > 90.0],
+    }
+
+
+def _exit_quality_period_summaries(trade_date: str) -> Dict[str, Dict[str, Any]]:
+    report_date = date.fromisoformat(trade_date)
+    week_start = report_date - timedelta(days=report_date.weekday())
+    month_start = report_date.replace(day=1)
+    memory = get_memory()
+    return {
+        "day": _exit_quality_summary(memory.load_exit_quality_export_inputs(report_date.isoformat(), report_date.isoformat())),
+        "week_to_date": _exit_quality_summary(memory.load_exit_quality_export_inputs(week_start.isoformat(), report_date.isoformat())),
+        "month_to_date": _exit_quality_summary(memory.load_exit_quality_export_inputs(month_start.isoformat(), report_date.isoformat())),
+    }
+
+
 def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Path]:
     csv_path = OUTPUT_DIR / f"daily_trade_log_{trade_date}.csv"
     json_path = OUTPUT_DIR / f"daily_trade_review_data_{trade_date}.json"
@@ -590,6 +662,10 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
         "option_symbol",
         "option_entry_price",
         "option_exit_price",
+        "option_high_since_entry", "option_low_since_entry", "option_high_timestamp", "option_low_timestamp",
+        "spy_price_at_option_high", "spy_price_at_option_low", "mfe_pct", "mae_pct",
+        "exit_efficiency_pct", "peak_capture_pct", "profit_left_on_table_dollars", "minutes_to_peak",
+        "minutes_after_peak_until_exit", "entry_efficiency_pct", "trade_quality_grade",
         "dollar_pnl",
         "percent_pnl",
         "hold_duration_minutes",
@@ -632,6 +708,7 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
             "win_rate_pct": round((wins / len(rows) * 100.0) if rows else 0.0, 4),
         },
         "trades": rows,
+        "exit_quality": _exit_quality_period_summaries(trade_date),
     }
 
     get_memory().write_report_json(

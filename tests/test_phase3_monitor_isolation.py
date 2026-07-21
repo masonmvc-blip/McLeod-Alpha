@@ -204,7 +204,7 @@ def test_open_option_quote_uses_held_contract_direct_quote(monkeypatch) -> None:
 
     monkeypatch.setattr(module, "client", Client())
 
-    assert module.get_open_option_quote("SPY   260731C00750000") == (2.5, 2.4)
+    assert module.get_open_option_quote("SPY   260731C00750000") == (2.5, 2.4, None)
 
 
 def test_authoritative_history_fetch_runs_once_after_each_closed_market_minute(monkeypatch) -> None:
