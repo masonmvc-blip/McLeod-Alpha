@@ -368,6 +368,8 @@ def _build_runtime_status():
         "decision_contract": {},
         "trend": "UNKNOWN",
         "market_trend": "UNKNOWN",
+        "last_candle_at": None,
+        "candle_age_seconds": None,
         "spy_price": None,
         "spy_change": None,
         "spy_change_pct": None,
@@ -704,6 +706,27 @@ def _build_runtime_status():
 
         # Parse latest decision line + no-trade reason from recent logs.
         recent_lines = [ln.strip() for ln in lines if ln.strip()]
+
+        # Use the latest candle timestamp emitted by the monitor, rather than
+        # the log-file write time, for the banner candle clock.
+        for line in reversed(file_all.splitlines()):
+            candle_match = re.search(
+                r"^Candles received:.*\blatest=(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})\b",
+                line,
+                re.IGNORECASE,
+            )
+            if not candle_match:
+                continue
+            try:
+                candle_at = datetime.fromisoformat(candle_match.group(1)).replace(tzinfo=timezone.utc)
+                status["last_candle_at"] = candle_at.astimezone(EASTERN_TZ).isoformat()
+                status["candle_age_seconds"] = round(
+                    max(0.0, (datetime.now(timezone.utc) - candle_at).total_seconds()),
+                    1,
+                )
+                break
+            except ValueError:
+                continue
 
         # Use the exact trend classification emitted for the latest evaluated candle.
         for line in reversed(recent_lines):

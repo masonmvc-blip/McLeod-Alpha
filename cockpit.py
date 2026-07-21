@@ -7473,8 +7473,8 @@ HTML_DASHBOARD = """
                         ? `<span class="banner-price ${toneClass}">$${spyPrice.toFixed(2)}</span> <span class="banner-pct ${toneClass}">${pctText}</span>`
                         : `<span class="banner-price banner-tone-flat">$${spyPrice.toFixed(2)}</span>`;
                 }
-                const botCheckAt = status.bot_check_at || status.last_heartbeat_at || status.last_update || new Date().toISOString();
-                const botCheckTimeText = formatTimeAMPM(botCheckAt);
+                const candleAt = status.last_candle_at || '';
+                const candleTimeText = formatTimeAMPM(candleAt);
                 const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;
 
                 if (tradeEntryEnabled) {
@@ -7505,10 +7505,10 @@ HTML_DASHBOARD = """
                     tradeEntryBannerMetaLeft.textContent = checklistText;
                 }
                 if (tradeEntryBannerMetaRight) {
-                    const timePart = botCheckTimeText !== '-' ? `${botCheckTimeText}` : '';
-                    let clockAgeSeconds = Number(status.heartbeat_age_seconds);
+                    const timePart = candleTimeText !== '-' ? `${candleTimeText}` : '';
+                    let clockAgeSeconds = Number(status.candle_age_seconds);
                     if (!Number.isFinite(clockAgeSeconds) || clockAgeSeconds < 0) {
-                        const parsedTs = Date.parse(botCheckAt);
+                        const parsedTs = Date.parse(candleAt);
                         if (Number.isFinite(parsedTs)) {
                             clockAgeSeconds = Math.max(0, (Date.now() - parsedTs) / 1000);
                         }
