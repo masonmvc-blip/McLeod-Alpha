@@ -5737,6 +5737,30 @@ HTML_DASHBOARD = """
         .primary-status-grid .status-card {
             text-align: center;
         }
+
+          /* An active position replaces the six summary cards with one focused view.
+              The normal grid returns as soon as the broker-reported position closes. */
+        #statusGrid.position-focus-active .position-secondary-card {
+            display: none;
+        }
+
+        #statusGrid.position-focus-active #currentPositionCard {
+            grid-column: 1 / -1;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #statusGrid.position-focus-active .position-summary-main {
+            font-size: 28px;
+        }
+
+        #statusGrid.position-focus-active .position-summary-pnl {
+            font-size: 24px;
+        }
         
         .status-card {
             background: #f8f9fa;
@@ -6812,7 +6836,7 @@ HTML_DASHBOARD = """
         </div>
         
         <div class="status-grid primary-status-grid" id="statusGrid">
-            <div class="status-card">
+            <div class="status-card position-secondary-card">
                 <h3>CALL Indicators</h3>
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
@@ -6822,22 +6846,19 @@ HTML_DASHBOARD = """
                 <div class="position-summary-pnl" id="currentTradePnl">Loading...</div>
                 <div class="position-summary-stop" id="currentStopCategory"></div>
             </div>
-            <div class="status-card">
+            <div class="status-card position-secondary-card">
                 <h3>PUT Indicators</h3>
                 <div class="status-value" id="putIndicators">Loading...</div>
             </div>
-        </div>
-
-        <div class="status-grid primary-status-grid">
-            <div class="status-card" id="wtdPnlCard">
+            <div class="status-card position-secondary-card" id="wtdPnlCard">
                 <h3>Week-to-Date P&L</h3>
                 <div class="status-value" id="wtdPnl">Loading...</div>
             </div>
-            <div class="status-card">
+            <div class="status-card position-secondary-card">
                 <h3>Month-to-Date P&L</h3>
                 <div class="status-value" id="mtdPnl">Loading...</div>
             </div>
-            <div class="status-card">
+            <div class="status-card position-secondary-card">
                 <h3>Year-to-Date P&L</h3>
                 <div class="status-value" id="ytdPnl">Loading...</div>
             </div>
@@ -7598,6 +7619,10 @@ HTML_DASHBOARD = """
                 }
 
                 const hasOpenPosition = !!status.has_open_position;
+                const statusGrid = document.getElementById('statusGrid');
+                if (statusGrid) {
+                    statusGrid.classList.toggle('position-focus-active', hasOpenPosition);
+                }
                 if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
                     if (hasOpenPosition || Number(previousOpenTradePnlDollars) > 0) {
                         playCashRegisterNoise();
