@@ -3,8 +3,8 @@ set -euo pipefail
 
 PROJECT_ROOT="${MCLEOD_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
-if [[ ! -f "$PROJECT_ROOT/control_center.py" ]]; then
-  echo "ERROR: Canonical control_center.py not found at $PROJECT_ROOT"
+if [[ ! -f "$PROJECT_ROOT/cockpit.py" ]]; then
+  echo "ERROR: Canonical cockpit.py not found at $PROJECT_ROOT"
   exit 1
 fi
 
@@ -26,13 +26,12 @@ if [[ ! -f "token.json" ]]; then
   exit 1
 fi
 
-# Stop existing local control center/bot processes.
-pkill -f "control_center.py" || true
+# Stop existing local cockpit/bot processes.
+pkill -f "cockpit.py" || true
 pkill -f "phase3_monitor.py" || true
 
-# Start control center in canonical-friendly local mode.
+# Start cockpit in canonical-friendly local mode.
 export MCLEOD_CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-$(hostname)}"
-export MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER=0
 export ACCOUNT_MODE=live
 export SCHWAB_CALLBACK_URL="https://127.0.0.1"
 
@@ -41,9 +40,9 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   PYTHON_BIN="/usr/bin/python3"
 fi
 
-nohup "$PYTHON_BIN" "$PROJECT_ROOT/control_center.py" > "$PROJECT_ROOT/control_center_stdout.log" 2>&1 &
+nohup "$PYTHON_BIN" "$PROJECT_ROOT/cockpit.py" > "$PROJECT_ROOT/cockpit_stdout.log" 2>&1 &
 CC_PID=$!
-echo "Started control center PID: $CC_PID"
+echo "Started cockpit PID: $CC_PID"
 
 # Wait briefly for API.
 for _ in {1..20}; do
@@ -68,4 +67,4 @@ print('bot_running_effective=', s.get('bot_running_effective'))
 print('trade_entry_reason=', s.get('trade_entry_reason'))
 PY
 
-echo "Recovery complete. If Tailnet still shows 502, verify iMac Tailscale Funnel/Serve target points to 127.0.0.1:5001."
+echo "Recovery complete. Verify the Cloudflare Tunnel routes the public Cockpit to the private origin."

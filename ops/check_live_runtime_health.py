@@ -13,12 +13,14 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+load_dotenv(ROOT / "config" / "cockpit.env", override=True)
 
 EASTERN = ZoneInfo("America/New_York")
-STATUS_URL = os.getenv("MCLEOD_CANONICAL_CONTROL_CENTER_URL", "https://masons-imac.tailb88bd7.ts.net/").rstrip("/") + "/api/status"
+STATUS_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/") + "/api/status"
 STATE_PATH = ROOT / "data" / "live_runtime_health_state.json"
 EVENT_PATH = ROOT / "data" / "reports" / "runtime_events.jsonl"
 LATENCY_PATH = ROOT / "data" / "reports" / "latency_cycle_history.jsonl"
@@ -90,7 +92,7 @@ def main() -> int:
     try:
         status = _status()
     except Exception as exc:
-        issues.append(f"iMac Control Center unavailable: {type(exc).__name__}")
+        issues.append(f"iMac Cockpit unavailable: {type(exc).__name__}")
     else:
         expected = {
             "bot_running_effective": True,

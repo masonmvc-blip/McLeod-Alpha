@@ -1,21 +1,21 @@
-# 🚀 McLeod Alpha Control Center
+# 🚀 McLeod Alpha Cockpit
 
 ## Overview
-The **McLeod Alpha Control Center** is a local macOS dashboard application that provides one-click controls for starting, stopping, and monitoring the live trading bot without using terminal commands.
+The **McLeod Alpha Cockpit** is a local macOS dashboard application that provides one-click controls for starting, stopping, and monitoring the live trading bot without using terminal commands.
 
 ---
 
 ## Files Created
 
-### 1. **control_center.py** (698 lines)
+### 1. **cockpit.py** (698 lines)
 - **Purpose**: Flask web server + REST API + HTML dashboard
-- **Location**: `/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha/control_center.py`
+- **Location**: repository root
 - **Size**: 22KB
 - **Dependencies**: Flask 3.1.3 (already installed in venv)
 
-### 2. **McLeod Alpha Control Center.command** (1.6KB)
+### 2. **McLeod Alpha Cockpit.command** (1.6KB)
 - **Purpose**: macOS shell launcher script
-- **Location**: `/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha/McLeod Alpha Control Center.command`
+- **Location**: repository root
 - **Permissions**: Executable (chmod +x ✓)
 - **Behavior**: Automatically opens dashboard in default browser on double-click
 
@@ -26,23 +26,23 @@ The **McLeod Alpha Control Center** is a local macOS dashboard application that 
 ### Method 1: Double-Click Launcher (Easiest)
 ```
 1. Open Finder → McLeod Alpha folder
-2. Double-click: "McLeod Alpha Control Center.command"
-3. Dashboard opens at: http://localhost:5000
+2. Double-click: "McLeod Alpha Cockpit.command"
+3. Dashboard opens at: https://cockpit.mcleodalpha.com
 4. Click buttons to control bot
 ```
 
 ### Method 2: Terminal Command
 ```bash
-cd "/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha"
-./control_center.py
+cd "$(git rev-parse --show-toplevel)"
+python3 cockpit.py
 ```
 
-Then open browser to: **http://localhost:5000**
+Then open browser to: **https://cockpit.mcleodalpha.com**
 
 ### Method 3: Direct Python
 ```bash
-cd "/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha"
-./venv/bin/python3 control_center.py
+cd "$(git rev-parse --show-toplevel)"
+./.venv/bin/python3 cockpit.py
 ```
 
 ---
@@ -111,19 +111,19 @@ All endpoints return JSON:
 
 ```bash
 # Get status
-curl http://localhost:5000/api/status
+curl https://cockpit.mcleodalpha.com/api/status
 
 # Start bot
-curl -X POST http://localhost:5000/api/start
+curl -X POST https://cockpit.mcleodalpha.com/api/start
 
 # Stop bot
-curl -X POST http://localhost:5000/api/stop
+curl -X POST https://cockpit.mcleodalpha.com/api/stop
 
 # Get last 50 lines of logs
-curl http://localhost:5000/api/logs?lines=50
+curl https://cockpit.mcleodalpha.com/api/logs?lines=50
 
 # Run checklist
-curl -X POST http://localhost:5000/api/run-checklist
+curl -X POST https://cockpit.mcleodalpha.com/api/run-checklist
 ```
 
 ---
@@ -132,8 +132,8 @@ curl -X POST http://localhost:5000/api/run-checklist
 
 ### Process Management
 ```
-Control Center (Flask):
-  - Listens on http://127.0.0.1:5000
+Cockpit (Flask):
+  - Served through the Cloudflare-protected Cockpit
   - Spawns new process group for bot
   - Monitors bot PID
   - Graceful shutdown on SIGTERM
@@ -143,7 +143,7 @@ Control Center (Flask):
 ### File Management
 - **`.bot_pid`**: Stores bot process ID (created on start, deleted on stop)
 - **`bot_output.log`**: Full bot output (appended during runtime)
-- **`.control_center_status`**: Reserved for future status persistence
+- **`.cockpit_status`**: Reserved for future status persistence
 
 ### Port
 - **5000**: Dashboard (configurable in code)
@@ -170,7 +170,7 @@ Control Center (Flask):
 
 ## Dependency Check
 
-The control center verifies dependencies before starting:
+The cockpit verifies dependencies before starting:
 
 ```python
 Required:
@@ -188,15 +188,8 @@ If Missing:
 
 ## Troubleshooting
 
-### "Port 5000 already in use"
-**Solution:**
-```bash
-# Kill any process on 5000
-lsof -ti:5000 | xargs kill -9
-
-# Or start control center on different port (edit control_center.py line 646)
-app.run(host='127.0.0.1', port=5001)
-```
+### "Cockpit is unavailable"
+**Solution:** Restart the Cockpit using the supported launcher, then access it at **https://cockpit.mcleodalpha.com**.
 
 ### "Bot won't start"
 1. Check `bot_output.log` for errors
@@ -209,7 +202,7 @@ app.run(host='127.0.0.1', port=5001)
 3. Click "🔄 Refresh Status" to force update
 
 ### "Can't stop bot"
-1. Control center sends SIGTERM (graceful) then SIGKILL (force)
+1. Cockpit sends SIGTERM (graceful) then SIGKILL (force)
 2. If stuck, manually kill: `pkill -9 -f phase3_monitor.py`
 3. Clean PID file: `rm .bot_pid`
 
@@ -218,12 +211,12 @@ app.run(host='127.0.0.1', port=5001)
 ## Testing Verification
 
 ### ✅ Files Created
-- [x] control_center.py (698 lines, 22KB)
-- [x] McLeod Alpha Control Center.command (executable)
-- [x] CONTROL_CENTER_README.md (this file)
+- [x] cockpit.py (698 lines, 22KB)
+- [x] McLeod Alpha Cockpit.command (executable)
+- [x] COCKPIT_README.md (this file)
 
 ### ✅ Functionality Tested
-- [x] Flask server starts on port 5000
+- [x] Cockpit is available at https://cockpit.mcleodalpha.com
 - [x] HTML dashboard renders correctly
 - [x] API endpoints return JSON
 - [x] Status parsing works
@@ -244,19 +237,19 @@ app.run(host='127.0.0.1', port=5001)
 
 ```
 User Double-Clicks:
-  "McLeod Alpha Control Center.command"
+  "McLeod Alpha Cockpit.command"
        ↓
   Bash launcher checks dependencies
        ↓
-  Spawns: ./venv/bin/python3 control_center.py
+  Spawns: ./venv/bin/python3 cockpit.py
        ↓
-  Flask starts on localhost:5000
+  Cockpit is available at https://cockpit.mcleodalpha.com
        ↓
   Browser opens dashboard
        ↓
   User clicks buttons → API calls
        ↓
-  Control center spawns/stops bot as process group
+     Cockpit spawns/stops bot as process group
        ↓
   Bot runs in background, logs to bot_output.log
        ↓
@@ -270,18 +263,18 @@ User Double-Clicks:
 **For macOS Finder:**
 ```
 Double-click file:
-  McLeod Alpha Control Center.command
+  McLeod Alpha Cockpit.command
 ```
 
 **For Terminal:**
 ```bash
-cd "/Users/mason/Library/CloudStorage/Dropbox/McLeod Capital/McLeod Alpha"
-./venv/bin/python3 control_center.py
+cd "$(git rev-parse --show-toplevel)"
+./.venv/bin/python3 cockpit.py
 ```
 
 **Then visit:**
 ```
-http://localhost:5000
+https://cockpit.mcleodalpha.com
 ```
 
 ---
@@ -306,7 +299,7 @@ http://localhost:5000
 ## Security Model
 
 ```
-Control Center (UI Layer):
+Cockpit (UI Layer):
   └─ Cannot modify trading decisions
   └─ Cannot change order logic
   └─ Cannot access private keys
@@ -325,8 +318,8 @@ Bot (Trading Layer):
 
 ## Next Steps
 
-1. **Daily Use**: Double-click "McLeod Alpha Control Center.command" each morning
-2. **Advanced**: Bookmark `http://localhost:5000` in browser for quick access
+1. **Daily Use**: Double-click "McLeod Alpha Cockpit.command" each morning
+2. **Advanced**: Bookmark `https://cockpit.mcleodalpha.com` for quick access
 3. **Monitoring**: Keep browser open to watch live trading
 4. **Shutdown**: Click "⏹ Stop Bot" button, then close browser/command window
 
@@ -334,12 +327,12 @@ Bot (Trading Layer):
 
 ## Support
 
-If control center won't start:
-1. Check `/tmp/mcleod_control_center.log`
-2. Run manually: `./venv/bin/python3 control_center.py`
+If cockpit won't start:
+1. Check `/tmp/mcleod_cockpit.log`
+2. Run manually: `./venv/bin/python3 cockpit.py`
 3. Verify Flask: `./venv/bin/python3 -c "import flask; print(flask.__version__)"`
 
-If bot won't start from control center:
+If bot won't start from cockpit:
 1. Check `bot_output.log` for errors
 2. Try manual start: `./venv/bin/python3 phase3_monitor.py`
 3. Verify `.venv` has all dependencies
@@ -348,7 +341,7 @@ If bot won't start from control center:
 
 ## Version Info
 
-- **Control Center Version**: 1.0
+- **Cockpit Version**: 1.0
 - **Flask**: 3.1.3
 - **Python**: 3.11 (via .venv)
 - **Created**: 2026-07-14

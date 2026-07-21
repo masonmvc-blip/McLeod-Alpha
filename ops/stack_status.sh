@@ -16,12 +16,12 @@ fi
 
 cd "$PROJECT_DIR"
 
-echo "Control Center listener PIDs:"
+echo "Cockpit listener PIDs:"
 lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null || echo "none"
 
 echo ""
 echo "PID files:"
-for f in .control_center_pid .bot_pid .runtime_watchdog.pid; do
+for f in .cockpit_pid .bot_pid .runtime_watchdog.pid; do
   if [[ -f "$f" ]]; then
     echo "$f=$(cat "$f" 2>/dev/null || true)"
   else

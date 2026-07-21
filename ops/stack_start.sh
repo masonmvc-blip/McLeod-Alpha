@@ -3,9 +3,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CC_LOG="$PROJECT_DIR/logs/control_center.log"
+CC_LOG="$PROJECT_DIR/logs/cockpit.log"
 WATCHDOG_LOG="$PROJECT_DIR/logs/runtime_watchdog.log"
-CC_PID_FILE="$PROJECT_DIR/.control_center_pid"
+CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
 CANONICAL_RUNTIME_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Masons-iMac.local}"
 
@@ -32,30 +32,30 @@ runtime_host_allows_bot_start() {
   [[ -z "$CANONICAL_RUNTIME_HOST" || "${current_host:l}" == "${CANONICAL_RUNTIME_HOST:l}" ]]
 }
 
-start_control_center_waitress() {
-  nohup "$SCRIPT_DIR/run_control_center_waitress.sh" >> "$CC_LOG" 2>&1 < /dev/null &
+start_cockpit_waitress() {
+  nohup "$SCRIPT_DIR/run_cockpit_waitress.sh" >> "$CC_LOG" 2>&1 < /dev/null &
   cc_pid=$!
   echo "$cc_pid" > "$CC_PID_FILE"
 }
 
-start_control_center() {
+start_cockpit() {
   if is_port_open; then
-    echo "Control Center already listening on 127.0.0.1:5001"
+    echo "Cockpit already listening on 127.0.0.1:5001"
     return 0
   fi
 
-  echo "Starting Control Center (Waitress)..."
-  start_control_center_waitress
+  echo "Starting Cockpit (Waitress)..."
+  start_cockpit_waitress
 
   for _ in {1..30}; do
     if is_port_open; then
-      echo "Control Center started (PID $cc_pid)"
+      echo "Cockpit started (PID $cc_pid)"
       return 0
     fi
     sleep 0.5
   done
 
-  echo "Control Center failed to bind port 5001; check logs/control_center.log"
+  echo "Cockpit failed to bind port 5001; check logs/cockpit.log"
   return 1
 }
 
@@ -75,7 +75,7 @@ start_bot_via_api() {
     return 0
   fi
 
-  echo "Starting bot through Control Center API..."
+  echo "Starting bot through Cockpit API..."
   "$PYTHON_BIN" - <<'PY'
 import json
 import urllib.request
@@ -113,7 +113,7 @@ start_watchdog() {
 }
 
 "$SCRIPT_DIR/rotate_runtime_logs.sh" || true
-start_control_center
+start_cockpit
 start_bot_via_api
 start_watchdog
 

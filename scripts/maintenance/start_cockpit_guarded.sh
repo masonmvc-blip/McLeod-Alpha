@@ -8,9 +8,8 @@ PYTHON_BIN="${PYTHON_BIN:-}"
 RUN_BACKGROUND="${RUN_BACKGROUND:-0}"
 REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}"
 REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1:8182}"
-REQUIRED_REDIRECT_FLAG="${MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER:-0}"
 TRADE_DB_PATH="$ROOT/data/mcleod_alpha.db"
-CONTROL_CENTER_PID_FILE="$ROOT/.control_center_pid"
+COCKPIT_PID_FILE="$ROOT/.cockpit_pid"
 
 db_has_trade_log_table() {
   local db_path="$1"
@@ -154,8 +153,8 @@ echo "hostname=$(hostname)"
 echo "canonical_host=$CANONICAL_HOST"
 echo "python=$PYTHON_BIN"
 
-if [[ ! -f "$ROOT/control_center.py" ]]; then
-  echo "ERROR: control_center.py not found in $ROOT"
+if [[ ! -f "$ROOT/cockpit.py" ]]; then
+  echo "ERROR: cockpit.py not found in $ROOT"
   exit 1
 fi
 
@@ -184,11 +183,6 @@ if [[ "${SCHWAB_CALLBACK_URL:-$REQUIRED_SCHWAB_CALLBACK_URL}" != "$REQUIRED_SCHW
   exit 1
 fi
 
-if [[ "${MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER:-$REQUIRED_REDIRECT_FLAG}" != "$REQUIRED_REDIRECT_FLAG" ]]; then
-  echo "ERROR: MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER mismatch (current=${MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER:-unset}, required=$REQUIRED_REDIRECT_FLAG)"
-  exit 1
-fi
-
 restore_trade_db_if_needed
 
 # Optional strict cleanliness gate (recommended for canonical runtime).
@@ -200,28 +194,26 @@ if [[ "${ENFORCE_CLEAN_GIT_ON_START:-1}" == "1" ]]; then
   fi
 fi
 
-pkill -f "control_center.py" || true
+pkill -f "cockpit.py" || true
 pkill -f "phase3_monitor.py" || true
 
 if [[ "$RUN_BACKGROUND" == "1" ]]; then
-  AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE=0 \
+  AUTO_REEXEC_ON_COCKPIT_CHANGE=0 \
   MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \
-  MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER="$REQUIRED_REDIRECT_FLAG" \
   ENFORCE_RUNTIME_CONFIG_ON_START=1 \
   ENFORCE_CLEAN_GIT_ON_START="${ENFORCE_CLEAN_GIT_ON_START:-1}" \
   ACCOUNT_MODE="$REQUIRED_ACCOUNT_MODE" \
   SCHWAB_CALLBACK_URL="$REQUIRED_SCHWAB_CALLBACK_URL" \
-  nohup "$PYTHON_BIN" "$ROOT/control_center.py" > "$ROOT/control_center_stdout.log" 2>&1 &
-  control_center_pid=$!
-  echo "$control_center_pid" > "$CONTROL_CENTER_PID_FILE"
-  echo "control_center started in background pid=$control_center_pid"
+  nohup "$PYTHON_BIN" "$ROOT/cockpit.py" > "$ROOT/cockpit_stdout.log" 2>&1 &
+  cockpit_pid=$!
+  echo "$cockpit_pid" > "$COCKPIT_PID_FILE"
+  echo "cockpit started in background pid=$cockpit_pid"
 else
-  AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE=0 \
+  AUTO_REEXEC_ON_COCKPIT_CHANGE=0 \
   MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \
-  MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER="$REQUIRED_REDIRECT_FLAG" \
   ENFORCE_RUNTIME_CONFIG_ON_START=1 \
   ENFORCE_CLEAN_GIT_ON_START="${ENFORCE_CLEAN_GIT_ON_START:-1}" \
   ACCOUNT_MODE="$REQUIRED_ACCOUNT_MODE" \
   SCHWAB_CALLBACK_URL="$REQUIRED_SCHWAB_CALLBACK_URL" \
-  "$PYTHON_BIN" "$ROOT/control_center.py"
+  "$PYTHON_BIN" "$ROOT/cockpit.py"
 fi

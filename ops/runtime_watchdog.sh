@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
-CC_PID_FILE="$PROJECT_DIR/.control_center_pid"
+CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 MANUAL_STOP_MARKER="$PROJECT_DIR/data/bot_manual_stop_marker.json"
 RUNTIME_EVENTS_FILE="$PROJECT_DIR/data/reports/runtime_events.jsonl"
 RUNTIME_ALERT_FLAG_FILE="$PROJECT_DIR/data/runtime_alert_flag.json"
@@ -93,8 +93,8 @@ runtime_host_allows_bot_start() {
   [[ -z "$CANONICAL_RUNTIME_HOST" || "${current_host:l}" == "${CANONICAL_RUNTIME_HOST:l}" ]]
 }
 
-restart_control_center_process() {
-  nohup "$SCRIPT_DIR/run_control_center_waitress.sh" >> "$PROJECT_DIR/logs/control_center.log" 2>&1 < /dev/null &
+restart_cockpit_process() {
+  nohup "$SCRIPT_DIR/run_cockpit_waitress.sh" >> "$PROJECT_DIR/logs/cockpit.log" 2>&1 < /dev/null &
   cc_pid=$!
   echo "$cc_pid" > "$CC_PID_FILE"
 }
@@ -110,8 +110,8 @@ restart_budget_ok() {
       cc_window_count=0
     fi
     if (( cc_window_count >= MAX_CC_RESTARTS_PER_WINDOW )); then
-      emit_event "watchdog_restart_limited" "warn" "Control Center restart budget exhausted" "count=$cc_window_count window_sec=$RESTART_WINDOW_SEC"
-      emit_alert_flag "warn" "Control Center restart budget exhausted" "watchdog_restart_limited"
+      emit_event "watchdog_restart_limited" "warn" "Cockpit restart budget exhausted" "count=$cc_window_count window_sec=$RESTART_WINDOW_SEC"
+      emit_alert_flag "warn" "Cockpit restart budget exhausted" "watchdog_restart_limited"
       return 1
     fi
     cc_window_count=$((cc_window_count + 1))
@@ -135,10 +135,10 @@ is_port_open() {
   lsof -nP -iTCP:5001 -sTCP:LISTEN >/dev/null 2>&1
 }
 
-restart_control_center() {
+restart_cockpit() {
   now_ts=$(date +%s)
   if (( now_ts - last_cc_restart < MIN_RESTART_GAP_SEC )); then
-    emit_event "watchdog_restart_skipped" "info" "Control Center restart skipped due cooldown" "cooldown_sec=$MIN_RESTART_GAP_SEC"
+    emit_event "watchdog_restart_skipped" "info" "Cockpit restart skipped due cooldown" "cooldown_sec=$MIN_RESTART_GAP_SEC"
     return 0
   fi
 
@@ -146,10 +146,10 @@ restart_control_center() {
     return 0
   fi
 
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Control Center not listening, restarting..."
-  restart_control_center_process
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cockpit not listening, restarting..."
+  restart_cockpit_process
   last_cc_restart=$now_ts
-  emit_event "watchdog_restart" "warn" "Control Center restarted" "pid=$cc_pid"
+  emit_event "watchdog_restart" "warn" "Cockpit restarted" "pid=$cc_pid"
 }
 
 maybe_restart_bot() {
@@ -220,8 +220,8 @@ emit_event "watchdog_start" "info" "Runtime watchdog online" "interval_sec=$WATC
 
 while true; do
   if ! is_port_open; then
-    emit_event "watchdog_health" "warn" "Control Center port not listening" "port=5001"
-    restart_control_center
+    emit_event "watchdog_health" "warn" "Cockpit port not listening" "port=5001"
+    restart_cockpit
   fi
 
   if is_port_open; then

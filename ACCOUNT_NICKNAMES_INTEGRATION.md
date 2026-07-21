@@ -22,7 +22,7 @@ Account: Guaranteed Future (903) (MARGIN)
 
 | Location | Display Format | Example |
 |----------|---|---|
-| Control Center Dashboard | Interactive card | ✅ Guaranteed Future (903) |
+| Cockpit Dashboard | Interactive card | ✅ Guaranteed Future (903) |
 | Morning CIO Report | Markdown header | **Account:** Guaranteed Future (903) (MARGIN) |
 | Portfolio Sync Output | Console output | Account: Guaranteed Future (903) |
 | API Status Endpoint | JSON response | `"account_nickname": "Guaranteed Future (903)"` |
@@ -35,7 +35,7 @@ Account: Guaranteed Future (903) (MARGIN)
 - ✅ `docs/ACCOUNT_NICKNAMES.md` - NEW - Complete user guide
 
 ### Display Layer Updates
-- ✅ `control_center.py` - Shows nickname in dashboard and API responses
+- ✅ `cockpit.py` - Shows nickname in dashboard and API responses
 - ✅ `reports/morning_cio_report.py` - Displays nickname in report header
 - ✅ `portfolio_sync.py` - Shows nickname in console output
 
@@ -145,7 +145,7 @@ All components tested and working:
 
 ✅ `AccountManager.get_nickname("33310903")` → "Guaranteed Future"  
 ✅ `AccountManager.get_display_name("33310903")` → "Guaranteed Future (903)"  
-✅ `Control Center` → Shows nickname in dashboard and API responses  
+✅ `Cockpit` → Shows nickname in dashboard and API responses
 ✅ `Morning CIO Report` → Shows nickname in report header  
 ✅ `Portfolio Sync` → Shows nickname in console output  
 

@@ -205,7 +205,7 @@ def _extract_series(companyfacts: Dict[str, Any], tag_candidates: List[str], uni
 
 
 def _get_live_quotes(symbols: List[str]) -> Dict[str, Dict[str, Any]]:
-    from control_center import _get_broker_client  # local import to avoid module side effects at import time
+    from cockpit import _get_broker_client  # local import to avoid module side effects at import time
 
     quotes: Dict[str, Dict[str, Any]] = {}
     client = _get_broker_client()

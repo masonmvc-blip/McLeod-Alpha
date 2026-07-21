@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$ROOT_DIR/config/cockpit.env"
 BASE_URL="${1:-http://127.0.0.1:5001}"
-CANONICAL_URL="${2:-${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}}"
+CANONICAL_URL="${2:-$COCKPIT_PUBLIC_URL}"
 EXPECTED_CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 EXPECTED_REPO_BASENAME="${MCLEOD_CANONICAL_REPO_BASENAME:-McLeod-Alpha-New}"
 REQUIRE_BOT_RUNNING="${MCLEOD_SMOKE_REQUIRE_BOT_RUNNING:-0}"

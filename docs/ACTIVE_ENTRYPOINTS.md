@@ -7,7 +7,7 @@ Use these scripts as the canonical operational flow.
 - Start: ops/stack_start.sh
 - Status: ops/stack_status.sh
 - Stop: ops/stack_stop.sh
-- Control Center (direct): ops/run_control_center_waitress.sh
+- Cockpit (direct): ops/run_cockpit_waitress.sh
 - Watchdog: ops/runtime_watchdog.sh
 
 ## Policy

@@ -9,7 +9,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_GLOBS = ("control_center.py", "phase3_monitor.py", "execution/**/*.py")
+RUNTIME_GLOBS = ("cockpit.py", "phase3_monitor.py", "execution/**/*.py")
 PERSISTENCE_METHODS = {"write_text", "write_bytes", "to_csv", "to_json", "writerow", "writerows"}
 POLICY_FUNCTIONS = {"manage_trade", "evaluate_entry", "evaluate_exit", "should_enter", "should_exit"}
 COCKPIT_POLICY_PREFIXES = ("_active_stop_", "_classify_exit_", "_indicator_no_entry_", "_validate_runtime_")
@@ -50,11 +50,11 @@ CAPABILITY_MATRIX = {
         ("optimization_history", "Optimization history", 6, "engine/memory/Memory", "complete", []),
     ),
     "cockpit": (
-        ("business_logic", "Business logic", 30, "control_center.py", "partial", ["control_center.py:_active_stop_category", "control_center.py:_classify_exit_reason"]),
-        ("direct_persistence", "Direct persistence", 25, "control_center.py", "partial", ["control_center.py"]),
-        ("duplicate_runtime_state", "Duplicate runtime state", 20, "control_center.py", "partial", ["control_center.py", "phase3_monitor.py"]),
-        ("brain_boundary", "Calls that bypass Brain", 15, "control_center.py", "partial", ["control_center.py"]),
-        ("memory_boundary", "Calls that bypass Memory", 10, "control_center.py", "partial", ["control_center.py"]),
+        ("business_logic", "Business logic", 30, "cockpit.py", "partial", ["cockpit.py:_active_stop_category", "cockpit.py:_classify_exit_reason"]),
+        ("direct_persistence", "Direct persistence", 25, "cockpit.py", "partial", ["cockpit.py"]),
+        ("duplicate_runtime_state", "Duplicate runtime state", 20, "cockpit.py", "partial", ["cockpit.py", "phase3_monitor.py"]),
+        ("brain_boundary", "Calls that bypass Brain", 15, "cockpit.py", "partial", ["cockpit.py"]),
+        ("memory_boundary", "Calls that bypass Memory", 10, "cockpit.py", "partial", ["cockpit.py"]),
     ),
 }
 
@@ -86,7 +86,7 @@ EXIT_CRITERIA = {
 PRIORITY_MILESTONES = (
     ("complete_exit_decisions", "Complete canonical exit decisions", "brain", ("exit_decisions",), "engine/brain/engine.py:evaluate_exit"),
     ("consolidate_feature_vectors", "Consolidate feature-vector persistence", "memory", ("feature_vectors",), "execution/live_engine.py"),
-    ("remove_cockpit_direct_persistence", "Remove direct Cockpit persistence", "cockpit", ("direct_persistence",), "control_center.py"),
+    ("remove_cockpit_direct_persistence", "Remove direct Cockpit persistence", "cockpit", ("direct_persistence",), "cockpit.py"),
 )
 
 
@@ -132,7 +132,7 @@ def _scan_file(root: Path, path: Path) -> tuple[list[dict[str, Any]], list[dict[
     persistence: list[dict[str, Any]] = []
     policy: list[dict[str, Any]] = []
     cockpit: list[dict[str, Any]] = []
-    is_cockpit = relative.name == "control_center.py"
+    is_cockpit = relative.name == "cockpit.py"
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
@@ -230,7 +230,7 @@ def build_architecture_health(root: Path | str | None = None) -> dict[str, Any]:
     memory["evidence"] = [_evidence(item, "direct_writer_outside_memory", "Runtime persistence bypasses the canonical Memory service.") for item in persistence]
     cockpit["evidence"] = [
         *[_evidence(item, "business_logic_in_cockpit", "Cockpit contains a candidate business-rule implementation.") for item in cockpit_policy],
-        *[_evidence(item, "direct_persistence_in_cockpit", "Cockpit writes state directly instead of using Memory.") for item in persistence if item["path"] == "control_center.py"],
+        *[_evidence(item, "direct_persistence_in_cockpit", "Cockpit writes state directly instead of using Memory.") for item in persistence if item["path"] == "cockpit.py"],
     ]
     components = {"brain": brain, "memory": memory, "cockpit": cockpit}
     overall_score = round(sum(components[name]["score"] * weight for name, weight in COMPONENT_WEIGHTS.items()))
@@ -244,7 +244,7 @@ def build_architecture_health(root: Path | str | None = None) -> dict[str, Any]:
         "rules": {
             "direct_persistence": "AST calls to mutating SQL, json.dump, write methods, CSV writers, or writable open outside Memory; read-only SQLite connections are excluded.",
             "brain_policy": "Execution functions named manage_trade/evaluate_entry/evaluate_exit/should_enter/should_exit outside engine/brain.",
-            "cockpit_policy": "Control Center functions that classify exits, stops, entry reasons, or runtime validation.",
+            "cockpit_policy": "Cockpit functions that classify exits, stops, entry reasons, or runtime validation.",
             "score": "Scores come only from the reviewed capability matrix: Complete=100% of its weight, Partial=50%, Remaining=0%. AST findings are evidence and never modify scores.",
             "completion": "Every capability lists its definition of complete. A status may change only after each criterion is demonstrably satisfied.",
         },

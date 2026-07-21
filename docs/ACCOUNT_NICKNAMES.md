@@ -5,7 +5,7 @@
 Account nicknames allow you to display friendly names instead of account numbers throughout the McLeod Alpha system. For example, display "Guaranteed Future (903)" instead of "33310903".
 
 **Where Nicknames Are Used:**
-- ✅ Control Center Dashboard
+- ✅ Cockpit Dashboard
 - ✅ Morning CIO Report
 - ✅ Portfolio Sync Output
 - ✅ API Status Endpoints
@@ -115,7 +115,7 @@ account_info = AccountManager.refresh_from_schwab(client)
 
 | File | Change | Notes |
 |------|--------|-------|
-| `control_center.py` | Dashboard shows nickname | API endpoint includes account_nickname |
+| `cockpit.py` | Dashboard shows nickname | API endpoint includes account_nickname |
 | `reports/morning_cio_report.py` | Header shows nickname | Replaces account number |
 | `portfolio_sync.py` | Console output shows nickname | Runs during portfolio sync |
 | `utils/account_manager.py` | New module | Handles all nickname logic |
@@ -131,7 +131,7 @@ from utils.account_manager import AccountManager
 AccountManager.set_nickname("33310903", "Main Trading Account")
 ```
 
-Result in Control Center:
+Result in Cockpit:
 ```
 Trading Account: ✅ Main Trading Account (903)
 ```
@@ -180,9 +180,9 @@ print(f"Account now displays as: {display}")
 2. Verify JSON syntax is valid
 3. Restart services:
    ```bash
-   # Restart control center
-   pkill -f control_center.py
-   python3 control_center.py
+   # Restart cockpit
+   pkill -f cockpit.py
+   python3 cockpit.py
    ```
 4. Clear cache:
    ```python

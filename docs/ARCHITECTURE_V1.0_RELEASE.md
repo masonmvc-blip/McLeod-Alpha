@@ -45,10 +45,9 @@ Cockpit operational validation.
 
 ## Operational Caveats
 
-- The canonical Tailscale Control Center endpoint has previously returned HTTP
-  502 while the local Flask listener was healthy, indicating a proxy or routing
-  issue outside the application process.
-- Control Center auto-reload can collide with an already bound port during a
+- The Cloudflare-protected Cockpit is the sole supported management interface;
+  its private loopback origin is not a public access path.
+- Cockpit auto-reload can collide with an already bound port during a
   restart; verify the active listener and PID state before relying on a restart.
 - The tag does not certify broker connectivity, live order submission, or
   Cockpit UI behavior. Those are the next operational validation focus.

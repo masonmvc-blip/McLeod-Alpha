@@ -6,7 +6,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-import control_center
+import cockpit
 from engine.memory import Memory
 
 
@@ -51,7 +51,7 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
 def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_path):
     database_path = tmp_path / "data" / "mcleod_alpha.db"
     memory = Memory(db_path=database_path)
-    today = datetime.now(control_center.EASTERN_TZ).date().isoformat()
+    today = datetime.now(cockpit.EASTERN_TZ).date().isoformat()
     memory.record_trade(
         entry_time=f"{today}T09:30:00-04:00",
         exit_time=f"{today}T09:35:00-04:00",
@@ -68,17 +68,17 @@ def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_pat
         broker_exit_order_id="existing-exit",
     )
 
-    monkeypatch.setattr(control_center, "PROJECT_ROOT", tmp_path)
-    monkeypatch.setattr(control_center, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
-    monkeypatch.setattr(control_center, "_schwab_transaction_day_net_pnl", lambda _: None)
-    monkeypatch.setattr(control_center, "_broker_verified_trade_signatures", lambda _: None)
-    monkeypatch.setattr(control_center, "_load_latest_schwab_transaction_export", lambda: (None, None))
-    monkeypatch.setattr(control_center, "_log_daily_trades_chart_snapshot", lambda *args: None)
-    monkeypatch.setattr(control_center, "parse_bot_status", lambda: {"todays_pnl": 0.0})
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
+    monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
+    monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
+    monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
+    monkeypatch.setattr(cockpit, "_log_daily_trades_chart_snapshot", lambda *args: None)
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"todays_pnl": 0.0})
 
     with sqlite3.connect(database_path) as connection:
         before_count = connection.execute("SELECT COUNT(*) FROM trade_log").fetchone()[0]
-    response = control_center.app.test_client().get("/api/today-trades")
+    response = cockpit.app.test_client().get("/api/today-trades")
     with sqlite3.connect(database_path) as connection:
         after_count = connection.execute("SELECT COUNT(*) FROM trade_log").fetchone()[0]
         broker_rows = connection.execute(
@@ -91,8 +91,8 @@ def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_pat
     assert broker_rows == 0
 
 
-def test_control_center_has_no_direct_trade_log_mutation():
-    tree = ast.parse(Path("control_center.py").read_text(encoding="utf-8"))
+def test_cockpit_has_no_direct_trade_log_mutation():
+    tree = ast.parse(Path("cockpit.py").read_text(encoding="utf-8"))
     forbidden_prefixes = ("INSERT INTO TRADE_LOG", "UPDATE TRADE_LOG", "DELETE FROM TRADE_LOG", "REPLACE INTO TRADE_LOG")
 
     for node in ast.walk(tree):
@@ -104,4 +104,4 @@ def test_control_center_has_no_direct_trade_log_mutation():
         if not isinstance(statement, ast.Constant) or not isinstance(statement.value, str):
             continue
         normalized = " ".join(statement.value.upper().split())
-        assert not normalized.startswith(forbidden_prefixes), f"control_center.py:{node.lineno} mutates trade_log directly"
+        assert not normalized.startswith(forbidden_prefixes), f"cockpit.py:{node.lineno} mutates trade_log directly"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Daily execution validation report for McLeod Control Center."""
+"""Daily execution validation report for McLeod Cockpit."""
 
 from __future__ import annotations
 
@@ -11,10 +11,13 @@ from typing import Any, Dict, List, Tuple
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
+from dotenv import load_dotenv
 
+ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / "config" / "cockpit.env", override=True)
 EASTERN_NOW = datetime.now().astimezone()
 TODAY = EASTERN_NOW.date().isoformat()
-BASE_URL = os.getenv("MCLEOD_CONTROL_CENTER_URL", "http://localhost:5001").rstrip("/")
+BASE_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/")
 REPORT_DIR = Path("data/reports/execution_validation")
 
 

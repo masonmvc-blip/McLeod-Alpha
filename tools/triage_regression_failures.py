@@ -108,7 +108,7 @@ def _contract_item(node: str) -> dict[str, str]:
     if "absorption_score" in lower or "reject_continuation" in lower:
         return {"test_node": node, "status": "LEGACY", "replacement_subsystem": "strategy.signals / execution feature payload; no canonical helper wrapper exists", "production_reference": "none outside tests", "retire_test": "yes"}
     if "daily_opportunity_review" in lower or "market_regime_filter" in lower:
-        return {"test_node": node, "status": "SUPERSEDED", "replacement_subsystem": "phase3_monitor.run_monitor runtime boundary", "production_reference": "control_center.py and alpha.py launch phase3_monitor.py", "retire_test": "yes"}
+        return {"test_node": node, "status": "SUPERSEDED", "replacement_subsystem": "phase3_monitor.run_monitor runtime boundary", "production_reference": "cockpit.py and alpha.py launch phase3_monitor.py", "retire_test": "yes"}
     if "stop_policy" in lower:
         return {"test_node": node, "status": "ACTIVE", "replacement_subsystem": "execution.paper_engine", "production_reference": "active paper execution path", "retire_test": "no"}
     if "regime_filter_ab" in lower:

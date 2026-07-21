@@ -87,11 +87,11 @@ echo "[Active path conflicted-copy prevention]"
 "$ROOT_DIR/scripts/maintenance/check_conflicted_copies_active_paths.sh"
 
 echo
-echo "[Control Center runtime parity]"
-if [[ -n "${MCLEOD_CONTROL_CENTER_URL_A:-}" && -n "${MCLEOD_CONTROL_CENTER_URL_B:-}" ]]; then
-  "$ROOT_DIR/scripts/maintenance/check_control_center_parity.sh"
+echo "[Cockpit runtime parity]"
+if [[ -n "${MCLEOD_COCKPIT_URL_A:-}" && -n "${MCLEOD_COCKPIT_URL_B:-}" ]]; then
+  "$ROOT_DIR/scripts/maintenance/check_cockpit_parity.sh"
 else
-  echo "skipped (set MCLEOD_CONTROL_CENTER_URL_A and MCLEOD_CONTROL_CENTER_URL_B)"
+  echo "skipped (set MCLEOD_COCKPIT_URL_A and MCLEOD_COCKPIT_URL_B)"
 fi
 
 echo "Hygiene check passed."

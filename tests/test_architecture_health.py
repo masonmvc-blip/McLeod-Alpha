@@ -4,7 +4,7 @@ from engine.architecture_health import build_architecture_health
 def test_health_report_identifies_runtime_boundary_debt(tmp_path):
     (tmp_path / "execution").mkdir()
     (tmp_path / "engine" / "memory").mkdir(parents=True)
-    (tmp_path / "control_center.py").write_text(
+    (tmp_path / "cockpit.py").write_text(
         "import sqlite3\n"
         "def _active_stop_category(): pass\n"
         "connection = sqlite3.connect('state.db')\n"
@@ -30,7 +30,7 @@ def test_health_report_identifies_runtime_boundary_debt(tmp_path):
         }
     ]
     assert {item["path"] for item in report["memory"]["evidence"]} == {
-        "control_center.py", "execution/paper_engine.py"
+        "cockpit.py", "execution/paper_engine.py"
     }
     assert report["cockpit"]["evidence"][0]["detail"] == "_active_stop_category"
     assert report["baseline"]["known_issues"][0]["id"] == "live_engine_vwap_snapshot"
@@ -61,7 +61,7 @@ def test_capabilities_publish_exit_criteria_and_calculated_priorities(tmp_path):
     assert report["priorities"]["priorities"][0] == {
         "id": "remove_cockpit_direct_persistence",
         "label": "Remove direct Cockpit persistence",
-        "blocker": "control_center.py",
+        "blocker": "cockpit.py",
         "targets": ["direct_persistence"],
         "impact_percent": 2,
     }

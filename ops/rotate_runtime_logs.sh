@@ -36,6 +36,6 @@ rotate_if_needed() {
 }
 
 rotate_if_needed "bot_output.log"
-rotate_if_needed "logs/control_center.log"
+rotate_if_needed "logs/cockpit.log"
 rotate_if_needed "logs/spcx_open_assist.log"
 rotate_if_needed "logs/preopen_health_bundle.log"

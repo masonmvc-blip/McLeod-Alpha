@@ -3,9 +3,10 @@ set -euo pipefail
 
 ROOT_DEFAULT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT="${MCLEOD_ROOT:-$ROOT_DEFAULT}"
+source "$ROOT/config/cockpit.env"
 CANONICAL_HOST="${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
-CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}"
+CANONICAL_URL="$COCKPIT_PUBLIC_URL"
 REQUIRE_CLEAN_REPO_FOR_LOCK="${MCLEOD_GOLIVE_REQUIRE_CLEAN_REPO_FOR_LOCK:-1}"
 SESSION_GUARD="$ROOT/scripts/maintenance/market_session_guard.sh"
 
@@ -43,7 +44,7 @@ else
     echo "go_live_lock_skipped_due_dirty_repo=1"
   fi
   ENFORCE_CLEAN_GIT_ON_START=0 RUN_BACKGROUND=1 MCLEOD_CANONICAL_RUNTIME_HOST="$CANONICAL_HOST" \
-    "$ROOT/scripts/maintenance/start_control_center_guarded.sh"
+    "$ROOT/scripts/maintenance/start_cockpit_guarded.sh"
 
   for _ in {1..40}; do
     if curl -sf "$BASE_URL/api/status" >/dev/null 2>&1; then

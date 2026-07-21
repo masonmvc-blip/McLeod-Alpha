@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import control_center
+import cockpit
 import pandas as pd
 import phase3_monitor
 
@@ -27,11 +27,11 @@ def test_indicator_snapshot_excludes_forming_minute(tmp_path):
     history_path = tmp_path / "spy_1min_history.csv"
     _write_candles(history_path)
 
-    during_current_minute = control_center._compute_candle_indicator_snapshot(
+    during_current_minute = cockpit._compute_candle_indicator_snapshot(
         now_et=datetime(2026, 7, 20, 10, 16, 30, tzinfo=ET),
         history_path=history_path,
     )
-    after_current_minute_closes = control_center._compute_candle_indicator_snapshot(
+    after_current_minute_closes = cockpit._compute_candle_indicator_snapshot(
         now_et=datetime(2026, 7, 20, 10, 17, 1, tzinfo=ET),
         history_path=history_path,
     )
@@ -45,7 +45,7 @@ def test_indicator_snapshot_uses_strategy_score_for_closed_candles(tmp_path):
     _write_candles(history_path)
     now = datetime(2026, 7, 20, 10, 17, 1, tzinfo=ET)
 
-    snapshot = control_center._compute_candle_indicator_snapshot(now_et=now, history_path=history_path)
+    snapshot = cockpit._compute_candle_indicator_snapshot(now_et=now, history_path=history_path)
     frame = pd.read_csv(history_path)
     frame["datetime"] = pd.to_datetime(frame["datetime"], utc=True)
     expected = phase3_monitor.score_closed_candle_frame(frame)
@@ -69,17 +69,17 @@ def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
     }
     audit_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
 
-    reasons = control_center._indicator_no_entry_reasons(snapshot, audit_path=audit_path)
+    reasons = cockpit._indicator_no_entry_reasons(snapshot, audit_path=audit_path)
 
     assert reasons["CALL"] == "Regime is Bear Trend; CALL requires BULL TREND"
     assert reasons["PUT"] == "no entry signal"
 
 
 def test_active_stop_reason_uses_the_actual_stop_price():
-    assert control_center._active_stop_category(5.00, stop_price=4.75) == "Stop"
-    assert control_center._active_stop_category(5.00, stop_price=5.27) == "6% Trail"
+    assert cockpit._active_stop_category(5.00, stop_price=4.75) == "Stop"
+    assert cockpit._active_stop_category(5.00, stop_price=5.27) == "6% Trail"
 
 
 def test_option_label_includes_strike_for_calls_and_puts():
-    assert control_center._position_label_from_option_symbol("SPY   260720C00755000") == "$755 Call"
-    assert control_center._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"
+    assert cockpit._position_label_from_option_symbol("SPY   260720C00755000") == "$755 Call"
+    assert cockpit._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"

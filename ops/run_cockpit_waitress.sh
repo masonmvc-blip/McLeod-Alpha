@@ -28,30 +28,13 @@ for candidate in \
 done
 
 if [[ -z "$PYTHON_BIN" ]]; then
-	echo "No Python with flask+waitress found for Control Center runner" >&2
+	echo "No Python with flask+waitress found for Cockpit runner" >&2
 	exit 1
 fi
-
-resolve_tailnet_ip() {
-	"$PYTHON_BIN" - <<'PY'
-import socket
-
-try:
-	short_host = socket.gethostname().split('.', 1)[0]
-	ip = socket.gethostbyname(short_host)
-	print(ip if ip.startswith('100.') else '')
-except Exception:
-	print('')
-PY
-}
 
 cd "$PROJECT_DIR"
 mkdir -p logs
 
-WAITRESS_ARGS=(--listen=127.0.0.1:5001 --threads=8 control_center:app)
-TAILNET_IP="$(resolve_tailnet_ip)"
-if [[ -n "$TAILNET_IP" ]]; then
-	WAITRESS_ARGS=(--listen="${TAILNET_IP}:5001" "${WAITRESS_ARGS[@]}")
-fi
+WAITRESS_ARGS=(--listen=127.0.0.1:5001 --threads=8 cockpit:app)
 
 exec "$PYTHON_BIN" -m waitress "${WAITRESS_ARGS[@]}"

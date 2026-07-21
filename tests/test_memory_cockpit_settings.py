@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
-import control_center
+import cockpit
 
 from engine.memory import Memory
 
@@ -52,13 +52,13 @@ def test_cockpit_operator_actions_delegate_to_memory(monkeypatch, tmp_path):
             calls.append(("clear", name, projection_path))
 
     memory = _Memory()
-    monkeypatch.setattr(control_center, "get_memory", lambda: memory)
-    monkeypatch.setattr(control_center, "PARITY_BASELINE_FILE", tmp_path / "parity_baseline.json")
-    monkeypatch.setattr(control_center, "CONTROL_COMMAND_FILE", tmp_path / "control_command.json")
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
+    monkeypatch.setattr(cockpit, "PARITY_BASELINE_FILE", tmp_path / "parity_baseline.json")
+    monkeypatch.setattr(cockpit, "CONTROL_COMMAND_FILE", tmp_path / "control_command.json")
 
-    control_center._save_parity_baseline({"control_center_sha256": "abc"})
-    command = control_center.queue_exit_trade_command()
+    cockpit._save_parity_baseline({"cockpit_sha256": "abc"})
+    command = cockpit.queue_exit_trade_command()
 
-    assert calls[0][:3] == ("save", "parity_baseline", {"control_center_sha256": "abc"})
+    assert calls[0][:3] == ("save", "parity_baseline", {"cockpit_sha256": "abc"})
     assert calls[1][0:2] == ("save", "control_command")
     assert calls[1][2] == command

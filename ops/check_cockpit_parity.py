@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare Control Center runtime fingerprints across two hosts."""
+"""Compare Cockpit runtime fingerprints across two hosts."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from typing import Any
 
 
 COMPARE_KEYS = (
-    "control_center_sha256",
+    "cockpit_sha256",
     "bot_script_sha256",
     "python_version",
     "dependency_hash",
@@ -97,9 +97,9 @@ def _compare(a: HostSnapshot, b: HostSnapshot) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Check Control Center parity across two hosts.")
-    parser.add_argument("--url-a", required=True, help="First Control Center base URL")
-    parser.add_argument("--url-b", required=True, help="Second Control Center base URL")
+    parser = argparse.ArgumentParser(description="Check Cockpit parity across two hosts.")
+    parser.add_argument("--url-a", required=True, help="First Cockpit base URL")
+    parser.add_argument("--url-b", required=True, help="Second Cockpit base URL")
     parser.add_argument("--label-a", default="A", help="Display label for first host")
     parser.add_argument("--label-b", default="B", help="Display label for second host")
     parser.add_argument("--timeout", type=float, default=6.0, help="HTTP timeout in seconds")
@@ -120,7 +120,7 @@ def main() -> int:
     snap_a = _snapshot_from_status(args.label_a, args.url_a, status_a)
     snap_b = _snapshot_from_status(args.label_b, args.url_b, status_b)
 
-    print("Control Center Runtime Parity")
+    print("Cockpit Runtime Parity")
     print("=" * 34)
     _print_host(snap_a)
     _print_host(snap_b)

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DEFAULT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT="${MCLEOD_ROOT:-$ROOT_DEFAULT}"
+source "$ROOT/config/cockpit.env"
 REMOTE="${MCLEOD_GIT_REMOTE:-origin}"
 BRANCH="${MCLEOD_GIT_BRANCH:-main}"
 BASE_URL="${MCLEOD_BASE_URL:-http://127.0.0.1:5001}"
@@ -22,8 +23,7 @@ git merge --ff-only "$REMOTE/$BRANCH"
 
 MCLEOD_REQUIRED_ACCOUNT_MODE="${MCLEOD_REQUIRED_ACCOUNT_MODE:-live}" \
 MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL="${MCLEOD_REQUIRED_SCHWAB_CALLBACK_URL:-https://127.0.0.1:8182}" \
-MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER="${MCLEOD_REQUIRED_REDIRECT_NONCANONICAL_CONTROL_CENTER:-0}" \
-ENFORCE_CLEAN_GIT_ON_START=0 RUN_BACKGROUND=1 "$ROOT/scripts/maintenance/start_control_center_guarded.sh"
+ENFORCE_CLEAN_GIT_ON_START=0 RUN_BACKGROUND=1 "$ROOT/scripts/maintenance/start_cockpit_guarded.sh"
 
 for _ in {1..30}; do
   if curl -sf "$BASE_URL/api/status" >/dev/null 2>&1; then

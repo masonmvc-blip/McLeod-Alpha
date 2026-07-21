@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+source "$ROOT_DIR/config/cockpit.env"
 AGENT_ID="com.mcleod.alpha.nightly-sync-restart"
 PLIST_PATH="$HOME/Library/LaunchAgents/$AGENT_ID.plist"
 LOG_PATH="$ROOT_DIR/logs/nightly_sync_restart_launchd.log"
@@ -39,8 +40,8 @@ cat > "$PLIST_PATH" <<PLIST
     <dict>
       <key>MCLEOD_CANONICAL_RUNTIME_HOST</key>
       <string>${MCLEOD_CANONICAL_RUNTIME_HOST:-Desktop}</string>
-      <key>MCLEOD_CANONICAL_CONTROL_CENTER_URL</key>
-      <string>${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}</string>
+      <key>COCKPIT_PUBLIC_URL</key>
+      <string>$COCKPIT_PUBLIC_URL</string>
       <key>PYTHONUNBUFFERED</key>
       <string>1</string>
     </dict>

@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
-CC_PID_FILE="$PROJECT_DIR/.control_center_pid"
+CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 
 if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
   PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
@@ -27,7 +27,7 @@ if [[ -f "$WATCHDOG_PID_FILE" ]]; then
   rm -f "$WATCHDOG_PID_FILE"
 fi
 
-echo "Stopping bot via Control Center API if available..."
+echo "Stopping bot via Cockpit API if available..."
 "$PYTHON_BIN" - <<'PY'
 import urllib.error
 import urllib.request
@@ -45,7 +45,7 @@ except Exception:
     pass
 PY
 
-echo "Stopping Control Center listener on port 5001..."
+echo "Stopping Cockpit listener on port 5001..."
 for cc_pid in $(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null); do
   kill "$cc_pid" 2>/dev/null || true
 done

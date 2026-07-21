@@ -4,7 +4,7 @@
 - Start stack: `ops/stack_start.sh`
 - Check status: `ops/stack_status.sh`
 - Stop stack: `ops/stack_stop.sh`
-- Control Center direct launch: `ops/run_control_center_waitress.sh`
+- Cockpit direct launch: `ops/run_cockpit_waitress.sh`
 
 ### Standard Go-Live Command (Desktop)
 
@@ -20,13 +20,13 @@ This command enforces:
 - Parity state `MATCH` and `parity_block_start=False`.
 - Bot effective running state after restart/start.
 
-Do not use direct `python3 control_center.py` for live operations.
+Do not use direct `python3 cockpit.py` for live operations.
 
 Desktop-only runtime rule:
 - Canonical bot host is `Masons-iMac.local` unless `MCLEOD_CANONICAL_RUNTIME_HOST` is explicitly changed.
 - Do not run the trading bot from the laptop; non-canonical hosts should be treated as read-only dashboards.
-- Canonical Control Center URL: `https://masons-imac.tailb88bd7.ts.net/`
-- Legacy laptop URL `https://masons-macbook-pro.tailb88bd7.ts.net/` is not authoritative and should not be used.
+- Canonical Cockpit URL: `https://cockpit.mcleodalpha.com`
+- The Cloudflare-protected Cockpit is the only supported management interface.
 
 Use these scripts as the blessed operational path to avoid stale process/file confusion.
 

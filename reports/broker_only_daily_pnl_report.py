@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import control_center
+import cockpit
 from engine.memory import get_memory
 
 OUT_CSV = ROOT / "reports" / "broker_only_daily_pnl.csv"
@@ -60,12 +60,12 @@ def _is_broker_backed(row: dict) -> bool:
 def _schwab_cash_day_pnl(day: str) -> float | None:
     """Return net SPY option cash P&L for a day from Schwab transaction source.
 
-    This reuses control_center's cash-basis helper so reconciliation aligns with
+    This reuses cockpit's cash-basis helper so reconciliation aligns with
     the dashboard's broker net calculations.
     """
 
     try:
-        value = control_center._schwab_transaction_day_net_pnl(str(day))
+        value = cockpit._schwab_transaction_day_net_pnl(str(day))
         if value is None:
             return None
         return round(float(value), 2)

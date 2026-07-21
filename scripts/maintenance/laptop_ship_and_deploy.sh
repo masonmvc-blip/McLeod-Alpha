@@ -3,9 +3,10 @@ set -euo pipefail
 
 ROOT_DEFAULT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT="${MCLEOD_ROOT:-$ROOT_DEFAULT}"
+source "$ROOT/config/cockpit.env"
 REMOTE="${MCLEOD_GIT_REMOTE:-origin}"
 BRANCH="${MCLEOD_GIT_BRANCH:-main}"
-CANONICAL_URL="${MCLEOD_CANONICAL_CONTROL_CENTER_URL:-https://masons-imac.tailb88bd7.ts.net}"
+CANONICAL_URL="$COCKPIT_PUBLIC_URL"
 TRIGGER_GOLIVE=1
 COMMIT_MESSAGE=""
 
@@ -16,13 +17,13 @@ Usage: laptop_ship_and_deploy.sh [-m "commit message"] [--no-go-live]
 Behavior:
 - Commits local changes (if any) from either laptop or desktop
 - Rebases on the remote branch, then pushes the resulting commit
-- Verifies the remote SHA before triggering canonical Control Center /api/go-live
+- Verifies the remote SHA before triggering canonical Cockpit /api/go-live
 
 Environment overrides:
 - MCLEOD_ROOT
 - MCLEOD_GIT_REMOTE
 - MCLEOD_GIT_BRANCH
-- MCLEOD_CANONICAL_CONTROL_CENTER_URL
+- COCKPIT_PUBLIC_URL (from config/cockpit.env)
 USAGE
 }
 
@@ -171,7 +172,7 @@ print("runtime_repo=" + str(fp.get("project_root") or "unknown"))
 print("bot_running_effective=" + str(payload.get("bot_running_effective")))
 print("parity_state=" + str(payload.get("parity_state") or "UNKNOWN"))
 print("parity_block_start=" + str(payload.get("parity_block_start")))
-print("control_center_sha256=" + str(fp.get("control_center_sha256") or ""))
+print("cockpit_sha256=" + str(fp.get("cockpit_sha256") or ""))
 PY
 
 echo "ship_complete=1"

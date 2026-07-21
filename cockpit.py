@@ -26,11 +26,10 @@ from pathlib import Path
 
 from engine.memory import get_memory
 from urllib.error import URLError, HTTPError
-from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 import ssl
 from zoneinfo import ZoneInfo
-from flask import Flask, render_template_string, jsonify, request, make_response, redirect
+from flask import Flask, render_template_string, jsonify, request, make_response
 from dotenv import load_dotenv
 from schwab.auth import easy_client
 from email.message import EmailMessage
@@ -41,6 +40,7 @@ except Exception:
     certifi = None
 
 load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent / "config" / "cockpit.env", override=True)
 
 # Account management
 sys.path.insert(0, str(Path(__file__).parent))
@@ -64,7 +64,7 @@ BOT_LOG_FILE = PROJECT_ROOT / "bot_output.log"
 CANONICAL_DEPLOY_SCRIPT = PROJECT_ROOT / "scripts" / "maintenance" / "sync_and_restart_from_start_button.sh"
 CANONICAL_DEPLOY_PID_FILE = PROJECT_ROOT / ".canonical_deploy_pid"
 CANONICAL_DEPLOY_LOG_FILE = PROJECT_ROOT / "logs" / "canonical_deploy.log"
-STATUS_FILE = PROJECT_ROOT / ".control_center_status"
+STATUS_FILE = PROJECT_ROOT / ".cockpit_status"
 BOT_STOP_ALERT_STATE_FILE = PROJECT_ROOT / "data" / "bot_stop_alert_state.json"
 CONTINUATION_STATUS_FILE = PROJECT_ROOT / "data" / "continuation_last_test.json"
 CONTINUATION_CALIBRATION_FILE = PROJECT_ROOT / "data" / "reports" / "continuation_calibration.jsonl"
@@ -78,7 +78,7 @@ DAILY_TRADES_CHART_LOG = PROJECT_ROOT / "data" / "reports" / "daily_trades_chart
 PARITY_BASELINE_FILE = PROJECT_ROOT / "data" / "parity_baseline.json"
 DAILY_TRADE_LEARNING_LATEST_FILE = PROJECT_ROOT / "reports" / "daily_trade_learning" / "latest_daily_trade_learning.json"
 GO_LIVE_SCRIPT = PROJECT_ROOT / "scripts" / "maintenance" / "go_live.sh"
-GO_LIVE_LOG_FILE = PROJECT_ROOT / "logs" / "go_live_from_control_center.log"
+GO_LIVE_LOG_FILE = PROJECT_ROOT / "logs" / "go_live_from_cockpit.log"
 HEARTBEAT_STALE_SECONDS = int(os.getenv("BOT_HEARTBEAT_STALE_SECONDS", "180"))
 HEARTBEAT_BANNER_STOP_SECONDS = int(os.getenv("BOT_HEARTBEAT_BANNER_STOP_SECONDS", "120"))
 BOT_STOP_EMAIL_CONFIRMATION_SECONDS = int(os.getenv("BOT_STOP_EMAIL_CONFIRMATION_SECONDS", "20"))
@@ -133,10 +133,7 @@ STATUS_SNAPSHOT_CACHE_SECONDS = float(os.getenv("STATUS_SNAPSHOT_CACHE_SECONDS",
 BROKER_PNL_REFRESH_SECONDS = float(os.getenv("BROKER_PNL_REFRESH_SECONDS", "15"))
 DAILY_LEARNING_CACHE_SECONDS = float(os.getenv("DAILY_LEARNING_CACHE_SECONDS", "30"))
 CANONICAL_RUNTIME_HOST = os.getenv("MCLEOD_CANONICAL_RUNTIME_HOST", "Desktop").strip()
-CANONICAL_CONTROL_CENTER_URL = os.getenv(
-    "MCLEOD_CANONICAL_CONTROL_CENTER_URL",
-    "https://masons-macbook-pro.tailb88bd7.ts.net/",
-).strip()
+COCKPIT_PUBLIC_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/")
 CANONICAL_REPO_BASENAME = os.getenv("MCLEOD_CANONICAL_REPO_BASENAME", "McLeod-Alpha-New").strip()
 CANONICAL_REPO_PATH = Path(
     os.getenv("MCLEOD_CANONICAL_REPO_PATH", str(Path.home() / "GitHub" / CANONICAL_REPO_BASENAME))
@@ -144,9 +141,6 @@ CANONICAL_REPO_PATH = Path(
 ENFORCE_CANONICAL_REPO_PATH = str(
     os.getenv("MCLEOD_ENFORCE_CANONICAL_REPO_PATH", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
-REDIRECT_NONCANONICAL_CONTROL_CENTER = str(
-    os.getenv("MCLEOD_REDIRECT_NONCANONICAL_CONTROL_CENTER", "1")
-).strip().lower() not in {"0", "false", "no", "off", ""}
 _SPY_QUOTE_REFRESH_LEGACY = os.getenv("SPY_QUOTE_REFRESH_SECONDS")
 SPY_QUOTE_REFRESH_SECONDS_OPEN = float(
     os.getenv("SPY_QUOTE_REFRESH_SECONDS_OPEN", _SPY_QUOTE_REFRESH_LEGACY or "3")
@@ -157,8 +151,8 @@ SPY_QUOTE_REFRESH_SECONDS_CLOSED = float(
 SPY_TRACKER_REFRESH_SECONDS = max(0.5, float(os.getenv("SPY_TRACKER_REFRESH_SECONDS", "1.0")))
 SPY_TRACKER_MAX_STALE_SECONDS = max(2.0, float(os.getenv("SPY_TRACKER_MAX_STALE_SECONDS", "3.0")))
 CODE_SYNC_CHECK_SECONDS = max(2.0, float(os.getenv("CODE_SYNC_CHECK_SECONDS", "5")))
-AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE = str(
-    os.getenv("AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE", "1")
+AUTO_REEXEC_ON_COCKPIT_CHANGE = str(
+    os.getenv("AUTO_REEXEC_ON_COCKPIT_CHANGE", "1")
 ).strip().lower() in {"1", "true", "yes", "on"}
 AUTO_RESTART_BOT_ON_SCRIPT_CHANGE = str(
     os.getenv("AUTO_RESTART_BOT_ON_SCRIPT_CHANGE", "1")
@@ -353,7 +347,7 @@ def _save_bot_stop_alert_state(state: dict):
 
 def _bot_stop_alert_recipient():
     return (
-        os.getenv("CONTROL_CENTER_ALERT_EMAIL", "").strip()
+        os.getenv("COCKPIT_ALERT_EMAIL", "").strip()
         or os.getenv("DAILY_PNL_TO_EMAIL", "").strip()
         or "MasonMVC@gmail.com"
     )
@@ -361,7 +355,7 @@ def _bot_stop_alert_recipient():
 
 def _send_bot_stop_email(subject: str, body: str):
     to_email = _bot_stop_alert_recipient()
-    transport = os.getenv("CONTROL_CENTER_ALERT_TRANSPORT", "auto").strip().lower()
+    transport = os.getenv("COCKPIT_ALERT_TRANSPORT", "auto").strip().lower()
 
     def _send_via_mailapp() -> bool:
         def esc(text: str) -> str:
@@ -388,10 +382,10 @@ end tell
             if result.returncode == 0:
                 return True
             err = (result.stderr or "").strip() or (result.stdout or "").strip()
-            print(f"Control Center stop email failed (Mail.app): {err}")
+            print(f"Cockpit stop email failed (Mail.app): {err}")
             return False
         except Exception as exc:
-            print(f"Control Center stop email failed (Mail.app): {exc}")
+            print(f"Cockpit stop email failed (Mail.app): {exc}")
             return False
 
     def _send_via_smtp() -> bool:
@@ -422,7 +416,7 @@ end tell
                 smtp.send_message(msg)
             return True
         except Exception as exc:
-            print(f"Control Center stop email failed (SMTP): {exc}")
+            print(f"Cockpit stop email failed (SMTP): {exc}")
             return False
 
     if transport == "smtp":
@@ -465,7 +459,7 @@ def _maybe_notify_bot_stop(status: dict, reason: str | None = None, force: bool 
 
     if force:
         stop_reason = reason or "Bot process stopped or is no longer running"
-        subject = f"Control Center: Bot stopped - {datetime.now(EASTERN_TZ).strftime('%Y-%m-%d %I:%M %p ET')}"
+        subject = f"Cockpit: Bot stopped - {datetime.now(EASTERN_TZ).strftime('%Y-%m-%d %I:%M %p ET')}"
         sent = _send_bot_stop_email(subject, _bot_stop_email_body(stop_reason, status))
         state["last_bot_running"] = False
         state.pop("stop_candidate_at", None)
@@ -514,7 +508,7 @@ def _maybe_notify_bot_stop(status: dict, reason: str | None = None, force: bool 
         return False
 
     stop_reason = candidate_reason
-    subject = f"Control Center: Bot stopped - {datetime.now(EASTERN_TZ).strftime('%Y-%m-%d %I:%M %p ET')}"
+    subject = f"Cockpit: Bot stopped - {datetime.now(EASTERN_TZ).strftime('%Y-%m-%d %I:%M %p ET')}"
     sent = _send_bot_stop_email(subject, _bot_stop_email_body(stop_reason, status))
     state["last_bot_running"] = False
     state["last_seen_at"] = now_iso
@@ -634,7 +628,7 @@ def _sha256_file(path: Path):
         return None
 
 
-_RUNNING_CONTROL_CENTER_SHA256 = _sha256_file(Path(__file__))
+_RUNNING_COCKPIT_SHA256 = _sha256_file(Path(__file__))
 _RUNNING_BOT_SCRIPT_SHA256 = _sha256_file(BOT_SCRIPT) if BOT_SCRIPT.exists() else None
 
 
@@ -681,7 +675,7 @@ def _runtime_fingerprint_snapshot(force_refresh: bool = False):
     if cached and not force_refresh and (now_ts - float(_RUNTIME_FINGERPRINT_CACHE.get("timestamp") or 0.0)) < 300:
         return dict(cached)
 
-    disk_control_center_sha = _sha256_file(Path(__file__))
+    disk_cockpit_sha = _sha256_file(Path(__file__))
     disk_bot_script_sha = _sha256_file(BOT_SCRIPT) if BOT_SCRIPT.exists() else None
     if _RUNNING_BOT_SCRIPT_SHA256 is None:
         _RUNNING_BOT_SCRIPT_SHA256 = disk_bot_script_sha
@@ -695,13 +689,13 @@ def _runtime_fingerprint_snapshot(force_refresh: bool = False):
         "bot_python_mode": str(os.getenv("BOT_PYTHON_MODE", "newest")).strip().lower(),
         "project_root": str(PROJECT_ROOT.resolve()),
         # Runtime hashes reflect the code currently executing in-memory.
-        "control_center_sha256": _RUNNING_CONTROL_CENTER_SHA256,
+        "cockpit_sha256": _RUNNING_COCKPIT_SHA256,
         "bot_script_sha256": _RUNNING_BOT_SCRIPT_SHA256,
         # Disk hashes expose pending sync/restart drift.
-        "control_center_disk_sha256": disk_control_center_sha,
+        "cockpit_disk_sha256": disk_cockpit_sha,
         "bot_script_disk_sha256": disk_bot_script_sha,
-        "control_center_drift": bool(
-            _RUNNING_CONTROL_CENTER_SHA256 and disk_control_center_sha and _RUNNING_CONTROL_CENTER_SHA256 != disk_control_center_sha
+        "cockpit_drift": bool(
+            _RUNNING_COCKPIT_SHA256 and disk_cockpit_sha and _RUNNING_COCKPIT_SHA256 != disk_cockpit_sha
         ),
         "bot_script_drift": bool(
             _RUNNING_BOT_SCRIPT_SHA256 and disk_bot_script_sha and _RUNNING_BOT_SCRIPT_SHA256 != disk_bot_script_sha
@@ -718,7 +712,7 @@ def _runtime_fingerprint_snapshot(force_refresh: bool = False):
 
 def _parity_baseline_from_fingerprint(fingerprint: dict):
     return {
-        "control_center_sha256": fingerprint.get("control_center_sha256"),
+        "cockpit_sha256": fingerprint.get("cockpit_sha256"),
         "bot_script_sha256": fingerprint.get("bot_script_sha256"),
         "python_version": fingerprint.get("python_version"),
         "dependency_hash": fingerprint.get("dependency_hash"),
@@ -769,7 +763,7 @@ def _parity_status_snapshot():
     baseline_fp = baseline.get("fingerprint") if isinstance((baseline or {}).get("fingerprint"), dict) else (baseline or {})
     baseline_matches_runtime = all(
         (baseline_fp.get(key) == runtime_fp.get(key))
-        for key in ("control_center_sha256", "bot_script_sha256", "python_version", "dependency_hash", "bot_python_mode")
+        for key in ("cockpit_sha256", "bot_script_sha256", "python_version", "dependency_hash", "bot_python_mode")
     )
 
     if auto_adopt and (baseline is None or not baseline_matches_runtime):
@@ -806,7 +800,7 @@ def _parity_status_snapshot():
 
     baseline_fp = baseline.get("fingerprint") if isinstance(baseline.get("fingerprint"), dict) else baseline
     keys = (
-        "control_center_sha256",
+        "cockpit_sha256",
         "bot_script_sha256",
         "python_version",
         "dependency_hash",
@@ -2367,7 +2361,7 @@ def resolve_bot_python():
     required_modules = ("pandas", "dotenv", "requests", "schwab")
     mode = _bot_python_mode()
 
-    # Prefer the interpreter currently running Control Center when it can run the bot.
+    # Prefer the interpreter currently running Cockpit when it can run the bot.
     current_python = Path(sys.executable)
     if current_python.exists() and os.access(current_python, os.X_OK) and _python_has_modules(current_python, required_modules):
         return current_python
@@ -2511,7 +2505,7 @@ def _git_dirty_summary() -> tuple[bool, list[str]]:
 
 
 def start_canonical_sync_and_restart():
-    """Queue a detached GitHub sync, Control Center restart, and bot restart."""
+    """Queue a detached GitHub sync, Cockpit restart, and bot restart."""
     repo_allowed, current_repo, expected_repo = _runtime_repo_path_allows_start()
     if not repo_allowed:
         return {"status": "error", "message": f"Start blocked in repo {current_repo}; canonical repo is {expected_repo}"}
@@ -2555,7 +2549,7 @@ def start_canonical_sync_and_restart():
         CANONICAL_DEPLOY_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env["MCLEOD_CANONICAL_RUNTIME_HOST"] = CANONICAL_RUNTIME_HOST
-        env["MCLEOD_CANONICAL_CONTROL_CENTER_URL"] = CANONICAL_CONTROL_CENTER_URL
+        env["COCKPIT_PUBLIC_URL"] = COCKPIT_PUBLIC_URL
         env["PYTHONUNBUFFERED"] = "1"
         with open(CANONICAL_DEPLOY_LOG_FILE, "a", buffering=1) as log_fp:
             process = subprocess.Popen(
@@ -2563,7 +2557,7 @@ def start_canonical_sync_and_restart():
                 stderr=subprocess.STDOUT, env=env, start_new_session=True,
             )
         CANONICAL_DEPLOY_PID_FILE.write_text(str(process.pid), encoding="utf-8")
-        return {"status": "success", "message": "GitHub sync, Control Center restart, and bot restart started", "pid": process.pid}
+        return {"status": "success", "message": "GitHub sync, Cockpit restart, and bot restart started", "pid": process.pid}
     except Exception as error:
         return {"status": "error", "message": f"Failed to start GitHub sync: {error}"}
 
@@ -2701,7 +2695,7 @@ def stop_bot():
                 "bot_manual_stop_marker",
                 {
                     "requested_at": datetime.now(timezone.utc).isoformat(),
-                    "source": "control_center",
+                    "source": "cockpit",
                     "pid": pid,
                 },
                 BOT_MANUAL_STOP_MARKER_FILE,
@@ -2737,7 +2731,7 @@ def stop_bot():
         stop_status = dict(pre_stop_status)
         stop_status["bot_running"] = False
         stop_status["bot_running_effective"] = False
-        _maybe_notify_bot_stop(stop_status, reason=f"Manual stop requested from Control Center (PID {pid})", force=True)
+        _maybe_notify_bot_stop(stop_status, reason=f"Manual stop requested from Cockpit (PID {pid})", force=True)
         return {
             "status": "success",
             "message": "Bot stopped immediately"
@@ -2776,7 +2770,7 @@ def trigger_go_live() -> dict:
         env.setdefault("MCLEOD_ROOT", str(PROJECT_ROOT))
         with open(GO_LIVE_LOG_FILE, "a", buffering=1, encoding="utf-8") as log_fp:
             log_fp.write(
-                f"\n===== go-live requested {datetime.now(timezone.utc).isoformat()} from control center =====\n"
+                f"\n===== go-live requested {datetime.now(timezone.utc).isoformat()} from cockpit =====\n"
             )
             subprocess.Popen(
                 [str(GO_LIVE_SCRIPT)],
@@ -2788,8 +2782,8 @@ def trigger_go_live() -> dict:
             )
         return {
             "status": "success",
-            "message": "Go-live started. Syncing latest runtime, restarting Control Center, then restarting bot.",
-            "canonical_url": CANONICAL_CONTROL_CENTER_URL,
+            "message": "Go-live started. Syncing latest runtime, restarting Cockpit, then restarting bot.",
+            "canonical_url": COCKPIT_PUBLIC_URL,
             "log_file": str(GO_LIVE_LOG_FILE),
         }
     except Exception as e:
@@ -2806,7 +2800,7 @@ def queue_exit_trade_command():
         "action": "EXIT_TRADE",
         "status": "PENDING",
         "requested_at": datetime.now(timezone.utc).isoformat(),
-        "source": "CONTROL_CENTER",
+        "source": "COCKPIT",
     }
 
     get_memory().save_setting("control_command", command, CONTROL_COMMAND_FILE)
@@ -3384,13 +3378,12 @@ def parse_bot_status():
         "parity_block_start": False,
         "runtime_fingerprint": {},
         "canonical_runtime_host": CANONICAL_RUNTIME_HOST,
-        "canonical_control_center_url": CANONICAL_CONTROL_CENTER_URL,
+        "cockpit_public_url": COCKPIT_PUBLIC_URL,
         "runtime_host_is_canonical": False,
         "runtime_repo_basename": current_repo,
         "canonical_repo_basename": expected_repo,
         "runtime_repo_path_ok": bool(repo_path_ok),
         "enforce_canonical_repo_path": bool(ENFORCE_CANONICAL_REPO_PATH),
-        "redirect_noncanonical_control_center": REDIRECT_NONCANONICAL_CONTROL_CENTER,
         "bell_broadcast_id": int(_BELL_BROADCAST.get("id") or 0),
         "bell_broadcast_kind": str(_BELL_BROADCAST.get("kind") or "open"),
         "bell_broadcast_at": _BELL_BROADCAST.get("triggered_at"),
@@ -3818,7 +3811,7 @@ def parse_bot_status():
             "decision": "ENTER" if enabled else "NO_ENTRY",
             "reason": normalized_reason,
             "reason_code": status["trade_entry_reason_code"],
-            "source": "control_center_trade_entry_gate",
+            "source": "cockpit_trade_entry_gate",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     
@@ -5753,12 +5746,12 @@ def _code_sync_watcher_loop():
 
             current_cc_sha = _sha256_file(Path(__file__))
             if (
-                AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE
+                AUTO_REEXEC_ON_COCKPIT_CHANGE
                 and current_cc_sha
-                and _RUNNING_CONTROL_CENTER_SHA256
-                and current_cc_sha != _RUNNING_CONTROL_CENTER_SHA256
+                and _RUNNING_COCKPIT_SHA256
+                and current_cc_sha != _RUNNING_COCKPIT_SHA256
             ):
-                print("Code sync watcher: control_center.py changed; reloading to newest version")
+                print("Code sync watcher: cockpit.py changed; reloading to newest version")
                 try:
                     sys.stdout.flush()
                     sys.stderr.flush()
@@ -5825,7 +5818,7 @@ def api_parity_baseline():
 
 @app.route('/api/start', methods=['POST'])
 def api_start():
-    """Sync GitHub, restart the Control Center, then start the bot."""
+    """Sync GitHub, restart the Cockpit, then start the bot."""
     return jsonify(start_canonical_sync_and_restart())
 
 
@@ -6681,7 +6674,7 @@ HTML_DASHBOARD = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McLeod SPY Options Trader Alpha 1.3</title>
+    <title>McLeod SPY Options Trader Cockpit 1.4</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -8368,12 +8361,12 @@ HTML_DASHBOARD = """
                         return;
                     }
                 } catch (_) {
-                    // Control center is still restarting.
+                    // Cockpit is still restarting.
                 }
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
 
-            showMessage('Go-live was triggered, but the dashboard did not come back within 90 seconds. Refresh the page and check logs/go_live_from_control_center.log.', 'error');
+            showMessage('Go-live was triggered, but the dashboard did not come back within 90 seconds. Refresh the page and check logs/go_live_from_cockpit.log.', 'error');
             const btn = document.getElementById('botToggleBtn');
             btn.disabled = false;
             btn.innerHTML = '▶ Start Bot';
@@ -9357,27 +9350,6 @@ HTML_DASHBOARD = """
 @app.route('/')
 def dashboard():
     """Serve the main dashboard"""
-    canonical_host = (urlsplit(CANONICAL_CONTROL_CENTER_URL).hostname or "").strip().lower()
-    incoming_host = str(request.headers.get("X-Forwarded-Host") or request.host or "").strip().lower()
-    incoming_host = incoming_host.split(",", 1)[0].strip()
-    if "]" in incoming_host and incoming_host.startswith("["):
-        incoming_host = incoming_host.rsplit(":", 1)[0]
-        incoming_host = incoming_host.lstrip("[").rstrip("]")
-    else:
-        incoming_host = incoming_host.split(":", 1)[0].strip()
-
-    if (
-        REDIRECT_NONCANONICAL_CONTROL_CENTER
-        and canonical_host
-        and incoming_host
-        and incoming_host != canonical_host
-    ):
-        canonical_base = CANONICAL_CONTROL_CENTER_URL.rstrip("/")
-        target_url = f"{canonical_base}{request.path}"
-        if request.query_string:
-            target_url = f"{target_url}?{request.query_string.decode('utf-8', errors='ignore')}"
-        return redirect(target_url, code=308)
-
     response = make_response(render_template_string(HTML_DASHBOARD))
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
@@ -9418,7 +9390,7 @@ if __name__ == '__main__':
         print(f"   current repo: {current_repo}")
         print(f"   required repo: {expected_repo}")
         print(f"   project root: {PROJECT_ROOT}")
-        print("   Refusing to start control center from non-canonical repository.")
+        print("   Refusing to start cockpit from non-canonical repository.")
         sys.exit(2)
 
     # Check dependencies
@@ -9439,14 +9411,11 @@ if __name__ == '__main__':
     print(f"Python (bot launch): {resolve_bot_python() or 'UNAVAILABLE'}")
     print(f"Log File: {BOT_LOG_FILE}")
     print("")
-    dashboard_host = os.getenv("CONTROL_CENTER_HOST", "127.0.0.1").strip() or "127.0.0.1"
-    print(f"📱 Dashboard URL (canonical): {CANONICAL_CONTROL_CENTER_URL}")
-    if REDIRECT_NONCANONICAL_CONTROL_CENTER:
-        print("🔒 Local non-canonical dashboard access redirects to canonical URL")
-    else:
-        print("🟢 Local non-canonical dashboard access is allowed (redirect disabled)")
-    print(f"🔁 Code sync watcher: {'ON' if (AUTO_REEXEC_ON_CONTROL_CENTER_CHANGE or AUTO_RESTART_BOT_ON_SCRIPT_CHANGE) else 'OFF'}")
-    print("✋ Press Ctrl+C to stop the control center")
+    dashboard_host = os.getenv("COCKPIT_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    print(f"📱 Cockpit public URL: {COCKPIT_PUBLIC_URL}")
+    print("🟢 Private origin is bound to localhost for Cloudflare Tunnel")
+    print(f"🔁 Code sync watcher: {'ON' if (AUTO_REEXEC_ON_COCKPIT_CHANGE or AUTO_RESTART_BOT_ON_SCRIPT_CHANGE) else 'OFF'}")
+    print("✋ Press Ctrl+C to stop the cockpit")
     print("="*70 + "\n")
 
     _ensure_code_sync_watcher_running()
