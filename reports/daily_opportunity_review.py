@@ -451,5 +451,8 @@ def build_daily_opportunity_review(trade_date: str) -> ReviewPaths:
     _write_csv(out_csv, csv_rows)
     get_memory().write_report_json(out_json, {"trade_date": trade_date, "generated_at": datetime.now(EASTERN_TZ).isoformat(), "summary": summary, "evaluated_setups": enriched}, "daily_opportunity_review", source="daily_opportunity_review", correlation_id=f"daily-opportunity-review:{trade_date}")
     get_memory().write_report_text(out_html, _render_html(trade_date, summary, csv_rows), "daily_opportunity_review", source="daily_opportunity_review", correlation_id=f"daily-opportunity-review:{trade_date}")
+    from reports.trend_quality_report import build_trend_quality_report
+
+    build_trend_quality_report(REPORTS_DIR)
 
     return ReviewPaths(html=out_html, csv=out_csv, json=out_json)
