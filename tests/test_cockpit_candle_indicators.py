@@ -110,6 +110,18 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
 
 
+def test_flat_position_hides_current_position_and_splits_indicator_row():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert '#statusGrid.position-flat {' in source
+    assert 'grid-template-columns: repeat(2, minmax(0, 1fr));' in source
+    assert '#statusGrid.position-flat #currentPositionCard {' in source
+    assert "display: none;" in source
+    assert 'id="callIndicatorsCard"' in source
+    assert 'id="putIndicatorsCard"' in source
+    assert "statusGrid.classList.toggle('position-flat', !hasOpenPosition);" in source
+
+
 def test_cockpit_shows_spy_run_filter_and_flat_position_none():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

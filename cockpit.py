@@ -5892,6 +5892,14 @@ HTML_DASHBOARD = """
             text-align: center;
         }
 
+        #statusGrid.position-flat {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        #statusGrid.position-flat #currentPositionCard {
+            display: none;
+        }
+
           /* An active position replaces the six summary cards with one focused view.
               The normal grid returns as soon as the broker-reported position closes. */
         #statusGrid.position-focus-active .position-secondary-card {
@@ -6823,6 +6831,10 @@ HTML_DASHBOARD = """
                 grid-template-columns: 1fr;
             }
 
+            #statusGrid.position-flat {
+                grid-template-columns: 1fr;
+            }
+
             .status-grid {
                 grid-template-columns: 1fr;
             }
@@ -7000,7 +7012,7 @@ HTML_DASHBOARD = """
         </div>
         
         <div class="status-grid primary-status-grid" id="statusGrid">
-            <div class="status-card position-secondary-card">
+            <div class="status-card position-secondary-card" id="callIndicatorsCard">
                 <h3>CALL Indicators</h3>
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
@@ -7024,7 +7036,7 @@ HTML_DASHBOARD = """
                     </div>
                 </div>
             </div>
-            <div class="status-card position-secondary-card">
+            <div class="status-card position-secondary-card" id="putIndicatorsCard">
                 <h3>PUT Indicators</h3>
                 <div class="status-value" id="putIndicators">Loading...</div>
             </div>
@@ -7798,6 +7810,7 @@ HTML_DASHBOARD = """
                 const statusGrid = document.getElementById('statusGrid');
                 if (statusGrid) {
                     statusGrid.classList.toggle('position-focus-active', hasOpenPosition);
+                    statusGrid.classList.toggle('position-flat', !hasOpenPosition);
                 }
                 if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
                     if (hasOpenPosition) {
