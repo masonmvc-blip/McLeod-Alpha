@@ -69,6 +69,6 @@ def indicator_no_entry_reasons(audit_event):
     reason = str(audit_event.get("entry_decision_reason") or "").strip().replace("_", " ") or None
     regime = str(audit_event.get("regime") or "").replace("_", " ").title()
     return {
-        "CALL": f"Regime is {regime}; CALL requires BULL TREND" if audit_event.get("call_score") == 5 and regime != "Bull Trend" else reason,
+        "CALL": "Trend is Neutral or Bear" if audit_event.get("call_score") == 5 and regime != "Bull Trend" else reason,
         "PUT": f"Regime is {regime}; PUT requires BEAR TREND" if audit_event.get("put_score") == 5 and regime != "Bear Trend" else reason,
     }

@@ -76,7 +76,7 @@ def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
     )
     reasons = indicator_no_entry_reasons(audit_event)
 
-    assert reasons["CALL"] == "Regime is Bear Trend; CALL requires BULL TREND"
+    assert reasons["CALL"] == "Trend is Neutral or Bear"
     assert reasons["PUT"] == "no entry signal"
 
 
