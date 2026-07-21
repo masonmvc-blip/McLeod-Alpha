@@ -349,11 +349,19 @@ def _is_regular_market_hours_now():
     return (9 * 60 + 30) <= minutes < (16 * 60)
 
 
+def _is_extended_market_hours_now(now_et=None):
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    if now_et.weekday() >= 5:
+        return False
+    minutes = now_et.hour * 60 + now_et.minute
+    return (4 * 60) <= minutes < (20 * 60)
+
+
 def _cycle_sleep_seconds(now_et=None):
-    if not _is_regular_market_hours_now():
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    if not _is_extended_market_hours_now(now_et):
         return OFF_HOURS_POLL_SECONDS
 
-    now_et = now_et or datetime.now(EASTERN_TZ)
     next_evaluation = now_et.replace(second=1, microsecond=0)
     if now_et >= next_evaluation:
         next_evaluation += timedelta(minutes=1)
@@ -363,11 +371,11 @@ def _cycle_sleep_seconds(now_et=None):
 
 
 def _history_fetch_due(now_et):
-    """Fetch authoritative candles once after each regular-market minute closes."""
+    """Fetch authoritative candles once after each regular or extended minute closes."""
     global _LAST_HISTORY_FETCH_MINUTE
 
     minute = now_et.replace(second=0, microsecond=0)
-    if _is_regular_market_hours_now():
+    if _is_extended_market_hours_now(now_et):
         return now_et.second >= 1 and _LAST_HISTORY_FETCH_MINUTE != minute
 
     return (time.time() - float(_LAST_HISTORY_REFRESH_EPOCH or 0.0)) >= float(CANDLE_HISTORY_REFRESH_SECONDS)
@@ -375,6 +383,10 @@ def _history_fetch_due(now_et):
 
 def _regular_session_start(now_et):
     return now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+
+
+def _extended_session_start(now_et):
+    return now_et.replace(hour=4, minute=0, second=0, microsecond=0)
 
 
 def _schwab_history_datetime(value):
@@ -514,7 +526,12 @@ def get_candles():
 
     # Pull official Schwab OHLCV bars, including extended-hours candles for
     # continuous overnight diagnostics and the next regular-session context.
-    primary_start = _regular_session_start(end) if _is_regular_market_hours_now() else end - timedelta(days=5)
+    if _is_regular_market_hours_now():
+        primary_start = _regular_session_start(end)
+    elif _is_extended_market_hours_now(end):
+        primary_start = _extended_session_start(end)
+    else:
+        primary_start = end - timedelta(days=5)
     _LAST_HISTORY_FETCH_MINUTE = end.replace(second=0, microsecond=0)
     df = _fetch_window(primary_start, end, include_previous_close=True)
     if not df.empty:

@@ -122,6 +122,17 @@ def test_candles_between_minute_fetches_use_closed_cache_without_quote_requests(
     assert module.LAST_CANDLE_SOURCE == "closed_candle_cache"
 
 
+def test_extended_market_hours_use_minute_boundary_schedule(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    premarket = datetime(2026, 7, 21, 8, 52, 30, tzinfo=ZoneInfo("America/New_York"))
+
+    assert module._is_extended_market_hours_now(premarket)
+    assert module._cycle_sleep_seconds(premarket) == 0.5
+
+    monkeypatch.setattr(module, "_LAST_HISTORY_FETCH_MINUTE", None)
+    assert module._history_fetch_due(premarket.replace(second=1))
+
+
 def test_history_fetch_requests_extended_hours_candles(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
     calls = []
