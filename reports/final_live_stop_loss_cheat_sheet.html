@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Final Live Stop Loss Cheat Sheet</title>
+  <style>
+    :root {
+      --bg: #eef4fb;
+      --panel: #ffffff;
+      --line: #cad7e6;
+      --head: #dbeafe;
+      --text: #0f172a;
+      --muted: #475569;
+      --alt: #f8fafc;
+      --accent: #2563eb;
+      --warn: #b91c1c;
+      --green: #15803d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(180deg, #f7fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    .sheet {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+    }
+    .header {
+      padding: 24px 28px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 0;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border-right: 1px solid var(--line);
+    }
+    .chart-section + .chart-section { border-top: 1px solid var(--line); }
+    .chart-title {
+      margin: 0;
+      padding: 12px 14px;
+      background: var(--head);
+      font-size: 15px;
+      line-height: 1.2;
+    }
+    table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.35;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: var(--head);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) td { background: var(--alt); }
+    .side {
+      padding: 20px 22px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f8fbff 100%);
+    }
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .note {
+      margin: 0 0 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    ul { margin: 0; padding-left: 18px; }
+    li { margin: 0 0 10px; font-size: 13px; line-height: 1.45; }
+    .callout {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #c7ddff;
+      background: #f8fbff;
+      border-radius: 14px;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .callout strong { color: var(--green); }
+    .callout .warn { color: var(--warn); font-weight: 700; }
+    .footer {
+      padding: 14px 28px 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @media (max-width: 1060px) {
+      .grid { grid-template-columns: 1fr; }
+      .table-wrap { border-right: none; border-bottom: 1px solid var(--line); }
+    }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .sheet { box-shadow: none; border: none; border-radius: 0; }
+      .table-wrap { overflow: visible; }
+      th { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="header">
+      <div class="badge">Final Live Trading Cheat Sheet</div>
+      <h1>McLeod Alpha Live Stop Loss Rules</h1>
+      <p class="sub">Pulled from <strong>execution/live_engine.py</strong>. These are the active thresholds for live trading and the sell-side rules the bot uses now.</p>
+    </div>
+
+    <div class="grid">
+      <div class="table-wrap">
+        <section class="chart-section">
+          <h2 class="chart-title">Stops</h2>
+          <table>
+          <thead>
+            <tr>
+              <th>Exit Reason</th>
+              <th>Profit Zone</th>
+              <th>Live Stop Rule</th>
+              <th>Formula</th>
+              <th>Example</th>
+              <th>Trigger-to-Stop</th>
+              <th>Implied Exit P&amp;L</th>
+              <th>Worst Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>STOP</td><td>Entry</td><td>Initial protective stop</td><td>entry x 0.95</td><td>$5.00 → $4.75</td><td>$0.250 (5.000%) down</td><td>(4,750 - 5,000)/5,000 = -5.000%</td><td>-$150.00</td></tr>
+            <tr><td>2% Stop</td><td>&gt;= +2.0%</td><td>Set stop to 3.0% below entry</td><td>entry x 0.97</td><td>$5.00 → $4.85</td><td>$0.250 (4.902%) down</td><td>(4,850 - 5,000)/5,000 = -3.000%</td><td>-$90.00</td></tr>
+            <tr><td>3% Stop</td><td>&gt;= +3.0%</td><td>Set stop to 1.0% below entry</td><td>entry x 0.99</td><td>$5.00 → $4.95</td><td>$0.200 (3.883%) down</td><td>(4,950 - 5,000)/5,000 = -1.000%</td><td>-$30.00</td></tr>
+          </tbody>
+          </table>
+        </section>
+        <section class="chart-section">
+          <h2 class="chart-title">Trailing Stops</h2>
+          <table>
+          <thead>
+            <tr>
+              <th>Exit Reason</th>
+              <th>Profit Zone</th>
+              <th>Live Stop Rule</th>
+              <th>Formula</th>
+              <th>Example</th>
+              <th>Trigger-to-Stop</th>
+              <th>Implied Exit P&amp;L</th>
+              <th>Worst Case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>4% TRAIL</td><td>&gt;= +4.0%</td><td>Trail 3.0% below quote</td><td>quote x 0.97</td><td>$5.00 → $5.04</td><td>$0.156 (3.000%) down</td><td>(5,044 - 5,000)/5,000 = +0.880%</td><td>+$26.40</td></tr>
+            <tr><td>5% TRAIL</td><td>&gt;= +5.0%</td><td>Trail 2.5% below quote</td><td>quote x 0.975</td><td>$5.00 → $5.12</td><td>$0.131 (2.500%) down</td><td>(5,119 - 5,000)/5,000 = +2.375%</td><td>+$71.25</td></tr>
+            <tr><td>6% TRAIL</td><td>&gt;= +6.0%</td><td>Trail 2.0% below quote</td><td>quote x 0.98</td><td>$5.00 → $5.19</td><td>$0.106 (2.000%) down</td><td>(5,194 - 5,000)/5,000 = +3.880%</td><td>+$116.40</td></tr>
+            <tr><td>7% TRAIL</td><td>&gt;= +7.0%</td><td>Trail 1.5% below quote</td><td>quote x 0.985</td><td>$5.00 → $5.27</td><td>$0.080 (1.500%) down</td><td>(5,270 - 5,000)/5,000 = +5.400%</td><td>+$162.00</td></tr>
+            <tr><td>8% TRAIL</td><td>&gt;= +8.0%</td><td>Trail 1.0% below quote</td><td>quote x 0.99</td><td>$5.00 → $5.35</td><td>$0.054 (1.000%) down</td><td>(5,346 - 5,000)/5,000 = +6.920%</td><td>+$207.60</td></tr>
+          </tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="side">
+        <h2 class="section-title">Execution Rules</h2>
+        <p class="note">These are the live enforcement rules pulled from the current engine.</p>
+        <ul>
+          <li>Stops ratchet upward only; they never move down.</li>
+          <li>At +2% and +3%, the live exit reasons are <strong>2% Stop</strong> and <strong>3% Stop</strong>.</li>
+          <li>Protective broker order uses <strong>SELL_TO_CLOSE STOP_LIMIT</strong>.</li>
+          <li>Stop checks use option <strong>bid</strong> first, then mark as fallback.</li>
+          <li>Maximum holding period is <strong>20 minutes</strong>; close through the broker-safe exit path with reason <strong>MAX_HOLD_20_MIN</strong>.</li>
+          <li>If broker stop sync fails, the engine closes the position to avoid unprotected exposure.</li>
+        </ul>
+        <div class="callout">
+          <strong>Live contract:</strong> the bot will only increase protection as profit rises.<br />
+          <span class="warn">No down-ratcheting, no unprotected live positions.</span>
+        </div>
+        <p class="note">Worst Case assumes the displayed $5.00 option entry, six contracts, and a fill at the listed stop price. It excludes commissions, slippage, and stop-limit execution risk.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      Source: <strong>execution/live_engine.py</strong> | This is the live trading cheat sheet.
+    </div>
+  </div>
+</body>
+</html>
