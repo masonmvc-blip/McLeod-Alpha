@@ -5966,7 +5966,7 @@ HTML_DASHBOARD = """
         .position-stats-grid {
             display: none;
             width: min(100%, 560px);
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
             text-align: center;
         }
@@ -7107,6 +7107,12 @@ HTML_DASHBOARD = """
                         <div class="position-stat"><div class="position-stat-label">Put Indicators</div><div class="position-candle-count" id="currentCandlePutCount">--</div></div>
                         <div class="position-stat"><div class="position-summary-stop" id="currentStopCategory"></div></div>
                     </div>
+                    <div class="position-stat-column" id="currentMarketContext">
+                        <div class="position-stat"><div class="position-stat-label">Call Phase</div><div class="position-stat-value" id="currentCallPhase">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Put Phase</div><div class="position-stat-value" id="currentPutPhase">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Market Trend</div><div class="position-stat-value" id="currentMarketTrend">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Candle Trend</div><div class="position-stat-value" id="currentCandleTrend">--</div></div>
+                    </div>
                 </div>
             </div>
             <div class="status-card position-secondary-card" id="putIndicatorsCard">
@@ -8041,6 +8047,10 @@ HTML_DASHBOARD = """
                 const optionPriceEl = document.getElementById('currentOptionPrice');
                 const candleCallCountEl = document.getElementById('currentCandleCallCount');
                 const candlePutCountEl = document.getElementById('currentCandlePutCount');
+                const callPhaseEl = document.getElementById('currentCallPhase');
+                const putPhaseEl = document.getElementById('currentPutPhase');
+                const marketTrendEl = document.getElementById('currentMarketTrend');
+                const candleTrendEl = document.getElementById('currentCandleTrend');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
                 const optionEntryPrice = Number(status.current_trade_option_entry);
@@ -8110,6 +8120,26 @@ HTML_DASHBOARD = """
                 if (candlePutCountEl) {
                     candlePutCountEl.textContent = status.has_open_position
                         ? `${putPassed}/${indicatorTotal}${formatIndicatorDelta(putPassed, entryPutCount)}`
+                        : '--';
+                }
+                if (callPhaseEl) {
+                    callPhaseEl.textContent = status.has_open_position && callMomentumStage
+                        ? callMomentumStage
+                        : '--';
+                }
+                if (putPhaseEl) {
+                    putPhaseEl.textContent = status.has_open_position && putMomentumStage
+                        ? putMomentumStage
+                        : '--';
+                }
+                if (marketTrendEl) {
+                    marketTrendEl.textContent = status.has_open_position
+                        ? trendText
+                        : '--';
+                }
+                if (candleTrendEl) {
+                    candleTrendEl.textContent = status.has_open_position
+                        ? candleTrendLabel
                         : '--';
                 }
 

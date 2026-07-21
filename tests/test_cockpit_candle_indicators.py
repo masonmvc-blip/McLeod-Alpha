@@ -109,6 +109,18 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert 'id="currentStopCategory"' in source
     assert "formatIndicatorDelta(callPassed, entryCallCount)" in source
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
+    assert '>Call Phase</div>' in source
+    assert '>Put Phase</div>' in source
+    assert '>Market Trend</div>' in source
+    assert '>Candle Trend</div>' in source
+    assert 'id="currentCallPhase"' in source
+    assert 'id="currentPutPhase"' in source
+    assert 'id="currentMarketTrend"' in source
+    assert 'id="currentCandleTrend"' in source
+    assert 'callPhaseEl.textContent' in source
+    assert 'putPhaseEl.textContent' in source
+    assert 'marketTrendEl.textContent' in source
+    assert 'candleTrendEl.textContent' in source
 
 
 def test_open_position_card_uses_one_text_size():
@@ -165,7 +177,7 @@ def test_current_position_has_live_candle_indicator_column():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="currentPositionStats"' in source
-    assert 'grid-template-columns: repeat(3, minmax(0, 1fr))' in source
+    assert 'grid-template-columns: repeat(4, minmax(0, 1fr))' in source
     assert '.position-stats-grid {' in source
     assert 'text-align: center;' in source
     assert '.status-card {' in source
@@ -176,6 +188,7 @@ def test_current_position_has_live_candle_indicator_column():
     assert 'id="currentCandleIndicators"' in source
     assert 'id="currentCandleCallCount"' in source
     assert 'id="currentCandlePutCount"' in source
+    assert 'id="currentMarketContext"' in source
     assert "${callPassed}/${indicatorTotal}${formatIndicatorDelta(callPassed, entryCallCount)}" in source
     assert "${putPassed}/${indicatorTotal}${formatIndicatorDelta(putPassed, entryPutCount)}" in source
 
