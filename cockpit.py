@@ -7732,7 +7732,7 @@ HTML_DASHBOARD = """
                 }
                 const candleAt = status.last_candle_at || '';
                 const candleTimeText = formatTimeAMPM(candleAt);
-                const trendWithTimestamp = `<span class="${trendToneClass}">Market Trend: ${trendText}</span>`;
+                const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;
 
                 if (tradeEntryEnabled) {
                     tradeEntryBanner.className = 'trade-entry-banner enabled';

@@ -172,7 +172,8 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "const candleTrendLabel = indicatorRegime.replaceAll('_', ' ');" in source
     assert "Candle Trend: ${escapeHtml(candleTrendLabel)}" in source
     assert "Blocked: ${escapeHtml(candleTrendLabel)}" in source
-    assert "Market Trend: ${trendText}" in source
+    assert 'const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;' in source
+    assert "Market Trend: ${trendText}" not in source
     assert "${side} requires ${requiredLabel}" not in source
 
 
