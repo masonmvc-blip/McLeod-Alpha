@@ -144,3 +144,9 @@ def test_indicator_performance_refreshes_when_closed_trade_signature_changes():
 
     assert "lastIndicatorTradeSignature" in source
     assert "lastIndicatorTradeSignature !== closedTradeSignature" in source
+
+
+def test_cash_register_plays_when_a_trade_opens():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "if (hasOpenPosition) {\n                        playCashRegisterNoise();" in source

@@ -7763,7 +7763,9 @@ HTML_DASHBOARD = """
                     statusGrid.classList.toggle('position-focus-active', hasOpenPosition);
                 }
                 if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
-                    if (hasOpenPosition || Number(previousOpenTradePnlDollars) > 0) {
+                    if (hasOpenPosition) {
+                        playCashRegisterNoise();
+                    } else if (Number(previousOpenTradePnlDollars) > 0) {
                         playCashRegisterNoise();
                     } else if (Number(previousOpenTradePnlDollars) < 0) {
                         playLossTrumpet();
