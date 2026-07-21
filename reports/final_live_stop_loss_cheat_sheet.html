@@ -79,6 +79,8 @@
       font-size: 15px;
       line-height: 1.2;
     }
+    .active-chart .chart-title { text-align: center; }
+    .active-chart table { table-layout: fixed; }
     table {
       width: 100%;
       min-width: 980px;
@@ -170,9 +172,18 @@
 
     <div class="grid">
       <div class="table-wrap">
-        <section class="chart-section">
+        <section class="chart-section active-chart">
           <h2 class="chart-title">LOSERS</h2>
           <table>
+          <colgroup>
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 17%" />
+            <col style="width: 11%" />
+            <col style="width: 13%" />
+            <col style="width: 17%" />
+            <col style="width: 18%" />
+          </colgroup>
           <thead>
             <tr>
               <th>Exit Reason</th>
@@ -191,9 +202,18 @@
           </tbody>
           </table>
         </section>
-        <section class="chart-section">
+        <section class="chart-section active-chart">
           <h2 class="chart-title">WINNERS</h2>
           <table>
+          <colgroup>
+            <col style="width: 12%" />
+            <col style="width: 12%" />
+            <col style="width: 17%" />
+            <col style="width: 11%" />
+            <col style="width: 13%" />
+            <col style="width: 17%" />
+            <col style="width: 18%" />
+          </colgroup>
           <thead>
             <tr>
               <th>Exit Reason</th>
