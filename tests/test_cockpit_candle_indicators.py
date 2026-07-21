@@ -55,6 +55,7 @@ def test_indicator_snapshot_uses_strategy_score_for_closed_candles(tmp_path):
     assert snapshot["call_passed"] == max(0, int(expected["call_score"]))
     assert snapshot["put_passed"] == max(0, int(expected["put_score"]))
     assert snapshot["regime"] == expected["regime"]
+    assert snapshot["market_trend"] == expected["market_trend"]
 
 
 def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):

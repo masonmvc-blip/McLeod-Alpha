@@ -87,6 +87,26 @@ def test_directional_spy_run_resets_after_a_reversal():
     }
 
 
+def test_session_market_trend_uses_today_open_and_session_vwap():
+    module = importlib.import_module("phase3_monitor")
+    candles = pd.DataFrame(
+        {
+            "open": [100.0, 100.1, 100.4],
+            "high": [100.2, 100.5, 100.8],
+            "low": [99.9, 100.0, 100.3],
+            "close": [100.1, 100.4, 100.7],
+            "volume": [1000, 1200, 1400],
+        },
+        index=pd.to_datetime(
+            ["2026-07-20T13:30:00Z", "2026-07-20T13:31:00Z", "2026-07-20T13:32:00Z"], utc=True
+        ),
+    )
+
+    assert module._session_market_trend(candles) == "BULL_TREND"
+    candles.loc[candles.index[-1], "close"] = 99.8
+    assert module._session_market_trend(candles) == "BEAR_TREND"
+
+
 def test_continuation_forecast_requires_strong_confirmation_for_initiation():
     module = importlib.import_module("phase3_monitor")
     metrics = {

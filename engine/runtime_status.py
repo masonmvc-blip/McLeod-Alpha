@@ -450,6 +450,7 @@ def _build_runtime_status():
         status["spy_run_entry_min_dollars"] = float(os.getenv("SPY_RUN_ENTRY_MIN_DOLLARS", "0.70"))
         status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
         status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
+        status["market_trend"] = str(candle_indicator_snapshot.get("market_trend") or "UNKNOWN")
 
     try:
         status["entry_paused"] = bool((get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}).get("paused"))
@@ -785,7 +786,6 @@ def _build_runtime_status():
 
             raw_trend = str(m_trend.group(1) or "UNKNOWN").upper()
             status["trend"] = raw_trend
-            status["market_trend"] = raw_trend
             break
 
         def _extract_side_reasons(reason_text: str):

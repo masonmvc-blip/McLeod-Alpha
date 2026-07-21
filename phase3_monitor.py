@@ -17,7 +17,7 @@ import time
 import json
 import importlib
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, time as dt_time, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -745,11 +745,49 @@ def score_closed_candle_frame(candles):
         "call_score": decision["call_score"],
         "put_score": decision["put_score"],
         "regime": decision["regime"],
+        "market_trend": _session_market_trend(indicators),
         "timestamp": indicators.index[-1],
         "call_momentum": momentum_snapshot("CALL"),
         "put_momentum": momentum_snapshot("PUT"),
         "spy_run": _directional_spy_run(indicators),
     }
+
+
+def _session_market_trend(candles):
+    """Classify the regular-session direction from today's completed candles."""
+    if candles is None or len(candles) < 2:
+        return "NEUTRAL"
+
+    local = candles.copy()
+    local.index = pd.to_datetime(local.index, errors="coerce", utc=True)
+    local = local[~local.index.isna()]
+    if local.empty or any(column not in local.columns for column in ("open", "high", "low", "close", "volume")):
+        return "NEUTRAL"
+
+    et_index = local.index.tz_convert(EASTERN_TZ)
+    session_date = et_index[-1].date()
+    session_mask = (
+        (et_index.date == session_date)
+        & (et_index.time >= dt_time(9, 30))
+        & (et_index.time <= dt_time(16, 0))
+    )
+    session = local.loc[session_mask]
+    if len(session) < 2:
+        return "NEUTRAL"
+
+    typical_price = (session["high"].astype(float) + session["low"].astype(float) + session["close"].astype(float)) / 3.0
+    cumulative_volume = session["volume"].astype(float).cumsum()
+    if float(cumulative_volume.iloc[-1]) <= 0:
+        return "NEUTRAL"
+    session_vwap = float((typical_price * session["volume"].astype(float)).cumsum().iloc[-1] / cumulative_volume.iloc[-1])
+    session_open = float(session["open"].iloc[0])
+    session_close = float(session["close"].iloc[-1])
+
+    if session_close > session_open and session_close > session_vwap:
+        return "BULL_TREND"
+    if session_close < session_open and session_close < session_vwap:
+        return "BEAR_TREND"
+    return "NEUTRAL"
 
 
 def _directional_spy_run(candles):
@@ -1472,22 +1510,6 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 _refresh_option_chain_cache()
             except Exception as exc:
                 print(f"Option-chain cache refresh unavailable: {exc}")
-        if last_processed_candle_time is None:
-            startup_cycle = plan_signal_cycle(df, now_et, force_attempt=True)
-            last_processed_candle_time = startup_cycle.candle_timestamp
-            print(
-                "Closed-candle startup baseline established: "
-                f"{last_processed_candle_time or 'awaiting closed candle'}"
-            )
-            _append_latency_skip_event(
-                reason="startup_candle_baseline",
-                cycle_start_ms=cycle_start_ms,
-                candles_fetch_ms=candles_fetch_ms,
-                indicators_ms=indicators_ms,
-            )
-            sleep_fn(_cycle_sleep_seconds())
-            continue
-
         signal_cycle = plan_signal_cycle(
             df,
             now_et,
