@@ -2126,6 +2126,19 @@ def _summarize_internet_quality_history(samples):
     }
 
 
+def _internet_quality_from_rolling_average(avg_latency_ms):
+    """Classify the Internet Trend title from its rolling 30-minute latency average."""
+    if avg_latency_ms is None:
+        return None, None
+    if avg_latency_ms <= 250:
+        return "EXCELLENT", f"Excellent ({avg_latency_ms:.0f} ms 30 min avg)"
+    if avg_latency_ms <= 600:
+        return "GOOD", f"Good ({avg_latency_ms:.0f} ms 30 min avg)"
+    if avg_latency_ms <= 1000:
+        return "FAIR", f"Fair ({avg_latency_ms:.0f} ms 30 min avg)"
+    return "DEGRADED", f"Degraded ({avg_latency_ms:.0f} ms 30 min avg)"
+
+
 def _get_internet_quality_snapshot(force: bool = False):
     now = time.time()
     cached = _INTERNET_QUALITY_CACHE.get("payload")
@@ -2194,6 +2207,15 @@ def _get_internet_quality_snapshot(force: bool = False):
         "targets": probes,
     }
     _append_internet_quality_sample(payload)
+    history = _summarize_internet_quality_history(_load_recent_internet_quality_samples())
+    rolling_quality, rolling_summary = _internet_quality_from_rolling_average(
+        history.get("recent_avg_latency_ms")
+    )
+    if rolling_quality is not None:
+        payload["quality"] = rolling_quality
+        payload["summary"] = rolling_summary
+        payload["rolling_avg_latency_ms"] = history.get("recent_avg_latency_ms")
+        payload["quality_window_minutes"] = history.get("window_minutes")
     _INTERNET_QUALITY_CACHE["timestamp"] = now
     _INTERNET_QUALITY_CACHE["payload"] = payload
     return payload
