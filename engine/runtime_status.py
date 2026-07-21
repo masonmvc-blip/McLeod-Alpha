@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
 from types import FunctionType
 from typing import Any, MutableMapping
 
@@ -47,6 +46,8 @@ def _build_runtime_status():
             return _safe_amount(candidate, 0.0), True
 
         def _api_period_net_after(start_dt, end_dt, symbol_scope, asset_scope):
+            from decimal import Decimal
+
             resp = client.get_transactions(
                 account_hash,
                 start_date=start_dt,
@@ -82,6 +83,8 @@ def _build_runtime_status():
                     return None
 
             def _parse_cash_amount(tx):
+                from decimal import Decimal, InvalidOperation
+
                 for value in ((tx or {}).get("netAmount"), (tx or {}).get("amount")):
                     try:
                         return Decimal(str(value))
@@ -247,8 +250,8 @@ def _build_runtime_status():
                     mtd_source = ext_mtd_source
                 if used_ext_ytd:
                     ytd_source = ext_ytd_source
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"Broker P&L refresh unavailable: {exc}")
 
         _BROKER_PNL_CACHE = {
             "timestamp": now_ts,
