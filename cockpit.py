@@ -2775,6 +2775,12 @@ def trigger_go_live() -> dict:
         get_memory().clear_setting("bot_manual_stop_marker", BOT_MANUAL_STOP_MARKER_FILE)
         env = os.environ.copy()
         env.setdefault("MCLEOD_ROOT", str(PROJECT_ROOT))
+        try:
+            bot_is_running = bool(parse_bot_status().get("bot_running"))
+        except Exception:
+            bot_is_running = True
+        if not bot_is_running:
+            env["MCLEOD_ALLOW_MARKET_HOURS_CHANGES"] = "1"
         with get_memory().open_runtime_log(GO_LIVE_LOG_FILE, mode="a") as log_fp:
             log_fp.write(
                 f"\n===== go-live requested {datetime.now(timezone.utc).isoformat()} from cockpit =====\n"

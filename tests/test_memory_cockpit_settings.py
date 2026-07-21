@@ -77,3 +77,4 @@ def test_explicit_go_live_clears_operator_stop_marker():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'get_memory().clear_setting("bot_manual_stop_marker", BOT_MANUAL_STOP_MARKER_FILE)' in source
+    assert 'env["MCLEOD_ALLOW_MARKET_HOURS_CHANGES"] = "1"' in source
