@@ -61,3 +61,9 @@ def test_local_period_pnl_includes_commissions_and_closing_regulatory_fee():
 
     assert "OPTION_COMMISSION_PER_CONTRACT_SIDE * 2" in source_text
     assert "OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE" in source_text
+
+
+def test_runtime_status_exposes_closed_trade_signature():
+    source_text = inspect.getsource(runtime_status._build_runtime_status)
+
+    assert '"closed_trade_signature": _BROKER_PNL_CACHE.get("closed_trade_signature")' in source_text

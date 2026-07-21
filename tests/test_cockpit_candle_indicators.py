@@ -137,3 +137,10 @@ def test_indicator_snapshot_includes_side_specific_momentum():
 
     assert '"call_momentum": momentum_snapshot("CALL")' in source
     assert '"put_momentum": momentum_snapshot("PUT")' in source
+
+
+def test_indicator_performance_refreshes_when_closed_trade_signature_changes():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "lastIndicatorTradeSignature" in source
+    assert "lastIndicatorTradeSignature !== closedTradeSignature" in source

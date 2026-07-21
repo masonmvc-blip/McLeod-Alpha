@@ -7057,6 +7057,7 @@ HTML_DASHBOARD = """
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
         let lastIndicatorPerformanceRefreshMs = 0;
+        let lastIndicatorTradeSignature = null;
         const LOGS_REFRESH_INTERVAL_MS = 500;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
@@ -7547,6 +7548,12 @@ HTML_DASHBOARD = """
                 lastStatusSnapshot = status;
                 maybeHandleBellBroadcast(status);
                 maybePlayMarketSessionBells(status);
+                const closedTradeSignature = String(status.closed_trade_signature || '0:none');
+                if (lastIndicatorTradeSignature !== null && lastIndicatorTradeSignature !== closedTradeSignature) {
+                    lastIndicatorPerformanceRefreshMs = 0;
+                    updateIndicatorPerformance();
+                }
+                lastIndicatorTradeSignature = closedTradeSignature;
                 
                 // Update the Schwab readiness status in the entry banner.
                 const reconState = String(status.broker_reconciliation || '').toUpperCase();

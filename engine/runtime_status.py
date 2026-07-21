@@ -346,6 +346,7 @@ def _build_runtime_status():
         "broker_pnl_source": _BROKER_PNL_CACHE.get("today_source") or "schwab_transactions",
         "broker_pnl_as_of_date": _BROKER_PNL_CACHE.get("as_of_date"),
         "broker_pnl_preflight_date": _BROKER_PNL_CACHE.get("last_preflight_date"),
+        "closed_trade_signature": _BROKER_PNL_CACHE.get("closed_trade_signature") or "0:none",
         "continuation_call_passed": 0,
         "continuation_put_passed": 0,
         "continuation_indicators_total": 5,
