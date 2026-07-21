@@ -73,3 +73,11 @@ def test_active_stop_category_is_not_derived_from_current_option_mark():
     source_text = inspect.getsource(runtime_status._build_runtime_status)
 
     assert "active_stop_category(\n                                option_entry,\n                                current_mark=current_mark," not in source_text
+
+
+def test_runtime_status_exposes_entry_time_indicator_baselines():
+    source_text = inspect.getsource(runtime_status._build_runtime_status)
+
+    assert '"entry_call_indicators": None' in source_text
+    assert '"entry_put_indicators": None' in source_text
+    assert 'status["entry_call_indicators"] = feature_payload.get("call_score"' in source_text

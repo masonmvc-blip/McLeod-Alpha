@@ -350,6 +350,8 @@ def _build_runtime_status():
         "continuation_call_passed": 0,
         "continuation_put_passed": 0,
         "continuation_indicators_total": 5,
+        "entry_call_indicators": None,
+        "entry_put_indicators": None,
         "continuation_last_test_at": None,
         "continuation_regime": "UNKNOWN",
         "call_momentum_strength": None,
@@ -554,6 +556,17 @@ def _build_runtime_status():
                     option_stop = float(pos_data.get("option_stop") or 0.0)
                 except (TypeError, ValueError):
                     option_stop = 0.0
+
+                feature_payload = pos_data.get("feature_payload") or {}
+                if isinstance(feature_payload, str):
+                    try:
+                        feature_payload = json.loads(feature_payload)
+                    except (TypeError, ValueError):
+                        feature_payload = {}
+                if isinstance(feature_payload, dict):
+                    checklist = feature_payload.get("checklist") or {}
+                    status["entry_call_indicators"] = feature_payload.get("call_score", checklist.get("call_score"))
+                    status["entry_put_indicators"] = feature_payload.get("put_score", checklist.get("put_score"))
 
                 if option_entry > 0:
                     status["current_trade_option_entry"] = round(option_entry, 3)

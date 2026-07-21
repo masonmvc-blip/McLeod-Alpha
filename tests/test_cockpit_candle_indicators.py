@@ -95,6 +95,21 @@ def test_current_position_shows_stop_category_and_protective_stop_price():
     assert "formatMoney(activeStopPrice)" in source
 
 
+def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert 'id="currentPositionTitle">Current Position</h3>' in source
+    assert "positionTitleEl.hidden = hasOpenPosition;" in source
+    assert ">Stop Price</div>" in source
+    assert ">Entry Price</div>" in source
+    assert ">Option Price</div>" in source
+    assert ">Current P&amp;L</div>" not in source
+    assert ">Stop Loss</div>" not in source
+    assert 'id="currentStopCategory"' in source
+    assert "formatIndicatorDelta(callPassed, entryCallCount)" in source
+    assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
+
+
 def test_current_position_has_live_candle_indicator_column():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
@@ -107,8 +122,8 @@ def test_current_position_has_live_candle_indicator_column():
     assert 'id="currentCandleIndicators"' in source
     assert 'id="currentCandleCallCount"' in source
     assert 'id="currentCandlePutCount"' in source
-    assert "candleCallCountEl.textContent = status.has_open_position ? `${callPassed}/${indicatorTotal}` : '--';" in source
-    assert "candlePutCountEl.textContent = status.has_open_position ? `${putPassed}/${indicatorTotal}` : '--';" in source
+    assert "${callPassed}/${indicatorTotal}${formatIndicatorDelta(callPassed, entryCallCount)}" in source
+    assert "${putPassed}/${indicatorTotal}${formatIndicatorDelta(putPassed, entryPutCount)}" in source
 
 
 def test_option_label_includes_strike_for_calls_and_puts():

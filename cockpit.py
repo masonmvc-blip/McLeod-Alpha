@@ -6999,22 +6999,22 @@ HTML_DASHBOARD = """
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
             <div class="status-card" id="currentPositionCard">
-                <h3>Current Position</h3>
+                <h3 id="currentPositionTitle">Current Position</h3>
                 <div class="position-stats-grid" id="currentPositionStats">
                     <div class="position-stat-column">
                         <div class="position-stat"><div class="position-summary-main" id="currentPosition">Loading...</div></div>
-                        <div class="position-stat"><div class="position-stat-label">Current P&amp;L</div><div class="position-summary-pnl" id="currentTradePnl">Loading...</div></div>
-                        <div class="position-stat"><div class="position-stat-label">Stop Loss</div><div class="position-summary-stop" id="currentStopCategory"></div></div>
+                        <div class="position-stat"><div class="position-summary-pnl" id="currentTradePnl">Loading...</div></div>
                     </div>
                     <div class="position-stat-column">
-                        <div class="position-stat"><div class="position-stat-label">Stop Loss Price</div><div class="position-stat-value" id="currentStopPrice">--</div></div>
-                        <div class="position-stat"><div class="position-stat-label">Option Entry</div><div class="position-stat-value" id="currentOptionEntry">--</div></div>
-                        <div class="position-stat"><div class="position-stat-label">Current Option</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Stop Price</div><div class="position-stat-value" id="currentStopPrice">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Entry Price</div><div class="position-stat-value" id="currentOptionEntry">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Option Price</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
                     </div>
                     <div class="position-stat-column" id="currentCandleIndicators">
                         <div class="position-stat"><div class="position-stat-label">Latest Candle</div></div>
                         <div class="position-stat"><div class="position-stat-label">Call Indicators</div><div class="position-candle-count" id="currentCandleCallCount">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Put Indicators</div><div class="position-candle-count" id="currentCandlePutCount">--</div></div>
+                        <div class="position-stat"><div class="position-summary-stop" id="currentStopCategory"></div></div>
                     </div>
                 </div>
             </div>
@@ -7785,6 +7785,10 @@ HTML_DASHBOARD = """
                 }
 
                 const hasOpenPosition = !!status.has_open_position;
+                const positionTitleEl = document.getElementById('currentPositionTitle');
+                if (positionTitleEl) {
+                    positionTitleEl.hidden = hasOpenPosition;
+                }
                 const statusGrid = document.getElementById('statusGrid');
                 if (statusGrid) {
                     statusGrid.classList.toggle('position-focus-active', hasOpenPosition);
@@ -7942,6 +7946,15 @@ HTML_DASHBOARD = """
                 const currentOptionPrice = Number(status.current_trade_mark);
                 const activeStopPrice = Number(status.active_protective_stop_price);
                 const activeStopCategory = String(status.active_stop_category || '').trim();
+                const entryCallCount = Number(status.entry_call_indicators);
+                const entryPutCount = Number(status.entry_put_indicators);
+                const formatIndicatorDelta = (current, entry) => {
+                    if (!Number.isFinite(entry)) return '';
+                    const delta = current - entry;
+                    if (delta > 0) return ` +${delta}`;
+                    if (delta < 0) return ` ${delta}`;
+                    return ' 0';
+                };
                 if (status.has_open_position && tradePnlDollars !== null && tradePnlDollars !== undefined && tradePnlPct !== null && tradePnlPct !== undefined) {
                     const dollarsText = formatMoney(tradePnlDollars);
                     const pctText = `${tradePnlPct >= 0 ? '+' : ''}${formatNumber(Math.abs(tradePnlPct), 1)}%`;
@@ -7989,10 +8002,14 @@ HTML_DASHBOARD = """
                         : '--';
                 }
                 if (candleCallCountEl) {
-                    candleCallCountEl.textContent = status.has_open_position ? `${callPassed}/${indicatorTotal}` : '--';
+                    candleCallCountEl.textContent = status.has_open_position
+                        ? `${callPassed}/${indicatorTotal}${formatIndicatorDelta(callPassed, entryCallCount)}`
+                        : '--';
                 }
                 if (candlePutCountEl) {
-                    candlePutCountEl.textContent = status.has_open_position ? `${putPassed}/${indicatorTotal}` : '--';
+                    candlePutCountEl.textContent = status.has_open_position
+                        ? `${putPassed}/${indicatorTotal}${formatIndicatorDelta(putPassed, entryPutCount)}`
+                        : '--';
                 }
 
                 const nowMs = Date.now();
