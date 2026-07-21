@@ -149,6 +149,9 @@ def test_current_position_has_live_candle_indicator_column():
 
     assert 'id="currentPositionStats"' in source
     assert 'grid-template-columns: repeat(3, minmax(0, 1fr))' in source
+    assert '.position-stats-grid {' in source
+    assert 'text-align: center;' in source
+    assert '.status-card {' in source
     assert 'class="position-summary-main" id="currentPosition"' in source
     assert 'id="currentStopPrice"' in source
     assert 'id="currentOptionEntry"' in source

@@ -5954,7 +5954,7 @@ HTML_DASHBOARD = """
             width: min(100%, 560px);
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 12px;
-            text-align: left;
+            text-align: center;
         }
 
         #statusGrid.position-focus-active .position-stats-grid {
@@ -6001,6 +6001,7 @@ HTML_DASHBOARD = """
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 12px;
+            text-align: center;
         }
 
         .architecture-health-summary {
