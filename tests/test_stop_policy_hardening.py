@@ -107,6 +107,44 @@ def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
     assert close_calls == []
 
 
+def test_failed_exit_submission_keeps_existing_protective_stop(monkeypatch):
+    pos = _live_position()
+    pos.protective_stop_order_id = "existing-stop"
+    live_engine.current_position = pos
+
+    cancelled_orders = []
+    monkeypatch.setattr(live_engine, "_submit_option_exit_market_order", lambda *_args: None)
+    monkeypatch.setattr(live_engine, "_cancel_protective_stop", lambda order_id: cancelled_orders.append(order_id))
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("must not replace a stop that was never canceled"),
+    )
+
+    assert live_engine.close_trade(500.0, "MANUAL_EXIT") is False
+    assert cancelled_orders == []
+
+
+def test_exit_submission_cooldown_keeps_existing_protective_stop(monkeypatch):
+    pos = _live_position()
+    pos.protective_stop_order_id = "existing-stop"
+    live_engine.current_position = pos
+
+    monkeypatch.setattr(live_engine, "_last_exit_submission_failure_epoch", live_engine.time.time())
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_option_exit_market_order",
+        lambda *_args: pytest.fail("cooldown must suppress duplicate exit submission"),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_cancel_protective_stop",
+        lambda *_args: pytest.fail("cooldown must preserve the protective stop"),
+    )
+
+    assert live_engine.close_trade(500.0, "MANUAL_EXIT") is False
+
+
 @pytest.mark.parametrize(
     "option_mark, expected_stop",
     [

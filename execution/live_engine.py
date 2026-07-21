@@ -733,6 +733,10 @@ _rejection_reason = None
 _entry_pending = False
 _pending_order_id = None
 
+# A rejected exit request must not become a high-frequency broker retry loop.
+_last_exit_submission_failure_epoch = 0.0
+EXIT_SUBMISSION_RETRY_COOLDOWN_SECONDS = 30
+
 # Max quantity lock: if Schwab shows more than configured SPY option contracts
 _max_quantity_exceeded = False
 _excess_quantity_details = None
@@ -2434,44 +2438,42 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     Close a live trade on Schwab.
     
     CRITICAL SEQUENCE:
-    1. Cancel broker-held protective stop
-    2. Submit closing order  
+    1. Submit closing order while the protective stop remains active
+    2. Cancel the broker-held protective stop only after exit submission
     3. Confirm close on Schwab
     4. Clear local position
     5. Log the trade (failure won't prevent closure)
     """
     global current_position, _protective_stop_failed, _protective_stop_failure_reason
+    global _last_exit_submission_failure_epoch
 
     if not current_position:
+        return False
+
+    retry_in = EXIT_SUBMISSION_RETRY_COOLDOWN_SECONDS - (time.time() - _last_exit_submission_failure_epoch)
+    if retry_in > 0:
+        print(f"EXIT SUBMISSION COOLDOWN: retry available in {retry_in:.0f}s; protective stop remains active")
         return False
 
     # Save position data before clearing (for logging and stop cancellation)
     saved_position = current_position
     
-    # STEP 1: Cancel protective stop before submitting exit
-    if saved_position.protective_stop_order_id:
-        print(f"\n[STEP 1] Canceling broker-held protective stop...")
-        cancel_success = _cancel_protective_stop(saved_position.protective_stop_order_id)
-        if not cancel_success:
-            print(f"WARNING: Could not confirm protective stop cancellation, continuing with exit")
-    else:
-        print(f"[STEP 1] No protective stop to cancel")
-    
-    # STEP 2: Submit actual exit order to Schwab and confirm fill.
+    # Keep the stop live until Schwab accepts the closing order. This prevents a
+    # rejected or rate-limited exit request from ever creating an unprotected position.
     exit_order_id = None
     if saved_position.option_symbol and int(saved_position.quantity or 0) > 0:
         use_limit_mode = str(execution_mode or "market").lower() == "limit_near_market"
         if use_limit_mode:
             if limit_price is None:
                 limit_price = _compute_fast_exit_limit_price(saved_position.option_symbol, option_mark or saved_position.option_entry)
-            print(f"[STEP 2] Submitting SELL_TO_CLOSE limit exit near market @ ${float(limit_price or 0):.2f}...")
+            print(f"[STEP 1] Submitting SELL_TO_CLOSE limit exit near market @ ${float(limit_price or 0):.2f}...")
             exit_order_id = _submit_option_exit_limit_order(
                 saved_position.option_symbol,
                 int(saved_position.quantity or 0),
                 float(limit_price or 0.0),
             )
         else:
-            print(f"[STEP 2] Submitting SELL_TO_CLOSE market exit...")
+            print(f"[STEP 1] Submitting SELL_TO_CLOSE market exit...")
             exit_order_id = _submit_option_exit_market_order(
                 saved_position.option_symbol,
                 int(saved_position.quantity or 0),
@@ -2486,16 +2488,18 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
                 )
 
         if not exit_order_id:
-            print("❌ EXIT SUBMISSION FAILED: keeping position open for retry/reconciliation")
-            # Best-effort re-protect if we canceled the original protective stop.
-            if saved_position.option_stop and saved_position.option_stop > 0:
-                _submit_protective_stop(
-                    saved_position.option_symbol,
-                    float(saved_position.option_entry or 0.0),
-                    int(saved_position.quantity or 0),
-                    stop_price_override=float(saved_position.option_stop),
-                )
+            _last_exit_submission_failure_epoch = time.time()
+            print("❌ EXIT SUBMISSION FAILED: protective stop remains active; keeping position open for reconciliation")
             return False
+
+        _last_exit_submission_failure_epoch = 0.0
+
+        if saved_position.protective_stop_order_id:
+            print("\n[STEP 2] Canceling broker-held protective stop after exit submission...")
+            if not _cancel_protective_stop(saved_position.protective_stop_order_id):
+                print("WARNING: Exit order is live but protective stop cancellation was not confirmed")
+        else:
+            print("[STEP 2] No protective stop to cancel")
 
         filled, exit_fill = _wait_for_fill(
             exit_order_id,
