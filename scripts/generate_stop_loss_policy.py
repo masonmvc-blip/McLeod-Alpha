@@ -60,7 +60,7 @@ def _build_policy() -> Dict[str, object]:
     from engine.brain import Brain
 
     brain_consts = _parse_constants(_read_text(BRAIN_ENGINE))
-    initial_stop_loss_pct = -5.0
+    initial_stop_loss_pct = -4.0
     max_trade_hold_minutes = brain_consts.get("MAX_TRADE_HOLD_MINUTES")
     t1, t2, t3, t4, t5 = 8.0, 7.0, 6.0, 5.0, 4.0
     t2_trigger, t2_entry_stop_pct = 2.0, 3.0

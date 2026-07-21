@@ -126,7 +126,7 @@ def test_startup_reconciliation_and_initial_stop_are_brain_decisions():
     assert unavailable.reason == "safe_mode"
     assert oversized.reason == "max_quantity_exceeded_lock"
     assert unprotected.reason == "protective_stop_failed_lock"
-    assert brain.initial_protective_stop(5.68) == pytest.approx(5.396)
+    assert brain.initial_protective_stop(5.68) == pytest.approx(5.4528)
 
 
 def test_startup_entry_attempt_gate_is_brain_owned():

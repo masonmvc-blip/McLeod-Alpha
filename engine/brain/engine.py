@@ -268,7 +268,7 @@ class Brain:
     def initial_protective_stop(option_entry_price) -> float:
         """Return the canonical initial protective stop before broker tick rounding."""
         entry = Brain._positive_float(option_entry_price)
-        return entry * 0.95 if entry else 0.0
+        return entry * 0.96 if entry else 0.0
 
     def evaluate_entry_quote(self, quote_snapshot, *, max_age_seconds: float, max_spread_pct: float) -> EntryDecision:
         """Fail closed when adapter-provided option quote facts are not tradeable."""
@@ -510,7 +510,7 @@ class Brain:
             return entry * 0.99, "3% Entry Lock"
         if profit_pct >= 2:
             return entry * 0.97, "2% Entry Lock"
-        return initial_stop, "Initial 5%"
+        return initial_stop, "Initial 4%"
 
     @staticmethod
     def _stop_exit_reason(entry, exit_price) -> str:
