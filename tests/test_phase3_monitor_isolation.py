@@ -87,6 +87,36 @@ def test_directional_spy_run_resets_after_a_reversal():
     }
 
 
+def test_continuation_forecast_blocks_initiation_and_exhaustion():
+    module = importlib.import_module("phase3_monitor")
+    metrics = {
+        "aligned": True,
+        "continuation_quality": 5.0,
+        "acceleration": 5.0,
+        "efficiency": 5.0,
+        "expansion": 5.0,
+        "confidence": 5.0,
+    }
+
+    assert module._continuation_forecast_admission({**metrics, "stage": 1}) == (False, "Forecast: trend initiation is not confirmed")
+    assert module._continuation_forecast_admission({**metrics, "stage": 5}) == (False, "Forecast: Late Exhaustion")
+
+
+def test_continuation_forecast_approves_healthy_established_trend():
+    module = importlib.import_module("phase3_monitor")
+    forecast = {
+        "stage": 3,
+        "aligned": True,
+        "continuation_quality": 3.0,
+        "acceleration": 3.0,
+        "efficiency": 3.0,
+        "expansion": 3.0,
+        "confidence": 3.0,
+    }
+
+    assert module._continuation_forecast_admission(forecast) == (True, "Forecast: continuation approved")
+
+
 def test_import_has_no_runtime_initialization(monkeypatch) -> None:
     import execution.equity_stream
     import schwab.auth

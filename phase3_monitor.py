@@ -779,6 +779,64 @@ def _directional_spy_run(candles):
     }
 
 
+def _continuation_forecast(candles, direction, base_score, regime):
+    """Estimate whether a qualified trend is likely to continue before entry."""
+    from backtesting.signal_replay import (
+        confidence_score_engine,
+        continuation_quality_score,
+        momentum_acceleration_score,
+        momentum_expansion_score_engine,
+        trend_efficiency_score,
+        trend_lifecycle_engine,
+        trend_stage_engine,
+    )
+
+    lifecycle = trend_lifecycle_engine(candles, direction=direction)
+    stage = trend_stage_engine(lifecycle)
+    continuation = continuation_quality_score(candles, direction=direction)
+    acceleration = momentum_acceleration_score(candles, direction=direction)
+    efficiency = trend_efficiency_score(candles, direction=direction)
+    expansion = momentum_expansion_score_engine(candles, direction=direction)
+    aligned = (direction == "CALL" and regime == "BULL_TREND") or (direction == "PUT" and regime == "BEAR_TREND")
+    confidence = confidence_score_engine(
+        base_score, aligned, continuation, acceleration, efficiency, expansion, lifecycle, stage
+    )
+    return {
+        "stage": int(stage.get("stage") or 5),
+        "stage_label": str(stage.get("label") or "UNKNOWN"),
+        "continuation_quality": float(continuation.get("score") or 0.0),
+        "acceleration": float(acceleration.get("score") or 0.0),
+        "efficiency": float(efficiency.get("score") or 0.0),
+        "expansion": float(expansion.get("score") or 0.0),
+        "confidence": float(confidence.get("score") or 0.0),
+        "aligned": aligned,
+    }
+
+
+def _continuation_forecast_admission(forecast):
+    """Apply stage-aware forward continuation thresholds to a trade candidate."""
+    stage = int(forecast.get("stage") or 5)
+    if not forecast.get("aligned"):
+        return False, "Forecast: regime is not aligned"
+    if stage <= 1:
+        return False, "Forecast: trend initiation is not confirmed"
+    if stage >= 5:
+        return False, "Forecast: Late Exhaustion"
+
+    minimum = 3.0 if stage == 4 else 2.4
+    floors = {
+        "continuation_quality": 3.0 if stage == 4 else 2.5,
+        "acceleration": 2.5 if stage == 4 else 2.0,
+        "efficiency": 3.0 if stage == 4 else 2.5,
+        "expansion": 2.5 if stage == 4 else 2.0,
+        "confidence": minimum,
+    }
+    weak = [name for name, floor in floors.items() if float(forecast.get(name) or 0.0) < floor]
+    if weak:
+        return False, f"Forecast: weak {', '.join(weak)}"
+    return True, "Forecast: continuation approved"
+
+
 def _build_entry_feature_payload(completed_candles, direction, regime, call_score, put_score, call_reasons, put_reasons):
     """Capture the exact decision diagnostics before submitting a live order."""
     from backtesting.signal_replay import (
@@ -1088,11 +1146,14 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
     log_signal(float(last.close), regime, call_score, put_score)
 
     candidate_direction = entry_decision["direction"]
-    spy_run = _directional_spy_run(completed_candles)
-    run_dollars = float(spy_run["call_dollars"] if candidate_direction == "CALL" else spy_run["put_dollars"] if candidate_direction == "PUT" else 0.0)
-    if candidate_direction in {"CALL", "PUT"} and run_dollars < SPY_RUN_ENTRY_MIN_DOLLARS:
-        run_reason = f"Range filter: SPY {candidate_direction.lower()} run ${run_dollars:.2f}/${SPY_RUN_ENTRY_MIN_DOLLARS:.2f}"
-        print(f"ENTRY BLOCKED: {run_reason}")
+    if candidate_direction in {"CALL", "PUT"}:
+        candidate_score = call_score if candidate_direction == "CALL" else put_score
+        forecast = _continuation_forecast(completed_candles, candidate_direction, candidate_score, regime)
+        forecast_allowed, forecast_reason = _continuation_forecast_admission(forecast)
+    else:
+        forecast_allowed, forecast_reason = True, None
+    if candidate_direction in {"CALL", "PUT"} and not forecast_allowed:
+        print(f"ENTRY BLOCKED: {forecast_reason}")
         _log_shadow_opportunities(
             last=last, prev=prev, completed_candles=completed_candles, regime=regime,
             call_score=call_score, call_reasons=call_reasons, put_score=put_score,
@@ -1100,7 +1161,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         )
         return {
             "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
-            "decision_reason": "range_bound_run_filter", "entry_block_reason": run_reason,
+            "decision_reason": "continuation_forecast_filter", "entry_block_reason": forecast_reason,
             "regime": regime, "call_score": call_score, "put_score": put_score,
             "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
             "signal_threshold": min_score_threshold, "candidate_direction": candidate_direction,
