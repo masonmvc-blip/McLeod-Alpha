@@ -6875,6 +6875,7 @@ HTML_DASHBOARD = """
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
         const TRADE_KACHING_AUDIO_PATH = '/static/audio/trade_kaching.mp3';
+        const TRADE_LOSS_TRUMPET_AUDIO_PATH = '/static/audio/trade_loss_trumpet.mp3';
 
         function isDashboardVisible() {
             return !document.hidden;
@@ -7175,6 +7176,15 @@ HTML_DASHBOARD = """
         function playCashRegisterNoise() {
             try {
                 const sound = new Audio(TRADE_KACHING_AUDIO_PATH);
+                sound.play().catch(() => {});
+            } catch (_) {
+                // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
+            }
+        }
+
+        function playLossTrumpet() {
+            try {
+                const sound = new Audio(TRADE_LOSS_TRUMPET_AUDIO_PATH);
                 sound.play().catch(() => {});
             } catch (_) {
                 // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
@@ -7562,6 +7572,8 @@ HTML_DASHBOARD = """
                 if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
                     if (hasOpenPosition || Number(previousOpenTradePnlDollars) > 0) {
                         playCashRegisterNoise();
+                    } else if (Number(previousOpenTradePnlDollars) < 0) {
+                        playLossTrumpet();
                     }
                 }
                 if (hasOpenPosition && Number.isFinite(Number(status.current_trade_pnl_dollars))) {
