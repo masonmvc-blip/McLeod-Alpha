@@ -6979,13 +6979,14 @@ HTML_DASHBOARD = """
             </div>
             <div class="status-card" id="currentPositionCard">
                 <h3>Current Position</h3>
-                <div class="position-summary-main" id="currentPosition">Loading...</div>
                 <div class="position-stats-grid" id="currentPositionStats">
                     <div class="position-stat-column">
+                        <div class="position-stat"><div class="position-summary-main" id="currentPosition">Loading...</div></div>
                         <div class="position-stat"><div class="position-stat-label">Current P&amp;L</div><div class="position-summary-pnl" id="currentTradePnl">Loading...</div></div>
                         <div class="position-stat"><div class="position-stat-label">Stop Loss</div><div class="position-summary-stop" id="currentStopCategory"></div></div>
                     </div>
                     <div class="position-stat-column">
+                        <div class="position-stat"><div class="position-stat-label">Stop Loss Price</div><div class="position-stat-value" id="currentStopPrice">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Option Entry</div><div class="position-stat-value" id="currentOptionEntry">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Current Option</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
                     </div>
@@ -7904,6 +7905,7 @@ HTML_DASHBOARD = """
                 // Current trade P&L (unrealized)
                 const tradePnlEl = document.getElementById('currentTradePnl');
                 const stopCategoryEl = document.getElementById('currentStopCategory');
+                const stopPriceEl = document.getElementById('currentStopPrice');
                 const optionEntryEl = document.getElementById('currentOptionEntry');
                 const optionPriceEl = document.getElementById('currentOptionPrice');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
@@ -7946,6 +7948,11 @@ HTML_DASHBOARD = """
                 if (optionEntryEl) {
                     optionEntryEl.textContent = status.has_open_position && Number.isFinite(optionEntryPrice) && optionEntryPrice > 0
                         ? formatMoney(optionEntryPrice)
+                        : '--';
+                }
+                if (stopPriceEl) {
+                    stopPriceEl.textContent = status.has_open_position && Number.isFinite(activeStopPrice) && activeStopPrice > 0
+                        ? formatMoney(activeStopPrice)
                         : '--';
                 }
                 if (optionPriceEl) {

@@ -85,17 +85,21 @@ def test_active_stop_reason_uses_the_actual_stop_price():
     assert active_stop_category(5.00, stop_price=5.27) == "6% Trail"
 
 
-def test_current_position_stop_line_uses_exit_category_not_stop_price():
+def test_current_position_shows_stop_category_and_protective_stop_price():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert "Stop Loss: ${activeStopCategory || 'Active Stop'}" in source
-    assert "Stop Loss: ${formatMoney(activeStopPrice)}" not in source
+    assert 'id="currentStopPrice"' in source
+    assert "stopPriceEl.textContent" in source
+    assert "formatMoney(activeStopPrice)" in source
 
 
 def test_current_position_has_option_price_stat_columns():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="currentPositionStats"' in source
+    assert 'class="position-summary-main" id="currentPosition"' in source
+    assert 'id="currentStopPrice"' in source
     assert 'id="currentOptionEntry"' in source
     assert 'id="currentOptionPrice"' in source
     assert "current_trade_option_entry" in source
