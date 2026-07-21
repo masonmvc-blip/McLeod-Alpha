@@ -5653,7 +5653,7 @@ HTML_DASHBOARD = """
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Calibri, Candara, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -5806,7 +5806,6 @@ HTML_DASHBOARD = """
 
         .architecture-evidence-list {
             color: #4a5568;
-            font-family: monospace;
             font-size: 11px;
             line-height: 1.45;
             margin: 8px 0 0;
@@ -5847,11 +5846,24 @@ HTML_DASHBOARD = """
             gap: 8px;
         }
 
+        .indicator-performance-columns,
         .indicator-performance-row {
             display: grid;
-            grid-template-columns: minmax(145px, 1.4fr) minmax(130px, 1fr) minmax(170px, 1.25fr);
+            grid-template-columns: minmax(145px, 1.5fr) minmax(145px, 1fr) minmax(92px, 0.7fr) minmax(150px, 1.1fr);
             align-items: center;
             gap: 10px;
+        }
+
+        .indicator-performance-columns {
+            color: #607083;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 0 0 6px;
+            text-transform: uppercase;
+        }
+
+        .indicator-performance-row {
             padding: 8px 0;
             border-top: 1px solid #e6eaf0;
         }
@@ -5862,7 +5874,6 @@ HTML_DASHBOARD = """
 
         .indicator-performance-name {
             color: #273142;
-            font-family: monospace;
             font-size: 12px;
             font-weight: 700;
             overflow-wrap: anywhere;
@@ -5875,6 +5886,10 @@ HTML_DASHBOARD = """
         }
 
         .indicator-performance-stats strong { color: #273142; }
+        .indicator-performance-wins { color: #1f7a41; font-weight: 700; }
+        .indicator-performance-losses { color: #b23a3a; font-weight: 700; }
+        .indicator-performance-average.positive { color: #1f7a41; }
+        .indicator-performance-average.negative { color: #b23a3a; }
         .indicator-performance-guidance { font-weight: 700; }
         .indicator-performance-guidance.review { color: #b23a3a; }
         .indicator-performance-guidance.candidate { color: #1f7a41; }
@@ -6205,7 +6220,6 @@ HTML_DASHBOARD = """
         .logs {
             background: #1e1e1e;
             color: #00ff00;
-            font-family: 'Monaco', 'Menlo', monospace;
             font-size: 11px;
             padding: 10px;
             border-radius: 6px;
@@ -6890,6 +6904,12 @@ HTML_DASHBOARD = """
                 <span class="indicator-performance-meta" id="indicatorPerformanceMeta">Loading closed-trade history...</span>
             </div>
             <div class="indicator-performance-list" id="indicatorPerformanceContainer">
+                <div class="indicator-performance-columns" aria-hidden="true">
+                    <span>Indicator</span>
+                    <span>W / L (Win %)</span>
+                    <span>Avg P&amp;L</span>
+                    <span>Guidance</span>
+                </div>
                 <div style="text-align: center; color: #999; padding: 12px;">Loading indicator performance...</div>
             </div>
         </section>
@@ -8005,6 +8025,12 @@ HTML_DASHBOARD = """
                 const rows = Array.isArray(data.indicators) ? data.indicators : [];
                 const container = document.getElementById('indicatorPerformanceContainer');
                 const meta = document.getElementById('indicatorPerformanceMeta');
+                const columns = `<div class="indicator-performance-columns" aria-hidden="true">
+                    <span>Indicator</span>
+                    <span>W / L (Win %)</span>
+                    <span>Avg P&amp;L</span>
+                    <span>Guidance</span>
+                </div>`;
                 const minimumSampleSize = Number(data.minimum_sample_size || 10);
                 const closedTrades = Number(data.closed_trades || 0);
                 const escapeText = (value) => String(value || '')
@@ -8025,20 +8051,25 @@ HTML_DASHBOARD = """
 
                 meta.textContent = `${closedTrades} closed trades | minimum ${minimumSampleSize} per indicator`;
                 if (!rows.length) {
-                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">No closed trades with recorded entry indicators yet.</div>';
+                    container.innerHTML = `${columns}<div style="text-align: center; color: #999; padding: 12px;">No closed trades with recorded entry indicators yet.</div>`;
                     return;
                 }
 
-                container.innerHTML = rows.map((row) => {
+                container.innerHTML = columns + rows.map((row) => {
                     const averageReturn = Number(row.average_return || 0);
+                    const wins = Number(row.wins || 0);
+                    const losses = Number(row.losses || 0);
+                    const winRate = Number(row.win_rate_pct || 0);
                     const guidance = String(row.guidance || 'Keep monitoring');
                     const tone = guidance === 'Candidate to increase weight'
                         ? 'candidate'
                         : (guidance === 'Review for reduction' ? 'review' : (guidance === 'Collect more data' ? 'collect' : ''));
+                    const averageTone = averageReturn > 0 ? 'positive' : (averageReturn < 0 ? 'negative' : '');
                     return `<article class="indicator-performance-row">
                         <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
-                        <div class="indicator-performance-stats"><strong>Wins ${Number(row.wins || 0)}</strong> | Losses ${Number(row.losses || 0)}</div>
-                        <div class="indicator-performance-stats"><strong>${Number(row.trades || 0)} trades</strong> | Avg P&L ${money(averageReturn)}<br><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
+                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)</div>
+                        <div class="indicator-performance-stats indicator-performance-average ${averageTone}">${money(averageReturn)}</div>
+                        <div class="indicator-performance-stats"><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
                     </article>`;
                 }).join('');
                 lastIndicatorPerformanceRefreshMs = Date.now();
