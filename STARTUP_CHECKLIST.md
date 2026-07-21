@@ -6,6 +6,10 @@
 - Stop stack: `ops/stack_stop.sh`
 - Cockpit direct launch: `ops/run_cockpit_waitress.sh`
 
+### `R` Command
+
+`R` means: pull the latest GitHub `main` with `git pull --ff-only origin main`, then restart the managed Cockpit, bot, and watchdog stack and verify the bot is effectively running.
+
 ### Standard Go-Live Command
 
 Use this single command before/after edits to deploy and verify live runtime:
