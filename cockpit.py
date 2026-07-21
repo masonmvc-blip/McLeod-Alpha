@@ -6843,33 +6843,7 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <div class="status-grid primary-status-grid" id="architectureHealthGrid">
-            <div class="status-card">
-                <h3>Brain</h3>
-                <div class="architecture-health-score" id="architectureBrainScore">Loading...</div>
-                <p class="architecture-health-summary" id="architectureBrainSummary">Decision ownership</p>
-                <ul class="architecture-health-blockers" id="architectureBrainBlockers"></ul>
-            </div>
-            <div class="status-card">
-                <h3>Memory</h3>
-                <div class="architecture-health-score" id="architectureMemoryScore">Loading...</div>
-                <p class="architecture-health-summary" id="architectureMemorySummary">Persistence ownership</p>
-                <ul class="architecture-health-blockers" id="architectureMemoryBlockers"></ul>
-            </div>
-            <div class="status-card">
-                <h3>Cockpit</h3>
-                <div class="architecture-health-score" id="architectureCockpitScore">Loading...</div>
-                <p class="architecture-health-summary" id="architectureCockpitSummary">UI ownership</p>
-                <ul class="architecture-health-blockers" id="architectureCockpitBlockers"></ul>
-            </div>
-        </div>
-
         <div class="status-grid">
-            <div class="status-card">
-                <h3>Architecture Completion</h3>
-                <div class="architecture-health-score" id="architectureOverallScore">Loading...</div>
-                <p class="architecture-health-summary" id="architectureOverallSummary">Weighted ownership review</p>
-            </div>
             <details class="architecture-evidence">
                 <summary id="architectureEvidenceSummary">Supporting scanner evidence</summary>
                 <ul class="architecture-evidence-list" id="architectureEvidenceList"></ul>
@@ -8031,18 +8005,6 @@ HTML_DASHBOARD = """
                     ['Cockpit', cockpit, 'architectureCockpit'],
                 ];
                 const escapeArchitectureText = (value) => safeEscape(String(value || ''));
-                const renderBlockers = (component, prefix) => {
-                    const capabilities = Array.isArray(component.capabilities) ? component.capabilities : [];
-                    const remaining = capabilities.filter((capability) => capability.status !== 'complete');
-                    document.getElementById(`${prefix}Score`).textContent = `${Number(component.score || 0)}%`;
-                    document.getElementById(`${prefix}Summary`).textContent = `${remaining.length} ownership capability blocker(s)`;
-                    document.getElementById(`${prefix}Blockers`).innerHTML = remaining.map((capability) => {
-                        const files = Array.isArray(capability.remaining_files) ? capability.remaining_files.join(', ') : '';
-                        return `<li>${escapeArchitectureText(capability.label)}: ${escapeArchitectureText(files || capability.status)}</li>`;
-                    }).join('') || '<li>All reviewed capabilities are complete.</li>';
-                };
-
-                components.forEach(([label, component, prefix]) => renderBlockers(component, prefix));
                 const evidence = components.flatMap(([label, component]) => (Array.isArray(component.evidence) ? component.evidence : []).map((item) => ({label, ...item})));
                 const incompleteCapabilities = components.flatMap(([label, component]) => (Array.isArray(component.capabilities) ? component.capabilities : [])
                     .filter((capability) => capability.status !== 'complete')
@@ -8050,8 +8012,6 @@ HTML_DASHBOARD = """
                 const priorities = report.priorities || {};
                 const roadmap = Array.isArray(priorities.priorities) ? priorities.priorities : [];
 
-                document.getElementById('architectureOverallScore').textContent = `${Number(overall.completion_percent || 0)}%`;
-                document.getElementById('architectureOverallSummary').textContent = `Brain ${Number(brain.score || 0)}% | Memory ${Number(memory.score || 0)}% | Cockpit ${Number(cockpit.score || 0)}%`;
                 document.getElementById('architectureEvidenceSummary').textContent = `Supporting scanner evidence (${evidence.length} finding${evidence.length === 1 ? '' : 's'})`;
                 document.getElementById('architectureEvidenceList').innerHTML = evidence.map((item) => `<li><strong>${escapeArchitectureText(item.label)}</strong> | ${escapeArchitectureText(item.path)}:${Number(item.line || 0)} | ${escapeArchitectureText(item.category)} | ${escapeArchitectureText(item.why)}</li>`).join('') || '<li>No runtime boundary findings.</li>';
                 document.getElementById('architectureBaseline').textContent = baselineCount
@@ -8066,12 +8026,6 @@ HTML_DASHBOARD = """
                 lastArchitectureHealthRefreshMs = Date.now();
             } catch (err) {
                 console.error('Error loading architecture health:', err);
-                ['architectureBrain', 'architectureMemory', 'architectureCockpit'].forEach((prefix) => {
-                    document.getElementById(`${prefix}Score`).textContent = 'Unavailable';
-                    document.getElementById(`${prefix}Summary`).textContent = 'Architecture Health API unavailable';
-                    document.getElementById(`${prefix}Blockers`).innerHTML = '<li>Refresh your Cloudflare Access session and retry.</li>';
-                });
-                document.getElementById('architectureOverallScore').textContent = 'Unavailable';
             } finally {
                 architectureHealthRefreshInFlight = false;
             }
