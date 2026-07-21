@@ -28,7 +28,7 @@ cat > "$PLIST_PATH" <<PLIST
     <key>StartCalendarInterval</key>
     <dict>
       <key>Hour</key>
-      <integer>2</integer>
+      <integer>3</integer>
       <key>Minute</key>
       <integer>0</integer>
     </dict>
@@ -40,6 +40,8 @@ cat > "$PLIST_PATH" <<PLIST
     <dict>
       <key>COCKPIT_PUBLIC_URL</key>
       <string>$COCKPIT_PUBLIC_URL</string>
+      <key>TZ</key>
+      <string>America/Chicago</string>
       <key>PYTHONUNBUFFERED</key>
       <string>1</string>
     </dict>
@@ -58,7 +60,7 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
 launchctl enable "gui/$(id -u)/$AGENT_ID"
 
 echo "Installed LaunchAgent: $AGENT_ID"
-echo "Schedule: daily at 2:00 AM (system local time)"
+echo "Schedule: daily at 3:00 AM America/Chicago (desktop local time is Central)"
 echo "Log: $LOG_PATH"
 
 if [[ "${1:-}" == "--run-now" ]]; then
