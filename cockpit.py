@@ -6237,7 +6237,7 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner .banner-title {
             color: #333;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 800;
             letter-spacing: 0.6px;
             text-align: center;
@@ -6902,7 +6902,7 @@ HTML_DASHBOARD = """
             }
 
             .trade-entry-banner .banner-title {
-                font-size: 15px;
+                font-size: 17px;
                 line-height: 1.25;
             }
 
@@ -7063,7 +7063,6 @@ HTML_DASHBOARD = """
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
             <div class="status-card position-secondary-card" id="trendCard">
-                <h3>Trend</h3>
                 <div class="status-value" id="trendStatus">Loading...</div>
             </div>
             <div class="status-card" id="currentPositionCard">

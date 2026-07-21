@@ -120,6 +120,10 @@ def test_flat_position_hides_current_position_and_uses_three_card_indicator_row(
     assert 'id="callIndicatorsCard"' in source
     assert 'id="trendCard"' in source
     assert 'id="trendStatus"' in source
+    assert '.trade-entry-banner .banner-title {' in source
+    assert 'font-size: 18px;' in source
+    assert 'font-size: 17px;' in source
+    assert '<h3>Trend</h3>' not in source
     assert 'id="putIndicatorsCard"' in source
     assert '#statusGrid.position-flat #callIndicatorsCard,' in source
     assert '#statusGrid.position-flat #trendCard,' in source
