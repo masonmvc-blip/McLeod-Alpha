@@ -6087,6 +6087,7 @@ HTML_DASHBOARD = """
         .trade-summary-value.total-pnl-positive { color: #28a745; }
         .trade-summary-value.total-pnl-negative { color: #dc3545; }
         .trade-summary-value.total-pnl-neutral { color: #999; }
+        .trade-summary-value.total-pnl-today-neutral { color: #0066cc; }
 
         .trade-summary-card.winning {
             background: #eefaf1;
@@ -8173,7 +8174,7 @@ HTML_DASHBOARD = """
                     const todayPnlCard = document.getElementById('todayPnlCard');
                     const todayPnl = document.getElementById('todayPnl');
                     todayPnlCard.className = 'trade-summary-card neutral';
-                    todayPnl.className = 'trade-summary-value total-pnl-neutral';
+                    todayPnl.className = 'trade-summary-value total-pnl-today-neutral';
                     todayPnl.textContent = '$0.00 (+0.0%)';
                     container.innerHTML = '<div class="no-trades">📭 No trades in database</div>';
                     return;
@@ -8189,7 +8190,9 @@ HTML_DASHBOARD = """
                 const todayPnlCard = document.getElementById('todayPnlCard');
                 const todayPnl = document.getElementById('todayPnl');
                 todayPnlCard.className = `trade-summary-card ${pnlClass}`;
-                todayPnl.className = `trade-summary-value total-pnl-${summaryColorClass}`;
+                todayPnl.className = totalPnl === 0
+                    ? 'trade-summary-value total-pnl-today-neutral'
+                    : `trade-summary-value total-pnl-${summaryColorClass}`;
                 const totalPnlText = totalPnl < 0
                     ? `($${Math.abs(totalPnl).toFixed(2)})`
                     : formatMoney(totalPnl);
