@@ -157,6 +157,14 @@ def test_qualifying_indicator_cards_show_startup_guard_reason():
     assert "Blocked: Start Up Guard" in source
 
 
+def test_indicator_cards_show_current_trend_without_direction_requirement_copy():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const currentTrendLabel = trend.replaceAll('_', ' ');" in source
+    assert "Blocked: ${currentTrendLabel}" in source
+    assert "${side} requires ${requiredLabel}" not in source
+
+
 def test_indicator_snapshot_does_not_cap_qualifying_scores(monkeypatch, tmp_path):
     history_path = tmp_path / "spy_1min_history.csv"
     _write_candles(history_path)

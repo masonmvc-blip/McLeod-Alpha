@@ -7916,9 +7916,8 @@ HTML_DASHBOARD = """
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        const regimeLabel = indicatorRegime.replaceAll('_', ' ');
-                        const requiredLabel = requiredRegime.replaceAll('_', ' ');
-                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
+                        const currentTrendLabel = trend.replaceAll('_', ' ');
+                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${currentTrendLabel}</span>`;
                     }
 
                     if (!isNoTrade) {
