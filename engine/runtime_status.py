@@ -40,20 +40,10 @@ def _build_runtime_status():
                 return round(float(fallback), 2)
 
         def _prefer_external(candidate, baseline):
-            """Use external value unless it is a likely stale zero against non-zero baseline."""
-            c_val = _safe_amount(candidate, baseline)
-            b_val = _safe_amount(baseline, 0.0)
-            if abs(c_val) > 1e-9 or abs(b_val) <= 1e-9:
-                return c_val, True
-            return b_val, False
-
-        def _export_to_date(payload):
-            if not payload:
-                return None
-            try:
-                return datetime.strptime(str(payload.get("ToDate") or ""), "%m/%d/%Y").date()
-            except Exception:
-                return None
+            """Use a successful Schwab transaction-history value, including a legitimate zero."""
+            if candidate is None:
+                return _safe_amount(baseline, 0.0), False
+            return _safe_amount(candidate, 0.0), True
 
         def _api_period_net_after(start_dt, end_dt, symbol_scope, asset_scope):
             resp = client.get_transactions(
@@ -200,7 +190,8 @@ def _build_runtime_status():
         mtd_source = "trade_log_realized"
         ytd_source = "trade_log_realized"
 
-        # Try to reconcile with Schwab transactions and exports; keep local non-zero totals if external is stale zero.
+        # Live Schwab transaction history is authoritative for all dashboard periods.
+        # Local completed trades remain an outage fallback only.
         try:
             from schwab.auth import easy_client
 
@@ -234,42 +225,6 @@ def _build_runtime_status():
                 ext_wtd_source = f"schwab_transactions_net{source_suffix}"
                 ext_mtd_source = f"schwab_transactions_net{source_suffix}"
                 ext_ytd_source = f"schwab_transactions_net{source_suffix}"
-
-                _, export_payload = _load_latest_schwab_transaction_export()
-                export_periods = _period_pnl_from_export_payload(export_payload, today_date)
-                export_to_date = _export_to_date(export_payload)
-                export_is_current = export_to_date is not None and export_to_date >= today_date
-                export_is_stale_same_year = export_to_date is not None and export_to_date.year == today_date.year and export_to_date < today_date
-                if export_periods and export_is_stale_same_year:
-                    delta_start_dt = datetime.combine(export_to_date + timedelta(days=1), datetime.min.time(), tzinfo=ZoneInfo("America/New_York"))
-                    if delta_start_dt <= now_et:
-                        delta_today, delta_wtd, delta_mtd, delta_ytd = _api_period_net_after(
-                            delta_start_dt,
-                            now_et,
-                            pnl_scope_symbol,
-                            pnl_scope_asset,
-                        )
-                    else:
-                        delta_today = delta_wtd = delta_mtd = delta_ytd = 0.0
-
-                    ext_today = delta_today
-                    ext_wtd = _safe_amount(export_periods.get("wtd"), 0.0) + delta_wtd
-                    ext_mtd = _safe_amount(export_periods.get("mtd"), 0.0) + delta_mtd
-                    ext_ytd = _safe_amount(export_periods.get("ytd"), 0.0) + delta_ytd
-                    ext_today_source = f"schwab_history_export_plus_live_delta_through_{export_to_date.isoformat()}"
-                    ext_wtd_source = ext_today_source
-                    ext_mtd_source = ext_today_source
-                    ext_ytd_source = ext_today_source
-                if export_periods and export_is_current:
-                    ext_today = _safe_amount(export_periods.get("today"), ext_today)
-                    ext_wtd = _safe_amount(export_periods.get("wtd"), ext_wtd)
-                    ext_mtd = _safe_amount(export_periods.get("mtd"), ext_mtd)
-                    ext_today_source = "schwab_history_export"
-                    ext_wtd_source = "schwab_history_export"
-                    ext_mtd_source = "schwab_history_export"
-                    if export_periods.get("covers_ytd"):
-                        ext_ytd = _safe_amount(export_periods.get("ytd"), ext_ytd)
-                        ext_ytd_source = "schwab_history_export"
 
                 today_total, used_ext_today = _prefer_external(ext_today, today_total)
                 wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total)
