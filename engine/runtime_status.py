@@ -446,13 +446,13 @@ def _build_runtime_status():
         status["call_run_dollars"] = float(spy_run.get("call_dollars") or 0.0)
         status["put_run_dollars"] = float(spy_run.get("put_dollars") or 0.0)
         status["spy_run_entry_min_dollars"] = float(os.getenv("SPY_RUN_ENTRY_MIN_DOLLARS", "0.70"))
+        status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
+        status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
 
     try:
         status["entry_paused"] = bool((get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}).get("paused"))
     except Exception:
         status["entry_paused"] = False
-        status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
-        status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
 
     try:
         parity = _parity_status_snapshot()

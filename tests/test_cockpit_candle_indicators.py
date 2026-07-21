@@ -166,8 +166,11 @@ def test_qualifying_indicator_cards_show_startup_guard_reason():
 def test_indicator_cards_show_current_trend_without_direction_requirement_copy():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert "const currentTrendLabel = trend.replaceAll('_', ' ');" in source
-    assert "Blocked: ${currentTrendLabel}" in source
+    assert "const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();" in source
+    assert "const candleTrendLabel = indicatorRegime.replaceAll('_', ' ');" in source
+    assert "Candle Trend: ${escapeHtml(candleTrendLabel)}" in source
+    assert "Blocked: ${escapeHtml(candleTrendLabel)}" in source
+    assert "Market Trend: ${trendText}" in source
     assert "${side} requires ${requiredLabel}" not in source
 
 

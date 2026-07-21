@@ -7637,7 +7637,7 @@ HTML_DASHBOARD = """
                 const tradeEntryBanner = document.getElementById('tradeEntryBanner');
                 const tradeEntryBannerTitle = document.getElementById('tradeEntryBannerTitle');
                 const tradeEntryBannerMeta = document.getElementById('tradeEntryBannerMeta');
-                const trendRaw = String(status.trend || 'UNKNOWN').toUpperCase();
+                const trendRaw = String(status.market_trend || status.trend || 'UNKNOWN').toUpperCase();
                 const trendMap = {
                     'BULL_TREND': 'BULL_TREND',
                     'BEAR_TREND': 'BEAR_TREND',
@@ -7732,7 +7732,7 @@ HTML_DASHBOARD = """
                 }
                 const candleAt = status.last_candle_at || '';
                 const candleTimeText = formatTimeAMPM(candleAt);
-                const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;
+                const trendWithTimestamp = `<span class="${trendToneClass}">Market Trend: ${trendText}</span>`;
 
                 if (tradeEntryEnabled) {
                     tradeEntryBanner.className = 'trade-entry-banner enabled';
@@ -7897,7 +7897,8 @@ HTML_DASHBOARD = """
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
                     || /startup guard/i.test(tradeEntryReason);
-                const indicatorRegime = String(status.continuation_regime || status.trend || 'UNKNOWN').toUpperCase();
+                const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();
+                const candleTrendLabel = indicatorRegime.replaceAll('_', ' ');
 
                 function escapeHtml(value) {
                     return String(value || '')
@@ -7917,31 +7918,31 @@ HTML_DASHBOARD = """
                         : '';
                     const runDollars = side === 'CALL' ? callRunDollars : putRunDollars;
                     const runText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">SPY Run $${runDollars.toFixed(2)}/$${runThreshold.toFixed(2)}</span>`;
+                    const candleTrendText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Candle Trend: ${escapeHtml(candleTrendLabel)}</span>`;
                     if (passed < 5) {
-                        return `${base}${momentumText}${runText}`;
+                        return `${base}${momentumText}${runText}${candleTrendText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        const currentTrendLabel = trend.replaceAll('_', ' ');
-                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${currentTrendLabel}</span>`;
+                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return `${base}${momentumText}${runText}`;
+                        return `${base}${momentumText}${runText}${candleTrendText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${momentumText}${runText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${momentumText}${runText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return `${base}${momentumText}${runText}`;
+                    return `${base}${momentumText}${runText}${candleTrendText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');
