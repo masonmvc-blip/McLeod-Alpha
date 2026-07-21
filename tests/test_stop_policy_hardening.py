@@ -183,6 +183,19 @@ def test_broker_governor_blocks_all_calls_after_rate_limit(monkeypatch, tmp_path
         client.get_account()
 
 
+def test_broker_governor_preserves_client_enum_classes():
+    class Account:
+        class Fields:
+            POSITIONS = "positions"
+
+    class Client:
+        pass
+
+    Client.Account = Account
+
+    assert live_engine._GovernedSchwabClient(Client()).Account.Fields.POSITIONS == "positions"
+
+
 @pytest.mark.parametrize(
     "option_mark, expected_stop",
     [

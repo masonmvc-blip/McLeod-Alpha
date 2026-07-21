@@ -116,7 +116,7 @@ class _GovernedSchwabClient:
 
     def __getattr__(self, name):
         attribute = getattr(self._client, name)
-        if not callable(attribute):
+        if not callable(attribute) or isinstance(attribute, type):
             return attribute
 
         def governed_call(*args, **kwargs):
