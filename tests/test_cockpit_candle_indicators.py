@@ -52,8 +52,8 @@ def test_indicator_snapshot_uses_strategy_score_for_closed_candles(tmp_path):
     frame["datetime"] = pd.to_datetime(frame["datetime"], utc=True)
     expected = phase3_monitor.score_closed_candle_frame(frame)
 
-    assert snapshot["call_passed"] == max(0, min(5, int(expected["call_score"])))
-    assert snapshot["put_passed"] == max(0, min(5, int(expected["put_score"])))
+    assert snapshot["call_passed"] == max(0, int(expected["call_score"]))
+    assert snapshot["put_passed"] == max(0, int(expected["put_score"]))
     assert snapshot["regime"] == expected["regime"]
 
 
@@ -95,3 +95,22 @@ def test_qualifying_indicator_cards_show_startup_guard_reason():
 
     assert "tradeEntryReasonCodeRaw === 'STARTUP_GUARD'" in source
     assert "Blocked: Start Up Guard" in source
+
+
+def test_indicator_snapshot_does_not_cap_qualifying_scores(monkeypatch, tmp_path):
+    history_path = tmp_path / "spy_1min_history.csv"
+    _write_candles(history_path)
+    monkeypatch.setattr(
+        phase3_monitor,
+        "score_closed_candle_frame",
+        lambda _candles: {"call_score": 7, "put_score": 6, "regime": "BULL_TREND"},
+    )
+
+    snapshot = cockpit._compute_candle_indicator_snapshot(
+        now_et=datetime(2026, 7, 20, 10, 17, 1, tzinfo=ET),
+        history_path=history_path,
+    )
+
+    assert snapshot["call_passed"] == 7
+    assert snapshot["put_passed"] == 6
+    assert snapshot["total"] == 5

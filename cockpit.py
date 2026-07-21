@@ -2838,8 +2838,8 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
     score = score_closed_candle_frame(candles)
     latest_ts = candles.iloc[-1]["datetime"].astimezone(EASTERN_TZ).isoformat()
     return {
-        "call_passed": max(0, min(5, int(score["call_score"]))),
-        "put_passed": max(0, min(5, int(score["put_score"]))),
+        "call_passed": max(0, int(score["call_score"])),
+        "put_passed": max(0, int(score["put_score"])),
         "total": 5,
         "timestamp": latest_ts,
         "regime": score["regime"],
