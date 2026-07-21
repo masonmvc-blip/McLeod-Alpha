@@ -5827,7 +5827,7 @@ HTML_DASHBOARD = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>McLeod SPY Options Trader Cockpit 1.4</title>
+    <title>SPY Options Trader Cockpit 1.4</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -7083,7 +7083,7 @@ HTML_DASHBOARD = """
 
         <div id="tradeEntryBanner" class="trade-entry-banner disabled">
             <div class="banner-price-slot" id="tradeEntryBannerPrice">--</div>
-            <div class="banner-title"><span class="title-rockets"><span>🚀</span><span>McLeod SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></div>
+            <div class="banner-title"><span class="title-rockets"><span>🚀</span><span>SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></div>
             <div class="banner-meta" id="tradeEntryBannerMeta">
                 <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">🛑 Schwab 903</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
             </div>

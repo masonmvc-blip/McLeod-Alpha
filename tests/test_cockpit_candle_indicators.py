@@ -260,7 +260,7 @@ def test_top_banner_combines_title_price_and_inline_status_meta():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="tradeEntryBannerPrice"' in source
-    assert '<span>McLeod SPY Options Trader Cockpit 1.4</span>' in source
+    assert '<span>SPY Options Trader Cockpit 1.4</span>' in source
     assert 'grid-template-columns: repeat(3, minmax(0, 1fr));' in source
     assert 'gap: 8px;' in source
     assert 'justify-self: center;' in source
