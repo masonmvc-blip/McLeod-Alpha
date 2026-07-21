@@ -111,6 +111,18 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
 
 
+def test_open_position_card_uses_one_text_size():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-summary-main,' in source
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-summary-pnl,' in source
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-summary-stop,' in source
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-stat-label,' in source
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-stat-value,' in source
+    assert '#statusGrid.position-focus-active #currentPositionCard .position-candle-count {' in source
+    assert 'font-size: 15px;' in source
+
+
 def test_flat_position_hides_current_position_and_uses_three_card_indicator_row():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

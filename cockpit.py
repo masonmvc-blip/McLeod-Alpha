@@ -5953,12 +5953,14 @@ HTML_DASHBOARD = """
             gap: 10px;
         }
 
-        #statusGrid.position-focus-active .position-summary-main {
-            font-size: 28px;
-        }
-
-        #statusGrid.position-focus-active .position-summary-pnl {
-            font-size: 24px;
+        #statusGrid.position-focus-active #currentPositionCard .position-summary-main,
+        #statusGrid.position-focus-active #currentPositionCard .position-summary-pnl,
+        #statusGrid.position-focus-active #currentPositionCard .position-summary-stop,
+        #statusGrid.position-focus-active #currentPositionCard .position-stat-label,
+        #statusGrid.position-focus-active #currentPositionCard .position-stat-value,
+        #statusGrid.position-focus-active #currentPositionCard .position-candle-count {
+            font-size: 15px;
+            line-height: 1.3;
         }
 
         .position-stats-grid {
