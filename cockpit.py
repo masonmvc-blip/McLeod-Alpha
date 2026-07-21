@@ -3243,7 +3243,7 @@ def _filter_synthetic_test_trade_rows(trades):
 
 
 def _indicator_labels_from_trade(trade):
-    payload = {}
+    payloads = []
     for field in ("entry_diagnostic_snapshot", "feature_payload"):
         raw = str((trade or {}).get(field) or "").strip()
         if not raw:
@@ -3253,19 +3253,26 @@ def _indicator_labels_from_trade(trade):
         except (TypeError, json.JSONDecodeError):
             continue
         if isinstance(parsed, dict):
-            payload = parsed
-            break
+            payloads.append(parsed)
 
     direction = str(trade.get("direction") or "").strip().lower()
     labels = []
-    for key in ("entry_reasons", f"entry_reasons_{direction}", "positive_signals", "penalties"):
-        values = payload.get(key)
-        if not isinstance(values, list):
-            continue
-        for value in values:
-            label = str(value or "").strip()
-            if label and label not in labels:
-                labels.append(label)
+    for payload in payloads:
+        checklist = payload.get("checklist") if isinstance(payload.get("checklist"), dict) else {}
+        for values in (
+            payload.get("entry_reasons"),
+            payload.get(f"entry_reasons_{direction}"),
+            checklist.get("entry_reasons"),
+            checklist.get(f"entry_reasons_{direction}"),
+            payload.get("positive_signals"),
+            payload.get("penalties"),
+        ):
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                label = str(value or "").strip()
+                if label and label not in labels:
+                    labels.append(label)
     return labels
 
 

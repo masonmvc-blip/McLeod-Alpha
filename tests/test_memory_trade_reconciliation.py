@@ -167,6 +167,21 @@ def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
     }]
 
 
+def test_indicator_performance_uses_nested_diagnostic_checklist_reasons():
+    trades = [{
+        "exit_time": "2026-07-21T10:05:00-04:00",
+        "pnl": 20.0,
+        "direction": "CALL",
+        "option_symbol": "SPY  260721C00600000",
+        "entry_diagnostic_snapshot": json.dumps({"checklist": {"entry_reasons": ["price_above_vwap"]}}),
+        "feature_payload": json.dumps({"entry_reasons": ["bull_ema_stack"]}),
+    }]
+
+    summary = cockpit._indicator_performance_summary(trades, minimum_sample_size=2)
+
+    assert [row["indicator"] for row in summary] == ["bull_ema_stack", "price_above_vwap"]
+
+
 def test_indicator_performance_summary_ranks_by_win_rate_before_win_count():
     trades = [
         {
