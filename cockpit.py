@@ -5980,6 +5980,10 @@ HTML_DASHBOARD = """
             gap: 8px;
         }
 
+        #statusGrid.position-focus-active #currentPositionSummary {
+            gap: 0;
+        }
+
         .position-stat {
             min-width: 0;
         }
@@ -7092,7 +7096,7 @@ HTML_DASHBOARD = """
             <div class="status-card" id="currentPositionCard">
                 <h3 id="currentPositionTitle">Current Position</h3>
                 <div class="position-stats-grid" id="currentPositionStats">
-                    <div class="position-stat-column">
+                    <div class="position-stat-column" id="currentPositionSummary">
                         <div class="position-stat"><div class="position-summary-main" id="currentPosition">Loading...</div></div>
                         <div class="position-stat"><div class="position-summary-pnl" id="currentTradePnl">Loading...</div></div>
                     </div>

@@ -100,6 +100,9 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="currentPositionTitle">Current Position</h3>' in source
+    assert 'id="currentPositionSummary"' in source
+    assert '#statusGrid.position-focus-active #currentPositionSummary {' in source
+    assert 'gap: 0;' in source
     assert "positionTitleEl.hidden = hasOpenPosition;" in source
     assert ">Stop Price</div>" in source
     assert ">Entry Price</div>" in source
