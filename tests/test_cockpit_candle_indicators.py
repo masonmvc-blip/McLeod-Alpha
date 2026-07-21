@@ -114,11 +114,17 @@ def test_flat_position_hides_current_position_and_splits_indicator_row():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert '#statusGrid.position-flat {' in source
-    assert 'grid-template-columns: repeat(2, minmax(0, 1fr));' in source
+    assert 'grid-template-columns: repeat(6, minmax(0, 1fr));' in source
     assert '#statusGrid.position-flat #currentPositionCard {' in source
     assert "display: none;" in source
     assert 'id="callIndicatorsCard"' in source
     assert 'id="putIndicatorsCard"' in source
+    assert '#statusGrid.position-flat #callIndicatorsCard,' in source
+    assert 'grid-column: span 3;' in source
+    assert 'id="wtdPnlCard"' in source
+    assert 'id="mtdPnlCard"' in source
+    assert 'id="ytdPnlCard"' in source
+    assert 'grid-column: span 2;' in source
     assert "statusGrid.classList.toggle('position-flat', !hasOpenPosition);" in source
 
 

@@ -5893,11 +5893,22 @@ HTML_DASHBOARD = """
         }
 
         #statusGrid.position-flat {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
         }
 
         #statusGrid.position-flat #currentPositionCard {
             display: none;
+        }
+
+        #statusGrid.position-flat #callIndicatorsCard,
+        #statusGrid.position-flat #putIndicatorsCard {
+            grid-column: span 3;
+        }
+
+        #statusGrid.position-flat #wtdPnlCard,
+        #statusGrid.position-flat #mtdPnlCard,
+        #statusGrid.position-flat #ytdPnlCard {
+            grid-column: span 2;
         }
 
           /* An active position replaces the six summary cards with one focused view.
@@ -7044,11 +7055,11 @@ HTML_DASHBOARD = """
                 <h3>Week-to-Date P&L</h3>
                 <div class="status-value" id="wtdPnl">Loading...</div>
             </div>
-            <div class="status-card position-secondary-card">
+            <div class="status-card position-secondary-card" id="mtdPnlCard">
                 <h3>Month-to-Date P&L</h3>
                 <div class="status-value" id="mtdPnl">Loading...</div>
             </div>
-            <div class="status-card position-secondary-card">
+            <div class="status-card position-secondary-card" id="ytdPnlCard">
                 <h3>Year-to-Date P&L</h3>
                 <div class="status-value" id="ytdPnl">Loading...</div>
             </div>
