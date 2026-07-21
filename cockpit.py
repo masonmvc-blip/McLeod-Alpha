@@ -6200,10 +6200,10 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             align-items: center;
-            justify-content: center;
-            gap: 12px;
+            gap: 8px;
             border-radius: 10px;
             padding: 10px 12px;
             margin-bottom: var(--hero-stack-gap);
@@ -6221,7 +6221,7 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner .banner-price-slot {
             min-width: 0;
-            text-align: left;
+            text-align: center;
             white-space: nowrap;
         }
 
@@ -6267,7 +6267,7 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner .banner-meta {
             display: grid;
-            justify-self: end;
+            justify-self: center;
             gap: 2px;
             text-align: right;
             font-size: 11px;
@@ -6840,6 +6840,7 @@ HTML_DASHBOARD = """
             }
 
             .trade-entry-banner {
+                display: flex;
                 flex-direction: column;
                 gap: 4px;
             }

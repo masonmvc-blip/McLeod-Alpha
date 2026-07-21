@@ -194,9 +194,11 @@ def test_top_banner_combines_title_price_and_stacked_status_meta():
 
     assert 'id="tradeEntryBannerPrice"' in source
     assert '<span>McLeod SPY Options Trader Cockpit 1.4</span>' in source
+    assert 'grid-template-columns: repeat(3, minmax(0, 1fr));' in source
+    assert 'gap: 8px;' in source
+    assert 'justify-self: center;' in source
+    assert 'text-align: center;' in source
     assert 'display: flex;' in source
-    assert 'justify-content: center;' in source
-    assert 'gap: 12px;' in source
     assert 'flex-direction: column;' in source
     assert "const tradeEntryBannerPrice = document.getElementById('tradeEntryBannerPrice');" in source
     assert "tradeEntryBannerPrice.innerHTML = priceBannerHtml;" in source
