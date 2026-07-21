@@ -85,6 +85,13 @@ def test_active_stop_reason_uses_the_actual_stop_price():
     assert active_stop_category(5.00, stop_price=5.27) == "6% Trail"
 
 
+def test_current_position_stop_line_uses_exit_category_not_stop_price():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "Stop Loss: ${activeStopCategory || 'Active Stop'}" in source
+    assert "Stop Loss: ${formatMoney(activeStopPrice)}" not in source
+
+
 def test_option_label_includes_strike_for_calls_and_puts():
     assert cockpit._position_label_from_option_symbol("SPY   260720C00755000") == "$755 Call"
     assert cockpit._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"

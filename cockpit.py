@@ -7814,6 +7814,7 @@ HTML_DASHBOARD = """
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
                 const activeStopPrice = Number(status.active_protective_stop_price);
+                const activeStopCategory = String(status.active_stop_category || '').trim();
                 if (status.has_open_position && tradePnlDollars !== null && tradePnlDollars !== undefined && tradePnlPct !== null && tradePnlPct !== undefined) {
                     const dollarsText = formatMoney(tradePnlDollars);
                     const pctText = `${tradePnlPct >= 0 ? '+' : ''}${formatNumber(Math.abs(tradePnlPct), 1)}%`;
@@ -7835,7 +7836,7 @@ HTML_DASHBOARD = """
                 }
 
                 if (status.has_open_position && Number.isFinite(activeStopPrice) && activeStopPrice > 0 && stopCategoryEl) {
-                    stopCategoryEl.textContent = `Stop Loss: ${formatMoney(activeStopPrice)}`;
+                    stopCategoryEl.textContent = `Stop Loss: ${activeStopCategory || 'Active Stop'}`;
                     stopCategoryEl.className = 'position-summary-stop active';
                 } else if (status.has_open_position && stopCategoryEl) {
                     stopCategoryEl.textContent = 'Stop Loss: unavailable';
