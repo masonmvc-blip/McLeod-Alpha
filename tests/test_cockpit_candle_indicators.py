@@ -95,15 +95,20 @@ def test_current_position_shows_stop_category_and_protective_stop_price():
     assert "formatMoney(activeStopPrice)" in source
 
 
-def test_current_position_has_option_price_stat_columns():
+def test_current_position_has_live_candle_indicator_column():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert 'id="currentPositionStats"' in source
+    assert 'grid-template-columns: repeat(3, minmax(0, 1fr))' in source
     assert 'class="position-summary-main" id="currentPosition"' in source
     assert 'id="currentStopPrice"' in source
     assert 'id="currentOptionEntry"' in source
     assert 'id="currentOptionPrice"' in source
-    assert "current_trade_option_entry" in source
+    assert 'id="currentCandleIndicators"' in source
+    assert 'id="currentCandleCallCount"' in source
+    assert 'id="currentCandlePutCount"' in source
+    assert "candleCallCountEl.textContent = status.has_open_position ? `${callPassed}/${indicatorTotal}` : '--';" in source
+    assert "candlePutCountEl.textContent = status.has_open_position ? `${putPassed}/${indicatorTotal}` : '--';" in source
 
 
 def test_option_label_includes_strike_for_calls_and_puts():

@@ -5903,9 +5903,9 @@ HTML_DASHBOARD = """
 
         .position-stats-grid {
             display: none;
-            width: min(100%, 420px);
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
+            width: min(100%, 560px);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
             text-align: left;
         }
 
@@ -5933,6 +5933,19 @@ HTML_DASHBOARD = """
             font-size: 15px;
             font-weight: 700;
             line-height: 1.3;
+        }
+
+        .position-candle-count {
+            color: #1f2933;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        @media (max-width: 560px) {
+            .position-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
         
         .status-card {
@@ -6989,6 +7002,11 @@ HTML_DASHBOARD = """
                         <div class="position-stat"><div class="position-stat-label">Option Entry</div><div class="position-stat-value" id="currentOptionEntry">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Current Option</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
                     </div>
+                    <div class="position-stat-column" id="currentCandleIndicators">
+                        <div class="position-stat"><div class="position-stat-label">Latest Candle</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Call Indicators</div><div class="position-candle-count" id="currentCandleCallCount">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Put Indicators</div><div class="position-candle-count" id="currentCandlePutCount">--</div></div>
+                    </div>
                 </div>
             </div>
             <div class="status-card position-secondary-card">
@@ -7907,6 +7925,8 @@ HTML_DASHBOARD = """
                 const stopPriceEl = document.getElementById('currentStopPrice');
                 const optionEntryEl = document.getElementById('currentOptionEntry');
                 const optionPriceEl = document.getElementById('currentOptionPrice');
+                const candleCallCountEl = document.getElementById('currentCandleCallCount');
+                const candlePutCountEl = document.getElementById('currentCandlePutCount');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
                 const optionEntryPrice = Number(status.current_trade_option_entry);
@@ -7958,6 +7978,12 @@ HTML_DASHBOARD = """
                     optionPriceEl.textContent = status.has_open_position && Number.isFinite(currentOptionPrice) && currentOptionPrice > 0
                         ? formatMoney(currentOptionPrice)
                         : '--';
+                }
+                if (candleCallCountEl) {
+                    candleCallCountEl.textContent = status.has_open_position ? `${callPassed}/${indicatorTotal}` : '--';
+                }
+                if (candlePutCountEl) {
+                    candlePutCountEl.textContent = status.has_open_position ? `${putPassed}/${indicatorTotal}` : '--';
                 }
 
                 const nowMs = Date.now();
