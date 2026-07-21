@@ -168,13 +168,13 @@ def test_current_position_has_live_candle_indicator_column():
     assert "${putPassed}/${indicatorTotal}${formatIndicatorDelta(putPassed, entryPutCount)}" in source
 
 
-def test_startup_guard_is_shown_only_on_the_blocked_indicator_side():
+def test_entry_block_reason_is_shown_only_on_the_blocked_indicator_side():
     cockpit_source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
     runtime_status_source = (cockpit.PROJECT_ROOT / "engine" / "runtime_status.py").read_text(encoding="utf-8")
 
     assert 'const lastEntryCandidateDirection = String(status.last_entry_candidate_direction || \'\').toUpperCase();' in cockpit_source
-    assert "startupGuardActive && lastEntryCandidateDirection === side" in cockpit_source
-    assert "Blocked: Startup Guard" in cockpit_source
+    assert "lastEntryCandidateDirection === side && lastEntryBlockReason" in cockpit_source
+    assert "Blocked: ${blockReason}" in cockpit_source
     assert '"last_entry_candidate_direction": None' in runtime_status_source
     assert '"last_entry_block_reason": None' in runtime_status_source
     assert 'decision_audit.get("candidate_direction")' in runtime_status_source
@@ -186,11 +186,11 @@ def test_option_label_includes_strike_for_calls_and_puts():
     assert cockpit._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"
 
 
-def test_qualifying_indicator_cards_show_startup_guard_reason():
+def test_qualifying_indicator_cards_show_blocked_reason():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert "tradeEntryReasonCodeRaw === 'STARTUP_GUARD'" in source
-    assert "Blocked: Startup Guard" in source
+    assert "lastEntryBlockReason.replaceAll('_', ' ')" in source
+    assert "Blocked: ${conciseReason}" in source
 
 
 def test_indicator_cards_show_current_trend_without_direction_requirement_copy():

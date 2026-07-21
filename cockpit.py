@@ -7952,9 +7952,6 @@ HTML_DASHBOARD = """
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const lastEntryCandidateDirection = String(status.last_entry_candidate_direction || '').toUpperCase();
                 const lastEntryBlockReason = String(status.last_entry_block_reason || '').trim();
-                const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
-                    || /startup guard/i.test(tradeEntryReason)
-                    || /^startup_guard$/i.test(lastEntryBlockReason);
                 const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();
                 const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';
                 const candleTrendLabel = candleTrend.replaceAll('_', ' ');
@@ -7989,8 +7986,9 @@ HTML_DASHBOARD = """
                         return `${base}${phaseText}`;
                     }
 
-                    if (startupGuardActive && lastEntryCandidateDirection === side) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Startup Guard</span>`;
+                    if (lastEntryCandidateDirection === side && lastEntryBlockReason) {
+                        const blockReason = escapeHtml(lastEntryBlockReason.replaceAll('_', ' '));
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${blockReason}</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
@@ -8006,7 +8004,7 @@ HTML_DASHBOARD = """
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${conciseReason}</span>`;
                     }
                     return `${base}${phaseText}`;
                 }
