@@ -7551,6 +7551,8 @@ HTML_DASHBOARD = """
                 }
                 const parityWarningEl = document.getElementById('parityWarning');
                 if (parityWarningEl) {
+                    const parityState = String(status.parity_state || 'UNSET').toUpperCase();
+                    const parityEnforced = !!status.parity_block_start;
                     const issues = Array.isArray(status.parity_issues) ? status.parity_issues : [];
                     if (parityState === 'MISMATCH') {
                         const firstIssue = String(issues[0] || status.parity_summary || 'Runtime differs from baseline').trim();
