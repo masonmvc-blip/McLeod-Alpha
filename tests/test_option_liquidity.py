@@ -12,6 +12,10 @@ def _chain_with_contracts(*contracts):
     return {"callExpDateMap": {expiry_key: {"750.0": list(contracts)}}}
 
 
+def _expiration_key(expiry):
+    return f"{expiry.isoformat()}:7"
+
+
 def _contract(symbol, volume):
     return {
         "symbol": symbol,
@@ -53,3 +57,22 @@ def test_nearest_expiration_does_not_require_a_liquid_contract():
     chain = _chain_with_contracts(_contract("SPY_LOW", MIN_OPTION_DAILY_VOLUME - 1))["callExpDateMap"]
 
     assert get_nearest_expiration(chain) in chain
+
+
+def test_selector_falls_through_to_next_liquid_weekly_expiration():
+    today = date.today()
+    nearest = today + timedelta(days=(4 - today.weekday()) % 7 or 7)
+    while (nearest - today).days < 7:
+        nearest += timedelta(days=7)
+    later = nearest + timedelta(days=7)
+    chain = {
+        "callExpDateMap": {
+            _expiration_key(nearest): {"750.0": [_contract("SPY_ILLIQUID", MIN_OPTION_DAILY_VOLUME - 1)]},
+            _expiration_key(later): {"750.0": [_contract("SPY_LIQUID", MIN_OPTION_DAILY_VOLUME)]},
+        }
+    }
+
+    selected = select_option_from_chain(chain, "CALL", 750.0)
+
+    assert selected["symbol"] == "SPY_LIQUID"
+    assert selected["expiration"] == _expiration_key(later)

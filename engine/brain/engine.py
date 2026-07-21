@@ -137,49 +137,59 @@ class Brain:
         chain_key = "callExpDateMap" if normalized_direction == "CALL" else "putExpDateMap"
         expirations = (option_chain or {}).get(chain_key) or {}
 
-        expiration_key = self.select_option_expiration(expirations, as_of=as_of)
-        candidates = []
-        for strike, contracts in (expirations.get(expiration_key) or {}).items():
-            for contract in contracts or []:
-                try:
-                    bid = float(contract.get("bid") or 0.0)
-                    ask = float(contract.get("ask") or 0.0)
-                    mark = float(contract.get("mark") or 0.0)
-                    volume = int(contract.get("totalVolume") or 0)
-                    open_interest = int(contract.get("openInterest") or 0)
-                    strike_price = float(strike)
-                except (TypeError, ValueError):
-                    continue
-                if bid <= 0 or ask <= 0 or mark <= 0:
-                    continue
-                spread = ask - bid
-                spread_pct = (spread / mark) * 100.0
-                if spread > OPTION_MAX_ABSOLUTE_SPREAD or spread_pct > OPTION_MAX_SPREAD_PCT:
-                    continue
-                if volume < OPTION_MIN_DAILY_VOLUME:
-                    continue
-                candidates.append({
-                    **contract,
-                    "direction": normalized_direction,
-                    "expiration": expiration_key,
-                    "strike": strike,
-                    "bid": bid,
-                    "ask": ask,
-                    "mark": mark,
-                    "volume": volume,
-                    "open_interest": open_interest,
-                    "spread": spread,
-                    "spread_pct": spread_pct,
-                    "_strike_distance": abs(strike_price - float(underlying_price)),
-                })
-        if not candidates:
-            return None
-        selected = max(
-            candidates,
-            key=lambda option: (option["volume"], option["open_interest"], -option["_strike_distance"]),
-        )
-        selected.pop("_strike_distance", None)
-        return selected
+        eligible_expirations = []
+        reference_date = as_of or date.today()
+        for expiration_key in expirations:
+            try:
+                expiration_date = datetime.strptime(str(expiration_key).split(":", 1)[0], "%Y-%m-%d").date()
+            except (TypeError, ValueError):
+                continue
+            if expiration_date.weekday() == 4 and (expiration_date - reference_date).days >= OPTION_MIN_DAYS_TO_EXPIRY:
+                eligible_expirations.append((expiration_date, expiration_key))
+
+        for _, expiration_key in sorted(eligible_expirations):
+            candidates = []
+            for strike, contracts in (expirations.get(expiration_key) or {}).items():
+                for contract in contracts or []:
+                    try:
+                        bid = float(contract.get("bid") or 0.0)
+                        ask = float(contract.get("ask") or 0.0)
+                        mark = float(contract.get("mark") or 0.0)
+                        volume = int(contract.get("totalVolume") or 0)
+                        open_interest = int(contract.get("openInterest") or 0)
+                        strike_price = float(strike)
+                    except (TypeError, ValueError):
+                        continue
+                    if bid <= 0 or ask <= 0 or mark <= 0:
+                        continue
+                    spread = ask - bid
+                    spread_pct = (spread / mark) * 100.0
+                    if spread > OPTION_MAX_ABSOLUTE_SPREAD or spread_pct > OPTION_MAX_SPREAD_PCT:
+                        continue
+                    if volume < OPTION_MIN_DAILY_VOLUME:
+                        continue
+                    candidates.append({
+                        **contract,
+                        "direction": normalized_direction,
+                        "expiration": expiration_key,
+                        "strike": strike,
+                        "bid": bid,
+                        "ask": ask,
+                        "mark": mark,
+                        "volume": volume,
+                        "open_interest": open_interest,
+                        "spread": spread,
+                        "spread_pct": spread_pct,
+                        "_strike_distance": abs(strike_price - float(underlying_price)),
+                    })
+            if candidates:
+                selected = max(
+                    candidates,
+                    key=lambda option: (option["volume"], option["open_interest"], -option["_strike_distance"]),
+                )
+                selected.pop("_strike_distance", None)
+                return selected
+        return None
 
     def evaluate_entry_runtime_guard(
         self,
