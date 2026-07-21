@@ -110,7 +110,7 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
 
 
-def test_flat_position_hides_current_position_and_splits_indicator_row():
+def test_flat_position_hides_current_position_and_uses_three_card_indicator_row():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert '#statusGrid.position-flat {' in source
@@ -118,9 +118,12 @@ def test_flat_position_hides_current_position_and_splits_indicator_row():
     assert '#statusGrid.position-flat #currentPositionCard {' in source
     assert "display: none;" in source
     assert 'id="callIndicatorsCard"' in source
+    assert 'id="trendCard"' in source
+    assert 'id="trendStatus"' in source
     assert 'id="putIndicatorsCard"' in source
     assert '#statusGrid.position-flat #callIndicatorsCard,' in source
-    assert 'grid-column: span 3;' in source
+    assert '#statusGrid.position-flat #trendCard,' in source
+    assert 'grid-column: span 2;' in source
     assert 'id="wtdPnlCard"' in source
     assert 'id="mtdPnlCard"' in source
     assert 'id="ytdPnlCard"' in source
@@ -170,9 +173,11 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
 
     assert "const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();" in source
     assert "const candleTrendLabel = indicatorRegime.replaceAll('_', ' ');" in source
-    assert "Candle Trend: ${escapeHtml(candleTrendLabel)}" in source
+    assert 'id="trendStatus"' in source
+    assert "Candle: ${escapeHtml(candleTrendLabel)}" in source
     assert "Blocked: ${escapeHtml(candleTrendLabel)}" in source
-    assert 'const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;' in source
+    assert "Market Trend:" not in source
+    assert "trendWithTimestamp" not in source
     assert "Market Trend: ${trendText}" not in source
     assert "${side} requires ${requiredLabel}" not in source
 

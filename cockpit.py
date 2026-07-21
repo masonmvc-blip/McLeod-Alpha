@@ -5901,8 +5901,9 @@ HTML_DASHBOARD = """
         }
 
         #statusGrid.position-flat #callIndicatorsCard,
+        #statusGrid.position-flat #trendCard,
         #statusGrid.position-flat #putIndicatorsCard {
-            grid-column: span 3;
+            grid-column: span 2;
         }
 
         #statusGrid.position-flat #wtdPnlCard,
@@ -7027,6 +7028,10 @@ HTML_DASHBOARD = """
                 <h3>CALL Indicators</h3>
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
+            <div class="status-card position-secondary-card" id="trendCard">
+                <h3>Trend</h3>
+                <div class="status-value" id="trendStatus">Loading...</div>
+            </div>
             <div class="status-card" id="currentPositionCard">
                 <h3 id="currentPositionTitle">Current Position</h3>
                 <div class="position-stats-grid" id="currentPositionStats">
@@ -7732,11 +7737,10 @@ HTML_DASHBOARD = """
                 }
                 const candleAt = status.last_candle_at || '';
                 const candleTimeText = formatTimeAMPM(candleAt);
-                const trendWithTimestamp = `<span class="${trendToneClass}">${trendText}</span>`;
 
                 if (tradeEntryEnabled) {
                     tradeEntryBanner.className = 'trade-entry-banner enabled';
-                    tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 💰 OPEN FOR BUSINESS 💰 | ${trendWithTimestamp}`;
+                    tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 💰 OPEN FOR BUSINESS 💰`;
                 } else {
                     const bannerReason = String(status.trade_entry_reason || '').trim().toLowerCase();
                     const afterHoursRunning = !!status.bot_running && (
@@ -7749,10 +7753,10 @@ HTML_DASHBOARD = """
                         tradeEntryBannerTitle.textContent = '⛔ CURRENTLY IN A TRADE ⛔';
                     } else if (afterHoursRunning) {
                         tradeEntryBanner.className = 'trade-entry-banner after-hours';
-                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 🔵 MARKET CLOSED 🔵 | ${trendWithTimestamp}`;
+                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 🔵 MARKET CLOSED 🔵`;
                     } else {
                         tradeEntryBanner.className = 'trade-entry-banner disabled';
-                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | ⛔ TRADE ENTRY DISABLED ⛔ | ${trendWithTimestamp}`;
+                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | ⛔ TRADE ENTRY DISABLED ⛔`;
                     }
                 }
                 const tradeEntryBannerMetaLeft = document.getElementById('tradeEntryBannerMetaLeft');
@@ -7906,6 +7910,11 @@ HTML_DASHBOARD = """
                         .replaceAll("'", '&#39;');
                 }
 
+                const trendStatusEl = document.getElementById('trendStatus');
+                if (trendStatusEl) {
+                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span style="font-size:11px;font-weight:500;opacity:0.85;">Candle: ${escapeHtml(candleTrendLabel)}</span>`;
+                }
+
                 function renderIndicatorText(passed, side) {
                     const base = `${passed}/${indicatorTotal} Passed`;
                     const momentumStrength = side === 'CALL' ? callMomentumStrength : putMomentumStrength;
@@ -7913,31 +7922,30 @@ HTML_DASHBOARD = """
                     const momentumText = Number.isFinite(momentumStrength)
                         ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Momentum ${momentumStrength.toFixed(1)}/5${momentumStage ? ` | ${escapeHtml(momentumStage)}` : ''}</span>`
                         : '';
-                    const candleTrendText = `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">Candle Trend: ${escapeHtml(candleTrendLabel)}</span>`;
                     if (passed < 5) {
-                        return `${base}${momentumText}${candleTrendText}`;
+                        return `${base}${momentumText}`;
                     }
 
                     if (startupGuardActive && isNoTrade) {
-                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
                     }
 
                     if (!isNoTrade) {
-                        return `${base}${momentumText}${candleTrendText}`;
+                        return `${base}${momentumText}`;
                     }
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${momentumText}${candleTrendText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
+                        return `${base}${momentumText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
-                    return `${base}${momentumText}${candleTrendText}`;
+                    return `${base}${momentumText}`;
                 }
 
                 const callIndEl = document.getElementById('callIndicators');
