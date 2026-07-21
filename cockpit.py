@@ -6268,6 +6268,7 @@ HTML_DASHBOARD = """
             grid-template-columns: repeat(3, minmax(0, 1fr));
             align-items: center;
             gap: 8px;
+            font-size: 18px;
             border-radius: 10px;
             padding: 10px 12px;
             margin-bottom: var(--hero-stack-gap);
@@ -6276,7 +6277,7 @@ HTML_DASHBOARD = """
 
         .trade-entry-banner .banner-title {
             color: #333;
-            font-size: 18px;
+            font-size: inherit;
             font-weight: 800;
             letter-spacing: 0.6px;
             text-align: center;
@@ -6339,7 +6340,7 @@ HTML_DASHBOARD = """
             justify-self: center;
             gap: 6px;
             text-align: right;
-            font-size: 11px;
+            font-size: inherit;
             font-weight: 600;
             letter-spacing: 0.2px;
             opacity: 0.95;
@@ -6956,15 +6957,16 @@ HTML_DASHBOARD = """
 
             .trade-entry-banner {
                 padding: 10px;
+                font-size: 17px;
             }
 
             .trade-entry-banner .banner-title {
-                font-size: 17px;
+                font-size: inherit;
                 line-height: 1.25;
             }
 
             .trade-entry-banner .banner-meta {
-                font-size: 10px;
+                font-size: inherit;
             }
 
             .trades-summary {

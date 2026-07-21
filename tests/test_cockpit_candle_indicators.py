@@ -269,6 +269,11 @@ def test_top_banner_combines_title_price_and_inline_status_meta():
     assert 'display: inline-block;' in source
     assert 'grid-template-columns: repeat(3, minmax(0, 1fr));' in source
     assert 'gap: 8px;' in source
+    assert '.trade-entry-banner {\n            display: grid;' in source
+    assert 'font-size: 18px;' in source
+    assert '.trade-entry-banner .banner-title {\n            color: #333;\n            font-size: inherit;' in source
+    assert '.trade-entry-banner .banner-meta {\n            display: flex;' in source
+    assert 'font-size: 17px;' in source
     assert 'justify-self: center;' in source
     assert 'text-align: center;' in source
     assert 'display: flex;' in source
