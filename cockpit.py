@@ -7587,15 +7587,9 @@ HTML_DASHBOARD = """
                     }
 
                     const isStaleClock = Number.isFinite(clockAgeSeconds) && clockAgeSeconds > 120;
-                    const clockAgeMinutes = Number.isFinite(clockAgeSeconds)
-                        ? Math.max(1, Math.floor(clockAgeSeconds / 60))
-                        : null;
                     const rightMetaParts = [];
                     if (timePart) {
                         rightMetaParts.push(`🕯️ ${timePart}`);
-                    }
-                    if (isStaleClock) {
-                        rightMetaParts.push(`🛑 ${clockAgeMinutes}m`);
                     }
                     const hasRightMeta = rightMetaParts.length > 0;
                     tradeEntryBannerMetaRight.innerHTML = rightMetaParts.length
