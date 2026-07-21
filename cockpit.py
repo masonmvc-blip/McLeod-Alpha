@@ -8148,13 +8148,16 @@ HTML_DASHBOARD = """
                 const totalPnl = Number(summary.total_pnl || 0);
                 const pnlClass = totalPnl > 0 ? 'winning' : totalPnl < 0 ? 'losing' : 'neutral';
                 const totalReturnPct = Number(summary.total_return_pct || 0);
-                const totalReturnPctText = `${totalReturnPct >= 0 ? '+' : '-'}${formatNumber(Math.abs(totalReturnPct), 1)}%`;
+                const totalReturnPctText = `${totalReturnPct > 0 ? '+' : ''}${formatNumber(Math.abs(totalReturnPct), 1)}%`;
                 const summaryColorClass = totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'neutral';
                 const todayPnlCard = document.getElementById('todayPnlCard');
                 const todayPnl = document.getElementById('todayPnl');
                 todayPnlCard.className = `trade-summary-card ${pnlClass}`;
                 todayPnl.className = `trade-summary-value total-pnl-${summaryColorClass}`;
-                todayPnl.textContent = `${formatMoney(totalPnl)} (${totalReturnPctText})`;
+                const totalPnlText = totalPnl < 0
+                    ? `($${Math.abs(totalPnl).toFixed(2)})`
+                    : formatMoney(totalPnl);
+                todayPnl.textContent = `${totalPnlText} (${totalReturnPctText})`;
                 
                 html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
                 html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Stage</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
