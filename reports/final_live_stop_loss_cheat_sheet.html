@@ -176,9 +176,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>STOP</td><td>Entry</td><td>Initial protective stop</td><td>entry x 0.95</td><td>$5.00 → $4.75</td><td>$0.250 (5.000%) down</td><td>(4,750 - 5,000)/5,000 = -5.000%</td><td>-$150.00</td></tr>
-            <tr><td>2% Stop</td><td>&gt;= +2.0%</td><td>Set stop to 3.0% below entry</td><td>entry x 0.97</td><td>$5.00 → $4.85</td><td>$0.250 (4.902%) down</td><td>(4,850 - 5,000)/5,000 = -3.000%</td><td>-$90.00</td></tr>
-            <tr><td>3% Stop</td><td>&gt;= +3.0%</td><td>Set stop to 1.0% below entry</td><td>entry x 0.99</td><td>$5.00 → $4.95</td><td>$0.200 (3.883%) down</td><td>(4,950 - 5,000)/5,000 = -1.000%</td><td>-$30.00</td></tr>
+            <tr><td>STOP</td><td>Entry to &lt; +1.0%</td><td>Trail 4.0% below quote</td><td>quote x 0.96</td><td>$5.00 → $4.80</td><td>$0.200 (4.000%) down</td><td>(4,800 - 5,000)/5,000 = -4.000%</td><td>-$120.00</td></tr>
+            <tr><td>1% Stop</td><td>&gt;= +1.0%</td><td>Trail 3.0% below quote</td><td>quote x 0.97</td><td>$5.05 → $4.90</td><td>$0.152 (3.000%) down</td><td>(4,899 - 5,000)/5,000 = -2.030%</td><td>-$60.90</td></tr>
+            <tr><td>2% Stop</td><td>&gt;= +2.0%</td><td>Trail 2.0% below quote</td><td>quote x 0.98</td><td>$5.10 → $5.00</td><td>$0.102 (2.000%) down</td><td>(4,998 - 5,000)/5,000 = -0.040%</td><td>-$1.20</td></tr>
+            <tr><td>3% Stop</td><td>&gt;= +3.0%</td><td>Trail 1.5% below quote</td><td>quote x 0.985</td><td>$5.15 → $5.07</td><td>$0.077 (1.500%) down</td><td>(5,073 - 5,000)/5,000 = +1.455%</td><td>+$43.65</td></tr>
           </tbody>
           </table>
         </section>
@@ -198,11 +199,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>4% TRAIL</td><td>&gt;= +4.0%</td><td>Trail 3.0% below quote</td><td>quote x 0.97</td><td>$5.00 → $5.04</td><td>$0.156 (3.000%) down</td><td>(5,044 - 5,000)/5,000 = +0.880%</td><td>+$26.40</td></tr>
-            <tr><td>5% TRAIL</td><td>&gt;= +5.0%</td><td>Trail 2.5% below quote</td><td>quote x 0.975</td><td>$5.00 → $5.12</td><td>$0.131 (2.500%) down</td><td>(5,119 - 5,000)/5,000 = +2.375%</td><td>+$71.25</td></tr>
-            <tr><td>6% TRAIL</td><td>&gt;= +6.0%</td><td>Trail 2.0% below quote</td><td>quote x 0.98</td><td>$5.00 → $5.19</td><td>$0.106 (2.000%) down</td><td>(5,194 - 5,000)/5,000 = +3.880%</td><td>+$116.40</td></tr>
-            <tr><td>7% TRAIL</td><td>&gt;= +7.0%</td><td>Trail 1.5% below quote</td><td>quote x 0.985</td><td>$5.00 → $5.27</td><td>$0.080 (1.500%) down</td><td>(5,270 - 5,000)/5,000 = +5.400%</td><td>+$162.00</td></tr>
-            <tr><td>8% TRAIL</td><td>&gt;= +8.0%</td><td>Trail 1.0% below quote</td><td>quote x 0.99</td><td>$5.00 → $5.35</td><td>$0.054 (1.000%) down</td><td>(5,346 - 5,000)/5,000 = +6.920%</td><td>+$207.60</td></tr>
+            <tr><td>4% TRAIL</td><td>&gt;= +4.0%</td><td>Trail 1.0% below quote</td><td>quote x 0.99</td><td>$5.20 → $5.15</td><td>$0.052 (1.000%) down</td><td>(5,148 - 5,000)/5,000 = +2.960%</td><td>+$88.80</td></tr>
           </tbody>
           </table>
         </section>
@@ -213,7 +210,7 @@
         <p class="note">These are the live enforcement rules pulled from the current engine.</p>
         <ul>
           <li>Stops ratchet upward only; they never move down.</li>
-          <li>At +2% and +3%, the live exit reasons are <strong>2% Stop</strong> and <strong>3% Stop</strong>.</li>
+          <li>At +1%, +2%, +3%, and +4%, the live exit reasons are <strong>1% Stop</strong>, <strong>2% Stop</strong>, <strong>3% Stop</strong>, and <strong>4% TRAIL</strong>.</li>
           <li>Protective broker order uses <strong>SELL_TO_CLOSE STOP_LIMIT</strong>.</li>
           <li>Stop checks use option <strong>bid</strong> first, then mark as fallback.</li>
           <li>Maximum holding period is <strong>20 minutes</strong>; close through the broker-safe exit path with reason <strong>MAX_HOLD_20_MIN</strong>.</li>
@@ -226,6 +223,21 @@
         <p class="note">Worst Case assumes the displayed $5.00 option entry, six contracts, and a fill at the listed stop price. It excludes commissions, slippage, and stop-limit execution risk.</p>
       </div>
     </div>
+
+    <section class="chart-section">
+      <h2 class="chart-title">RETIRED</h2>
+      <table>
+        <thead>
+          <tr><th>Retired Exit Reason</th><th>Former Profit Zone</th><th>Former Quote Trail</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>5% TRAIL</td><td>&gt;= +5.0%</td><td>2.5% below quote</td></tr>
+          <tr><td>6% TRAIL</td><td>&gt;= +6.0%</td><td>2.0% below quote</td></tr>
+          <tr><td>7% TRAIL</td><td>&gt;= +7.0%</td><td>1.5% below quote</td></tr>
+          <tr><td>8% TRAIL</td><td>&gt;= +8.0%</td><td>1.0% below quote</td></tr>
+        </tbody>
+      </table>
+    </section>
 
     <div class="footer">
       Source: <strong>execution/live_engine.py</strong> | This is the live trading cheat sheet.

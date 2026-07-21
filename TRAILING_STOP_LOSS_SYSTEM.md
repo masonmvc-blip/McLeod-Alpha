@@ -41,18 +41,15 @@ Use this as the quick-reference source of truth for live stops.
 
 ## Stop Loss Strategy
 
-The system uses **8-tier progressive trailing stops** based on option value:
+The system uses a **five-tier quote-trailing stop ladder** based on option value:
 
 | Profit Level | Stop Placement | Purpose |
 |---|---|---|
-| **Entry (0%)** | 5% below entry | Initial capital protection |
-| **Up 2%** | 3% below entry | Tighten risk early |
-| **Up 3%** | 1% below entry | Lock in near-breakeven protection |
-| **Up 4%** | Trail 3% below current | Begin profit-based trailing |
-| **Up 5%** | Trail 2.5% below current | Keep trailing as winner develops |
-| **Up 6%** | Trail 2% below current | Lock in more of the move |
-| **Up 7%** | Trail 1.5% below current | Tighten again as strength continues |
-| **Up 8%+** | Trail 1% below current | Maximize winning trades |
+| **Entry to < +1%** | Trail 4% below quote | Initial capital protection |
+| **Up 1%** | Trail 3% below quote | Tighten risk early |
+| **Up 2%** | Trail 2% below quote | Near-breakeven protection |
+| **Up 3%** | Trail 1.5% below quote | Lock in profit |
+| **Up 4%+** | Trail 1% below quote | Maximize retained profit |
 
 ### Example
 
@@ -60,21 +57,18 @@ The system uses **8-tier progressive trailing stops** based on option value:
 
 | Option Price | Profit | Stop Placement | Reason |
 |---|---|---|---|
-| $2.00 | 0% | $1.90 | Initial 5% stop |
-| $2.04 | 2% | $1.94 | Stop = entry x 0.97 |
-| $2.06 | 3% | $1.98 | Stop = entry x 0.99 |
-| $2.08 | 4% | $2.02 | Trail 3% ($2.08 × 0.97) |
-| $2.10 | 5% | $2.05 | Trail 2.5% ($2.10 × 0.975) |
-| $2.12 | 6% | $2.08 | Trail 2% ($2.12 × 0.98) |
-| $2.14 | 7% | $2.11 | Trail 1.5% ($2.14 × 0.985) |
-| $2.16 | 8% | $2.14 | Trail 1% ($2.16 × 0.99) |
+| $2.00 | 0% | $1.92 | Trail 4% ($2.00 × 0.96) |
+| $2.02 | 1% | $1.96 | Trail 3% ($2.02 × 0.97) |
+| $2.04 | 2% | $2.00 | Trail 2% ($2.04 × 0.98) |
+| $2.06 | 3% | $2.03 | Trail 1.5% ($2.06 × 0.985) |
+| $2.08 | 4% | $2.06 | Trail 1% ($2.08 × 0.99) |
 
 ## Key Features
 
 ✅ **Option-Based Calculations** - All profit % and stops based on option value, not SPY price  
 ✅ **Ratcheting Stops** - Stops only move up, never down (locks in gains)  
 ✅ **Progressive Tightening** - Tighter stops as profits increase (1% trail > 2% trail)  
-✅ **Breakeven Protection** - At 3% profit, trade becomes risk-free  
+✅ **Breakeven Protection** - At 2% profit, the stop is approximately breakeven
 ✅ **Automatic Management** - No manual intervention required  
 
 ## Technical Implementation
@@ -83,16 +77,6 @@ The system uses **8-tier progressive trailing stops** based on option value:
 
 1. **execution/live_engine.py** - Updated `manage_trade()` function
 2. **engine/brain/engine.py** - Canonical trailing-stop decision policy
-
-### Constants Updated
-
-```python
-# Canonical Brain (engine/brain/engine.py)
-BREAKEVEN_TRIGGER_PCT = 3       # Move stop to breakeven at 3% profit
-TRAIL_2_TRIGGER_PCT = 5         # Trail 2% at 5% profit
-TRAIL_1_TRIGGER_PCT = 7         # Trail 1% at 7% profit
-INITIAL_STOP_LOSS_PCT = -5      # Initial stop: 5% below entry
-```
 
 ### Position Fields Used
 
@@ -107,8 +91,8 @@ option_initial_stop: float      # Initial stop set at entry (for tracking)
 
 ### On Trade Entry
 1. Position created with `option_entry` = current option mark price
-2. `option_initial_stop` = `option_entry * 0.95` (5% below entry)
-3. `option_stop` = `option_initial_stop` (set to initial 5%)
+2. `option_initial_stop` = `option_entry * 0.96` (4% below entry)
+3. `option_stop` = `option_initial_stop` (then trails upward with quote highs)
 
 ### Each Candle (manage_trade called)
 1. Calculate profit % = `(current_mark - option_entry) / option_entry * 100`

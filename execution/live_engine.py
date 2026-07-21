@@ -852,7 +852,7 @@ class Position:
     submitted_limit_price: float = 0.0  # Submitted limit price
     # Protective stop order fields
     protective_stop_order_id: str = ""  # Broker-held SELL_TO_CLOSE stop order ID
-    protective_stop_price: float = 0.0  # Stop trigger price (-5% of fill)
+    protective_stop_price: float = 0.0  # Stop trigger price (initially 4% below fill)
     protective_stop_status: str = ""    # PENDING, PLACED, FAILED, CANCELED
     protective_stop_restore_count: int = 0  # Number of in-trade restore operations
     option_high_since_entry: float = 0.0
@@ -1390,7 +1390,7 @@ def cleanup_phantom_position():
 
 def _calculate_protective_stop_price(fill_price):
     """
-    Calculate protective stop price at -5% of option fill price.
+    Calculate the canonical initial protective stop price from the option fill.
     
     Args:
         fill_price: Confirmed option fill price
@@ -1406,7 +1406,7 @@ def _calculate_protective_stop_price(fill_price):
     # Normalize to valid tick
     stop_normalized = normalize_option_tick(stop_raw)
     
-    print(f"   Protective Stop Calculation: {fill_price:.2f} * 95% = {stop_raw:.6f} → {stop_normalized:.2f}")
+    print(f"   Protective Stop Calculation: {fill_price:.2f} * 96% = {stop_raw:.6f} → {stop_normalized:.2f}")
     return stop_normalized
 
 
@@ -1432,7 +1432,7 @@ def _submit_protective_stop(
     """
     Submit broker-held SELL_TO_CLOSE protective stop order.
     
-    Uses STOP_LIMIT order type with calculated trigger at -5% of fill.
+    Uses STOP_LIMIT order type with the canonical protective-stop trigger.
     
     Args:
         option_symbol: Exact Schwab option symbol (e.g., "SPY 260724C00754000")
@@ -2969,6 +2969,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         current_position.protective_stop_order_id = str(order_id)
         current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
         current_position.protective_stop_status = "PLACED"
+        current_position.active_stop_reason = decision.reason
         save_position(current_position)
         return
 

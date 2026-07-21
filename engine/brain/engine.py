@@ -19,13 +19,10 @@ OPTION_MAX_ABSOLUTE_SPREAD = 0.05
 OPTION_MAX_SPREAD_PCT = 8.0
 ALLOWED_EXIT_REASONS = {
     "STOP",
+    "1% Stop",
     "2% Stop",
     "3% Stop",
     "4% TRAIL",
-    "5% TRAIL",
-    "6% TRAIL",
-    "7% TRAIL",
-    "8% TRAIL",
     "MANUAL_EXIT_LIMIT",
     "MANUAL_EXIT_MARKET",
     "TARGET_HIT",
@@ -432,7 +429,7 @@ class Brain:
             action=TradeAction.HOLD,
             reason="exit_conditions_not_triggered",
             state_transition="POSITION_OPEN",
-            metadata={"market": market},
+            metadata={"market": market, "state_updates": state_updates},
         )
 
     def evaluate_protective_stop_result(self, position, *, restored: bool, restore_count: int) -> TradeDecision:
@@ -496,39 +493,27 @@ class Brain:
 
     @staticmethod
     def _trailing_stop(entry, initial_stop, quote, profit_pct) -> tuple[float, str]:
-        if profit_pct >= 8:
-            return quote * 0.99, "Trail 1%"
-        if profit_pct >= 7:
-            return quote * 0.985, "Trail 1.5%"
-        if profit_pct >= 6:
-            return quote * 0.98, "Trail 2%"
-        if profit_pct >= 5:
-            return quote * 0.975, "Trail 2.5%"
         if profit_pct >= 4:
-            return quote * 0.97, "Trail 3%"
+            return quote * 0.99, "4% TRAIL"
         if profit_pct >= 3:
-            return entry * 0.99, "3% Entry Lock"
+            return quote * 0.985, "3% Stop"
         if profit_pct >= 2:
-            return entry * 0.97, "2% Entry Lock"
-        return initial_stop, "Initial 4%"
+            return quote * 0.98, "2% Stop"
+        if profit_pct >= 1:
+            return quote * 0.97, "1% Stop"
+        return quote * 0.96, "STOP"
 
     @staticmethod
     def _stop_exit_reason(entry, exit_price) -> str:
         profit_pct = ((float(exit_price) - float(entry)) / float(entry)) * 100.0
-        if profit_pct >= 8:
-            return "8% TRAIL"
-        if profit_pct >= 7:
-            return "7% TRAIL"
-        if profit_pct >= 6:
-            return "6% TRAIL"
-        if profit_pct >= 5:
-            return "5% TRAIL"
         if profit_pct >= 4:
             return "4% TRAIL"
         if profit_pct >= 3:
             return "3% Stop"
         if profit_pct >= 2:
             return "2% Stop"
+        if profit_pct >= 1:
+            return "1% Stop"
         return "STOP"
 
     @staticmethod

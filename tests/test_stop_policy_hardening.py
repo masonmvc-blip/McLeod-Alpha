@@ -245,12 +245,11 @@ def test_broker_governor_preserves_client_enum_classes():
 @pytest.mark.parametrize(
     "option_mark, expected_stop",
     [
-        (5.101, 4.85),
-        (5.151, 4.95),
-        (5.201, 5.04497),
-        (5.251, 5.119725),
-        (5.301, 5.19498),
-        (5.351, 5.270735),
+        (5.000, 4.80),
+        (5.051, 4.89947),
+        (5.101, 4.99898),
+        (5.151, 5.073735),
+        (5.201, 5.14899),
         (5.401, 5.34699),
     ],
 )
@@ -359,6 +358,7 @@ def test_live_ratchet_does_not_wait_for_recent_stop_health_check(monkeypatch):
 
     assert submitted["existing_stop_order_id"] == "existing-stop"
     assert pos.protective_stop_order_id == "replacement-stop"
+    assert pos.active_stop_reason == "4% TRAIL"
 
 
 def test_live_closes_at_twenty_minute_maximum_hold(monkeypatch):
@@ -383,11 +383,12 @@ def test_live_closes_at_twenty_minute_maximum_hold(monkeypatch):
 @pytest.mark.parametrize(
     "reason, entry, exit_px, expected",
     [
+        ("1% Stop", 5.00, 5.05, "1% Stop"),
         ("2% Stop", 5.00, 4.85, "2% Stop"),
         ("3% Stop", 5.00, 4.95, "3% Stop"),
-        ("7% TRAIL", 5.00, 5.27, "7% TRAIL"),
-        ("TRAILING_STOP", 5.00, 5.27, "5% TRAIL"),
-        ("TRAILING_STOP", 5.00, 5.40, "8% TRAIL"),
+        ("4% TRAIL", 5.00, 5.27, "4% TRAIL"),
+        ("TRAILING_STOP", 5.00, 5.27, "4% TRAIL"),
+        ("TRAILING_STOP", 5.00, 5.40, "4% TRAIL"),
     ],
 )
 def test_live_exit_reason_guard(reason, entry, exit_px, expected):
