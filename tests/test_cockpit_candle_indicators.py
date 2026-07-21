@@ -180,7 +180,8 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "#trendStatus .trend-tone-bullish" in source
     assert 'id="trendStatus"' in source
     assert 'class="${candleTrendToneClass}"' in source
-    assert "Candle: ${escapeHtml(candleTrendLabel)}" in source
+    assert "🕯️ ${escapeHtml(candleTrendLabel)} 🕯️" in source
+    assert "Candle: ${escapeHtml(candleTrendLabel)}" not in source
     assert "Blocked: ${escapeHtml(candleTrendLabel)}" in source
     assert "Market Trend:" not in source
     assert "trendWithTimestamp" not in source

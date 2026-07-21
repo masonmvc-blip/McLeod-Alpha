@@ -7926,7 +7926,7 @@ HTML_DASHBOARD = """
 
                 const trendStatusEl = document.getElementById('trendStatus');
                 if (trendStatusEl) {
-                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span class="${candleTrendToneClass}" style="font-size:11px;font-weight:500;opacity:0.85;">Candle: ${escapeHtml(candleTrendLabel)}</span>`;
+                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span class="${candleTrendToneClass}" style="font-size:11px;font-weight:500;opacity:0.85;">🕯️ ${escapeHtml(candleTrendLabel)} 🕯️</span>`;
                 }
 
                 function renderIndicatorText(passed, side) {
