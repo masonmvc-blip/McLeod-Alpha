@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -14,6 +15,8 @@ from zoneinfo import ZoneInfo
 EASTERN_TZ = ZoneInfo("America/New_York")
 REPORTS_DIR = Path("reports")
 MINIMUM_SAMPLE_SIZE = 10
+DEEP_VALIDATION_SAMPLE_SIZE = 30
+PROMOTION_REVIEW_SAMPLE_SIZE = 100
 
 
 def _number(value: Any) -> float | None:
@@ -32,7 +35,7 @@ def _bucket(value: float | None, boundaries: tuple[float, ...]) -> str:
     return f">={boundaries[-1]:g}"
 
 
-def _quality_row(event: dict[str, Any]) -> dict[str, Any] | None:
+def _quality_row(event: dict[str, Any], report_date: date) -> dict[str, Any] | None:
     outcome = event.get("estimated_option_outcome") or {}
     mfe = _number(outcome.get("estimated_option_mfe_pct"))
     mae = _number(outcome.get("estimated_option_mae_pct"))
@@ -49,6 +52,7 @@ def _quality_row(event: dict[str, Any]) -> dict[str, Any] | None:
         trend_age = _number((components.get("trend_age") or {}).get("age_candles"))
 
     return {
+        "report_date": report_date,
         "entered": bool(event.get("entered")),
         "market_state": str((event.get("research") or {}).get("trend_state") or market_state.get("state") or "UNCLASSIFIED"),
         "trend_age": trend_age,
@@ -63,6 +67,25 @@ def _quality_row(event: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _mean_confidence_interval(values: list[float]) -> list[float] | None:
+    if len(values) < 2:
+        return None
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / (len(values) - 1)
+    margin = 1.96 * math.sqrt(variance / len(values))
+    return [round(mean - margin, 4), round(mean + margin, 4)]
+
+
+def _research_stage(observations: int) -> str:
+    if observations >= PROMOTION_REVIEW_SAMPLE_SIZE:
+        return "promotion_review_requires_cross_regime_out_of_sample_validation"
+    if observations >= DEEP_VALIDATION_SAMPLE_SIZE:
+        return "eligible_for_deep_validation"
+    if observations >= MINIMUM_SAMPLE_SIZE:
+        return "candidate_for_validation"
+    return "exploratory_insufficient_sample"
+
+
 def _summarize(rows: list[dict[str, Any]], label: str) -> dict[str, Any]:
     mfe = [row["estimated_mfe_pct"] for row in rows]
     mae = [row["estimated_mae_pct"] for row in rows]
@@ -74,7 +97,9 @@ def _summarize(rows: list[dict[str, Any]], label: str) -> dict[str, Any]:
         "rejected": len(rows) - entered,
         "avg_estimated_option_mfe_pct": round(sum(mfe) / len(mfe), 4),
         "avg_estimated_option_mae_pct": round(sum(mae) / len(mae), 4),
-        "research_status": "candidate_for_validation" if len(rows) >= MINIMUM_SAMPLE_SIZE else "exploratory_insufficient_sample",
+        "estimated_option_mfe_pct_95ci": _mean_confidence_interval(mfe),
+        "estimated_option_mae_pct_95ci": _mean_confidence_interval(mae),
+        "research_status": _research_stage(len(rows)),
     }
 
 
@@ -124,6 +149,45 @@ def _market_state_adx_trend_age_rows(rows: list[dict[str, Any]]) -> list[dict[st
     )
 
 
+def _interaction_label(row: dict[str, Any]) -> str:
+    return " | ".join((
+        row["market_state"],
+        f"ADX {_bucket(row['adx'], (18, 25, 30, 35))}",
+        f"trend_age {_bucket(row['trend_age'], (3, 6, 9))}",
+    ))
+
+
+def _stability_rows(rows: list[dict[str, Any]], as_of: date) -> list[dict[str, Any]]:
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[_interaction_label(row)].append(row)
+
+    cutoff = as_of - timedelta(days=29)
+    stability = []
+    for label, members in groups.items():
+        all_time = _summarize(members, label)
+        if all_time["observations"] < MINIMUM_SAMPLE_SIZE:
+            continue
+        rolling = [row for row in members if row["report_date"] >= cutoff]
+        rolling_summary = _summarize(rolling, label) if rolling else None
+        if not rolling_summary or rolling_summary["observations"] < MINIMUM_SAMPLE_SIZE:
+            state = "insufficient_rolling_sample"
+        elif (
+            rolling_summary["avg_estimated_option_mfe_pct"] < all_time["avg_estimated_option_mfe_pct"]
+            and rolling_summary["avg_estimated_option_mae_pct"] < all_time["avg_estimated_option_mae_pct"]
+        ):
+            state = "deteriorating"
+        else:
+            state = "stable_or_improving"
+        stability.append({
+            "cohort": label,
+            "all_time": all_time,
+            "rolling_30_day": rolling_summary,
+            "stability_state": state,
+        })
+    return sorted(stability, key=lambda row: row["cohort"])
+
+
 def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Path | None = None) -> Path:
     """Aggregate immutable daily reviews without changing live-trading behavior."""
     quality_rows: list[dict[str, Any]] = []
@@ -133,9 +197,13 @@ def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Pat
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        try:
+            report_date = date.fromisoformat(path.stem.removeprefix("daily_opportunity_review_"))
+        except ValueError:
+            continue
         source_reports.append(path.name)
         for event in payload.get("evaluated_setups") or []:
-            row = _quality_row(event)
+            row = _quality_row(event, report_date)
             if row is not None:
                 quality_rows.append(row)
 
@@ -151,14 +219,19 @@ def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Pat
     state_adx_age_rows = _market_state_adx_trend_age_rows(quality_rows)
     qualified_state_adx_age_rows = [
         row for row in state_adx_age_rows
-        if row["research_status"] == "candidate_for_validation"
+        if row["observations"] >= MINIMUM_SAMPLE_SIZE
     ]
+    as_of = max((row["report_date"] for row in quality_rows), default=datetime.now(EASTERN_TZ).date())
     output = {
         "generated_at": datetime.now(EASTERN_TZ).isoformat(),
         "research_only": True,
         "promotion_eligible": False,
         "minimum_sample_size": MINIMUM_SAMPLE_SIZE,
+        "deep_validation_minimum_sample_size": DEEP_VALIDATION_SAMPLE_SIZE,
+        "promotion_review_minimum_sample_size": PROMOTION_REVIEW_SAMPLE_SIZE,
+        "promotion_policy": "Manual-only. A 100+ observation cohort requires multi-regime, statistical, and out-of-sample validation before live-rule promotion can be considered.",
         "outcome_note": "MFE and MAE are estimated option-return proxies from the daily opportunity review, not reconciled option P&L.",
+        "realized_outcome_status": "unavailable: opportunity-to-trade linkage for actual option P&L, slippage, theta, and exit quality is not yet persisted",
         "source_reports": source_reports,
         "observations": len(quality_rows),
         "entered": sum(row["entered"] for row in quality_rows),
@@ -166,9 +239,10 @@ def build_trend_quality_report(reports_dir: Path = REPORTS_DIR, output_path: Pat
         "feature_buckets": _feature_buckets(quality_rows),
         "market_states": _group(quality_rows, lambda row: row["market_state"]),
         "quality_combinations": ranked_combinations,
-        "top_candidate_combinations": [row for row in ranked_combinations if row["research_status"] == "candidate_for_validation"][:10],
+        "top_candidate_combinations": [row for row in ranked_combinations if row["observations"] >= MINIMUM_SAMPLE_SIZE][:10],
         "market_state_adx_trend_age_interactions": qualified_state_adx_age_rows,
         "market_state_adx_trend_age_deferred_sparse_combinations": len(state_adx_age_rows) - len(qualified_state_adx_age_rows),
+        "market_state_adx_trend_age_stability": _stability_rows(quality_rows, as_of),
     }
     destination = output_path or reports_dir / "trend_quality_report.json"
     destination.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
