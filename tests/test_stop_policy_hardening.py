@@ -126,6 +126,11 @@ def test_failed_exit_submission_keeps_existing_protective_stop(monkeypatch):
 
 
 def test_exit_submission_cooldown_keeps_existing_protective_stop(monkeypatch):
+
+    def test_near_market_manual_exit_prices_at_midpoint_of_spread(monkeypatch):
+        monkeypatch.setattr(live_engine, "_fetch_option_quote_levels", lambda _symbol: {"bid": 5.00, "ask": 5.40})
+
+        assert live_engine._compute_fast_exit_limit_price("SPY TEST", 5.20) == 5.20
     pos = _live_position()
     pos.protective_stop_order_id = "existing-stop"
     live_engine.current_position = pos

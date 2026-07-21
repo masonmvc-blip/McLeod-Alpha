@@ -2064,8 +2064,9 @@ def _compute_fast_exit_limit_price(option_symbol, fallback_price):
     last = float(levels.get("last", 0.0) or 0.0)
 
     if bid > 0 and ask > 0 and ask >= bid:
-        # Price inside spread but close to bid for quick execution.
-        target = bid + (0.25 * (ask - bid))
+        # Start at the spread midpoint to protect price while still seeking a
+        # prompt fill; close_trade falls back to market if it does not fill.
+        target = bid + (0.50 * (ask - bid))
     elif bid > 0:
         target = bid
     elif mark > 0:

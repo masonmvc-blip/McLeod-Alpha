@@ -53,6 +53,7 @@ LATENCY_METRICS_ENABLED = str(os.getenv("LATENCY_METRICS_ENABLED", "true")).stri
 LATENCY_METRICS_PATH = Path(os.getenv("LATENCY_METRICS_PATH", "data/reports/latency_cycle_history.jsonl"))
 DECISION_AUDIT_ENABLED = str(os.getenv("DECISION_AUDIT_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 DECISION_AUDIT_PATH = Path(os.getenv("DECISION_AUDIT_PATH", "data/reports/decision_audit_history.jsonl"))
+CONTROL_COMMAND_PATH = Path("data") / "control_command.json"
 LAST_ENTRY_EXECUTION_METRICS = {
     "attempted": False,
     "opened": False,
@@ -874,6 +875,44 @@ def _entries_are_paused():
     except Exception:
         return False
 
+def _process_manual_exit_command(current_price, option_mark):
+    """Consume Cockpit's pending exit command before normal trade management."""
+    try:
+        command = get_memory().load_setting(CONTROL_COMMAND_PATH, {}) or {}
+    except Exception:
+        return False
+
+    if str(command.get("action") or "").upper() != "EXIT_TRADE":
+        return False
+    if str(command.get("status") or "").upper() not in {"PENDING", "RETRYING"}:
+        return False
+    if not getattr(ENGINE_MODULE, "current_position", None):
+        get_memory().clear_setting("control_command", CONTROL_COMMAND_PATH)
+        return False
+
+    command["status"] = "SUBMITTING"
+    command["last_attempt_at"] = datetime.now(UTC_TZ).isoformat()
+    get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
+    print("MANUAL EXIT: submitting near-market limit close with market fallback")
+
+    closed = bool(ENGINE_MODULE.close_trade(
+        float(current_price),
+        "MANUAL_EXIT_LIMIT",
+        option_mark,
+        execution_mode="limit_near_market",
+        fallback_to_market=True,
+    ))
+    if closed:
+        command["status"] = "COMPLETED"
+        command["completed_at"] = datetime.now(UTC_TZ).isoformat()
+        get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
+        return True
+
+    command["status"] = "RETRYING"
+    command["last_error"] = "Exit was not accepted or filled; protective stop remains active"
+    get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
+    return False
+
 def open_trade(*args, **kwargs):
     global startup_entry_attempts, LAST_ENTRY_EXECUTION_METRICS
 
@@ -1251,7 +1290,9 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
         except Exception as e:
             print(f"Option mark error: {e}")
         manage_start_ms = _perf_ms_now()
-        manage_trade(float(latest.close), option_mark, option_bid)
+        manual_exit_requested = _process_manual_exit_command(float(latest.close), option_mark)
+        if not manual_exit_requested:
+            manage_trade(float(latest.close), option_mark, option_bid)
         manage_trade_ms = _elapsed_ms(manage_start_ms)
         try:
             SpyBotReviewer(Path(__file__).resolve().parent).maybe_run_after_session()
