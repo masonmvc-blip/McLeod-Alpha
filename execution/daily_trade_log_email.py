@@ -76,10 +76,11 @@ def _enabled() -> bool:
 
 
 def _transport() -> str:
-    return (
+    configured = (
         os.getenv("DAILY_TRADE_LOG_EMAIL_TRANSPORT", "").strip().lower()
-        or os.getenv("DAILY_PNL_EMAIL_TRANSPORT", "mailapp").strip().lower()
+        or os.getenv("DAILY_PNL_EMAIL_TRANSPORT", "smtp").strip().lower()
     )
+    return "smtp" if configured in {"", "mailapp"} else configured
 
 
 def _recipient() -> str:

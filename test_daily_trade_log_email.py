@@ -3,6 +3,13 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import execution.daily_trade_log_email as trade_email
+def test_retired_mailapp_transport_uses_smtp(monkeypatch):
+    monkeypatch.setenv("DAILY_TRADE_LOG_EMAIL_TRANSPORT", "")
+    monkeypatch.setenv("DAILY_PNL_EMAIL_TRANSPORT", "mailapp")
+
+    assert trade_email._transport() == "smtp"
+
+
 
 
 def test_target_send_time_regular_close(monkeypatch):
