@@ -7904,11 +7904,13 @@ HTML_DASHBOARD = """
                 }
                 if (points.length >= 2) {
                     const pMin = Math.min(...points);
-                    const pMax = Math.max(...points);
-                    const spread = Math.max(1, pMax - pMin);
+                    const sortedPoints = [...points].sort((left, right) => left - right);
+                    const p95 = sortedPoints[Math.floor((sortedPoints.length - 1) * 0.95)];
+                    const visualCeiling = Math.max(pMin + 1, p95);
+                    const visualSpread = Math.max(1, visualCeiling - pMin);
                     const chartHtml = points.map((value) => {
                         const n = Number(value || 0);
-                        const scaled = 8 + Math.round(((n - pMin) / spread) * 44);
+                        const scaled = 6 + Math.round(Math.min(1, Math.max(0, (n - pMin) / visualSpread)) * 34);
                         const cls = n > 600 ? 'bad' : (n > 250 ? 'warn' : '');
                         return `<div class="connectivity-bar ${cls}" style="height:${scaled}px" title="${safeEscape(n.toFixed(1))} ms"></div>`;
                     }).join('');
@@ -8211,7 +8213,6 @@ HTML_DASHBOARD = """
             refreshStatus();
             refreshLogs();
             updateTodaysTrades();
-            updateExecutionQuality(lastStatusSnapshot);
             updateDailyLearningInsights();
             updateIndicatorPerformance();
         });
