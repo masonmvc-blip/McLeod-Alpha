@@ -172,6 +172,40 @@ def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_pat
     assert broker_rows == 0
 
 
+def test_today_trades_uses_broker_net_status_total_including_commissions(monkeypatch, tmp_path):
+    database_path = tmp_path / "data" / "mcleod_alpha.db"
+    memory = Memory(db_path=database_path)
+    today = datetime.now(cockpit.EASTERN_TZ).date().isoformat()
+    memory.record_trade(
+        entry_time=f"{today}T09:30:00-04:00",
+        exit_time=f"{today}T09:35:00-04:00",
+        direction="CALL",
+        entry_price=1.0,
+        exit_price=1.1,
+        pnl=-644.55,
+        exit_reason="TARGET",
+        option_symbol="SPY  260720C00600000",
+        option_entry=1.0,
+        option_exit=1.1,
+        option_quantity=1,
+        broker_entry_order_id="commission-entry",
+        broker_exit_order_id="commission-exit",
+    )
+
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [])
+    monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: -644.55)
+    monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
+    monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
+    monkeypatch.setattr(cockpit, "_log_daily_trades_chart_snapshot", lambda *args: None)
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"todays_pnl": -644.62})
+
+    response = cockpit.app.test_client().get("/api/today-trades")
+
+    assert response.status_code == 200
+    assert response.get_json()["summary"]["total_pnl"] == -644.62
+
+
 def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monkeypatch, tmp_path):
     database_path = tmp_path / "data" / "mcleod_alpha.db"
     memory = Memory(db_path=database_path)

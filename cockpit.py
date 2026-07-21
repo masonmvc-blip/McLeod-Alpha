@@ -5423,17 +5423,20 @@ def api_today_trades():
 
         # Calculate summary from net cash P&L values.
         total_pnl = sum(float(t.get('pnl', 0) or 0) for t in trades)
-        schwab_day_total = _schwab_transaction_day_net_pnl(trading_date)
-        if schwab_day_total is not None:
-            total_pnl = float(schwab_day_total)
-        elif trading_date == today:
-            # Keep dashboard totals aligned: use the same canonical Today P&L
-            # source as status when Schwab day-net lookup is temporarily unavailable.
+        if trading_date == today:
+            # Status is the canonical Schwab transaction netAmount aggregation for
+            # Today/WTD/MTD/YTD, including broker commissions and fees.
             try:
-                status_today_pnl = float(parse_bot_status().get('todays_pnl') or 0.0)
+                status_today_pnl = float(parse_bot_status().get('todays_pnl'))
                 total_pnl = status_today_pnl
             except Exception:
-                pass
+                schwab_day_total = _schwab_transaction_day_net_pnl(trading_date)
+                if schwab_day_total is not None:
+                    total_pnl = float(schwab_day_total)
+        else:
+            schwab_day_total = _schwab_transaction_day_net_pnl(trading_date)
+            if schwab_day_total is not None:
+                total_pnl = float(schwab_day_total)
         total_pnl_points = sum(
             float(t.get('pnl_pct') or 0.0)
             for t in trades
