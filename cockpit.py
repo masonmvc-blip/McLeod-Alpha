@@ -6735,7 +6735,7 @@ HTML_DASHBOARD = """
         <div id="tradeEntryBanner" class="trade-entry-banner disabled">
             <div class="banner-title" id="tradeEntryBannerTitle">⛔ TRADE ENTRY DISABLED ⛔</div>
             <div class="banner-meta" id="tradeEntryBannerMeta">
-                <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">❌ Broker UNKNOWN | ⚪ Unknown Account</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
+                <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">🛑 Schwab 903</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
             </div>
             <div class="parity-warning" id="parityWarning"></div>
         </div>
@@ -7359,11 +7359,8 @@ HTML_DASHBOARD = """
                 maybeHandleBellBroadcast(status);
                 maybePlayMarketSessionBells(status);
                 
-                // Update combined bot/reconciliation/mode status in entry banner.
+                // Update the Schwab readiness status in the entry banner.
                 const reconState = String(status.broker_reconciliation || '').toUpperCase();
-                const parityState = String(status.parity_state || 'UNKNOWN').toUpperCase();
-                const parityEnforced = status.parity_enforce_on_start !== false;
-                const parityBlockStart = !!status.parity_block_start;
                 const botToggleBtn = document.getElementById('botToggleBtn');
                 const botRunning = !!status.bot_running;
                 botToggleBtn.disabled = false;
@@ -7373,28 +7370,11 @@ HTML_DASHBOARD = """
                 const canManualExit = !!(status.bot_running && status.mode === 'LIVE TRADING' && status.has_open_position);
                 document.getElementById('exitTradeBtn').disabled = !canManualExit;
                 
-                // Build concise checklist summary for banner meta line.
+                // Schwab is ready only for reconciled live trading.
                 const modeText = String(status.mode || '').toUpperCase();
-                const accountLabel = String(status.account_nickname || status.account_number || 'Unknown Account').trim();
                 const accountDisplayLabel = 'Schwab 903';
-                const liveTradingOk = modeText.includes('LIVE');
-                const modeOk = liveTradingOk;
-                const modeLabel = 'Live';
-                const accountOk = accountLabel.length > 0 && !/^unknown account$/i.test(accountLabel);
-                const explicitReconFailure = reconState === 'FAILED' || reconState === 'SAFE MODE';
-                const inferredBrokerOk = !explicitReconFailure && !!status.account_verified && liveTradingOk;
-                const reconOk = reconState === 'SUCCESS' || inferredBrokerOk;
-                const parityOk = parityState === 'MATCH' && !parityBlockStart;
-                const runtimeFingerprint = status.runtime_fingerprint || {};
-                const runtimeHost = String(runtimeFingerprint.hostname || '').trim();
-                const runtimeHostLower = runtimeHost.toLowerCase();
-                let runtimeBadge = '☐ Runtime Unknown';
-                if (runtimeHostLower.includes('imac') || runtimeHostLower.includes('desktop')) {
-                    runtimeBadge = '🖥️ Desktop';
-                } else if (runtimeHostLower.includes('macbook') || runtimeHostLower.includes('laptop')) {
-                    runtimeBadge = '✅ 💻 laptop';
-                }
-                const checklistText = `${runtimeBadge} | ${modeOk ? '✅' : '☐'} ${modeLabel} | ${reconOk ? '✅' : '☐'} Broker | ${parityOk ? '✅' : '🛑'} Parity | ${accountOk ? '✅' : '☐'} ${accountDisplayLabel}`;
+                const schwabReady = modeText === 'LIVE TRADING' && reconState === 'SUCCESS';
+                const checklistText = `${schwabReady ? '✅' : '🛑'} ${accountDisplayLabel}`;
 
                 // Trade entry readiness (fast and visible)
                 const tradeEntryEnabled = !!status.trade_entry_enabled;
