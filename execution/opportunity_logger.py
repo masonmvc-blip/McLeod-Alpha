@@ -1,14 +1,38 @@
 import json
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
 
 from engine.memory import get_memory
+from strategy.market_state import classify_market_state
 
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 OPPORTUNITY_LOG_DIR = Path("data/reports/opportunity_logs")
+RESEARCH_MODEL_VERSION = "market-state-adx-v1"
+RESEARCH_SCHEMA_VERSION = "2026-07-adx-v1"
+RESEARCH_SCHEMA_FIELDS = (
+    "ema10_slope_3",
+    "ema20_slope_3",
+    "ema10_ema20_separation",
+    "macd_histogram_value",
+    "macd_histogram_slope_3",
+    "candle_compression_status",
+    "candle_overlap_status",
+    "recent_high_break",
+    "recent_low_break",
+    "adx_14",
+    "plus_di_14",
+    "minus_di_14",
+    "adx_slope_1",
+    "adx_trend",
+    "shadow_market_state",
+)
+FEATURE_SCHEMA_HASH = hashlib.sha256(
+    json.dumps({"feature_schema": RESEARCH_SCHEMA_VERSION, "fields": RESEARCH_SCHEMA_FIELDS}, sort_keys=True).encode("utf-8")
+).hexdigest()
 
 _NEGATIVE_REASON_KEYS = {
     "volume_weakening_bullish_move",
@@ -116,6 +140,72 @@ def _macd_metrics(df, last, bars: int = 3) -> Dict[str, Any]:
     return {
         "macd_histogram_value": hist,
         "macd_histogram_slope_3": slope,
+    }
+
+
+def _adx_metrics(df, period: int = 14) -> Dict[str, Any]:
+    """Calculate Wilder ADX telemetry from the supplied completed candles only."""
+    unavailable = {
+        "adx_14": None,
+        "plus_di_14": None,
+        "minus_di_14": None,
+        "adx_slope_1": None,
+        "adx_trend": "UNAVAILABLE",
+    }
+    if df is None or len(df) < (2 * period):
+        return unavailable
+
+    try:
+        highs = [float(value) for value in df["high"].tolist()]
+        lows = [float(value) for value in df["low"].tolist()]
+        closes = [float(value) for value in df["close"].tolist()]
+    except (KeyError, TypeError, ValueError):
+        return unavailable
+
+    true_ranges: list[float] = []
+    plus_moves: list[float] = []
+    minus_moves: list[float] = []
+    for index in range(1, len(df)):
+        upward_move = highs[index] - highs[index - 1]
+        downward_move = lows[index - 1] - lows[index]
+        true_ranges.append(max(highs[index] - lows[index], abs(highs[index] - closes[index - 1]), abs(lows[index] - closes[index - 1])))
+        plus_moves.append(upward_move if upward_move > downward_move and upward_move > 0 else 0.0)
+        minus_moves.append(downward_move if downward_move > upward_move and downward_move > 0 else 0.0)
+
+    smoothed_tr = sum(true_ranges[:period])
+    smoothed_plus = sum(plus_moves[:period])
+    smoothed_minus = sum(minus_moves[:period])
+    dx_values: list[float] = []
+    adx_values: list[float] = []
+    latest_plus_di = latest_minus_di = None
+
+    for index in range(period - 1, len(true_ranges)):
+        if index >= period:
+            smoothed_tr = smoothed_tr - (smoothed_tr / period) + true_ranges[index]
+            smoothed_plus = smoothed_plus - (smoothed_plus / period) + plus_moves[index]
+            smoothed_minus = smoothed_minus - (smoothed_minus / period) + minus_moves[index]
+        if smoothed_tr <= 0:
+            continue
+        latest_plus_di = 100.0 * smoothed_plus / smoothed_tr
+        latest_minus_di = 100.0 * smoothed_minus / smoothed_tr
+        di_total = latest_plus_di + latest_minus_di
+        dx_values.append(100.0 * abs(latest_plus_di - latest_minus_di) / di_total if di_total > 0 else 0.0)
+        if len(dx_values) == period:
+            adx_values.append(sum(dx_values) / period)
+        elif len(dx_values) > period:
+            adx_values.append(((adx_values[-1] * (period - 1)) + dx_values[-1]) / period)
+
+    if not adx_values or latest_plus_di is None or latest_minus_di is None:
+        return unavailable
+
+    adx = adx_values[-1]
+    slope = adx - adx_values[-2] if len(adx_values) >= 2 else None
+    return {
+        "adx_14": round(adx, 4),
+        "plus_di_14": round(latest_plus_di, 4),
+        "minus_di_14": round(latest_minus_di, 4),
+        "adx_slope_1": round(slope, 4) if slope is not None else None,
+        "adx_trend": "RISING" if slope and slope > 0 else "FALLING" if slope and slope < 0 else "FLAT" if slope is not None else "UNAVAILABLE",
     }
 
 
@@ -333,6 +423,34 @@ def _extract_option_symbol(option_obj: Any) -> str | None:
     return _safe_str(option_obj)
 
 
+def _research_envelope(*, market_state: Dict[str, Any], direction: str, regime: str, score: int, entry_threshold: int, entered: bool, feature_hash: str) -> Dict[str, Any]:
+    required_regime = "BULL_TREND" if direction == "CALL" else "BEAR_TREND"
+    return {
+        "trend_state": market_state.get("state"),
+        "trend_direction": market_state.get("trend_direction"),
+        "market_state_model": "v1.0",
+        "feature_schema": RESEARCH_SCHEMA_VERSION,
+        "feature_schema_hash": FEATURE_SCHEMA_HASH,
+        "feature_hash": feature_hash,
+        "classification_confidence": None,
+        "freshness_score": None,
+        "trend_strength_score": None,
+        "momentum_quality_score": None,
+        "expected_setup": None,
+        "research_engine_would_trade": None,
+        "current_engine_qualified": bool(regime == required_regime and score >= entry_threshold),
+        "current_engine_entered": bool(entered),
+        "research_version": RESEARCH_MODEL_VERSION,
+        "shadow_only": True,
+        "promotion_eligible": False,
+    }
+
+
+def _feature_hash(record: Dict[str, Any]) -> str:
+    payload = {field: record.get(field) for field in RESEARCH_SCHEMA_FIELDS}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
 def _build_setup_record(
     direction: str,
     evaluation_time_et: str,
@@ -413,6 +531,7 @@ def _build_setup_record(
 
     record.update(_ema_metrics(df=df, last=last, bars=3))
     record.update(_macd_metrics(df=df, last=last, bars=3))
+    record.update(_adx_metrics(df=df))
     record.update(_candle_structure(last=last, prev=prev, df=df))
     record.update(_candle_research_metrics(last=last, prev=prev, df=df))
 
@@ -440,6 +559,7 @@ def log_evaluated_setups(
     selected_option_put: Any = None,
 ) -> None:
     payload = feature_payload or {}
+    market_state = classify_market_state(df)
     evaluation_time_et = datetime.now(EASTERN_TZ).isoformat()
     candle_time_et = _normalize_candle_time_to_et_iso(getattr(last, "name", None))
     spy_price = _safe_float(getattr(last, "close", None))
@@ -465,6 +585,16 @@ def log_evaluated_setups(
         feature_payload=payload,
         selected_option=selected_option_call,
     )
+    call_record["shadow_market_state"] = market_state
+    call_record["research"] = _research_envelope(
+        market_state=market_state,
+        direction="CALL",
+        regime=regime,
+        score=int(call_score),
+        entry_threshold=entry_threshold,
+        entered=bool(entered_call),
+        feature_hash=_feature_hash(call_record),
+    )
 
     put_record = _build_setup_record(
         direction="PUT",
@@ -484,6 +614,16 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_put,
+    )
+    put_record["shadow_market_state"] = market_state
+    put_record["research"] = _research_envelope(
+        market_state=market_state,
+        direction="PUT",
+        regime=regime,
+        score=int(put_score),
+        entry_threshold=entry_threshold,
+        entered=bool(entered_put),
+        feature_hash=_feature_hash(put_record),
     )
 
     trade_date = datetime.fromisoformat(candle_time_et).date().isoformat()

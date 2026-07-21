@@ -63,6 +63,17 @@ def test_logger_timestamps_are_eastern(tmp_path, monkeypatch):
         assert candle_dt.tzinfo is not None
         assert eval_dt.utcoffset().total_seconds() in {-4 * 3600, -5 * 3600}
         assert candle_dt.utcoffset().total_seconds() in {-4 * 3600, -5 * 3600}
+        assert row["research"]["research_version"] == "market-state-adx-v1"
+        assert row["research"]["market_state_model"] == "v1.0"
+        assert row["research"]["feature_schema"] == "2026-07-adx-v1"
+        assert len(row["research"]["feature_schema_hash"]) == 64
+        assert len(row["research"]["feature_hash"]) == 64
+        assert row["research"]["classification_confidence"] is None
+        assert row["research"]["trend_state"]
+        assert row["research"]["freshness_score"] is None
+        assert row["research"]["research_engine_would_trade"] is None
+        assert row["research"]["shadow_only"] is True
+        assert row["research"]["promotion_eligible"] is False
 
 
 def test_executed_and_rejected_included_once(tmp_path, monkeypatch):
@@ -174,10 +185,10 @@ def test_estimated_outcomes_are_labeled_estimates(tmp_path, monkeypatch):
 
 
 def test_live_decision_predicates_unchanged():
-    source = Path("phase3_monitor.py").read_text(encoding="utf-8")
+    source = Path("engine/brain/live_rules.py").read_text(encoding="utf-8")
 
-    assert "elif regime == \"BULL_TREND\" and call_score >= ENTRY_SCORE_THRESHOLD:" in source
-    assert "elif regime == \"BEAR_TREND\" and put_score >= ENTRY_SCORE_THRESHOLD:" in source
+    assert '"CALL": "BULL_TREND", "PUT": "BEAR_TREND"' in source
+    assert "normalized_score >= LIVE_ENTRY_MIN_SCORE" in source
     assert "stop = entry - 0.75" in source
     assert "stop = entry + 0.75" in source
     assert "target = entry + 1.50" in source

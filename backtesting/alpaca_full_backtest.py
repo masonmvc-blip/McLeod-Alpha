@@ -580,6 +580,7 @@ def run_alpaca_full_backtest(
     spy_df: Optional[pd.DataFrame] = None,
     progress_callback: Optional[Callable[[str], None]] = None,
     diagnostics_limit: int = 100,
+    entry_selector: Optional[Callable[[Dict[str, Any], List[Dict[str, Any]]], Optional[Tuple[str, int, List[str]]]]] = None,
 ) -> Dict[str, Any]:
     def _emit(msg: str) -> None:
         if progress_callback is not None:
@@ -628,6 +629,8 @@ def run_alpaca_full_backtest(
     trades_today = 0
     accepted_trades = 0
     data_unavailable_trades = 0
+    max_exit_fill_delay = timedelta(minutes=1)
+    signal_history: List[Dict[str, Any]] = []
 
     contracts_payload_cache: Dict[Tuple[str, str], Dict[str, Any]] = {}
     trade_history_presence_cache: Dict[Tuple[str, str], bool] = {}
@@ -800,6 +803,28 @@ def run_alpaca_full_backtest(
                     )
                 else:
                     ex_ts, ex_px = exit_fill
+                    if ex_ts > trigger_time + max_exit_fill_delay:
+                        open_trade.exit_reason = trigger_reason
+                        open_trade.exit_trigger_time = trigger_time
+                        open_trade.excluded_from_official = True
+                        open_trade.data_unavailable_reason = "STALE_EXIT_FILL"
+                        open_trade.data_source = "ALPACA_HISTORICAL_TRADE"
+                        availability.append(
+                            AvailabilityRow(
+                                trade_id=open_trade.trade_id,
+                                signal_time=open_trade.entry_signal_time.isoformat(),
+                                direction=open_trade.direction,
+                                option_symbol=open_trade.option_symbol,
+                                status="DATA_UNAVAILABLE",
+                                reason="EXIT_FILL_MORE_THAN_60_SECONDS_AFTER_TRIGGER",
+                            )
+                        )
+                        trades.append(open_trade)
+                        open_trade = None
+                        open_series = None
+                        open_pricer = None
+                        open_state = None
+                        continue
                     open_trade.exit_trigger_time = trigger_time
                     open_trade.exit_fill_time = ex_ts
                     open_trade.exit_reason = trigger_reason
@@ -847,7 +872,11 @@ def run_alpaca_full_backtest(
         if not signal:
             continue
 
-        choice = _choose_direction(signal)
+        if entry_selector is None:
+            choice = _choose_direction(signal)
+        else:
+            choice = entry_selector(signal, signal_history)
+        signal_history.append(signal)
         if choice is None:
             continue
 

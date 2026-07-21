@@ -1,9 +1,11 @@
 from execution.option_selector import select_option_from_chain, find_option_mark, find_option_bid
 from execution.equity_stream import SchwabEquityQuoteStream
+from execution.opportunity_logger import log_evaluated_setups
 from execution.signal_logger import log_signal
 from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_effectiveness_report
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
 from engine.memory import get_memory
+from spy_bot_reviewer import SpyBotReviewer
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
@@ -83,6 +85,47 @@ def _append_decision_audit_event(payload):
         get_memory().record_decision(payload, DECISION_AUDIT_PATH, source="monitor")
     except Exception as exc:
         print(f"Decision audit write error: {exc}")
+
+def _log_shadow_opportunities(
+    *,
+    last,
+    prev,
+    completed_candles,
+    regime,
+    call_score,
+    call_reasons,
+    put_score,
+    put_reasons,
+    entered_call,
+    entered_put,
+    feature_payload=None,
+    selected_option_call=None,
+    selected_option_put=None,
+):
+    """Capture evaluated setups as non-blocking research telemetry."""
+    try:
+        payload = json.loads(feature_payload) if isinstance(feature_payload, str) else feature_payload
+        log_evaluated_setups(
+            last=last,
+            prev=prev,
+            df=completed_candles,
+            regime=regime,
+            call_score=call_score,
+            call_reasons=call_reasons,
+            put_score=put_score,
+            put_reasons=put_reasons,
+            entry_threshold=LIVE_ENTRY_MIN_SCORE,
+            allow_entry=True,
+            in_position=False,
+            in_market_hours=True,
+            entered_call=entered_call,
+            entered_put=entered_put,
+            feature_payload=payload,
+            selected_option_call=selected_option_call,
+            selected_option_put=selected_option_put,
+        )
+    except Exception as exc:
+        print(f"Shadow opportunity logging error: {exc}")
 
 
 def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None, indicators_ms=None):
@@ -903,6 +946,20 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("CALL", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
+        _log_shadow_opportunities(
+            last=last,
+            prev=prev,
+            completed_candles=completed_candles,
+            regime=regime,
+            call_score=call_score,
+            call_reasons=call_reasons,
+            put_score=put_score,
+            put_reasons=put_reasons,
+            entered_call=opened,
+            entered_put=False,
+            feature_payload=feature_payload,
+            selected_option_call=option,
+        )
         return {
             "attempted": True,
             "opened": opened,
@@ -956,6 +1013,20 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("PUT", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
+        _log_shadow_opportunities(
+            last=last,
+            prev=prev,
+            completed_candles=completed_candles,
+            regime=regime,
+            call_score=call_score,
+            call_reasons=call_reasons,
+            put_score=put_score,
+            put_reasons=put_reasons,
+            entered_call=False,
+            entered_put=opened,
+            feature_payload=feature_payload,
+            selected_option_put=option,
+        )
         return {
             "attempted": True,
             "opened": opened,
@@ -989,6 +1060,18 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "filled_via": LAST_ENTRY_EXECUTION_METRICS.get("filled_via"),
         }
 
+    _log_shadow_opportunities(
+        last=last,
+        prev=prev,
+        completed_candles=completed_candles,
+        regime=regime,
+        call_score=call_score,
+        call_reasons=call_reasons,
+        put_score=put_score,
+        put_reasons=put_reasons,
+        entered_call=False,
+        entered_put=False,
+    )
     return {
         "attempted": False,
         "opened": False,
@@ -1101,6 +1184,10 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
         manage_start_ms = _perf_ms_now()
         manage_trade(float(latest.close), option_mark, option_bid)
         manage_trade_ms = _elapsed_ms(manage_start_ms)
+        try:
+            SpyBotReviewer(Path(__file__).resolve().parent).maybe_run_after_session()
+        except Exception as exc:
+            print(f"SPY Bot Reviewer scheduling warning: {exc}")
 
         now_et = datetime.now(EASTERN_TZ)
         if (

@@ -49,6 +49,7 @@ from utils.account_manager import AccountManager
 from utils.decision_contract import normalize_reason_text, reason_code_from_text, quote_state_from_age
 from execution.equity_stream import SchwabEquityQuoteStream
 from engine.architecture_health import build_architecture_health
+from spy_bot_reviewer import SpyBotReviewer
 
 # Setup paths
 PROJECT_ROOT = Path(__file__).parent
@@ -4458,6 +4459,121 @@ def api_daily_learning_insights():
         })
 
 
+@app.route('/api/spy-bot-reviewer', methods=['GET'])
+def api_spy_bot_reviewer():
+    """Return the isolated SPY post-session review ledger for Cockpit."""
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).dashboard_payload((request.args.get("date") or "").strip() or None))
+
+
+@app.route('/api/spy-bot-reviewer/replay/<trade_id>', methods=['GET'])
+def api_spy_bot_reviewer_replay(trade_id):
+    """Return one immutable trade replay bundle for Cockpit's stepper."""
+    replay = SpyBotReviewer(PROJECT_ROOT).replay_bundle(trade_id)
+    if replay is None:
+        return jsonify({"error": "replay not found"}), 404
+    return jsonify(replay)
+
+
+@app.route('/api/spy-bot-reviewer/counterfactuals', methods=['GET'])
+def api_spy_bot_reviewer_counterfactuals():
+    """Return aggregate, advisory-only alternative-outcome evidence."""
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).counterfactual_summary())
+
+
+@app.route('/api/spy-bot-reviewer/patterns', methods=['GET'])
+def api_spy_bot_reviewer_patterns():
+    """Return immutable, advisory-only replay pattern discoveries."""
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).dashboard_payload().get("pattern_discovery", {}))
+
+
+@app.route('/api/spy-bot-reviewer/hypotheses', methods=['GET'])
+def api_spy_bot_reviewer_hypotheses():
+    """Return ranked advisory hypotheses and their immutable evidence state."""
+    return jsonify({"hypotheses": SpyBotReviewer(PROJECT_ROOT).dashboard_payload().get("hypotheses", [])})
+
+
+@app.route('/api/spy-bot-reviewer/market-memory', methods=['GET'])
+def api_spy_bot_reviewer_market_memory():
+    """Return the latest immutable market-memory record and historical analogs."""
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).dashboard_payload().get("market_memory") or {})
+
+
+@app.route('/api/research-governance', methods=['GET'])
+def api_research_governance():
+    """Return the advisory-only Research Performance & Governance snapshot."""
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).dashboard_payload().get("research_governance") or {})
+
+
+@app.route('/api/experiments', methods=['GET'])
+def api_experiments():
+    """Return replay-only experiment protocols and immutable interim analyses."""
+    return jsonify({"experiments": SpyBotReviewer(PROJECT_ROOT).dashboard_payload().get("experiments", [])})
+
+
+@app.route('/api/spy-bot-reviewer/hypotheses/<hypothesis_id>/promote', methods=['POST'])
+def api_spy_bot_reviewer_promote_hypothesis(hypothesis_id):
+    """Manual bridge from Ready for Validation to Rule Validation only."""
+    try:
+        return jsonify(SpyBotReviewer(PROJECT_ROOT).promote_hypothesis_to_rule_validation(hypothesis_id))
+    except KeyError:
+        return jsonify({"error": "hypothesis not found"}), 404
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+
+
+@app.route('/api/spy-bot-reviewer/validate-rule', methods=['POST'])
+def api_spy_bot_reviewer_validate_rule():
+    """Record expectancy evidence; this endpoint can never deploy a live rule."""
+    payload = request.get_json(silent=True) or {}
+    rule_id = str(payload.get("rule_id") or "").strip()
+    proposal = str(payload.get("proposal") or "").strip()
+    outcomes = payload.get("trade_outcomes") or []
+    if not rule_id or not proposal or not isinstance(outcomes, list):
+        return jsonify({"error": "rule_id, proposal, and trade_outcomes[] are required"}), 400
+    return jsonify(SpyBotReviewer(PROJECT_ROOT).validate_rule(rule_id, proposal, outcomes))
+
+
+@app.route('/spy-bot-reviewer', methods=['GET'])
+def spy_bot_reviewer_dashboard():
+    return render_template_string("""
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPY Bot Reviewer | McLeod Alpha Cockpit</title><style>
+:root{--ink:#17212b;--muted:#5d6770;--line:#d8dee3;--paper:#f6f7f5;--panel:#fff;--accent:#087e8b;--good:#1d7a46;--warn:#ad5d09}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px Georgia,serif}.shell{max-width:1180px;margin:auto;padding:28px 20px 54px}header{border-bottom:2px solid var(--ink);padding-bottom:18px;display:flex;justify-content:space-between;gap:20px;align-items:end}h1{font-size:32px;margin:0}p{color:var(--muted);margin:6px 0}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}.card,.panel{background:var(--panel);border:1px solid var(--line);padding:16px;border-radius:6px}.panel{margin-top:14px}.label{font:12px ui-sans-serif,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.value{font-size:25px;margin-top:8px}.row{display:grid;grid-template-columns:150px 1fr 120px;gap:12px;border-top:1px solid var(--line);padding:12px 0}.status{font:12px ui-sans-serif,sans-serif;font-weight:bold;color:var(--warn)}.validated{color:var(--good)}pre{white-space:pre-wrap;margin:0;font:12px ui-monospace,monospace;color:var(--muted)}button{border:1px solid var(--ink);background:#fff;padding:6px 9px;margin:0 4px 8px 0;border-radius:4px;cursor:pointer}button:disabled{opacity:.4}.candle{font:13px ui-monospace,monospace;min-height:120px}@media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.row{grid-template-columns:1fr}}
+ </style></head><body><main class="shell"><header><div><h1>SPY Bot Reviewer</h1><p>Immutable trade replay, objective scoring, and evidence-gated learning.</p></div><a href="/">Cockpit</a></header><section class="grid" id="metrics"><div class="card">Loading reviewer history...</div></section><section class="panel"><h2>Trade Replay</h2><div id="trades">No captured trades yet.</div><div id="stepper" hidden><button id="previous">Previous</button><button id="next">Next</button><span id="step"></span><pre class="candle" id="candle"></pre></div></section><section class="panel"><h2>Alternative Outcomes</h2><div id="alternatives">Select a replay to inspect alternative outcomes.</div><div id="improvements"></div></section><section class="panel"><h2>Pattern Discovery</h2><div id="patterns">Pattern evidence is loading.</div></section><section class="panel"><h2>Historical Analogs</h2><div id="analogs">Historical market analogs are loading.</div></section><section class="panel"><h2>Latest Review</h2><pre id="review">Loading...</pre></section><section class="panel"><h2>Rule Validation Database</h2><div id="rules">Loading...</div></section></main><script>
+let replay=[],index=0;function render(){const c=replay[index]||{};document.querySelector('#step').textContent=`Candle ${index+1} / ${replay.length}`;document.querySelector('#candle').textContent=JSON.stringify(c,null,2);document.querySelector('#previous').disabled=index===0;document.querySelector('#next').disabled=index>=replay.length-1}async function openReplay(id){const data=await fetch('/api/spy-bot-reviewer/replay/'+encodeURIComponent(id)).then(r=>r.json());replay=(data.candles||{})['1m']||[];index=0;document.querySelector('#stepper').hidden=!replay.length;render();const outcomes=((data.alternative_outcomes||{}).alternatives||[]);document.querySelector('#alternatives').innerHTML=outcomes.map(row=>`<div class="row"><strong>${row.name}</strong><span>P&L ${row.pnl}; MAE ${row.mae_pct}%; MFE ${row.mfe_pct}%; drawdown ${row.drawdown_pct}%; hold ${row.hold_minutes}m</span><span class="status">Delta ${row.delta_pnl}</span></div>`).join('')||'No counterfactual evidence available.'}document.querySelector('#previous').onclick=()=>{index--;render()};document.querySelector('#next').onclick=()=>{index++;render()};async function load(){const data=await fetch('/api/spy-bot-reviewer').then(r=>r.json());const latest=data.latest_review||{};const metrics=((latest.analysis||{}).metrics||{});document.querySelector('#metrics').innerHTML=`<div class="card"><div class="label">Reviews</div><div class="value">${data.review_history.length}</div></div><div class="card"><div class="label">Latest session</div><div class="value">${latest.trading_date||'--'}</div></div><div class="card"><div class="label">Expectancy</div><div class="value">${metrics.expectancy??'--'}</div></div><div class="card"><div class="label">Net P&L</div><div class="value">${metrics.net_pnl??'--'}</div></div>`;const bundles=((latest.evidence||{}).replay_bundles||[]);document.querySelector('#trades').innerHTML=bundles.map(b=>`<button onclick="openReplay('${b.trade_id}')">Replay trade ${b.trade_id}</button> ${Object.entries(b.scores||{}).filter(([k])=>k!=='note'&&k!=='method').map(([k,v])=>k+': '+v).join(' | ')}`).join('')||'No captured trades yet.';const improvements=((data.counterfactual_summary||{}).improvements||[]);document.querySelector('#improvements').innerHTML=improvements.length?'<h3>Aggregate evidence</h3>'+improvements.map(row=>`<div class="row"><strong>${row.name}</strong><span>Expectancy improvement ${row.expectancy_improvement}; trades ${row.trades_tested}</span><span class="status">${row.status}</span></div>`).join(''):'<p>Aggregate evidence is accumulating. Strategy changes remain isolated until validated.</p>';const patterns=((data.pattern_discovery||{}).patterns||[]);document.querySelector('#patterns').innerHTML=patterns.length?patterns.map(row=>`<div class="row"><strong>${row.label}</strong><span>Win ${row.win_rate_pct}%; expectancy ${row.expectancy}; MAE ${row.mae_pct}%; MFE ${row.mfe_pct}%; hold ${row.average_hold_minutes}m; confidence ${row.confidence_level}; p=${row.p_value}</span><span class="status">${row.trend}<br>${row.advisory_status}</span></div>`).join(''):'<p>No statistically meaningful pattern cohorts yet. Discoveries remain advisory-only.</p>';const analogs=(((data.market_memory||{}).analogs)||[]);document.querySelector('#analogs').innerHTML=analogs.length?analogs.map(row=>`<div class="row"><strong>${row.trading_date}<br>Similarity ${row.similarity_score}</strong><span>${row.similarity_reasons.join('; ')}<br><small>Outcome: P&L ${row.outcomes.pnl}; win rate ${row.outcomes.win_rate_pct}%; patterns: ${row.pattern_outcomes.join(', ')}; counterfactuals: ${row.counterfactual_conclusions.join(', ')||'none'}</small></span><span class="status">Hypotheses: ${(row.active_hypothesis_ids||[]).join(', ')||'none'}</span></div>`).join(''):'<p>No comparable historical sessions yet. Analogs use only pre-entry features and remain advisory.</p>';document.querySelector('#review').textContent=latest.review_id?JSON.stringify(latest.analysis,null,2):'No completed review yet.';document.querySelector('#rules').innerHTML=data.rule_validations.length?data.rule_validations.map(r=>`<div class="row"><strong>${r.rule_id}</strong><span>${r.proposal}<br><small>Expectancy improvement ${r.expectancy_improvement}; trades tested ${r.trades_tested}</small></span><span class="status ${r.status==='Validated'?'validated':''}">${r.status}</span></div>`).join(''):'No recommendation records yet.'}load().catch(e=>document.querySelector('#review').textContent='Unable to load reviewer data: '+e);
+</script></body></html>""")
+
+
+@app.route('/spy-bot-reviewer/hypotheses', methods=['GET'])
+def spy_bot_reviewer_hypothesis_lab():
+    return render_template_string("""
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hypothesis Lab | McLeod Alpha Cockpit</title><style>
+:root{--ink:#17212b;--muted:#5d6770;--line:#d8dee3;--paper:#f6f7f5;--panel:#fff;--accent:#087e8b;--good:#1d7a46;--warn:#ad5d09}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px Georgia,serif}.shell{max-width:1220px;margin:auto;padding:28px 20px 54px}header{border-bottom:2px solid var(--ink);padding-bottom:18px;display:flex;justify-content:space-between;align-items:end;gap:20px}h1{margin:0;font-size:32px}p{color:var(--muted)}.panel{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}.row{display:grid;grid-template-columns:190px 1fr 145px;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.row:first-child{border-top:0}.meta{font:12px ui-sans-serif,sans-serif;color:var(--muted);line-height:1.55}.state{font:12px ui-sans-serif,sans-serif;font-weight:bold;color:var(--warn)}.ready{color:var(--good)}button{background:#fff;border:1px solid var(--ink);border-radius:4px;padding:7px 10px;cursor:pointer}button:disabled{opacity:.45}a{color:var(--accent)}@media(max-width:760px){.row{grid-template-columns:1fr}}
+</style></head><body><main class="shell"><header><div><h1>Hypothesis Lab</h1><p>Auditable trading ideas ranked by impact, evidence quality, confidence, and remaining evidence.</p></div><a href="/spy-bot-reviewer">SPY Bot Reviewer</a></header><section class="panel"><div id="hypotheses">Loading hypotheses...</div></section></main><script>
+async function promote(id){const response=await fetch('/api/spy-bot-reviewer/hypotheses/'+encodeURIComponent(id)+'/promote',{method:'POST'});const payload=await response.json();if(!response.ok){alert(payload.error||'Promotion unavailable');return}load()}async function load(){const data=await fetch('/api/spy-bot-reviewer/hypotheses').then(r=>r.json());const rows=data.hypotheses||[];document.querySelector('#hypotheses').innerHTML=rows.length?rows.map(h=>`<div class="row"><div><strong>${h.hypothesis_id}</strong><div class="meta">${h.source}<br>Revision ${h.revision}</div></div><div><strong>${h.proposal}</strong><div class="meta">Expected improvement ${h.expected_improvement}; evidence quality ${h.evidence_quality??0}; confidence target ${h.confidence_target}; support ${h.supporting_trade_ids.length}; conflict ${h.conflicting_trade_ids.length}; remaining sample ${h.remaining_sample_size??h.minimum_sample_size}</div></div><div><div class="state ${h.status==='Ready for Validation'?'ready':''}">${h.status}</div>${h.status==='Ready for Validation'?`<button onclick="promote('${h.hypothesis_id}')">Promote to validation</button>`:'<div class="meta">Manual promotion only</div>'}</div></div>`).join(''):'No hypotheses have been registered yet.'}load()
+</script></body></html>""")
+
+
+@app.route('/research-governance', methods=['GET'])
+def research_governance_dashboard():
+    return render_template_string("""
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Research Governance | McLeod Alpha</title><style>
+:root{--ink:#17212b;--muted:#5d6770;--line:#d8dee3;--paper:#f4f6f3;--panel:#fff;--accent:#087e8b;--good:#1d7a46;--warn:#ad5d09;--bad:#a33636}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px Georgia,serif}.shell{max-width:1280px;margin:auto;padding:28px 20px 54px}header{border-bottom:2px solid var(--ink);padding-bottom:18px;display:flex;justify-content:space-between;align-items:end;gap:20px}h1{margin:0;font-size:32px}h2{font-size:20px;margin:0 0 12px}p{color:var(--muted)}a{color:var(--accent)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}.panel{margin-top:14px}.label{font:12px ui-sans-serif,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.value{font-size:25px;margin-top:8px}.row{display:grid;grid-template-columns:190px 1fr 160px;gap:14px;border-top:1px solid var(--line);padding:12px 0}.row:first-child{border-top:0}.meta{font:12px ui-sans-serif,sans-serif;color:var(--muted);line-height:1.55}.state{font:12px ui-sans-serif,sans-serif;font-weight:bold;color:var(--warn)}.good{color:var(--good)}.bad{color:var(--bad)}.graph{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.node{border:1px solid var(--accent);padding:8px;border-radius:4px;background:#fff;font:12px ui-sans-serif,sans-serif}.arrow{color:var(--accent)}svg{width:100%;height:130px;background:#fbfcfa;border:1px solid var(--line)}@media(max-width:760px){.cards{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+</style></head><body><main class="shell"><header><div><h1>Research Governance</h1><p>Advisory subsystem performance, lifecycle accountability, and research health.</p></div><a href="/spy-bot-reviewer">SPY Bot Reviewer</a></header><section class="cards" id="summary"><div class="card">Loading governance snapshot...</div></section><section class="panel"><h2>Subsystem Performance</h2><div id="subsystems">Loading...</div></section><section class="panel"><h2>Research Pipeline</h2><div class="graph" id="graph">Loading...</div></section><section class="panel"><h2>Governance Health</h2><div id="health">Loading...</div></section><section class="panel"><h2>Trend</h2><svg viewBox="0 0 900 130" role="img" aria-label="Hypothesis lifecycle trend"><polyline id="trend" fill="none" stroke="#087e8b" stroke-width="3" points=""/></svg></section><section class="panel"><h2>Recommendation Lifecycle</h2><div id="lifecycles">Loading...</div></section></main><script>
+function n(value){return value===null||value===undefined?'--':value}function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]))}async function load(){const data=await fetch('/api/research-governance').then(r=>r.json());const health=data.health||{};const subsystems=data.subsystems||[];document.querySelector('#summary').innerHTML=`<div class="card"><div class="label">Governance status</div><div class="value ${health.health_status==='HEALTHY'?'good':'bad'}">${n(health.health_status)}</div></div><div class="card"><div class="label">Lifecycle records</div><div class="value">${(data.recommendation_lifecycles||[]).length}</div></div><div class="card"><div class="label">Snapshot</div><div class="value">${esc((data.snapshot_hash||'--').slice(0,10))}</div></div>`;document.querySelector('#subsystems').innerHTML=subsystems.map(row=>`<div class="row"><strong>${esc(row.subsystem)}</strong><span class="meta">Precision ${n(row.precision)} | Validation success ${n(row.validation_success_rate)} | Rejected ${n(row.rejected_recommendation_rate)} | Avg expectancy ${n(row.average_expectancy_improvement)} | Contribution ${n(row.cumulative_contribution_to_trading_performance)}</span><span class="state">${row.recommendations_generated} recommendations<br>${row.permanent_lifecycle_records} lifecycle records</span></div>`).join('')||'No subsystem records yet.';const edges=((data.dependency_graph||{}).edges||[]).filter(edge=>!String(edge.from).startsWith('hypothesis:')&&!String(edge.to).startsWith('hypothesis:'));document.querySelector('#graph').innerHTML=edges.map(edge=>`<span class="node">${esc(edge.from)}</span><span class="arrow">&#8594; ${esc(edge.type)} &#8594;</span><span class="node">${esc(edge.to)}</span>`).join('')||'No dependency edges yet.';document.querySelector('#health').innerHTML=`<div class="meta">Stale hypotheses: ${(health.stale_hypotheses||[]).join(', ')||'none'}<br>Duplicate ideas: ${(health.duplicate_ideas||[]).length}<br>Contradictory recommendations: ${(health.contradictory_recommendations||[]).length}<br>Modules failing validation: ${(health.modules_consistently_failing_validation||[]).join(', ')||'none'}</div>`;const trend=data.trend||[];const max=Math.max(1,...trend.map(row=>row.hypotheses||0));document.querySelector('#trend').setAttribute('points',trend.map((row,index)=>`${20+index*860/Math.max(1,trend.length-1)},${115-(row.hypotheses||0)*90/max}`).join(' '));document.querySelector('#lifecycles').innerHTML=(data.recommendation_lifecycles||[]).map(row=>`<div class="row"><strong>${esc(row.originating_subsystem)}</strong><span>${esc(row.proposal)}<div class="meta">Hypothesis ${esc(row.hypothesis_status)} | Rule Validation ${esc(row.rule_validation_status||'not entered')} | ${esc(row.adoption_status)}</div></span><span class="state">Expected ${n(row.expected_improvement)}<br>Adopted: ${row.adopted}</span></div>`).join('')||'No recommendation lifecycles yet.'}load().catch(error=>document.querySelector('#subsystems').textContent='Unable to load governance data: '+error)
+</script></body></html>""")
+
+
+@app.route('/experiments', methods=['GET'])
+def experiment_dashboard():
+    return render_template_string("""
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiments | McLeod Alpha</title><style>
+:root{--ink:#17212b;--muted:#5d6770;--line:#d8dee3;--paper:#f4f6f3;--panel:#fff;--accent:#087e8b;--good:#1d7a46;--warn:#ad5d09;--bad:#a33636}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px Georgia,serif}.shell{max-width:1240px;margin:auto;padding:28px 20px 54px}header{border-bottom:2px solid var(--ink);padding-bottom:18px;display:flex;justify-content:space-between;align-items:end;gap:20px}h1{margin:0;font-size:32px}p{color:var(--muted)}a{color:var(--accent)}.panel{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px}.row{display:grid;grid-template-columns:180px 1fr 180px;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.row:first-child{border-top:0}.meta{font:12px ui-sans-serif,sans-serif;color:var(--muted);line-height:1.55}.state{font:12px ui-sans-serif,sans-serif;font-weight:bold;color:var(--warn)}.good{color:var(--good)}.bad{color:var(--bad)}@media(max-width:760px){.row{grid-template-columns:1fr}}
+</style></head><body><main class="shell"><header><div><h1>Experiment Dashboard</h1><p>Versioned replay-only protocols with sequential testing and manual-only promotion.</p></div><a href="/research-governance">Research Governance</a></header><section class="panel"><div id="experiments">Loading experiments...</div></section></main><script>
+function n(value){return value===null||value===undefined?'--':value}function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]))}async function load(){const data=await fetch('/api/experiments').then(r=>r.json());const rows=data.experiments||[];document.querySelector('#experiments').innerHTML=rows.length?rows.map(row=>{const interim=row.interim||{};const protocol=row.protocol||{};const provenance=row.provenance||{};return `<div class="row"><div><strong>${esc(row.experiment_id)}</strong><div class="meta">${esc(row.mode)}<br>Revision ${n(row.revision)}<br>Hypothesis ${esc(row.hypothesis_id)}</div></div><div><strong>${esc(row.status)}</strong><div class="meta">Enrollment ${n(interim.treatment_count)}/${n(protocol.sample_size_calculation)}; remaining ${n(interim.estimated_remaining_sample_size)}<br>Effect ${n(interim.effect_size)}; CI [${(interim.confidence_interval||[]).join(', ')}]; success probability ${n(interim.probability_of_success)}<br>Raw p ${n(interim.raw_p_value)}; sequential p ${n(interim.sequential_adjusted_p_value)}; alpha improvement ${n(interim.expected_alpha_improvement)}<br>Strategy ${esc(provenance.strategy_version)}; features ${esc(provenance.feature_set)}; reviewer ${esc(provenance.reviewer_version)}; prompt ${esc(provenance.prompt_version)}; memory ${esc(provenance.market_memory_version)}; schema ${esc(provenance.data_schema_version)}</div></div><div class="state ${row.status==='Concluded Success'?'good':row.status==='Concluded Failure'?'bad':''}">${esc(row.status)}<br>Manual approval required<br>${row.contaminated?'Contamination: '+esc(JSON.stringify(row.overlaps)):'No detected contamination'}</div></div>`}).join(''):'No experiments have been created yet.'}load()
+</script></body></html>""")
+
+
 @app.route('/api/cio/dashboard', methods=['GET'])
 def api_cio_dashboard():
     from cio_dashboard import build_cio_dashboard_payload
@@ -6339,8 +6455,8 @@ HTML_DASHBOARD = """
             background: #f8f9fa;
         }
         
-        .trade-direction.CALL { color: #28a745; font-weight: 600; }
-        .trade-direction.PUT { color: #dc3545; font-weight: 600; }
+        .trade-direction.CALL { color: #28a745; }
+        .trade-direction.PUT { color: #dc3545; }
         
         .trade-pnl.positive { color: #28a745; font-weight: 600; }
         .trade-pnl.negative { color: #dc3545; font-weight: 600; }

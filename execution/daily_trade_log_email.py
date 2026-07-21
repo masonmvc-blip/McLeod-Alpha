@@ -644,6 +644,13 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
     return csv_path, json_path
 
 
+def generate_daily_trade_review_data(trade_date: str) -> Path:
+    """Export the canonical review dataset without sending email."""
+    rows = _build_export_rows(_fetch_trades_for_date(trade_date), trade_date)
+    _, json_path = _export_files(trade_date, rows)
+    return json_path
+
+
 def _send_via_smtp(to_email: str, subject: str, body: str, attachments: List[Path]) -> bool:
     host = os.getenv("SMTP_HOST", "").strip()
     port_raw = os.getenv("SMTP_PORT", "587").strip()
@@ -813,6 +820,14 @@ def _target_send_time_ct(trade_date: date) -> dt_time:
 def _attempt_send_for_date(trade_date: str) -> bool:
     rows = _build_export_rows(_fetch_trades_for_date(trade_date), trade_date)
     csv_path, json_path = _export_files(trade_date, rows)
+
+    try:
+        from spy_bot_reviewer import SpyBotReviewer
+
+        SpyBotReviewer(Path(__file__).resolve().parent.parent).run_session_review(trade_date, json_path)
+    except Exception as exc:
+        # Review failures must never interfere with the trade-log delivery path.
+        print(f"SPY Bot Reviewer generation warning: {exc}")
 
     opportunity_paths: List[Path] = []
     try:
