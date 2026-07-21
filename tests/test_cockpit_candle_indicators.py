@@ -4,6 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import cockpit
+from engine.brain import active_stop_category
 import pandas as pd
 import phase3_monitor
 
@@ -76,8 +77,8 @@ def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
 
 
 def test_active_stop_reason_uses_the_actual_stop_price():
-    assert cockpit._active_stop_category(5.00, stop_price=4.75) == "Stop"
-    assert cockpit._active_stop_category(5.00, stop_price=5.27) == "6% Trail"
+    assert active_stop_category(5.00, stop_price=4.75) == "Stop"
+    assert active_stop_category(5.00, stop_price=5.27) == "6% Trail"
 
 
 def test_option_label_includes_strike_for_calls_and_puts():

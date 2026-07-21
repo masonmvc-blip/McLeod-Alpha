@@ -25,6 +25,7 @@ from typing import Optional
 from pathlib import Path
 
 from engine.memory import get_memory
+from engine.brain import active_stop_category, classify_exit_reason
 from urllib.error import URLError, HTTPError
 from urllib.request import Request, urlopen
 import ssl
@@ -2811,163 +2812,61 @@ def queue_exit_trade_command():
 # Status Monitoring
 # ============================================================================
 
-def _active_stop_category(option_entry, current_mark=None, stop_price=None):
-    """Map the open trade into the same stop ladder used by the live engine."""
-    try:
-        option_entry = float(option_entry or 0.0)
-    except (TypeError, ValueError):
-        option_entry = 0.0
-
-    if option_entry <= 0:
-        return None
-
-    try:
-        current_mark = float(current_mark) if current_mark is not None else None
-    except (TypeError, ValueError):
-        current_mark = None
-
-    if current_mark is not None and current_mark > 0:
-        profit_pct = ((current_mark - option_entry) / option_entry) * 100.0
-        if profit_pct >= 8.0:
-            return "8% Trail"
-        if profit_pct >= 7.0:
-            return "7% Trail"
-        if profit_pct >= 6.0:
-            return "6% Trail"
-        if profit_pct >= 5.0:
-            return "5% Trail"
-        if profit_pct >= 4.0:
-            return "4% Trail"
-        if profit_pct >= 3.0:
-            return "3% Stop"
-        if profit_pct >= 2.0:
-            return "2% Stop"
-        return "Stop"
-
-    try:
-        stop_price = float(stop_price or 0.0)
-    except (TypeError, ValueError):
-        stop_price = 0.0
-
-    if stop_price > 0:
-        stop_return_pct = ((stop_price - option_entry) / option_entry) * 100.0
-        if stop_return_pct >= 6.9:
-            return "8% Trail"
-        if stop_return_pct >= 5.4:
-            return "7% Trail"
-        if stop_return_pct >= 3.9:
-            return "6% Trail"
-        if stop_return_pct >= 2.3:
-            return "5% Trail"
-        if stop_return_pct >= 0.8:
-            return "4% Trail"
-        if stop_return_pct >= -1.0:
-            return "3% Stop"
-        if stop_return_pct >= -3.0:
-            return "2% Stop"
-
-    return "Stop"
-
-
-def _compute_candle_indicator_snapshot():
-    """Compute CALL/PUT indicator counts directly from recent candle history."""
-    history_path = PROJECT_ROOT / "data" / "spy_1min_history.csv"
+def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
+    """Read only completed candles and delegate scoring to the strategy monitor."""
+    history_path = Path(history_path or PROJECT_ROOT / "data" / "spy_1min_history.csv")
     if not history_path.exists():
         return None
 
-    candles = []
     try:
-        with history_path.open("r", encoding="utf-8", errors="ignore") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                try:
-                    candles.append(
-                        {
-                            "datetime": str(row.get("datetime") or "").strip(),
-                            "open": float(row.get("open")),
-                            "high": float(row.get("high")),
-                            "low": float(row.get("low")),
-                            "close": float(row.get("close")),
-                            "volume": float(row.get("volume") or 0.0),
-                        }
-                    )
-                except (TypeError, ValueError):
-                    continue
+        import pandas as pd
+        from phase3_monitor import score_closed_candle_frame
+
+        candles = pd.read_csv(history_path)
+        candles["datetime"] = pd.to_datetime(candles["datetime"], utc=True)
+        current_et = now_et or datetime.now(EASTERN_TZ)
+        current_minute = current_et.astimezone(timezone.utc).replace(second=0, microsecond=0)
+        candles = candles[candles["datetime"] < current_minute]
     except Exception:
         return None
 
     if len(candles) < 2:
         return None
 
-    closes = [c["close"] for c in candles]
-    highs = [c["high"] for c in candles]
-    lows = [c["low"] for c in candles]
-    volumes = [max(0.0, c["volume"]) for c in candles]
-
-    def _ema(values, span):
-        alpha = 2.0 / (float(span) + 1.0)
-        out = [float(values[0])]
-        for value in values[1:]:
-            out.append((float(value) * alpha) + (out[-1] * (1.0 - alpha)))
-        return out
-
-    ema10 = _ema(closes, 10)
-    ema20 = _ema(closes, 20)
-    ema50 = _ema(closes, 50)
-    ema12 = _ema(closes, 12)
-    ema26 = _ema(closes, 26)
-    macd = [a - b for a, b in zip(ema12, ema26)]
-    signal = _ema(macd, 9)
-    macd_hist = [m - s for m, s in zip(macd, signal)]
-
-    vwap = []
-    cumulative_pv = 0.0
-    cumulative_volume = 0.0
-    for i in range(len(candles)):
-        typical = (highs[i] + lows[i] + closes[i]) / 3.0
-        cumulative_pv += typical * volumes[i]
-        cumulative_volume += volumes[i]
-        vwap.append((cumulative_pv / cumulative_volume) if cumulative_volume > 0 else closes[i])
-
-    i_last = len(candles) - 1
-    i_prev = i_last - 1
-
-    call_score = 0
-    if closes[i_last] > vwap[i_last]:
-        call_score += 1
-    if ema10[i_last] > ema20[i_last] > ema50[i_last]:
-        call_score += 2
-    if ema10[i_last] > ema10[i_prev]:
-        call_score += 1
-    if macd_hist[i_last] > macd_hist[i_prev]:
-        call_score += 1
-    if closes[i_last] > highs[i_prev]:
-        call_score += 1
-
-    put_score = 0
-    if closes[i_last] < vwap[i_last]:
-        put_score += 1
-    if ema10[i_last] < ema20[i_last] < ema50[i_last]:
-        put_score += 2
-    if ema10[i_last] < ema10[i_prev]:
-        put_score += 1
-    if macd_hist[i_last] < macd_hist[i_prev]:
-        put_score += 1
-    if closes[i_last] < lows[i_prev]:
-        put_score += 1
-
-    raw_total = 6
-    indicator_total = 5
-    call_score = int(round((max(0, min(raw_total, int(call_score))) / raw_total) * indicator_total))
-    put_score = int(round((max(0, min(raw_total, int(put_score))) / raw_total) * indicator_total))
-
-    latest_ts = str(candles[i_last].get("datetime") or "").strip() or None
+    score = score_closed_candle_frame(candles)
+    latest_ts = candles.iloc[-1]["datetime"].astimezone(EASTERN_TZ).isoformat()
     return {
-        "call_passed": call_score,
-        "put_passed": put_score,
-        "total": indicator_total,
+        "call_passed": max(0, min(5, int(score["call_score"]))),
+        "put_passed": max(0, min(5, int(score["put_score"]))),
+        "total": 5,
         "timestamp": latest_ts,
+        "regime": score["regime"],
     }
+
+
+def _indicator_no_entry_reasons(snapshot, audit_path=None):
+    """Return side-specific reasons for the latest matching closed-candle decision."""
+    path = Path(audit_path or PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl")
+    if not path.exists():
+        return {"CALL": None, "PUT": None}
+    timestamp = _parse_iso_datetime((snapshot or {}).get("timestamp"))
+    if timestamp is None:
+        return {"CALL": None, "PUT": None}
+    try:
+        events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    except (OSError, json.JSONDecodeError):
+        return {"CALL": None, "PUT": None}
+    for event in reversed(events):
+        candle_time = _parse_iso_datetime(event.get("candle_time"))
+        if candle_time is None or candle_time.astimezone(EASTERN_TZ).replace(second=0, microsecond=0) != timestamp.replace(second=0, microsecond=0):
+            continue
+        reason = str(event.get("entry_decision_reason") or "").strip().replace("_", " ") or None
+        regime = str(event.get("regime") or "").replace("_", " ").title()
+        return {
+            "CALL": f"Regime is {regime}; CALL requires BULL TREND" if event.get("call_score") == 5 and regime != "Bull Trend" else reason,
+            "PUT": f"Regime is {regime}; PUT requires BEAR TREND" if event.get("put_score") == 5 and regime != "Bear Trend" else reason,
+        }
+    return {"CALL": None, "PUT": None}
 
 def parse_bot_status():
     """Parse bot status from logs and position file"""
@@ -3512,7 +3411,7 @@ def parse_bot_status():
                     option_stop = 0.0
 
                 status["protective_stop_status"] = str(pos_data.get("protective_stop_status") or "").strip() or None
-                status["active_stop_category"] = _active_stop_category(option_entry, stop_price=option_stop)
+                status["active_stop_category"] = active_stop_category(option_entry, stop_price=option_stop)
 
                 if option_symbol and option_entry > 0 and quantity > 0:
                     try:
@@ -3546,7 +3445,7 @@ def parse_bot_status():
                             status["current_trade_mark"] = round(current_mark, 3)
                             status["current_trade_pnl_dollars"] = round(pnl_dollars, 2)
                             status["current_trade_pnl_pct"] = round(pnl_pct, 1)
-                            status["active_stop_category"] = _active_stop_category(
+                            status["active_stop_category"] = active_stop_category(
                                 option_entry,
                                 current_mark=current_mark,
                                 stop_price=option_stop,
@@ -4772,7 +4671,7 @@ def _broker_transaction_trades_for_date(trading_date: str):
                 "order_id": str(event.get("order_id") or ""),
                 "order_type": str(order_type_by_id.get(str(event.get("order_id") or ""), "")),
             }
-            exit_reason = _classify_exit_reason(buy_event, sell_event)
+            exit_reason = classify_exit_reason(buy_event, sell_event)
 
             manual_label = "Mason" if _is_manual_exit_trade(sell_event, bot_order_ids) else ""
             entry_et = lot["entry_time"].astimezone(EASTERN_TZ)

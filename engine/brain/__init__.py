@@ -1,6 +1,7 @@
 """Canonical live-trading decision engine."""
 
 from .engine import Brain, EntryDecision, TradeAction, TradeDecision
+from .cockpit_policy import active_stop_category, classify_exit_reason
 
 from .live_rules import (
 	LIVE_ENTRY_MIN_SCORE,
@@ -16,6 +17,8 @@ __all__ = [
 	"EntryDecision",
 	"TradeAction",
 	"TradeDecision",
+	"active_stop_category",
+	"classify_exit_reason",
 	"LIVE_ENTRY_MIN_SCORE",
 	"build_entry_risk_plan",
 	"calculate_entry_quantity",
