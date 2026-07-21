@@ -6867,12 +6867,14 @@ HTML_DASHBOARD = """
         let isPollingLeader = false;
         let pollLeaderHeartbeatInterval = null;
         let previousHasOpenPosition = null;
+        let previousOpenTradePnlDollars = null;
         let activeBellPlaybackCount = 0;
         let lastBellBroadcastId = 0;
         let bellBroadcastPrimed = false;
 
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
+        const TRADE_KACHING_AUDIO_PATH = '/static/audio/trade_kaching.mp3';
 
         function isDashboardVisible() {
             return !document.hidden;
@@ -7170,34 +7172,10 @@ HTML_DASHBOARD = """
             }
         }
 
-        function playCashRegisterNoise(isBuy) {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
+        function playCashRegisterNoise() {
             try {
-                const ctx = new AudioCtx();
-                const start = ctx.currentTime;
-
-                function tone(freq, at, duration, gainValue) {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, at);
-                    gain.gain.setValueAtTime(0.0001, at);
-                    gain.gain.exponentialRampToValueAtTime(gainValue, at + 0.01);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, at + duration);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(at);
-                    osc.stop(at + duration);
-                }
-
-                // Two-tone "cha-ching" effect. Slightly higher pitch for buy, lower for sell.
-                const base = isBuy ? 880 : 740;
-                tone(base, start, 0.12, 0.15);
-                tone(base * 1.35, start + 0.09, 0.18, 0.18);
-                setTimeout(() => {
-                    try { ctx.close(); } catch (_) {}
-                }, 500);
+                const sound = new Audio(TRADE_KACHING_AUDIO_PATH);
+                sound.play().catch(() => {});
             } catch (_) {
                 // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
             }
@@ -7582,7 +7560,14 @@ HTML_DASHBOARD = """
 
                 const hasOpenPosition = !!status.has_open_position;
                 if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
-                    playCashRegisterNoise(hasOpenPosition);
+                    if (hasOpenPosition || Number(previousOpenTradePnlDollars) > 0) {
+                        playCashRegisterNoise();
+                    }
+                }
+                if (hasOpenPosition && Number.isFinite(Number(status.current_trade_pnl_dollars))) {
+                    previousOpenTradePnlDollars = Number(status.current_trade_pnl_dollars);
+                } else if (!hasOpenPosition) {
+                    previousOpenTradePnlDollars = null;
                 }
                 previousHasOpenPosition = hasOpenPosition;
 
