@@ -27,6 +27,7 @@ import os
 import time
 import json
 import sqlite3
+import threading
 from pathlib import Path
 
 # Global Schwab client and account configuration
@@ -43,6 +44,103 @@ BROKER_RECONCILE_MAX_ATTEMPTS = max(1, int(os.getenv("BROKER_RECONCILE_MAX_ATTEM
 BROKER_RECONCILE_RETRY_DELAY_SECONDS = max(1.0, float(os.getenv("BROKER_RECONCILE_RETRY_DELAY_SECONDS", "6")))
 OPTION_QUOTE_MAX_STALE_SECONDS_OPEN = max(1.0, float(os.getenv("OPTION_QUOTE_MAX_STALE_SECONDS_OPEN", "8")))
 OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SPREAD_PCT_OPEN", "15")))
+BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
+BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
+BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
+_broker_request_lock = threading.Lock()
+_last_broker_request_epoch = 0.0
+_broker_rate_limited_until_epoch = 0.0
+
+
+def _load_broker_rate_limit_cooldown():
+    """Restore a broker-directed cooldown after a bot restart."""
+    try:
+        payload = json.loads(BROKER_RATE_LIMIT_STATE_FILE.read_text())
+        return float(payload.get("rate_limited_until_epoch") or 0.0)
+    except (OSError, ValueError, TypeError):
+        return 0.0
+
+
+def _persist_broker_rate_limit_cooldown():
+    try:
+        BROKER_RATE_LIMIT_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        BROKER_RATE_LIMIT_STATE_FILE.write_text(json.dumps({
+            "rate_limited_until_epoch": _broker_rate_limited_until_epoch,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }))
+    except OSError as exc:
+        print(f"WARNING: Could not persist Schwab rate-limit cooldown: {exc}")
+
+
+def _record_broker_rate_limit(response=None):
+    """Honor Schwab Retry-After, or apply a conservative fallback cooldown."""
+    global _broker_rate_limited_until_epoch
+    retry_after = None
+    headers = getattr(response, "headers", {}) or {}
+    try:
+        retry_after = float(headers.get("Retry-After") or headers.get("retry-after"))
+    except (TypeError, ValueError):
+        retry_after = None
+    cooldown_seconds = max(1.0, retry_after or BROKER_RATE_LIMIT_FALLBACK_SECONDS)
+    _broker_rate_limited_until_epoch = max(
+        _broker_rate_limited_until_epoch,
+        time.time() + cooldown_seconds,
+    )
+    _persist_broker_rate_limit_cooldown()
+    print(f"[SCHWAB RATE LIMIT] Cooling down all broker requests for {cooldown_seconds:.0f}s")
+
+
+class _GovernedBrokerResponse:
+    """Response proxy that detects rate-limit errors at raise_for_status()."""
+
+    def __init__(self, response):
+        self._response = response
+
+    def raise_for_status(self):
+        try:
+            return self._response.raise_for_status()
+        except Exception:
+            if getattr(self._response, "status_code", None) == 429:
+                _record_broker_rate_limit(self._response)
+            raise
+
+    def __getattr__(self, name):
+        return getattr(self._response, name)
+
+
+class _GovernedSchwabClient:
+    """Serialize Schwab API traffic and preserve capacity for order safety."""
+
+    def __init__(self, client):
+        self._client = client
+
+    def __getattr__(self, name):
+        attribute = getattr(self._client, name)
+        if not callable(attribute):
+            return attribute
+
+        def governed_call(*args, **kwargs):
+            global _last_broker_request_epoch
+            with _broker_request_lock:
+                now = time.time()
+                if _broker_rate_limited_until_epoch > now:
+                    wait_seconds = _broker_rate_limited_until_epoch - now
+                    print(f"[SCHWAB RATE LIMIT] Blocking {name}; retry available in {wait_seconds:.0f}s")
+                    raise RuntimeError(f"Schwab rate-limit cooldown active for {wait_seconds:.0f}s")
+                spacing = BROKER_REQUEST_MIN_INTERVAL_SECONDS - (now - _last_broker_request_epoch)
+                if spacing > 0:
+                    time.sleep(spacing)
+                try:
+                    response = attribute(*args, **kwargs)
+                except Exception as exc:
+                    response = getattr(exc, "response", None)
+                    if getattr(response, "status_code", None) == 429:
+                        _record_broker_rate_limit(response)
+                    raise
+                _last_broker_request_epoch = time.time()
+                return _GovernedBrokerResponse(response) if hasattr(response, "raise_for_status") else response
+
+        return governed_call
 
 
 def _perf_ms_now():
@@ -67,9 +165,10 @@ def set_schwab_client(client, account_number, account_hash):
     global _entry_pending, _pending_order_id, _max_quantity_exceeded, _excess_quantity_details
     global _safe_mode, _safe_mode_reason, _protective_stop_failed, _protective_stop_failure_reason
     global _last_broker_sync_epoch, _last_protective_stop_check_epoch, _last_protective_stop_check_ok
+    global _last_broker_request_epoch, _broker_rate_limited_until_epoch
     global LAST_OPEN_TRADE_METRICS
     
-    _schwab_client = client
+    _schwab_client = _GovernedSchwabClient(client)
     _schwab_account_number = account_number
     _schwab_account_hash = account_hash
     
@@ -87,6 +186,8 @@ def set_schwab_client(client, account_number, account_hash):
     _last_broker_sync_epoch = 0.0
     _last_protective_stop_check_epoch = 0.0
     _last_protective_stop_check_ok = True
+    _last_broker_request_epoch = 0.0
+    _broker_rate_limited_until_epoch = _load_broker_rate_limit_cooldown()
     LAST_OPEN_TRADE_METRICS = {
         "attempted": False,
         "opened": False,

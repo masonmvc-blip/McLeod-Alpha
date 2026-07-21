@@ -156,6 +156,33 @@ def test_reconciliation_clears_stale_local_position_when_broker_is_flat(monkeypa
     assert live_engine.current_position is None
 
 
+def test_broker_governor_blocks_all_calls_after_rate_limit(monkeypatch, tmp_path):
+    class RateLimitedResponse:
+        status_code = 429
+        headers = {"Retry-After": "45"}
+
+        def raise_for_status(self):
+            raise RuntimeError("429 Too Many Requests")
+
+    class Client:
+        def get_account(self):
+            return RateLimitedResponse()
+
+    cooldown_file = tmp_path / "broker_rate_limit.json"
+    monkeypatch.setattr(live_engine, "BROKER_RATE_LIMIT_STATE_FILE", cooldown_file)
+    monkeypatch.setattr(live_engine, "_broker_rate_limited_until_epoch", 0.0)
+    monkeypatch.setattr(live_engine, "_last_broker_request_epoch", 0.0)
+
+    client = live_engine._GovernedSchwabClient(Client())
+    with pytest.raises(RuntimeError, match="429"):
+        client.get_account().raise_for_status()
+
+    assert live_engine._broker_rate_limited_until_epoch > live_engine.time.time()
+    assert cooldown_file.exists()
+    with pytest.raises(RuntimeError, match="cooldown active"):
+        client.get_account()
+
+
 @pytest.mark.parametrize(
     "option_mark, expected_stop",
     [
