@@ -6153,6 +6153,11 @@ HTML_DASHBOARD = """
             border-color: #7ed6a0;
         }
 
+        .status-card.indicator-qualified {
+            background: #eefaf1;
+            border-color: #7ed6a0;
+        }
+
         .status-card.pnl-negative {
             background: #fff1f1;
             border-color: #f4a7a3;
@@ -8021,9 +8026,13 @@ HTML_DASHBOARD = """
                 }
 
                 const callIndEl = document.getElementById('callIndicators');
+                const callIndicatorsCard = document.getElementById('callIndicatorsCard');
                 callIndEl.innerHTML = renderIndicatorText(callPassed, 'CALL');
                 const strongThreshold = Math.max(1, indicatorTotal);
                 const midThreshold = Math.max(0, indicatorTotal - 1);
+                if (callIndicatorsCard) {
+                    callIndicatorsCard.classList.toggle('indicator-qualified', callPassed >= 5);
+                }
                 if (callPassed >= strongThreshold) {
                     callIndEl.className = 'status-value success';
                 } else if (callPassed >= midThreshold) {
@@ -8033,7 +8042,11 @@ HTML_DASHBOARD = """
                 }
 
                 const putIndEl = document.getElementById('putIndicators');
+                const putIndicatorsCard = document.getElementById('putIndicatorsCard');
                 putIndEl.innerHTML = renderIndicatorText(putPassed, 'PUT');
+                if (putIndicatorsCard) {
+                    putIndicatorsCard.classList.toggle('indicator-qualified', putPassed >= 5);
+                }
                 if (putPassed >= strongThreshold) {
                     putIndEl.className = 'status-value success';
                 } else if (putPassed >= midThreshold) {

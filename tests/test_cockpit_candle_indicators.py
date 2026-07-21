@@ -222,6 +222,14 @@ def test_qualifying_indicator_cards_show_blocked_reason():
     assert "Blocked: ${conciseReason}" in source
 
 
+def test_full_indicator_cards_are_green():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert '.status-card.indicator-qualified {' in source
+    assert 'callIndicatorsCard.classList.toggle(\'indicator-qualified\', callPassed >= 5);' in source
+    assert 'putIndicatorsCard.classList.toggle(\'indicator-qualified\', putPassed >= 5);' in source
+
+
 def test_indicator_cards_show_current_trend_without_direction_requirement_copy():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
