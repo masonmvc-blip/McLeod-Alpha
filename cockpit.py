@@ -8181,6 +8181,19 @@ HTML_DASHBOARD = """
                     return `${monthName} ${ordinalDay(day)}, ${year}`;
                 }
 
+                function formatEntryTime(dateValue) {
+                    const d = new Date(dateValue);
+                    if (Number.isNaN(d.getTime())) return '-';
+                    const timeText = d.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                        timeZone: 'America/New_York',
+                    });
+                    return String(timeText).replace(/\s?[AP]M$/i, '');
+                }
+
                 const tradingDate = formatTradingDate(data.trading_date);
                 if (data.is_fallback_day) {
                     heading.textContent = `📊 Most Recent Trading Day - ${tradingDate} 📊`;
@@ -8216,8 +8229,7 @@ HTML_DASHBOARD = """
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
-                    // Use shared AM/PM formatter so trade time stays in regular time format.
-                    const entryTime = trade.entry_time ? formatTimeAMPM(trade.entry_time) : '-';
+                    const entryTime = trade.entry_time ? formatEntryTime(trade.entry_time) : '-';
                     const exitTime = trade.exit_time ? formatTimeAMPM(trade.exit_time) : '-';
                     const timeRange = `${entryTime} - ${exitTime}`;
                     const pnl = trade.pnl || 0;
