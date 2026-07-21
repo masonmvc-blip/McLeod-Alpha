@@ -84,7 +84,7 @@ def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
     }]
 
 
-def test_indicator_performance_summary_ranks_more_wins_before_sample_size():
+def test_indicator_performance_summary_ranks_by_win_rate_before_win_count():
     trades = [
         {
             "exit_time": "2026-07-20T10:05:00-04:00",
@@ -122,11 +122,29 @@ def test_indicator_performance_summary_ranks_more_wins_before_sample_size():
             "broker_exit_order_id": "rank-exit-4",
             "feature_payload": json.dumps({"entry_reasons": ["one_win_many_trades"]}),
         },
+        {
+            "exit_time": "2026-07-20T10:25:00-04:00",
+            "pnl": 10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-5",
+            "broker_exit_order_id": "rank-exit-5",
+            "feature_payload": json.dumps({"entry_reasons": ["perfect_single"]}),
+        },
+        {
+            "exit_time": "2026-07-20T10:30:00-04:00",
+            "pnl": -10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "rank-entry-6",
+            "broker_exit_order_id": "rank-exit-6",
+            "feature_payload": json.dumps({"entry_reasons": ["two_wins"]}),
+        },
     ]
 
     summary = cockpit._indicator_performance_summary(trades, minimum_sample_size=2)
 
-    assert [row["indicator"] for row in summary] == ["two_wins", "one_win_many_trades"]
+    assert [row["indicator"] for row in summary] == ["perfect_single", "two_wins", "one_win_many_trades"]
 
 
 def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_path):

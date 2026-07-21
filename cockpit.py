@@ -3271,7 +3271,7 @@ def _indicator_performance_summary(trades, minimum_sample_size=10):
         rows.append({"indicator": bucket["indicator"], "trades": trades_count, "wins": bucket["wins"], "losses": bucket["losses"], "breakeven": bucket["breakeven"], "win_rate_pct": win_rate, "average_return": average_return, "guidance": guidance})
     return sorted(
         rows,
-        key=lambda row: (-row["wins"], row["losses"], -row["average_return"], row["indicator"].lower()),
+        key=lambda row: (-row["win_rate_pct"], -row["trades"], -row["average_return"], row["indicator"].lower()),
     )
 
 
@@ -5846,7 +5846,7 @@ HTML_DASHBOARD = """
 
         .indicator-performance-list {
             display: grid;
-            gap: 8px;
+            gap: 0;
         }
 
         .indicator-performance-columns,
@@ -5862,12 +5862,12 @@ HTML_DASHBOARD = """
             font-size: 10px;
             font-weight: 700;
             letter-spacing: 0.04em;
-            padding: 0 0 6px;
+            padding: 0 0 4px;
             text-transform: uppercase;
         }
 
         .indicator-performance-row {
-            padding: 8px 0;
+            padding: 6px 0;
             border-top: 1px solid #e6eaf0;
         }
 
@@ -6268,7 +6268,7 @@ HTML_DASHBOARD = """
         }
         
         .trades-table th {
-            padding: 8px;
+            padding: 6px;
             text-align: center;
             font-weight: 600;
             color: #666;
@@ -6277,7 +6277,7 @@ HTML_DASHBOARD = """
         }
         
         .trades-table td {
-            padding: 8px;
+            padding: 6px;
             text-align: center;
             border-bottom: 1px solid #eee;
         }
