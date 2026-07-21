@@ -599,7 +599,6 @@ def _build_runtime_status():
                             status["current_trade_pnl_pct"] = round(pnl_pct, 1)
                             status["active_stop_category"] = active_stop_category(
                                 option_entry,
-                                current_mark=current_mark,
                                 stop_price=option_stop,
                             )
                     except Exception:
