@@ -39,9 +39,9 @@ def _build_runtime_status():
             except (TypeError, ValueError):
                 return round(float(fallback), 2)
 
-        def _prefer_external(candidate, baseline):
-            """Use a successful Schwab transaction-history value, including a legitimate zero."""
-            if candidate is None:
+        def _prefer_external(candidate, baseline, has_scoped_transactions):
+            """Use Schwab totals only when its response contains matching transaction legs."""
+            if candidate is None or not has_scoped_transactions:
                 return _safe_amount(baseline, 0.0), False
             return _safe_amount(candidate, 0.0), True
 
@@ -61,6 +61,7 @@ def _build_runtime_status():
             period_wtd = Decimal("0")
             period_mtd = Decimal("0")
             period_ytd = Decimal("0")
+            has_scoped_transactions = False
 
             def _tx_timestamp(tx):
                 for key in ("transactionDate", "tradeDate", "time"):
@@ -115,6 +116,8 @@ def _build_runtime_status():
                 if not in_scope:
                     continue
 
+                has_scoped_transactions = True
+
                 amount = _parse_cash_amount(tx)
                 if amount is None:
                     continue
@@ -132,6 +135,7 @@ def _build_runtime_status():
                 float(period_wtd),
                 float(period_mtd),
                 float(period_ytd),
+                has_scoped_transactions,
             )
 
         def _closed_trade_signature():
@@ -227,7 +231,7 @@ def _build_runtime_status():
 
                     pnl_scope_symbol = str(os.getenv("BROKER_PNL_SCOPE_SYMBOL", "SPY")).strip().upper()
                     pnl_scope_asset = str(os.getenv("BROKER_PNL_SCOPE_ASSET", "OPTION")).strip().upper()
-                    ext_today, ext_wtd, ext_mtd, ext_ytd = _api_period_net_after(
+                    ext_today, ext_wtd, ext_mtd, ext_ytd, has_scoped_transactions = _api_period_net_after(
                         year_start_dt,
                         now_et,
                         pnl_scope_symbol,
@@ -243,10 +247,10 @@ def _build_runtime_status():
                     ext_mtd_source = f"schwab_transactions_net{source_suffix}"
                     ext_ytd_source = f"schwab_transactions_net{source_suffix}"
 
-                    today_total, used_ext_today = _prefer_external(ext_today, today_total)
-                    wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total)
-                    mtd_total, used_ext_mtd = _prefer_external(ext_mtd, mtd_total)
-                    ytd_total, used_ext_ytd = _prefer_external(ext_ytd, ytd_total)
+                    today_total, used_ext_today = _prefer_external(ext_today, today_total, has_scoped_transactions)
+                    wtd_total, used_ext_wtd = _prefer_external(ext_wtd, wtd_total, has_scoped_transactions)
+                    mtd_total, used_ext_mtd = _prefer_external(ext_mtd, mtd_total, has_scoped_transactions)
+                    ytd_total, used_ext_ytd = _prefer_external(ext_ytd, ytd_total, has_scoped_transactions)
 
                     if used_ext_today:
                         today_source = ext_today_source
