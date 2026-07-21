@@ -5919,6 +5919,17 @@ HTML_DASHBOARD = """
             grid-column: span 2;
         }
 
+        #trendCard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #trendStatus {
+            width: 100%;
+        }
+
         #statusGrid.position-flat #wtdPnlCard,
         #statusGrid.position-flat #mtdPnlCard,
         #statusGrid.position-flat #ytdPnlCard {
