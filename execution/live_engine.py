@@ -1366,9 +1366,9 @@ def _submit_protective_stop(
         return order_id, target_stop_price, target_limit_price, order
     
     try:
-        # Detect any currently working protective stop for this symbol.
-        # We do NOT cancel it up front. We submit the replacement first,
-        # then retire the old stop only after the new one is confirmed.
+        # When the in-memory position already has the broker stop ID, avoid a
+        # full-account order scan on every ratchet. We still submit the new stop
+        # before retiring that exact known order, so protection never has a gap.
         active_statuses = {
             "PENDING_ACTIVATION",
             "ACCEPTED",
@@ -1379,58 +1379,61 @@ def _submit_protective_stop(
             "AWAITING_PARENT_ORDER",
             "AWAITING_CONDITION",
         }
-        try:
-            existing_resp = _schwab_client.get_orders_for_account(_schwab_account_hash)
-            existing_resp.raise_for_status()
-            existing_orders = existing_resp.json() if isinstance(existing_resp.json(), list) else []
-            for existing in existing_orders:
-                status = (existing.get("status") or "").upper()
-                if status not in active_statuses:
-                    continue
+        if existing_protective_stop:
+            print(f"   Replacing known protective stop {existing_protective_stop[0]} without account scan")
+        else:
+            try:
+                existing_resp = _schwab_client.get_orders_for_account(_schwab_account_hash)
+                existing_resp.raise_for_status()
+                existing_orders = existing_resp.json() if isinstance(existing_resp.json(), list) else []
+                for existing in existing_orders:
+                    status = (existing.get("status") or "").upper()
+                    if status not in active_statuses:
+                        continue
 
-                legs = existing.get("orderLegCollection", []) or []
-                if not legs:
-                    continue
+                    legs = existing.get("orderLegCollection", []) or []
+                    if not legs:
+                        continue
 
-                leg0 = legs[0]
-                inst = leg0.get("instrument", {})
-                if inst.get("assetType") != "OPTION":
-                    continue
-                if inst.get("symbol") != option_symbol:
-                    continue
-                if leg0.get("instruction") != "SELL_TO_CLOSE":
-                    continue
+                    leg0 = legs[0]
+                    inst = leg0.get("instrument", {})
+                    if inst.get("assetType") != "OPTION":
+                        continue
+                    if inst.get("symbol") != option_symbol:
+                        continue
+                    if leg0.get("instruction") != "SELL_TO_CLOSE":
+                        continue
 
-                existing_type = (existing.get("orderType") or "").upper()
-                existing_id = str(existing.get("orderId") or "")
+                    existing_type = (existing.get("orderType") or "").upper()
+                    existing_id = str(existing.get("orderId") or "")
 
-                # If a protective stop already exists, reuse if it matches target.
-                # Otherwise, remember it so we can cancel it only after the new
-                # protective stop is successfully accepted by Schwab.
-                if existing_type in {"STOP", "STOP_LIMIT"} and existing_id:
-                    existing_stop = existing.get("stopPrice") or existing.get("price") or 0
-                    try:
-                        existing_stop = float(existing_stop)
-                    except (TypeError, ValueError):
-                        existing_stop = 0.0
+                    # If a protective stop already exists, reuse if it matches target.
+                    # Otherwise, remember it so we can cancel it only after the new
+                    # protective stop is successfully accepted by Schwab.
+                    if existing_type in {"STOP", "STOP_LIMIT"} and existing_id:
+                        existing_stop = existing.get("stopPrice") or existing.get("price") or 0
+                        try:
+                            existing_stop = float(existing_stop)
+                        except (TypeError, ValueError):
+                            existing_stop = 0.0
 
-                    if abs(existing_stop - float(stop_price)) < 0.005:
-                        print(f"✓ Existing protective stop already active: {existing_id} @ ${existing_stop:.2f}")
-                        return existing_id, float(existing_stop)
+                        if abs(existing_stop - float(stop_price)) < 0.005:
+                            print(f"✓ Existing protective stop already active: {existing_id} @ ${existing_stop:.2f}")
+                            return existing_id, float(existing_stop)
 
-                    print(
-                        f"   Will replace protective stop {existing_id}: "
-                        f"${existing_stop:.2f} → ${float(stop_price):.2f}"
-                    )
-                    existing_protective_stop = (existing_id, float(existing_stop))
+                        print(
+                            f"   Will replace protective stop {existing_id}: "
+                            f"${existing_stop:.2f} → ${float(stop_price):.2f}"
+                        )
+                        existing_protective_stop = (existing_id, float(existing_stop))
 
-                # Cancel working SELL_TO_CLOSE LIMIT to avoid oversold rejection.
-                if existing_type == "LIMIT" and existing_id:
-                    print(f"   Canceling conflicting SELL_TO_CLOSE LIMIT {existing_id} before stop submission")
-                    cancel_resp = _schwab_client.cancel_order(existing_id, _schwab_account_hash)
-                    cancel_resp.raise_for_status()
-        except Exception as order_cleanup_exc:
-            print(f"WARNING: Could not pre-clean conflicting exit orders: {order_cleanup_exc}")
+                    # Cancel working SELL_TO_CLOSE LIMIT to avoid oversold rejection.
+                    if existing_type == "LIMIT" and existing_id:
+                        print(f"   Canceling conflicting SELL_TO_CLOSE LIMIT {existing_id} before stop submission")
+                        cancel_resp = _schwab_client.cancel_order(existing_id, _schwab_account_hash)
+                        cancel_resp.raise_for_status()
+            except Exception as order_cleanup_exc:
+                print(f"WARNING: Could not pre-clean conflicting exit orders: {order_cleanup_exc}")
 
         order_id, submitted_stop_price, submitted_limit_price, order = _submit_stop_limit_once(stop_price)
         

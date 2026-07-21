@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import Mock
 
 import pytest
 
@@ -59,6 +60,31 @@ def test_protective_stop_limit_keeps_the_intended_loss_floor():
 
     assert trigger_price == 5.88
     assert limit_price == 5.87
+
+
+def test_known_stop_replacement_skips_account_scan_and_cancels_only_after_submit(monkeypatch):
+    client = Mock()
+    response = Mock()
+    response.headers = {"Location": "/orders/replacement-stop"}
+    response.raise_for_status.return_value = None
+    client.place_order.return_value = response
+    client.cancel_order.return_value.raise_for_status.return_value = None
+    live_engine.set_schwab_client(client, "account-number", "account-hash")
+    monkeypatch.setattr(live_engine, "_audit_bot_order", lambda *_args: None)
+
+    order_id, stop_price = live_engine._submit_protective_stop(
+        "SPY  260720C00600000",
+        fill_price=5.00,
+        quantity=1,
+        stop_price_override=5.25,
+        existing_stop_order_id="old-stop",
+    )
+
+    assert order_id == "replacement-stop"
+    assert stop_price == 5.25
+    client.get_orders_for_account.assert_not_called()
+    assert client.place_order.call_count == 1
+    client.cancel_order.assert_called_once_with("old-stop", "account-hash")
 
 
 def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
