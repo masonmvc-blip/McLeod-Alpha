@@ -364,6 +364,8 @@ def _build_runtime_status():
         "entry_paused": False,
         "last_decision": None,
         "last_decision_reason": None,
+        "last_entry_candidate_direction": None,
+        "last_entry_block_reason": None,
         "last_no_trade_call_reason": None,
         "last_no_trade_put_reason": None,
         "latest_rejection_reason": None,
@@ -824,6 +826,20 @@ def _build_runtime_status():
             if line_text.startswith("ENTER CALL ") or line_text.startswith("ENTER PUT "):
                 status["last_decision"] = "ENTER"
                 break
+
+        try:
+            decision_audit = get_memory().load_decision_audit_event(
+                PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl",
+                status.get("last_candle_at"),
+            ) or {}
+            candidate_direction = str(decision_audit.get("candidate_direction") or "").upper()
+            if candidate_direction in {"CALL", "PUT"}:
+                status["last_entry_candidate_direction"] = candidate_direction
+            block_reason = decision_audit.get("entry_block_reason")
+            if block_reason:
+                status["last_entry_block_reason"] = str(block_reason)
+        except Exception:
+            pass
         
         # Get last actionable error (ignore DEBUG/state dump noise).
         error_markers = (

@@ -7929,8 +7929,11 @@ HTML_DASHBOARD = """
                 const putMomentumStage = String(status.put_momentum_stage || '').replaceAll('_', ' ');
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
+                const lastEntryCandidateDirection = String(status.last_entry_candidate_direction || '').toUpperCase();
+                const lastEntryBlockReason = String(status.last_entry_block_reason || '').trim();
                 const startupGuardActive = tradeEntryReasonCodeRaw === 'STARTUP_GUARD'
-                    || /startup guard/i.test(tradeEntryReason);
+                    || /startup guard/i.test(tradeEntryReason)
+                    || /^startup_guard$/i.test(lastEntryBlockReason);
                 const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();
                 const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';
                 const candleTrendLabel = candleTrend.replaceAll('_', ' ');
@@ -7965,8 +7968,8 @@ HTML_DASHBOARD = """
                         return `${base}${phaseText}`;
                     }
 
-                    if (startupGuardActive && isNoTrade) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Start Up Guard</span>`;
+                    if (startupGuardActive && lastEntryCandidateDirection === side) {
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: Startup Guard</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
