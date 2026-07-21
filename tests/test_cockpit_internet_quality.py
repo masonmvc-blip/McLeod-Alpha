@@ -29,3 +29,19 @@ def test_internet_quality_title_uses_rolling_thirty_minute_average(monkeypatch, 
     assert snapshot["rolling_avg_latency_ms"] == 373.3
     assert snapshot["quality"] == "GOOD"
     assert snapshot["summary"] == "Good (373 ms 30 min avg)"
+
+
+def test_internet_trend_bars_include_only_the_last_thirty_minutes():
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    samples = [
+        {"checked_at": (now - timedelta(minutes=31)).isoformat(), "avg_latency_ms": 900.0},
+        {"checked_at": (now - timedelta(minutes=30)).isoformat(), "avg_latency_ms": 100.0},
+        {"checked_at": (now - timedelta(minutes=10)).isoformat(), "avg_latency_ms": 200.0},
+        {"checked_at": now.isoformat(), "avg_latency_ms": 300.0},
+    ]
+
+    history = cockpit._summarize_internet_quality_history(samples)
+
+    assert history["recent_points_ms"] == [100.0, 200.0, 300.0]
+    assert history["recent_avg_latency_ms"] == 200.0
+    assert history["window_minutes"] == 30.0

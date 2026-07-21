@@ -130,6 +130,7 @@ _DAILY_LEARNING_INSIGHTS_CACHE = {
 INTERNET_QUALITY_CACHE_SECONDS = int(os.getenv("INTERNET_QUALITY_CACHE_SECONDS", "30"))
 INTERNET_QUALITY_TIMEOUT_SECONDS = float(os.getenv("INTERNET_QUALITY_TIMEOUT_SECONDS", "3.5"))
 INTERNET_TREND_BAR_POINTS = max(10, int(os.getenv("INTERNET_TREND_BAR_POINTS", "60")))
+INTERNET_TREND_HISTORY_SAMPLES = max(240, int(os.getenv("INTERNET_TREND_HISTORY_SAMPLES", "720")))
 STATUS_SNAPSHOT_CACHE_SECONDS = float(os.getenv("STATUS_SNAPSHOT_CACHE_SECONDS", "1.5"))
 BROKER_PNL_REFRESH_SECONDS = float(os.getenv("BROKER_PNL_REFRESH_SECONDS", "15"))
 DAILY_LEARNING_CACHE_SECONDS = float(os.getenv("DAILY_LEARNING_CACHE_SECONDS", "30"))
@@ -1949,7 +1950,7 @@ def _append_internet_quality_sample(payload: dict):
         pass
 
 
-def _load_recent_internet_quality_samples(max_samples: int = 120):
+def _load_recent_internet_quality_samples(max_samples: int = INTERNET_TREND_HISTORY_SAMPLES):
     if not INTERNET_QUALITY_HISTORY_FILE.exists():
         return []
     try:
@@ -7915,9 +7916,13 @@ HTML_DASHBOARD = """
                 const internetTone = internetQualityTone(internetQuality);
                 const internetSummary = safeEscape(String(internet.summary || 'Unknown'));
                 const internetIcon = internetQualityIcon(internetQuality);
+                const rollingAverage = Number(internet.rolling_avg_latency_ms);
+                const rollingAverageText = Number.isFinite(rollingAverage)
+                    ? ` | ${formatNumber(rollingAverage, 0)} ms avg / 30 min`
+                    : '';
                 const internetTitle = internetQuality === 'EXCELLENT'
-                    ? `${internetIcon} ${safeEscape(internetQuality)} ${internetIcon}`
-                    : (internetIcon ? `${internetIcon} ${safeEscape(internetQuality)}` : safeEscape(internetQuality));
+                    ? `${internetIcon} ${safeEscape(internetQuality)}${rollingAverageText} ${internetIcon}`
+                    : `${internetIcon ? `${internetIcon} ` : ''}${safeEscape(internetQuality)}${rollingAverageText}`;
                 const pointsRaw = Array.isArray(history.recent_points_ms) ? history.recent_points_ms : [];
                 const pointTimestampsRaw = Array.isArray(history.recent_point_timestamps) ? history.recent_point_timestamps : [];
                 const points = [...pointsRaw].reverse();
