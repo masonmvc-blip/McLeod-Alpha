@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_GLOBS = ("cockpit.py", "phase3_monitor.py", "execution/**/*.py")
 PERSISTENCE_METHODS = {"write_text", "write_bytes", "to_csv", "to_json", "writerow", "writerows"}
 POLICY_FUNCTIONS = {"manage_trade", "evaluate_entry", "evaluate_exit", "should_enter", "should_exit"}
-COCKPIT_POLICY_PREFIXES = ("_active_stop_", "_classify_exit_", "_indicator_no_entry_", "_validate_runtime_")
+COCKPIT_POLICY_PREFIXES = ("_active_stop_", "_classify_exit_", "_indicator_no_entry_")
 MUTATING_SQL_PREFIXES = ("ALTER", "CREATE", "DELETE", "DROP", "INSERT", "REPLACE", "UPDATE")
 KNOWN_BASELINES = (
     {
@@ -50,8 +50,8 @@ CAPABILITY_MATRIX = {
         ("optimization_history", "Optimization history", 6, "engine/memory/Memory", "complete", []),
     ),
     "cockpit": (
-        ("business_logic", "Business logic", 30, "cockpit.py", "partial", ["cockpit.py:_active_stop_category", "cockpit.py:_classify_exit_reason"]),
-        ("direct_persistence", "Direct persistence", 25, "cockpit.py", "partial", ["cockpit.py"]),
+        ("business_logic", "Business logic", 30, "engine/brain", "complete", []),
+        ("direct_persistence", "Direct persistence", 25, "engine/memory/Memory", "complete", []),
         ("duplicate_runtime_state", "Duplicate runtime state", 20, "cockpit.py", "partial", ["cockpit.py", "phase3_monitor.py"]),
         ("brain_boundary", "Calls that bypass Brain", 15, "cockpit.py", "partial", ["cockpit.py"]),
         ("memory_boundary", "Calls that bypass Memory", 10, "cockpit.py", "partial", ["cockpit.py"]),
@@ -86,7 +86,7 @@ EXIT_CRITERIA = {
 PRIORITY_MILESTONES = (
     ("complete_exit_decisions", "Complete canonical exit decisions", "brain", ("exit_decisions",), "engine/brain/engine.py:evaluate_exit"),
     ("consolidate_feature_vectors", "Consolidate feature-vector persistence", "memory", ("feature_vectors",), "execution/live_engine.py"),
-    ("remove_cockpit_direct_persistence", "Remove direct Cockpit persistence", "cockpit", ("direct_persistence",), "cockpit.py"),
+    ("consolidate_cockpit_runtime", "Consolidate Cockpit runtime state", "cockpit", ("duplicate_runtime_state",), "cockpit.py"),
 )
 
 

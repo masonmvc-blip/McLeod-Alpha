@@ -60,3 +60,15 @@ def classify_exit_reason(buy_event, sell_event):
     if order_type in {"STOP", "STOP_LIMIT", "TRAILING_STOP", "TRAILING_STOP_LIMIT"} and realized_pct > 0.0:
         return "4% TRAIL"
     return "STOP"
+
+
+def indicator_no_entry_reasons(audit_event):
+    """Explain why a fully-qualified side was declined on a closed candle."""
+    if not audit_event:
+        return {"CALL": None, "PUT": None}
+    reason = str(audit_event.get("entry_decision_reason") or "").strip().replace("_", " ") or None
+    regime = str(audit_event.get("regime") or "").replace("_", " ").title()
+    return {
+        "CALL": f"Regime is {regime}; CALL requires BULL TREND" if audit_event.get("call_score") == 5 and regime != "Bull Trend" else reason,
+        "PUT": f"Regime is {regime}; PUT requires BEAR TREND" if audit_event.get("put_score") == 5 and regime != "Bear Trend" else reason,
+    }

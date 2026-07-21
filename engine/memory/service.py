@@ -376,6 +376,61 @@ class Memory:
             handle.write(str(line).rstrip("\n") + "\n")
         return self._record_report_projection(path, report_type, "append", source, correlation_id)
 
+    def open_runtime_log(self, projection_path, mode="a", encoding="utf-8", buffering=1):
+        """Open a compatibility runtime log while keeping its projection owned by Memory."""
+        if mode not in {"a", "w"}:
+            raise ValueError("Runtime logs support append or truncate mode only")
+        path = Path(projection_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path.open(mode, encoding=encoding, buffering=buffering)
+
+    def write_runtime_artifact(self, projection_path, content, artifact_type, source="cockpit"):
+        """Atomically write a runtime compatibility projection and record its ownership event."""
+        path = Path(projection_path)
+        self._write_text_projection(path, str(content))
+        return self.record_event(MemoryEvent(
+            "runtime", "runtime_artifact_written", source,
+            {"artifact_type": str(artifact_type), "projection_path": str(path)},
+        ))
+
+    def clear_runtime_artifact(self, projection_path, artifact_type, source="cockpit"):
+        """Remove a stale runtime compatibility projection and record its ownership event."""
+        path = Path(projection_path)
+        path.unlink(missing_ok=True)
+        return self.record_event(MemoryEvent(
+            "runtime", "runtime_artifact_cleared", source,
+            {"artifact_type": str(artifact_type), "projection_path": str(path)},
+        ))
+
+    def load_decision_audit_event(self, projection_path, candle_time):
+        """Read the latest decision-audit event matching a closed candle minute."""
+        path = Path(projection_path)
+        target_time = self._parse_projection_timestamp(candle_time)
+        if target_time is None or not path.exists():
+            return None
+        try:
+            events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except (OSError, json.JSONDecodeError):
+            return None
+        target_minute = target_time.astimezone(timezone.utc).replace(second=0, microsecond=0)
+        for event in reversed(events):
+            event_time = self._parse_projection_timestamp(event.get("candle_time"))
+            if event_time is not None and event_time.astimezone(timezone.utc).replace(second=0, microsecond=0) == target_minute:
+                return event
+        return None
+
+    @staticmethod
+    def _parse_projection_timestamp(value):
+        if isinstance(value, datetime):
+            return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
     def read_report_bytes(self, projection_path):
         return Path(projection_path).read_bytes()
 

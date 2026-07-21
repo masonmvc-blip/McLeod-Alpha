@@ -4,7 +4,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import cockpit
-from engine.brain import active_stop_category
+from engine.brain import active_stop_category, indicator_no_entry_reasons
+from engine.memory.service import Memory
 import pandas as pd
 import phase3_monitor
 
@@ -70,7 +71,10 @@ def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
     }
     audit_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
 
-    reasons = cockpit._indicator_no_entry_reasons(snapshot, audit_path=audit_path)
+    audit_event = Memory(db_path=tmp_path / "memory.db").load_decision_audit_event(
+        audit_path, snapshot["timestamp"]
+    )
+    reasons = indicator_no_entry_reasons(audit_event)
 
     assert reasons["CALL"] == "Regime is Bear Trend; CALL requires BULL TREND"
     assert reasons["PUT"] == "no entry signal"

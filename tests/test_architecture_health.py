@@ -48,7 +48,7 @@ def test_scores_are_capability_based_not_ast_finding_counts(tmp_path):
     assert len(report["memory"]["evidence"]) == 2
     assert report["memory"]["score"] == 100
     assert report["brain"]["score"] == 100
-    assert report["overall"]["score"] == 90
+    assert report["overall"]["score"] == 96
 
 
 def test_capabilities_publish_exit_criteria_and_calculated_priorities(tmp_path):
@@ -59,17 +59,30 @@ def test_capabilities_publish_exit_criteria_and_calculated_priorities(tmp_path):
     assert "The live execution adapter and historical replay consume Brain decisions." in trade_management["definition_of_complete"]
     assert "Brain owns entry eligibility, trade planning, startup lifecycle locks, broker-fact admission, quote-quality, and option-contract selection decisions." in entry_decisions["definition_of_complete"]
     assert report["priorities"]["priorities"][0] == {
-        "id": "remove_cockpit_direct_persistence",
-        "label": "Remove direct Cockpit persistence",
+        "id": "consolidate_cockpit_runtime",
+        "label": "Consolidate Cockpit runtime state",
         "blocker": "cockpit.py",
-        "targets": ["direct_persistence"],
+        "targets": ["duplicate_runtime_state"],
         "impact_percent": 2,
     }
     assert report["brain"]["score"] == 100
-    assert report["priorities"]["estimated_completion_after_next_milestone"] == 92
+    assert report["cockpit"]["score"] == 78
+    assert report["overall"]["score"] == 96
+    assert report["priorities"]["estimated_completion_after_next_milestone"] == 98
 
 
 def test_version_history_is_not_a_memory_persistence_capability(tmp_path):
     report = build_architecture_health(tmp_path)
 
     assert "version_history" not in {item["id"] for item in report["memory"]["capabilities"]}
+
+
+def test_runtime_config_validation_is_not_classified_as_cockpit_trading_policy(tmp_path):
+    (tmp_path / "cockpit.py").write_text(
+        "def _validate_runtime_config(): pass\n",
+        encoding="utf-8",
+    )
+
+    report = build_architecture_health(tmp_path)
+
+    assert report["cockpit"]["evidence"] == []

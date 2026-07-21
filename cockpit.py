@@ -2547,17 +2547,18 @@ def start_canonical_sync_and_restart():
         return {"status": "error", "message": "Unable to verify active GitHub sync process"}
 
     try:
-        CANONICAL_DEPLOY_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env["MCLEOD_CANONICAL_RUNTIME_HOST"] = CANONICAL_RUNTIME_HOST
         env["COCKPIT_PUBLIC_URL"] = COCKPIT_PUBLIC_URL
         env["PYTHONUNBUFFERED"] = "1"
-        with open(CANONICAL_DEPLOY_LOG_FILE, "a", buffering=1) as log_fp:
+        with get_memory().open_runtime_log(CANONICAL_DEPLOY_LOG_FILE, mode="a") as log_fp:
             process = subprocess.Popen(
                 [str(CANONICAL_DEPLOY_SCRIPT)], cwd=str(PROJECT_ROOT), stdout=log_fp,
                 stderr=subprocess.STDOUT, env=env, start_new_session=True,
             )
-        CANONICAL_DEPLOY_PID_FILE.write_text(str(process.pid), encoding="utf-8")
+        get_memory().write_runtime_artifact(
+            CANONICAL_DEPLOY_PID_FILE, process.pid, "canonical_deploy_pid"
+        )
         return {"status": "success", "message": "GitHub sync, Cockpit restart, and bot restart started", "pid": process.pid}
     except Exception as error:
         return {"status": "error", "message": f"Failed to start GitHub sync: {error}"}
@@ -2632,7 +2633,7 @@ def start_bot():
             pass
 
         # Start bot in background, capturing output
-        with open(BOT_LOG_FILE, 'w', buffering=1) as log_fp:
+        with get_memory().open_runtime_log(BOT_LOG_FILE, mode="w") as log_fp:
             process = subprocess.Popen(
                 [str(selected_python), "-u", str(BOT_SCRIPT)],
                 cwd=str(PROJECT_ROOT),
@@ -2643,8 +2644,7 @@ def start_bot():
             )
         
         # Save PID
-        with open(BOT_PID_FILE, 'w') as f:
-            f.write(str(process.pid))
+        get_memory().write_runtime_artifact(BOT_PID_FILE, process.pid, "bot_pid")
 
         _save_bot_stop_alert_state({
             "last_bot_running": True,
@@ -2766,10 +2766,9 @@ def trigger_go_live() -> dict:
         }
 
     try:
-        GO_LIVE_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env.setdefault("MCLEOD_ROOT", str(PROJECT_ROOT))
-        with open(GO_LIVE_LOG_FILE, "a", buffering=1, encoding="utf-8") as log_fp:
+        with get_memory().open_runtime_log(GO_LIVE_LOG_FILE, mode="a") as log_fp:
             log_fp.write(
                 f"\n===== go-live requested {datetime.now(timezone.utc).isoformat()} from cockpit =====\n"
             )
@@ -2843,30 +2842,6 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
         "regime": score["regime"],
     }
 
-
-def _indicator_no_entry_reasons(snapshot, audit_path=None):
-    """Return side-specific reasons for the latest matching closed-candle decision."""
-    path = Path(audit_path or PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl")
-    if not path.exists():
-        return {"CALL": None, "PUT": None}
-    timestamp = _parse_iso_datetime((snapshot or {}).get("timestamp"))
-    if timestamp is None:
-        return {"CALL": None, "PUT": None}
-    try:
-        events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    except (OSError, json.JSONDecodeError):
-        return {"CALL": None, "PUT": None}
-    for event in reversed(events):
-        candle_time = _parse_iso_datetime(event.get("candle_time"))
-        if candle_time is None or candle_time.astimezone(EASTERN_TZ).replace(second=0, microsecond=0) != timestamp.replace(second=0, microsecond=0):
-            continue
-        reason = str(event.get("entry_decision_reason") or "").strip().replace("_", " ") or None
-        regime = str(event.get("regime") or "").replace("_", " ").title()
-        return {
-            "CALL": f"Regime is {regime}; CALL requires BULL TREND" if event.get("call_score") == 5 and regime != "Bull Trend" else reason,
-            "PUT": f"Regime is {regime}; PUT requires BEAR TREND" if event.get("put_score") == 5 and regime != "Bear Trend" else reason,
-        }
-    return {"CALL": None, "PUT": None}
 
 def parse_bot_status():
     """Parse bot status from logs and position file"""
@@ -5363,35 +5338,6 @@ def _bot_order_ids_from_audit():
     return ids if ids else None
 
 
-def _classify_exit_reason(buy_event, sell_event):
-    """Classify completed exit into canonical stop/trailing labels."""
-    order_type = str(sell_event.get("order_type") or "").upper()
-    try:
-        entry_px = float(buy_event.get("price") or 0)
-        exit_px = float(sell_event.get("price") or 0)
-        realized_pct = ((exit_px - entry_px) / entry_px) * 100.0 if entry_px > 0 else 0.0
-    except (TypeError, ValueError):
-        realized_pct = 0.0
-
-    # Canonical taxonomy requested by user: STOP, 4% TRAIL, 5% TRAIL, 6%+ TRAIL.
-    # We classify by realized return so broker order-type differences do not drift labels.
-    if realized_pct >= 6.0:
-        return "6%+ TRAIL"
-    if realized_pct >= 5.0:
-        return "5% TRAIL"
-    if realized_pct >= 4.0:
-        return "4% TRAIL"
-    if order_type in {"STOP", "STOP_LIMIT", "TRAILING_STOP", "TRAILING_STOP_LIMIT"}:
-        # Mechanism-aware fallback: if a stop-order exit is still profitable but
-        # below 4%, treat it as the first trailing tier rather than STOP.
-        if realized_pct > 0.0:
-            return "4% TRAIL"
-        return "STOP"
-
-    # Fallback for MARKET/other order types: infer from realized option move.
-    return "STOP"
-
-
 def _is_manual_exit_trade(sell_event, bot_order_ids):
     """Exact attribution: Mason when exit order ID is not in bot audit."""
     if bot_order_ids is None:
@@ -5588,7 +5534,7 @@ def _broker_filled_today_trades(trading_date: str):
                     "option_entry": round(buy["price"], 2),
                     "option_exit": round(sell["price"], 2),
                     "option_quantity": qty,
-                    "exit_reason": _classify_exit_reason(buy, sell),
+                    "exit_reason": classify_exit_reason(buy, sell),
                     "manual_label": manual_label,
                     "broker_entry_order_id": buy["order_id"],
                     "broker_exit_order_id": sell["order_id"],
