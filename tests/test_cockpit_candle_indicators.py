@@ -189,6 +189,7 @@ def test_current_position_has_live_candle_indicator_column():
     assert 'id="currentOptionEntry"' in source
     assert 'id="currentOptionPrice"' in source
     assert 'id="currentCandleIndicators"' in source
+    assert '>Latest Candle</div>' not in source
     assert 'id="currentCandleCallCount"' in source
     assert 'id="currentCandlePutCount"' in source
     assert 'id="currentMarketContext"' in source

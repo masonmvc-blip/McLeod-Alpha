@@ -7106,7 +7106,6 @@ HTML_DASHBOARD = """
                         <div class="position-stat"><div class="position-stat-label">Option Price</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
                     </div>
                     <div class="position-stat-column" id="currentCandleIndicators">
-                        <div class="position-stat"><div class="position-stat-label">Latest Candle</div></div>
                         <div class="position-stat"><div class="position-stat-label">Call Indicators</div><div class="position-candle-count" id="currentCandleCallCount">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Put Indicators</div><div class="position-candle-count" id="currentCandlePutCount">--</div></div>
                         <div class="position-stat"><div class="position-summary-stop" id="currentStopCategory"></div></div>
