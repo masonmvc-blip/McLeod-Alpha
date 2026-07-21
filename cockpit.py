@@ -5784,6 +5784,86 @@ HTML_DASHBOARD = """
             padding-left: 18px;
         }
 
+        .indicator-performance-wrap {
+            margin: 0 0 14px;
+            border: 1px solid #d8dee7;
+            border-radius: 8px;
+            padding: 12px;
+            background: #fbfcfe;
+        }
+
+        .indicator-performance-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .indicator-performance-header h2 {
+            color: #273142;
+            font-size: 16px;
+        }
+
+        .indicator-performance-meta {
+            color: #607083;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .indicator-performance-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .indicator-performance-row {
+            display: grid;
+            grid-template-columns: minmax(145px, 1.25fr) minmax(130px, 2fr) minmax(170px, 1.25fr);
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-top: 1px solid #e6eaf0;
+        }
+
+        .indicator-performance-row:first-child {
+            border-top: 0;
+        }
+
+        .indicator-performance-name {
+            color: #273142;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .indicator-winrate-track {
+            height: 10px;
+            overflow: hidden;
+            border-radius: 5px;
+            background: #e6eaf0;
+        }
+
+        .indicator-winrate-fill {
+            height: 100%;
+            background: #d14b4b;
+        }
+
+        .indicator-winrate-fill.positive { background: #27834c; }
+        .indicator-winrate-fill.neutral { background: #c58a15; }
+
+        .indicator-performance-stats {
+            color: #4f5d70;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .indicator-performance-stats strong { color: #273142; }
+        .indicator-performance-guidance { font-weight: 700; }
+        .indicator-performance-guidance.review { color: #b23a3a; }
+        .indicator-performance-guidance.candidate { color: #1f7a41; }
+        .indicator-performance-guidance.collect { color: #9a6b0d; }
+
         .status-card.position-call {
             background: #eefaf1;
             border-color: #7ed6a0;
@@ -6838,6 +6918,16 @@ HTML_DASHBOARD = """
                 <div style="text-align: center; color: #999; padding: 12px;">Loading execution quality...</div>
             </div>
         </div>
+
+        <section class="indicator-performance-wrap" aria-labelledby="indicatorPerformanceTitle">
+            <div class="indicator-performance-header">
+                <h2 id="indicatorPerformanceTitle">Indicator Performance</h2>
+                <span class="indicator-performance-meta" id="indicatorPerformanceMeta">Loading closed-trade history...</span>
+            </div>
+            <div class="indicator-performance-list" id="indicatorPerformanceContainer">
+                <div style="text-align: center; color: #999; padding: 12px;">Loading indicator performance...</div>
+            </div>
+        </section>
         
         <div class="logs">
             <div class="logs-title">📋 Recent Logs <span id="logsLastUpdated" class="logs-meta">(log updated: loading...)</span></div>
@@ -6852,14 +6942,17 @@ HTML_DASHBOARD = """
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
         let architectureHealthRefreshInFlight = false;
+        let indicatorPerformanceRefreshInFlight = false;
         let lastLogsRefreshMs = 0;
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
         let lastArchitectureHealthRefreshMs = 0;
+        let lastIndicatorPerformanceRefreshMs = 0;
         const LOGS_REFRESH_INTERVAL_MS = 5000;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
         const ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS = 30000;
+        const INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1500;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
@@ -7729,6 +7822,9 @@ HTML_DASHBOARD = """
                 if ((nowMs - lastTradesRefreshMs) >= TRADES_REFRESH_INTERVAL_MS) {
                     updateTodaysTrades();
                 }
+                if ((nowMs - lastIndicatorPerformanceRefreshMs) >= INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS) {
+                    updateIndicatorPerformance();
+                }
             } catch (err) {
                 console.error('Error refreshing status:', err);
             }
@@ -7996,6 +8092,63 @@ HTML_DASHBOARD = """
             }
         }
 
+        async function updateIndicatorPerformance() {
+            if (indicatorPerformanceRefreshInFlight) {
+                return;
+            }
+
+            indicatorPerformanceRefreshInFlight = true;
+            try {
+                const response = await fetch('/api/indicator-performance');
+                if (!response.ok) {
+                    throw new Error(`Indicator Performance request failed: HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                const rows = Array.isArray(data.indicators) ? data.indicators : [];
+                const container = document.getElementById('indicatorPerformanceContainer');
+                const meta = document.getElementById('indicatorPerformanceMeta');
+                const minimumSampleSize = Number(data.minimum_sample_size || 10);
+                const closedTrades = Number(data.closed_trades || 0);
+                const escapeText = (value) => String(value || '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#39;');
+                const money = (value) => {
+                    const amount = Number(value || 0);
+                    return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toFixed(2)}`;
+                };
+
+                meta.textContent = `${closedTrades} closed trades | minimum ${minimumSampleSize} per indicator`;
+                if (!rows.length) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">No closed trades with recorded entry indicators yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = rows.map((row) => {
+                    const winRate = Math.max(0, Math.min(100, Number(row.win_rate_pct || 0)));
+                    const averageReturn = Number(row.average_return || 0);
+                    const guidance = String(row.guidance || 'Keep monitoring');
+                    const tone = guidance === 'Candidate to increase weight'
+                        ? 'candidate'
+                        : (guidance === 'Review for reduction' ? 'review' : (guidance === 'Collect more data' ? 'collect' : ''));
+                    const barTone = winRate >= 55 ? 'positive' : (winRate <= 45 ? '' : 'neutral');
+                    return `<article class="indicator-performance-row">
+                        <div class="indicator-performance-name">${escapeText(row.indicator)}</div>
+                        <div><div class="indicator-winrate-track"><div class="indicator-winrate-fill ${barTone}" style="width:${winRate}%"></div></div><div class="indicator-performance-stats"><strong>${winRate.toFixed(1)}% win rate</strong> | ${Number(row.wins || 0)}W / ${Number(row.losses || 0)}L / ${Number(row.breakeven || 0)} BE</div></div>
+                        <div class="indicator-performance-stats"><strong>${Number(row.trades || 0)} trades</strong> | Avg P&L ${money(averageReturn)}<br><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
+                    </article>`;
+                }).join('');
+                lastIndicatorPerformanceRefreshMs = Date.now();
+            } catch (error) {
+                console.error('Error loading indicator performance:', error);
+                document.getElementById('indicatorPerformanceContainer').innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">Indicator performance unavailable</div>';
+            } finally {
+                indicatorPerformanceRefreshInFlight = false;
+            }
+        }
+
         async function updateTodaysTrades() {
             if (tradesRefreshInFlight) {
                 return;
@@ -8175,6 +8328,7 @@ HTML_DASHBOARD = """
             updateExecutionQuality(lastStatusSnapshot);
             updateDailyLearningInsights();
             updateArchitectureHealth();
+            updateIndicatorPerformance();
         });
 
         document.addEventListener('visibilitychange', () => {
@@ -8195,8 +8349,10 @@ HTML_DASHBOARD = """
             lastExecutionQualityRefreshMs = 0;
             lastDailyLearningRefreshMs = 0;
             lastArchitectureHealthRefreshMs = 0;
+            lastIndicatorPerformanceRefreshMs = 0;
             refreshStatus();
             updateArchitectureHealth();
+            updateIndicatorPerformance();
         });
 
         window.addEventListener('storage', (event) => {

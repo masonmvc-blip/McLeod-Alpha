@@ -48,6 +48,42 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
     assert json.loads(events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
+def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
+    trades = [
+        {
+            "exit_time": "2026-07-20T10:05:00-04:00",
+            "pnl": 20.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "indicator-entry-1",
+            "broker_exit_order_id": "indicator-exit-1",
+            "feature_payload": json.dumps({"entry_reasons": ["price_above_vwap"]}),
+        },
+        {
+            "exit_time": "2026-07-20T10:10:00-04:00",
+            "pnl": -10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260720C00600000",
+            "broker_entry_order_id": "indicator-entry-2",
+            "broker_exit_order_id": "indicator-exit-2",
+            "feature_payload": json.dumps({"entry_reasons": ["price_above_vwap"]}),
+        },
+    ]
+
+    summary = cockpit._indicator_performance_summary(trades, minimum_sample_size=2)
+
+    assert summary == [{
+        "indicator": "price_above_vwap",
+        "trades": 2,
+        "wins": 1,
+        "losses": 1,
+        "breakeven": 0,
+        "win_rate_pct": 50.0,
+        "average_return": 5.0,
+        "guidance": "Keep monitoring",
+    }]
+
+
 def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_path):
     database_path = tmp_path / "data" / "mcleod_alpha.db"
     memory = Memory(db_path=database_path)
