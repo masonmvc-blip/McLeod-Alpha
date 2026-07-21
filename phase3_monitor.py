@@ -54,6 +54,7 @@ LATENCY_METRICS_PATH = Path(os.getenv("LATENCY_METRICS_PATH", "data/reports/late
 DECISION_AUDIT_ENABLED = str(os.getenv("DECISION_AUDIT_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 DECISION_AUDIT_PATH = Path(os.getenv("DECISION_AUDIT_PATH", "data/reports/decision_audit_history.jsonl"))
 CONTROL_COMMAND_PATH = Path("data") / "control_command.json"
+POST_EXIT_COOLING_PATH = Path("data") / "post_exit_cooling.json"
 LAST_ENTRY_EXECUTION_METRICS = {
     "attempted": False,
     "opened": False,
@@ -875,6 +876,19 @@ def _entries_are_paused():
     except Exception:
         return False
 
+
+def _consume_post_exit_cooling_period():
+    """Skip exactly one otherwise-qualified entry after a completed exit."""
+    try:
+        cooling_state = get_memory().load_setting(POST_EXIT_COOLING_PATH, {}) or {}
+    except Exception:
+        return False
+    if not bool(cooling_state.get("pending")):
+        return False
+
+    get_memory().clear_setting("post_exit_cooling", POST_EXIT_COOLING_PATH)
+    return True
+
 def _process_manual_exit_command(current_price, option_mark):
     """Consume Cockpit's pending exit command before normal trade management."""
     try:
@@ -925,6 +939,16 @@ def open_trade(*args, **kwargs):
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
             "block_reason": "entry_paused",
+        }
+        return False
+
+    if _consume_post_exit_cooling_period():
+        print("ENTRY BLOCKED: Cooling Period")
+        LAST_ENTRY_EXECUTION_METRICS = {
+            "attempted": True,
+            "opened": False,
+            "open_trade_ms": _elapsed_ms(start_ms),
+            "block_reason": "Cooling Period",
         }
         return False
 

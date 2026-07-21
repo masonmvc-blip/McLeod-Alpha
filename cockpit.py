@@ -2770,6 +2770,9 @@ def trigger_go_live() -> dict:
         }
 
     try:
+        # Start Bot is an explicit operator override of the persistent Stop Bot
+        # intent, so let the canonical stack launch the monitor again.
+        get_memory().clear_setting("bot_manual_stop_marker", BOT_MANUAL_STOP_MARKER_FILE)
         env = os.environ.copy()
         env.setdefault("MCLEOD_ROOT", str(PROJECT_ROOT))
         with get_memory().open_runtime_log(GO_LIVE_LOG_FILE, mode="a") as log_fp:

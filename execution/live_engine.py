@@ -47,6 +47,7 @@ OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SP
 BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
 BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
 BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
+POST_EXIT_COOLING_FILE = Path(__file__).resolve().parents[1] / "data" / "post_exit_cooling.json"
 _broker_request_lock = threading.Lock()
 _last_broker_request_epoch = 0.0
 _broker_rate_limited_until_epoch = 0.0
@@ -2716,6 +2717,20 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     # Clearing position resets alarm lock so new entries can resume while flat.
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
+    try:
+        get_memory().save_setting(
+            "post_exit_cooling",
+            {
+                "pending": True,
+                "exit_reason": reason,
+                "exited_at": datetime.now(timezone.utc).isoformat(),
+                "source": "live_engine",
+            },
+            POST_EXIT_COOLING_FILE,
+        )
+        print("POST-EXIT COOLING: next qualifying entry signal will be skipped")
+    except Exception as exc:
+        print(f"WARNING: Could not persist post-exit cooling state: {exc}")
     
     # NOW attempt logging (failure won't affect position closure)
     try:

@@ -71,3 +71,9 @@ def test_entry_pause_toggle_is_persisted(monkeypatch, tmp_path):
 
     assert cockpit.toggle_entry_pause_command()["paused"] is True
     assert cockpit.toggle_entry_pause_command()["paused"] is False
+
+
+def test_explicit_go_live_clears_operator_stop_marker():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert 'get_memory().clear_setting("bot_manual_stop_marker", BOT_MANUAL_STOP_MARKER_FILE)' in source

@@ -52,6 +52,32 @@ def test_pending_cockpit_exit_uses_near_market_limit_with_fallback(monkeypatch):
     assert memory.command["status"] == "COMPLETED"
 
 
+def test_post_exit_cooling_blocks_one_qualifying_entry(monkeypatch):
+    module = importlib.import_module("phase3_monitor")
+
+    class Memory:
+        state = {"pending": True}
+        cleared = 0
+
+        def load_setting(self, *_args):
+            return dict(self.state)
+
+        def clear_setting(self, *_args):
+            self.cleared += 1
+            self.state = {}
+
+    memory = Memory()
+    engine_calls = []
+    monkeypatch.setattr(module, "get_memory", lambda: memory)
+    monkeypatch.setattr(module, "_entries_are_paused", lambda: False)
+    monkeypatch.setattr(module, "original_open_trade", lambda *args: engine_calls.append(args) or True)
+
+    assert module.open_trade("CALL", 500.0, 497.0, 506.0, 1, "test", {}, "") is False
+    assert memory.cleared == 1
+    assert engine_calls == []
+    assert module.LAST_ENTRY_EXECUTION_METRICS["block_reason"] == "Cooling Period"
+
+
 def test_import_has_no_runtime_initialization(monkeypatch) -> None:
     import execution.equity_stream
     import schwab.auth
