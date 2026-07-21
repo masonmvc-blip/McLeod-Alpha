@@ -7594,6 +7594,7 @@ HTML_DASHBOARD = """
                     trendText = '🐻 BEAR TREND 🐻';
                     trendToneClass = 'trend-tone-bearish';
                 } else if (trend === 'BULL_TREND') {
+                    trendText = '🐂 BULL TREND 🐂';
                     trendToneClass = 'trend-tone-bullish';
                 }
 
