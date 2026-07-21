@@ -13,6 +13,11 @@ from zoneinfo import ZoneInfo
 EASTERN_TZ = ZoneInfo("America/New_York")
 REPORTS_DIR = Path("reports")
 WIN_THRESHOLD_PCT = 4.0
+OBSERVATION_TARGET = 100
+TRADING_DAY_TARGET = 20
+MARKET_REGIME_TARGET = 3
+TREND_STATE_TARGET = 5
+ADX_BUCKET_TARGET = 5
 
 
 def _number(value: Any) -> float | None:
@@ -37,6 +42,25 @@ def _stage_value(event: dict[str, Any]) -> Any:
     if isinstance(stage, dict):
         return stage.get("stage") or stage.get("value") or stage.get("label")
     return stage
+
+
+def _adx_bucket(value: Any) -> str | None:
+    adx = _number(value)
+    if adx is None:
+        return None
+    if adx < 18:
+        return "<18"
+    if adx < 25:
+        return "18-25"
+    if adx < 30:
+        return "25-30"
+    if adx < 35:
+        return "30-35"
+    return "35+"
+
+
+def _score(count: int, target: int) -> float:
+    return min(count / target, 1.0) * 100.0 if target else 0.0
 
 
 def _pattern(event: dict[str, Any]) -> str | None:
@@ -73,8 +97,28 @@ def _cohort_row(pattern: str, rows: list[tuple[str, dict[str, Any]]]) -> dict[st
     maes: list[float] = []
     returns: list[float] = []
     dates: set[str] = set()
+    market_regimes: set[str] = set()
+    trend_states: set[str] = set()
+    adx_buckets: set[str] = set()
+    complete_snapshots = 0
+    gap_scenarios = set()
     for trade_date, event in rows:
         dates.add(trade_date)
+        market_regime = str(event.get("market_regime") or "").strip()
+        research = event.get("research") or {}
+        trend_state = str(research.get("trend_state") or (event.get("shadow_market_state") or {}).get("state") or "").strip()
+        adx_bucket = _adx_bucket(event.get("adx_14"))
+        if market_regime:
+            market_regimes.add(market_regime)
+        if trend_state:
+            trend_states.add(trend_state)
+        if adx_bucket:
+            adx_buckets.add(adx_bucket)
+        if market_regime and trend_state and adx_bucket:
+            complete_snapshots += 1
+        gap_scenario = event.get("gap_scenario") or event.get("opening_gap_scenario")
+        if gap_scenario:
+            gap_scenarios.add(str(gap_scenario))
         outcome = event.get("estimated_option_outcome") or {}
         mfe = _number(outcome.get("estimated_option_mfe_pct"))
         mae = _number(outcome.get("estimated_option_mae_pct"))
@@ -89,6 +133,23 @@ def _cohort_row(pattern: str, rows: list[tuple[str, dict[str, Any]]]) -> dict[st
 
     observations = len(rows)
     outcome_coverage = len(mfes) / observations if observations else 0.0
+    data_completeness = complete_snapshots / observations if observations else 0.0
+    coverage_components = {
+        "trading_days": round(_score(len(dates), TRADING_DAY_TARGET), 2),
+        "market_regimes": round(_score(len(market_regimes), MARKET_REGIME_TARGET), 2),
+        "trend_states": round(_score(len(trend_states), TREND_STATE_TARGET), 2),
+        "adx_buckets": round(_score(len(adx_buckets), ADX_BUCKET_TARGET), 2),
+        "opening_gap_scenarios": round(_score(len(gap_scenarios), 3), 2) if gap_scenarios else None,
+    }
+    measured_coverage = [value for value in coverage_components.values() if value is not None]
+    coverage_score = sum(measured_coverage) / len(measured_coverage) if measured_coverage else 0.0
+    observation_score = _score(observations, OBSERVATION_TARGET)
+    research_confidence = (
+        observation_score * 0.30
+        + coverage_score * 0.35
+        + outcome_coverage * 100.0 * 0.20
+        + data_completeness * 100.0 * 0.15
+    )
     if len(dates) >= 10 and observations >= 30 and outcome_coverage >= 0.9:
         sample_quality = "high"
     elif len(dates) >= 3 and observations >= 10:
@@ -100,11 +161,26 @@ def _cohort_row(pattern: str, rows: list[tuple[str, dict[str, Any]]]) -> dict[st
         "pattern": pattern,
         "current_observations": observations,
         "trading_days_observed": len(dates),
+        "market_regimes_observed": sorted(market_regimes),
+        "trend_states_observed": sorted(trend_states),
+        "adx_buckets_observed": sorted(adx_buckets),
+        "opening_gap_scenarios_observed": sorted(gap_scenarios) if gap_scenarios else None,
+        "opening_gap_scenarios_status": "unavailable: opening-gap scenario is not persisted in opportunity snapshots" if not gap_scenarios else "available",
         "average_estimated_mfe_pct": round(sum(mfes) / len(mfes), 4) if mfes else None,
         "average_estimated_mae_pct": round(sum(maes) / len(maes), 4) if maes else None,
         "estimated_expectancy_pct": round(sum(returns) / len(returns), 4) if returns else None,
         "estimated_win_rate_pct": round(sum(value >= WIN_THRESHOLD_PCT for value in mfes) / len(mfes) * 100.0, 2) if mfes else None,
         "outcome_coverage_pct": round(outcome_coverage * 100.0, 2),
+        "data_completeness_pct": round(data_completeness * 100.0, 2),
+        "coverage_score_pct": round(coverage_score, 2),
+        "coverage_score_components_pct": coverage_components,
+        "research_confidence_pct": round(research_confidence, 2),
+        "research_confidence_weights": {
+            "observation_count": 30,
+            "market_diversity": 35,
+            "outcome_coverage": 20,
+            "data_completeness": 15,
+        },
         "similarity_to_executed_trades_pct": None,
         "similarity_status": "unavailable: no validated feature-distance model links rejected setups to executed trades",
         "sample_quality": sample_quality,

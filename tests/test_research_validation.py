@@ -12,6 +12,8 @@ def test_validation_dashboard_and_pipeline_are_research_only(tmp_path):
             "direction": "CALL",
             "rejection_reason": "CALL score below threshold by 1",
             "market_regime": "BULL_TREND",
+            "adx_14": 31.0,
+            "research": {"trend_state": "HEALTHY_CONTINUATION"},
             "estimated_option_outcome": {"estimated_option_mfe_pct": 12.0, "estimated_option_mae_pct": -4.0},
             "post_rejection_tracking": {"fixed_horizon_outcomes": {"15": {"estimated_option_return_pct": 6.8}}},
         })
@@ -28,6 +30,11 @@ def test_validation_dashboard_and_pipeline_are_research_only(tmp_path):
     assert cohort["current_observations"] == 10
     assert cohort["estimated_expectancy_pct"] == 6.8
     assert cohort["estimated_win_rate_pct"] == 100.0
+    assert cohort["coverage_score_components_pct"]["trading_days"] == 5.0
+    assert cohort["coverage_score_components_pct"]["opening_gap_scenarios"] is None
+    assert cohort["opening_gap_scenarios_status"].startswith("unavailable")
+    assert cohort["research_confidence_weights"]["market_diversity"] == 35
+    assert cohort["research_confidence_pct"] < 100.0
     assert cohort["similarity_to_executed_trades_pct"] is None
     assert cohort["governance_status"] == "candidate_cohort"
     assert cohort["shadow_trading_status"].startswith("not_started")
