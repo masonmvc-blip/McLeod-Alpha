@@ -310,6 +310,7 @@ def _build_runtime_status():
         "current_position_side": None,
         "current_trade_pnl_dollars": None,
         "current_trade_pnl_pct": None,
+        "current_trade_option_entry": None,
         "current_trade_mark": None,
         "active_stop_category": None,
         "active_protective_stop_price": None,
@@ -515,6 +516,9 @@ def _build_runtime_status():
                     option_stop = float(pos_data.get("option_stop") or 0.0)
                 except (TypeError, ValueError):
                     option_stop = 0.0
+
+                if option_entry > 0:
+                    status["current_trade_option_entry"] = round(option_entry, 3)
 
                 status["protective_stop_status"] = str(pos_data.get("protective_stop_status") or "").strip() or None
                 status["active_stop_category"] = active_stop_category(option_entry, stop_price=option_stop)

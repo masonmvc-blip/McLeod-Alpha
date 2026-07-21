@@ -92,6 +92,15 @@ def test_current_position_stop_line_uses_exit_category_not_stop_price():
     assert "Stop Loss: ${formatMoney(activeStopPrice)}" not in source
 
 
+def test_current_position_has_option_price_stat_columns():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert 'id="currentPositionStats"' in source
+    assert 'id="currentOptionEntry"' in source
+    assert 'id="currentOptionPrice"' in source
+    assert "current_trade_option_entry" in source
+
+
 def test_option_label_includes_strike_for_calls_and_puts():
     assert cockpit._position_label_from_option_symbol("SPY   260720C00755000") == "$755 Call"
     assert cockpit._position_label_from_option_symbol("SPY   260720P00752250") == "$752.25 Put"

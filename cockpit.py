@@ -5872,6 +5872,40 @@ HTML_DASHBOARD = """
         #statusGrid.position-focus-active .position-summary-pnl {
             font-size: 24px;
         }
+
+        .position-stats-grid {
+            display: none;
+            width: min(100%, 420px);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            text-align: left;
+        }
+
+        #statusGrid.position-focus-active .position-stats-grid {
+            display: grid;
+        }
+
+        .position-stat-column {
+            display: grid;
+            gap: 8px;
+        }
+
+        .position-stat {
+            min-width: 0;
+        }
+
+        .position-stat-label {
+            color: #59636e;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .position-stat-value {
+            color: #1f2933;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
         
         .status-card {
             background: #f8f9fa;
@@ -6917,8 +6951,16 @@ HTML_DASHBOARD = """
             <div class="status-card" id="currentPositionCard">
                 <h3>Current Position</h3>
                 <div class="position-summary-main" id="currentPosition">Loading...</div>
-                <div class="position-summary-pnl" id="currentTradePnl">Loading...</div>
-                <div class="position-summary-stop" id="currentStopCategory"></div>
+                <div class="position-stats-grid" id="currentPositionStats">
+                    <div class="position-stat-column">
+                        <div class="position-stat"><div class="position-stat-label">Current P&amp;L</div><div class="position-summary-pnl" id="currentTradePnl">Loading...</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Stop Loss</div><div class="position-summary-stop" id="currentStopCategory"></div></div>
+                    </div>
+                    <div class="position-stat-column">
+                        <div class="position-stat"><div class="position-stat-label">Option Entry</div><div class="position-stat-value" id="currentOptionEntry">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label">Current Option</div><div class="position-stat-value" id="currentOptionPrice">--</div></div>
+                    </div>
+                </div>
             </div>
             <div class="status-card position-secondary-card">
                 <h3>PUT Indicators</h3>
@@ -7811,8 +7853,12 @@ HTML_DASHBOARD = """
                 // Current trade P&L (unrealized)
                 const tradePnlEl = document.getElementById('currentTradePnl');
                 const stopCategoryEl = document.getElementById('currentStopCategory');
+                const optionEntryEl = document.getElementById('currentOptionEntry');
+                const optionPriceEl = document.getElementById('currentOptionPrice');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
+                const optionEntryPrice = Number(status.current_trade_option_entry);
+                const currentOptionPrice = Number(status.current_trade_mark);
                 const activeStopPrice = Number(status.active_protective_stop_price);
                 const activeStopCategory = String(status.active_stop_category || '').trim();
                 if (status.has_open_position && tradePnlDollars !== null && tradePnlDollars !== undefined && tradePnlPct !== null && tradePnlPct !== undefined) {
@@ -7844,6 +7890,17 @@ HTML_DASHBOARD = """
                 } else if (stopCategoryEl) {
                     stopCategoryEl.textContent = '';
                     stopCategoryEl.className = 'position-summary-stop';
+                }
+
+                if (optionEntryEl) {
+                    optionEntryEl.textContent = status.has_open_position && Number.isFinite(optionEntryPrice) && optionEntryPrice > 0
+                        ? formatMoney(optionEntryPrice)
+                        : '--';
+                }
+                if (optionPriceEl) {
+                    optionPriceEl.textContent = status.has_open_position && Number.isFinite(currentOptionPrice) && currentOptionPrice > 0
+                        ? formatMoney(currentOptionPrice)
+                        : '--';
                 }
 
                 const nowMs = Date.now();
