@@ -7805,16 +7805,6 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <div class="status-grid">
-            <div class="status-card" id="dailyLearningCard">
-                <h3>Daily Learning Insights</h3>
-                <div class="daily-learning-meta" id="dailyLearningMeta">Loading latest learning summary...</div>
-                <ul class="daily-learning-lessons" id="dailyLearningLessons">
-                    <li>Loading actionable lessons...</li>
-                </ul>
-            </div>
-        </div>
-
         <div class="status-grid primary-status-grid" id="architectureHealthGrid">
             <div class="status-card">
                 <h3>Brain</h3>
@@ -7894,17 +7884,14 @@ HTML_DASHBOARD = """
         let logsRefreshInFlight = false;
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
-        let dailyLearningRefreshInFlight = false;
         let architectureHealthRefreshInFlight = false;
         let lastLogsRefreshMs = 0;
         let lastTradesRefreshMs = 0;
         let lastExecutionQualityRefreshMs = 0;
-        let lastDailyLearningRefreshMs = 0;
         let lastArchitectureHealthRefreshMs = 0;
         const LOGS_REFRESH_INTERVAL_MS = 5000;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
-        const DAILY_LEARNING_REFRESH_INTERVAL_MS = 30000;
         const ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1500;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
@@ -8797,9 +8784,6 @@ HTML_DASHBOARD = """
                 if ((nowMs - lastTradesRefreshMs) >= TRADES_REFRESH_INTERVAL_MS) {
                     updateTodaysTrades();
                 }
-                if ((nowMs - lastDailyLearningRefreshMs) >= DAILY_LEARNING_REFRESH_INTERVAL_MS) {
-                    updateDailyLearningInsights();
-                }
             } catch (err) {
                 console.error('Error refreshing status:', err);
             }
@@ -8997,73 +8981,6 @@ HTML_DASHBOARD = """
         }
         
         
-        async function updateDailyLearningInsights() {
-            if (dailyLearningRefreshInFlight) {
-                return;
-            }
-
-            dailyLearningRefreshInFlight = true;
-            try {
-                const res = await fetch('/api/daily-learning-insights');
-                const data = await res.json();
-                const metaEl = document.getElementById('dailyLearningMeta');
-                const listEl = document.getElementById('dailyLearningLessons');
-
-                if (!data || data.available !== true) {
-                    if (metaEl) {
-                        metaEl.textContent = 'No daily learning report found yet. Run daily learner after market close.';
-                    }
-                    if (listEl) {
-                        listEl.innerHTML = '<li>Waiting for first learning run.</li>';
-                    }
-                    lastDailyLearningRefreshMs = Date.now();
-                    return;
-                }
-
-                const tradingDate = String(data.trading_date || 'unknown');
-                const summary = data.summary || {};
-                const broker = summary.broker_backed || {};
-                const overall = summary.overall || {};
-                const lessons = Array.isArray(data.actionable_lessons) ? data.actionable_lessons : [];
-
-                const brokerPnlText = Number.isFinite(Number(broker.pnl))
-                    ? formatMoney(Number(broker.pnl))
-                    : '-';
-                const brokerTradesText = Number.isFinite(Number(broker.trades))
-                    ? formatNumber(Number(broker.trades))
-                    : '-';
-                const winRateText = Number.isFinite(Number(overall.win_rate))
-                    ? `${formatNumber(Number(overall.win_rate) * 100, 1)}%`
-                    : '-';
-                const generatedText = data.generated_at ? formatDateTimeAMPM(data.generated_at) : 'unknown';
-
-                if (metaEl) {
-                    metaEl.textContent = `Date ${tradingDate} | Broker PnL ${brokerPnlText} on ${brokerTradesText} trades | Win Rate ${winRateText} | Updated ${generatedText}`;
-                }
-
-                if (listEl) {
-                    if (lessons.length === 0) {
-                        listEl.innerHTML = '<li>No actionable lessons for latest run.</li>';
-                    } else {
-                        const items = lessons.map((lesson) => {
-                            const priority = safeEscape(String(lesson.priority || 'low').toUpperCase());
-                            const title = safeEscape(String(lesson.title || 'Untitled lesson'));
-                            const signal = safeEscape(String(lesson.signal || ''));
-                            const action = safeEscape(String(lesson.action || ''));
-                            return `<li><strong>[${priority}] ${title}</strong><br><span>${signal}</span><br><span>${action}</span></li>`;
-                        }).join('');
-                        listEl.innerHTML = items;
-                    }
-                }
-
-                lastDailyLearningRefreshMs = Date.now();
-            } catch (err) {
-                console.error('Error loading daily learning insights:', err);
-            } finally {
-                dailyLearningRefreshInFlight = false;
-            }
-        }
-
         async function updateArchitectureHealth() {
             if (architectureHealthRefreshInFlight || (Date.now() - lastArchitectureHealthRefreshMs) < ARCHITECTURE_HEALTH_REFRESH_INTERVAL_MS) {
                 return;
