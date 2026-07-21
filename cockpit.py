@@ -2690,6 +2690,20 @@ def start_bot():
 
 def stop_bot():
     """Stop the trading bot immediately and tolerate stale PID state."""
+    # Persist the operator's intent before inspecting process state so the
+    # watchdog cannot revive a bot that exited during the stop request.
+    try:
+        get_memory().save_setting(
+            "bot_manual_stop_marker",
+            {
+                "requested_at": datetime.now(timezone.utc).isoformat(),
+                "source": "cockpit",
+            },
+            BOT_MANUAL_STOP_MARKER_FILE,
+        )
+    except Exception:
+        pass
+
     pid = get_bot_pid()
     if not pid or not _is_bot_process_running():
         BOT_PID_FILE.unlink(missing_ok=True)
@@ -2701,21 +2715,6 @@ def stop_bot():
         pre_stop_status = {"bot_running": True, "mode": "UNKNOWN", "last_error": None}
     
     try:
-        # Mark this as an intentional operator stop so the monitor can avoid
-        # auto-restarting on this specific SIGTERM.
-        try:
-            get_memory().save_setting(
-                "bot_manual_stop_marker",
-                {
-                    "requested_at": datetime.now(timezone.utc).isoformat(),
-                    "source": "cockpit",
-                    "pid": pid,
-                },
-                BOT_MANUAL_STOP_MARKER_FILE,
-            )
-        except Exception:
-            pass
-
         # Immediate shutdown path: SIGTERM first, then fast SIGKILL fallback.
         try:
             os.killpg(os.getpgid(pid), signal.SIGTERM)
@@ -7935,10 +7934,10 @@ HTML_DASHBOARD = """
                 }
 
                 if (status.has_open_position && Number.isFinite(activeStopPrice) && activeStopPrice > 0 && stopCategoryEl) {
-                    stopCategoryEl.textContent = `Stop Loss: ${activeStopCategory || 'Active Stop'}`;
+                    stopCategoryEl.textContent = activeStopCategory || 'Active Stop';
                     stopCategoryEl.className = 'position-summary-stop active';
                 } else if (status.has_open_position && stopCategoryEl) {
-                    stopCategoryEl.textContent = 'Stop Loss: unavailable';
+                    stopCategoryEl.textContent = 'Stop unavailable';
                     stopCategoryEl.className = 'position-summary-stop';
                 } else if (stopCategoryEl) {
                     stopCategoryEl.textContent = '';

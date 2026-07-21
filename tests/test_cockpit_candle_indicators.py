@@ -88,7 +88,8 @@ def test_active_stop_reason_uses_the_actual_stop_price():
 def test_current_position_shows_stop_category_and_protective_stop_price():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert "Stop Loss: ${activeStopCategory || 'Active Stop'}" in source
+    assert "stopCategoryEl.textContent = activeStopCategory || 'Active Stop';" in source
+    assert "Stop Loss: ${activeStopCategory || 'Active Stop'}" not in source
     assert 'id="currentStopPrice"' in source
     assert "stopPriceEl.textContent" in source
     assert "formatMoney(activeStopPrice)" in source

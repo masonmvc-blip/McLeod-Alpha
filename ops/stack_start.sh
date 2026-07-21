@@ -7,6 +7,7 @@ CC_LOG="$PROJECT_DIR/logs/cockpit.log"
 WATCHDOG_LOG="$PROJECT_DIR/logs/runtime_watchdog.log"
 CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
+MANUAL_STOP_MARKER="$PROJECT_DIR/data/bot_manual_stop_marker.json"
 
 if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
   PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
@@ -53,6 +54,11 @@ start_cockpit() {
 }
 
 start_bot_via_api() {
+  if [[ -f "$MANUAL_STOP_MARKER" ]]; then
+    echo "Bot start skipped: operator stop is active. Use Cockpit Start Bot to resume trading."
+    return 0
+  fi
+
   bot_pid=""
   if [[ -f .bot_pid ]]; then
     bot_pid="$(cat .bot_pid 2>/dev/null || true)"
