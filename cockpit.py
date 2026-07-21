@@ -2866,6 +2866,7 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
         "total": 5,
         "timestamp": latest_ts,
         "regime": score["regime"],
+        "market_trend": score.get("market_trend") or "UNKNOWN",
         "call_momentum": score.get("call_momentum") or {},
         "put_momentum": score.get("put_momentum") or {},
         "spy_run": score.get("spy_run") or {},
