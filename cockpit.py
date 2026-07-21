@@ -6116,8 +6116,8 @@ HTML_DASHBOARD = """
             margin: 0;
         }
 
-        .bot-toggle.running { background: #28a745; color: white; }
-        .bot-toggle.stopped { background: #dc3545; color: white; }
+        .bot-toggle.running { background: #dc3545; color: white; }
+        .bot-toggle.stopped { background: #28a745; color: white; }
 
         button {
             padding: 9px 14px;
