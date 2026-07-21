@@ -829,7 +829,7 @@ def _refresh_option_chain_cache(*, force=False):
 
 
 
-STARTUP_GUARD_BLOCKED_ATTEMPTS = 2
+STARTUP_GUARD_BLOCKED_ATTEMPTS = 1
 startup_entry_attempts = 0
 
 def open_trade(*args, **kwargs):

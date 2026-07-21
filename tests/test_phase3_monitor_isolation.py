@@ -255,7 +255,7 @@ def test_entry_snapshot_preserves_support_resistance() -> None:
     assert snapshot["fibonacci_levels"] == payload["fibonacci_levels"]
 
 
-def test_startup_guard_blocks_two_entries_then_releases_to_engine(monkeypatch) -> None:
+def test_startup_guard_blocks_one_entry_then_releases_to_engine(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
     engine_calls = []
     admissions = []
@@ -269,10 +269,9 @@ def test_startup_guard_blocks_two_entries_then_releases_to_engine(monkeypatch) -
     )
 
     assert module.open_trade("CALL") is False
-    assert module.open_trade("CALL") is False
     assert module.open_trade("CALL") is True
     assert len(engine_calls) == 1
-    assert [item["attempted_entries"] for item in admissions] == [0, 1, 2]
+    assert [item["attempted_entries"] for item in admissions] == [0, 1]
 
 
 def test_candle_history_merge_preserves_cached_context_and_fresh_values() -> None:

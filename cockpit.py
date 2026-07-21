@@ -86,6 +86,7 @@ HEARTBEAT_BANNER_STOP_SECONDS = int(os.getenv("BOT_HEARTBEAT_BANNER_STOP_SECONDS
 BOT_STOP_EMAIL_CONFIRMATION_SECONDS = int(os.getenv("BOT_STOP_EMAIL_CONFIRMATION_SECONDS", "20"))
 OPTION_CONTRACT_MULTIPLIER = float(os.getenv("OPTION_CONTRACT_MULTIPLIER", "100"))
 OPTION_COMMISSION_PER_CONTRACT_SIDE = float(os.getenv("OPTION_COMMISSION_PER_CONTRACT_SIDE", "0.665"))
+OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE = float(os.getenv("OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE", "0.0135"))
 MTD_PNL_CACHE_SECONDS = int(os.getenv("MTD_PNL_CACHE_SECONDS", "60"))
 _BROKER_PNL_CACHE = {
     "timestamp": 0.0,
@@ -3403,13 +3404,20 @@ def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
         cur = con.cursor()
         cur.execute(
             """
-            SELECT ROUND(SUM(COALESCE(option_pnl_dollars, pnl, 0)), 2) AS realized
+                        SELECT ROUND(SUM(
+                                COALESCE(option_pnl_dollars, pnl, 0)
+                                - ABS(COALESCE(option_quantity, 0)) * ?
+                        ), 2) AS realized
             FROM trade_log
             WHERE exit_time IS NOT NULL
               AND substr(exit_time, 1, 10) >= ?
               AND substr(exit_time, 1, 10) <= ?
             """,
-            (str(start_date), str(end_date)),
+                        (
+                                (OPTION_COMMISSION_PER_CONTRACT_SIDE * 2) + OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE,
+                                str(start_date),
+                                str(end_date),
+                        ),
         )
         row = cur.fetchone()
         value = row["realized"] if row else None

@@ -52,3 +52,12 @@ def test_empty_broker_period_does_not_override_local_pnl():
     assert "has_today_transactions" in source_text
     assert "has_wtd_transactions" in source_text
     assert "_prefer_external(ext_today, today_total, has_today_transactions)" in source_text
+
+
+def test_local_period_pnl_includes_commissions_and_closing_regulatory_fee():
+    import cockpit
+
+    source_text = inspect.getsource(cockpit._realized_spy_option_pnl_for_period)
+
+    assert "OPTION_COMMISSION_PER_CONTRACT_SIDE * 2" in source_text
+    assert "OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE" in source_text
