@@ -7744,6 +7744,7 @@ HTML_DASHBOARD = """
                 const isNoTrade = status.last_decision === 'NO_TRADE' || (!status.has_open_position && !tradeEntryEnabled);
                 const tradeEntryReason = String(status.trade_entry_reason || '').trim();
                 const startupGuardReason = /startup guard/i.test(tradeEntryReason) ? tradeEntryReason : '';
+                const indicatorRegime = String(status.continuation_regime || status.trend || 'UNKNOWN').toUpperCase();
 
                 function escapeHtml(value) {
                     return String(value || '')
@@ -7758,6 +7759,13 @@ HTML_DASHBOARD = """
                     const base = `${passed}/${indicatorTotal} Passed`;
                     if (passed < 5) {
                         return base;
+                    }
+
+                    const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
+                    if (indicatorRegime !== requiredRegime) {
+                        const regimeLabel = indicatorRegime.replaceAll('_', ' ');
+                        const requiredLabel = requiredRegime.replaceAll('_', ' ');
+                        return `${base}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${regimeLabel}; ${side} requires ${requiredLabel}</span>`;
                     }
 
                     if (!isNoTrade) {

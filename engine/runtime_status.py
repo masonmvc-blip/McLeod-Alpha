@@ -322,6 +322,7 @@ def _build_runtime_status():
         "continuation_put_passed": 0,
         "continuation_indicators_total": 5,
         "continuation_last_test_at": None,
+        "continuation_regime": "UNKNOWN",
         "last_decision": None,
         "last_decision_reason": None,
         "last_no_trade_call_reason": None,
@@ -397,6 +398,7 @@ def _build_runtime_status():
         status["continuation_put_passed"] = int(candle_indicator_snapshot.get("put_passed") or 0)
         status["continuation_indicators_total"] = int(candle_indicator_snapshot.get("total") or 5)
         status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
+        status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
 
     try:
         parity = _parity_status_snapshot()
