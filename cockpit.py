@@ -5825,18 +5825,6 @@ HTML_DASHBOARD = """
             padding: var(--hero-stack-gap) 18px 18px;
         }
         
-        .header {
-            text-align: center;
-            margin-bottom: var(--hero-stack-gap);
-            padding-bottom: 0;
-        }
-        
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 0;
-        }
-
         .title-rockets {
             display: inline-flex;
             align-items: center;
@@ -6212,18 +6200,29 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner {
+            display: grid;
+            grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) minmax(120px, 1fr);
+            align-items: center;
+            gap: 10px;
             border-radius: 10px;
             padding: 10px 12px;
             margin-bottom: var(--hero-stack-gap);
             border: 1px solid transparent;
-            text-align: center;
         }
 
         .trade-entry-banner .banner-title {
+            color: #333;
             font-size: 16px;
             font-weight: 800;
             letter-spacing: 0.6px;
-            margin-bottom: 2px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .trade-entry-banner .banner-price-slot {
+            min-width: 0;
+            text-align: left;
+            white-space: nowrap;
         }
 
         .trade-entry-banner .banner-price {
@@ -6267,7 +6266,10 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner .banner-meta {
-            display: block;
+            display: grid;
+            justify-self: end;
+            gap: 2px;
+            text-align: right;
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.2px;
@@ -6276,20 +6278,15 @@ HTML_DASHBOARD = """
         }
 
         .trade-entry-banner .banner-meta-left {
-            display: inline;
+            display: block;
         }
 
         .trade-entry-banner .banner-meta-divider {
             display: none;
-            margin: 0 4px;
-        }
-
-        .trade-entry-banner .banner-meta-divider.show {
-            display: inline;
         }
 
         .trade-entry-banner .banner-meta-right {
-            display: inline;
+            display: block;
             font-size: inherit;
             font-weight: inherit;
             letter-spacing: inherit;
@@ -6842,6 +6839,17 @@ HTML_DASHBOARD = """
                 gap: 4px;
             }
 
+            .trade-entry-banner {
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+
+            .trade-entry-banner .banner-price-slot,
+            .trade-entry-banner .banner-meta {
+                justify-self: center;
+                text-align: center;
+            }
+
             .primary-status-grid {
                 grid-template-columns: 1fr;
             }
@@ -7013,14 +7021,11 @@ HTML_DASHBOARD = """
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1><span class="title-rockets"><span>🚀</span><span>McLeod SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></h1>
-        </div>
-        
         <div id="message" class="message"></div>
 
         <div id="tradeEntryBanner" class="trade-entry-banner disabled">
-            <div class="banner-title" id="tradeEntryBannerTitle">⛔ TRADE ENTRY DISABLED ⛔</div>
+            <div class="banner-price-slot" id="tradeEntryBannerPrice">--</div>
+            <div class="banner-title"><span class="title-rockets"><span>🚀</span><span>McLeod SPY Options Trader Cockpit 1.4</span><span>🚀</span></span></div>
             <div class="banner-meta" id="tradeEntryBannerMeta">
                 <span class="banner-meta-left" id="tradeEntryBannerMetaLeft">🛑 Schwab 903</span><span class="banner-meta-divider" id="tradeEntryBannerMetaDivider">|</span><span class="banner-meta-right" id="tradeEntryBannerMetaRight"></span>
             </div>
@@ -7643,7 +7648,7 @@ HTML_DASHBOARD = """
                 // Trade entry readiness (fast and visible)
                 const tradeEntryEnabled = !!status.trade_entry_enabled;
                 const tradeEntryBanner = document.getElementById('tradeEntryBanner');
-                const tradeEntryBannerTitle = document.getElementById('tradeEntryBannerTitle');
+                const tradeEntryBannerPrice = document.getElementById('tradeEntryBannerPrice');
                 const tradeEntryBannerMeta = document.getElementById('tradeEntryBannerMeta');
                 const trendRaw = String(status.market_trend || status.trend || 'UNKNOWN').toUpperCase();
                 const trendMap = {
@@ -7743,7 +7748,6 @@ HTML_DASHBOARD = """
 
                 if (tradeEntryEnabled) {
                     tradeEntryBanner.className = 'trade-entry-banner enabled';
-                    tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 💰 OPEN FOR BUSINESS 💰`;
                 } else {
                     const bannerReason = String(status.trade_entry_reason || '').trim().toLowerCase();
                     const afterHoursRunning = !!status.bot_running && (
@@ -7753,14 +7757,14 @@ HTML_DASHBOARD = """
                     );
                     if (status.has_open_position) {
                         tradeEntryBanner.className = 'trade-entry-banner disabled';
-                        tradeEntryBannerTitle.textContent = '⛔ CURRENTLY IN A TRADE ⛔';
                     } else if (afterHoursRunning) {
                         tradeEntryBanner.className = 'trade-entry-banner after-hours';
-                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | 🔵 MARKET CLOSED 🔵`;
                     } else {
                         tradeEntryBanner.className = 'trade-entry-banner disabled';
-                        tradeEntryBannerTitle.innerHTML = `${priceBannerHtml} | ⛔ TRADE ENTRY DISABLED ⛔`;
                     }
+                }
+                if (tradeEntryBannerPrice) {
+                    tradeEntryBannerPrice.innerHTML = priceBannerHtml;
                 }
                 const tradeEntryBannerMetaLeft = document.getElementById('tradeEntryBannerMetaLeft');
                 const tradeEntryBannerMetaDivider = document.getElementById('tradeEntryBannerMetaDivider');

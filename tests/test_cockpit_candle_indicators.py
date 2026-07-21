@@ -188,6 +188,18 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "${side} requires ${requiredLabel}" not in source
 
 
+def test_top_banner_combines_title_price_and_stacked_status_meta():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert 'id="tradeEntryBannerPrice"' in source
+    assert '<span>McLeod SPY Options Trader Cockpit 1.4</span>' in source
+    assert 'grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) minmax(120px, 1fr);' in source
+    assert "const tradeEntryBannerPrice = document.getElementById('tradeEntryBannerPrice');" in source
+    assert "tradeEntryBannerPrice.innerHTML = priceBannerHtml;" in source
+    assert "tradeEntryBannerTitle" not in source
+    assert "OPEN FOR BUSINESS" not in source
+
+
 def test_indicator_snapshot_does_not_cap_qualifying_scores(monkeypatch, tmp_path):
     history_path = tmp_path / "spy_1min_history.csv"
     _write_candles(history_path)
