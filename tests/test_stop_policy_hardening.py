@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from unittest.mock import Mock
 
@@ -169,15 +170,21 @@ def test_exit_submission_cooldown_keeps_existing_protective_stop(monkeypatch):
     assert live_engine.close_trade(500.0, "MANUAL_EXIT") is False
 
 
-def test_reconciliation_clears_stale_local_position_when_broker_is_flat(monkeypatch):
+def test_reconciliation_clears_stale_local_position_when_broker_is_flat(monkeypatch, tmp_path):
     live_engine.current_position = _live_position()
     cleared = []
+    snapshot_path = tmp_path / "broker_reconciliation_snapshot.json"
+    monkeypatch.setattr(live_engine, "BROKER_RECONCILIATION_SNAPSHOT_PATH", snapshot_path)
     monkeypatch.setattr(live_engine, "get_schwab_positions", lambda: ([], [], 200, None))
     monkeypatch.setattr(live_engine, "clear_position", lambda: cleared.append(True))
 
     assert live_engine.reconcile_startup() is True
     assert cleared == [True]
     assert live_engine.current_position is None
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    assert snapshot["status"] == "SUCCESS"
+    assert snapshot["spy_option_positions"] == []
+    assert snapshot["spy_option_orders"] == []
 
 
 def test_broker_governor_blocks_all_calls_after_rate_limit(monkeypatch, tmp_path):

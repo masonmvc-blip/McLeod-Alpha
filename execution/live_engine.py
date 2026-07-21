@@ -51,6 +51,7 @@ OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SP
 BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
 BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
 BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
+BROKER_RECONCILIATION_SNAPSHOT_PATH = Path(__file__).resolve().parents[1] / "data" / "broker_reconciliation_snapshot.json"
 POST_EXIT_COOLING_FILE = Path(__file__).resolve().parents[1] / "data" / "post_exit_cooling.json"
 _broker_request_lock = threading.Lock()
 _last_broker_request_epoch = 0.0
@@ -75,6 +76,29 @@ def _persist_broker_rate_limit_cooldown():
         }))
     except OSError as exc:
         print(f"WARNING: Could not persist Schwab rate-limit cooldown: {exc}")
+
+
+def _persist_broker_reconciliation_snapshot(spy_positions, spy_orders):
+    """Project only the broker facts needed for local position reconciliation."""
+    payload = {
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "status": "SUCCESS",
+        "spy_option_positions": [
+            {"symbol": str(symbol), "quantity": float(quantity)}
+            for symbol, quantity, _position in spy_positions
+        ],
+        "spy_option_orders": [
+            {"symbol": str(symbol), "quantity": float(quantity), "status": str(status)}
+            for symbol, quantity, status, _order in spy_orders
+        ],
+    }
+    try:
+        BROKER_RECONCILIATION_SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = BROKER_RECONCILIATION_SNAPSHOT_PATH.with_suffix(".tmp")
+        temp_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        temp_path.replace(BROKER_RECONCILIATION_SNAPSHOT_PATH)
+    except OSError as exc:
+        print(f"WARNING: Could not persist broker reconciliation snapshot: {exc}")
 
 
 def _record_broker_rate_limit(response=None):
@@ -591,6 +615,8 @@ def reconcile_startup():
                         qty = leg.get("quantity", 0)
                         status = order.get("status", "")
                         spy_orders.append((symbol, qty, status, order))
+
+    _persist_broker_reconciliation_snapshot(spy_positions, spy_orders)
     
     # Check for critical issue: quantity exceeds configured cap.
     total_qty = sum(qty for _, qty, _ in spy_positions)
