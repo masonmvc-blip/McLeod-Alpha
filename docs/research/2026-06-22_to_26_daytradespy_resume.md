@@ -1,8 +1,10 @@
-# Day Trade SPY June 22-26 Resume Point
+# Day Trade SPY Research Resume Point
 
 ## Status
 
-The June 22-26, 2026 trading-week block is not complete. All five recordings are still `pending` in `data/research/daytradespy/archive_manifest.json`. June 26 was used to verify the corrected collection method and yielded 351 browser-visible transcript cues; it has not yet been analyzed.
+The June 22-26, 2026 trading-week block is complete. Its five browser-reviewed recordings are marked `reviewed_in_browser` / `complete` in the local manifest, and its synthesis was published in commit `8d4fd1a`.
+
+The next chronological block is June 15-18, 2026. June 19 was the Juneteenth market holiday. The four pending recordings are June 15 (`45147`), June 16 (`45158`), June 17 (`45169`), and June 18 (`45194`).
 
 ## Vimeo Transcript Collection Fix
 
@@ -27,8 +29,8 @@ For June 26, the scroll container measured `20752` px high with a `169` px viewp
 
 ## Next Actions
 
-1. Collect full browser-visible transcript cues for June 22-25 using the parent-container method.
-2. Analyze the five sessions without storing verbatim transcripts; retain structured evidence only.
-3. Create an evidence-based weekly synthesis, update all five manifest records to `reviewed_in_browser` / `complete`, validate, then commit and push the complete block.
+1. Collect full browser-visible transcript cues for June 15-18 using the parent-container method.
+2. Analyze the four sessions without storing verbatim transcripts; retain structured evidence only.
+3. Create an evidence-based holiday-shortened weekly synthesis, update all four manifest records to `reviewed_in_browser` / `complete`, validate, then commit and push the complete block.
 
 External recording commentary remains qualitative research only. Do not make live entry, exit, stop, or risk changes without replay and out-of-sample validation.
