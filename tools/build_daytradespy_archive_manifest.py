@@ -37,7 +37,7 @@ def _fetch_page(page: int, *, opener=urlopen) -> tuple[list[dict[str, Any]], int
     return payload, total_pages
 
 
-def build_manifest(*, fetch_page=_fetch_page) -> dict[str, Any]:
+def build_manifest(*, fetch_page=_fetch_page, existing: dict[str, Any] | None = None) -> dict[str, Any]:
     posts: list[dict[str, Any]] = []
     page = 1
     total_pages = 1
@@ -46,15 +46,20 @@ def build_manifest(*, fetch_page=_fetch_page) -> dict[str, Any]:
         posts.extend(batch)
         page += 1
 
+    existing_by_post_id = {
+        int(record["post_id"]): record
+        for record in (existing or {}).get("recordings", [])
+        if isinstance(record, dict) and record.get("post_id") is not None
+    }
     recordings = [
         {
             "post_id": int(post["id"]),
             "recording_date": str(post["date"]),
             "title": str((post.get("title") or {}).get("rendered") or ""),
             "source_url": str(post["link"]),
-            "transcript_status": "pending",
-            "transcript_path": "",
-            "analysis_status": "pending",
+            "transcript_status": str(existing_by_post_id.get(int(post["id"]), {}).get("transcript_status") or "pending"),
+            "transcript_path": str(existing_by_post_id.get(int(post["id"]), {}).get("transcript_path") or ""),
+            "analysis_status": str(existing_by_post_id.get(int(post["id"]), {}).get("analysis_status") or "pending"),
         }
         for post in posts
     ]
@@ -75,6 +80,15 @@ def write_manifest(manifest: dict[str, Any], output: Path) -> None:
     temporary.replace(output)
 
 
+def load_manifest(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Existing manifest is not an object: {path}")
+    return payload
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -84,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Generated manifest path.",
     )
     args = parser.parse_args(argv)
-    manifest = build_manifest()
+    manifest = build_manifest(existing=load_manifest(args.output))
     write_manifest(manifest, args.output)
     print(f"{args.output}: {manifest['recording_count']} recordings")
     return 0
