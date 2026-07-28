@@ -7448,6 +7448,8 @@ HTML_DASHBOARD = """
         let lastExecutionQualityRefreshMs = 0;
         let lastIndicatorPerformanceRefreshMs = 0;
         let lastIndicatorTradeSignature = null;
+        let completedTradeSignatures = null;
+        let tradeAudioPrimed = false;
         const LOGS_REFRESH_INTERVAL_MS = 500;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
@@ -7770,6 +7772,7 @@ HTML_DASHBOARD = """
         function playCashRegisterNoise() {
             try {
                 const sound = new Audio(TRADE_KACHING_AUDIO_PATH);
+                sound.preload = 'auto';
                 sound.play().catch(() => {});
             } catch (_) {
                 // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
@@ -7779,11 +7782,32 @@ HTML_DASHBOARD = """
         function playLossTrumpet() {
             try {
                 const sound = new Audio(TRADE_LOSS_TRUMPET_AUDIO_PATH);
+                sound.preload = 'auto';
                 sound.play().catch(() => {});
             } catch (_) {
                 // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
             }
         }
+
+        function primeTradeAudio() {
+            if (tradeAudioPrimed) {
+                return;
+            }
+            tradeAudioPrimed = true;
+            [TRADE_KACHING_AUDIO_PATH, TRADE_LOSS_TRUMPET_AUDIO_PATH].forEach((path) => {
+                try {
+                    const sound = new Audio(path);
+                    sound.muted = true;
+                    sound.play().then(() => {
+                        sound.pause();
+                        sound.currentTime = 0;
+                    }).catch(() => {});
+                } catch (_) {}
+            });
+        }
+
+        document.addEventListener('pointerdown', primeTradeAudio, { once: true, capture: true });
+        document.addEventListener('keydown', primeTradeAudio, { once: true, capture: true });
 
         function formatTimeAMPM(dateValue) {
             const d = new Date(dateValue);
@@ -8863,6 +8887,32 @@ HTML_DASHBOARD = """
                 }
 
                 const tradingDate = formatTradingDate(data.trading_date);
+                const currentTradeSignatures = new Set((data.trades || []).map((trade) => [
+                    trade.entry_time,
+                    trade.exit_time,
+                    trade.direction,
+                    trade.exit_reason,
+                    trade.pnl,
+                ].join('|')));
+                if (completedTradeSignatures !== null) {
+                    (data.trades || []).forEach((trade) => {
+                        const signature = [
+                            trade.entry_time,
+                            trade.exit_time,
+                            trade.direction,
+                            trade.exit_reason,
+                            trade.pnl,
+                        ].join('|');
+                        if (!completedTradeSignatures.has(signature)) {
+                            if (Number(trade.pnl) > 0) {
+                                playCashRegisterNoise();
+                            } else if (Number(trade.pnl) < 0) {
+                                playLossTrumpet();
+                            }
+                        }
+                    });
+                }
+                completedTradeSignatures = currentTradeSignatures;
                 if (data.is_fallback_day) {
                     heading.textContent = `📊 Most Recent Trading Day - ${tradingDate} 📊`;
                 } else {
