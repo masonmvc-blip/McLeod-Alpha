@@ -92,7 +92,14 @@ def build_morning_readiness(
     cockpit = _cockpit_status()
     scheduler = _load_json(scheduler_health_path)
     entry_pause = _load_json(entry_pause_path)
-    email_task = next((task for task in scheduler.get("tasks", []) if task.get("task") == "Daily Trade Email"), {})
+    email_task = next(
+        (
+            task
+            for task in scheduler.get("tasks", [])
+            if task.get("task") in {"Daily Bot Trade Review Email", "Daily Trade Email"}
+        ),
+        {},
+    )
     scheduler_ok = scheduler.get("trade_date") == now.date().isoformat() and email_task.get("status") in {"scheduled", "healthy"}
     local_symbol = str(_load_json(local_position_path).get("option_symbol") or "").strip()
     local = [local_symbol] if local_symbol else []

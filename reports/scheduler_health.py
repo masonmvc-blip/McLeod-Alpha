@@ -11,9 +11,9 @@ from zoneinfo import ZoneInfo
 
 CENTRAL_TZ = ZoneInfo("America/Chicago")
 REPORTS_DIR = Path("reports")
-EMAIL_STATE_PATH = Path("data/daily_trade_log_email_state.json")
+EMAIL_STATE_PATH = Path("data/daily_bot_trade_review_email_state.json")
 WATCHDOG_STATE_PATH = Path("data/scheduler_health_watchdog_state.json")
-MISSED_EMAIL_ALERT_DELAY_MINUTES = 15
+MISSED_EMAIL_ALERT_DELAY_MINUTES = 30
 _LAST_REFRESH_MINUTE: str | None = None
 
 
@@ -31,9 +31,7 @@ def _save_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _email_target_time() -> dt_time:
-    from execution.daily_trade_log_email import _configured_send_time_ct
-
-    return _configured_send_time_ct()
+    return dt_time(15, 30)
 
 
 def _artifact_status(path: Path, trade_date: str) -> dict[str, Any]:
@@ -62,9 +60,9 @@ def _maybe_alert_missed_daily_email(now_ct: datetime, target: dt_time, email_sta
     from execution.sms_alerts import send_emergency_alert
 
     delivered = send_emergency_alert(
-        "DAILY TRADE EMAIL MISSED",
+        "DAILY BOT TRADE REVIEW EMAIL MISSED",
         (
-            f"The {target.strftime('%H:%M')} CT daily trade email remains unsent after "
+            f"The {target.strftime('%H:%M')} CT daily bot trade review remains unsent after "
             f"{MISSED_EMAIL_ALERT_DELAY_MINUTES} minutes. Check Scheduler Health and SMTP delivery."
         ),
     )
@@ -74,7 +72,7 @@ def _maybe_alert_missed_daily_email(now_ct: datetime, target: dt_time, email_sta
             "alert_date": trade_date,
             "alert_at": now_ct.isoformat(),
             "alert_delivered": delivered,
-            "reason": "daily_trade_email_missed",
+            "reason": "daily_bot_trade_review_email_missed",
         },
     )
 
@@ -98,7 +96,7 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
 
     tasks = [
         {
-            "task": "Daily Trade Email",
+            "task": "Daily Bot Trade Review Email",
             "schedule_ct": target.strftime("%H:%M"),
             "status": email_status,
             "last_result": email_result,
@@ -113,7 +111,7 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
     ]
     for task, path in artifacts:
         status = _artifact_status(path, trade_date)
-        tasks.append({"task": task, "schedule_ct": "after daily email export", "next_run": None, **status})
+        tasks.append({"task": task, "schedule_ct": "after daily review export", "next_run": None, **status})
 
     payload = {
         "generated_at": now.isoformat(),
