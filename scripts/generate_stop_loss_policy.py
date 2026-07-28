@@ -62,40 +62,36 @@ def _build_policy() -> Dict[str, object]:
     brain_consts = _parse_constants(_read_text(BRAIN_ENGINE))
     initial_stop_loss_pct = -4.0
     max_trade_hold_minutes = brain_consts.get("MAX_TRADE_HOLD_MINUTES")
-    t1, t2, t3, t4, t5 = 8.0, 7.0, 6.0, 5.0, 4.0
-    t2_trigger, t2_entry_stop_pct = 2.0, 3.0
-    t3_trigger, t3_entry_stop_pct = 3.0, 1.0
     policy = Brain()
-    m1 = policy._trailing_stop(5.0, 4.75, 5.40, 8.0)[0] / 5.40
-    m2 = policy._trailing_stop(5.0, 4.75, 5.35, 7.0)[0] / 5.35
-    m3 = policy._trailing_stop(5.0, 4.75, 5.30, 6.0)[0] / 5.30
-    m4 = policy._trailing_stop(5.0, 4.75, 5.25, 5.0)[0] / 5.25
-    m5 = policy._trailing_stop(5.0, 4.75, 5.20, 4.0)[0] / 5.20
-
-    trail1_pct = round((1.0 - m1) * 100.0, 2)
-    trail2_pct = round((1.0 - m2) * 100.0, 2)
-    trail3_pct = round((1.0 - m3) * 100.0, 2)
-    trail4_pct = round((1.0 - m4) * 100.0, 2)
-    trail5_pct = round((1.0 - m5) * 100.0, 2)
+    tiers = []
+    for profit_trigger in (1.0, 2.0, 3.0, 4.0):
+        quote = 5.0 * (1.0 + (profit_trigger / 100.0))
+        stop, reason = policy._trailing_stop(5.0, 4.8, quote, profit_trigger)
+        tiers.append({
+            "profit_trigger": profit_trigger,
+            "stop_pct": round((1.0 - (stop / quote)) * 100.0, 2),
+            "reason": reason,
+        })
 
     return {
         "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "initial_stop_loss_pct": float(initial_stop_loss_pct),
         "max_trade_hold_minutes": int(max_trade_hold_minutes) if max_trade_hold_minutes is not None else None,
-        "trail_1_trigger": float(t1),
-        "trail_2_trigger": float(t2),
-        "trail_3_trigger": float(t3),
-        "trail_4_trigger": float(t4),
-        "trail_5_trigger": float(t5),
-        "two_pct_trigger": float(t2_trigger) if t2_trigger is not None else None,
-        "two_pct_entry_stop_pct": float(t2_entry_stop_pct) if t2_entry_stop_pct is not None else None,
-        "three_pct_trigger": float(t3_trigger) if t3_trigger is not None else None,
-        "three_pct_entry_stop_pct": float(t3_entry_stop_pct) if t3_entry_stop_pct is not None else None,
-        "trail_1_pct": trail1_pct,
-        "trail_2_pct": trail2_pct,
-        "trail_3_pct": trail3_pct,
-        "trail_4_pct": trail4_pct,
-        "trail_5_pct": trail5_pct,
+        "tiers": tiers,
+        "two_pct_trigger": 1.0,
+        "two_pct_entry_stop_pct": 3.0,
+        "three_pct_trigger": 2.0,
+        "three_pct_entry_stop_pct": 2.0,
+        "trail_5_trigger": 3.0,
+        "trail_5_pct": 1.5,
+        "trail_4_trigger": 4.0,
+        "trail_4_pct": 1.0,
+        "trail_3_trigger": 4.0,
+        "trail_3_pct": 1.0,
+        "trail_2_trigger": 4.0,
+        "trail_2_pct": 1.0,
+        "trail_1_trigger": 4.0,
+        "trail_1_pct": 1.0,
         "brain_source": str(BRAIN_ENGINE.relative_to(ROOT)),
     }
 
@@ -144,13 +140,13 @@ def _build_html(policy: Dict[str, object]) -> str:
     two_pct_rule_row = ""
     if two_pct_trigger is not None and two_pct_entry_stop_pct is not None:
         at_t2_lock = entry * (1.0 + float(two_pct_trigger) / 100.0)
-        stop_t2_lock = entry * (1.0 - float(two_pct_entry_stop_pct) / 100.0)
+        stop_t2_lock = at_t2_lock * (1.0 - float(two_pct_entry_stop_pct) / 100.0)
         two_pct_rule_row = f"""
             <tr>
-              <td>2% Stop</td>
+              <td>1% Stop</td>
               <td>>= +{float(two_pct_trigger):.1f}%</td>
-              <td>Set stop to {float(two_pct_entry_stop_pct):.1f}% below entry</td>
-              <td>entry x {_multiplier_from_pct(float(two_pct_entry_stop_pct))}</td>
+              <td>Trail {float(two_pct_entry_stop_pct):.1f}% below quote</td>
+              <td>quote x {_multiplier_from_pct(float(two_pct_entry_stop_pct))}</td>
               <td>{_money(at_t2_lock)} -> {_money(stop_t2_lock)}</td>
               <td>{_trigger_to_stop_spacing(at_t2_lock, stop_t2_lock)}</td>
               <td>{_exit_pl_formula(entry, stop_t2_lock)}</td>
@@ -162,13 +158,13 @@ def _build_html(policy: Dict[str, object]) -> str:
     three_pct_rule_row = ""
     if three_pct_trigger is not None and three_pct_entry_stop_pct is not None:
         at_t3_lock = entry * (1.0 + float(three_pct_trigger) / 100.0)
-        stop_t3_lock = entry * (1.0 - float(three_pct_entry_stop_pct) / 100.0)
+        stop_t3_lock = at_t3_lock * (1.0 - float(three_pct_entry_stop_pct) / 100.0)
         three_pct_rule_row = f"""
             <tr>
-              <td>3% Stop</td>
+              <td>2% Stop</td>
               <td>>= +{float(three_pct_trigger):.1f}%</td>
-              <td>Set stop to {float(three_pct_entry_stop_pct):.1f}% below entry</td>
-              <td>entry x {_multiplier_from_pct(float(three_pct_entry_stop_pct))}</td>
+              <td>Trail {float(three_pct_entry_stop_pct):.1f}% below quote</td>
+              <td>quote x {_multiplier_from_pct(float(three_pct_entry_stop_pct))}</td>
               <td>{_money(at_t3_lock)} -> {_money(stop_t3_lock)}</td>
               <td>{_trigger_to_stop_spacing(at_t3_lock, stop_t3_lock)}</td>
               <td>{_exit_pl_formula(entry, stop_t3_lock)}</td>
@@ -205,7 +201,7 @@ def _build_html(policy: Dict[str, object]) -> str:
       body {{ zoom: 0.90; }}
       .card {{ break-inside: avoid; }}
     }}
-    @page {{ size: letter portrait; margin: 5mm; }}
+      @page {{ size: letter landscape; margin: 5mm; }}
   </style>
 </head>
 <body>
@@ -242,7 +238,7 @@ def _build_html(policy: Dict[str, object]) -> str:
 {two_pct_rule_row}
 {three_pct_rule_row}
             <tr>
-              <td>4% TRAIL</td>
+              <td>3% Stop</td>
               <td>>= +{policy['trail_5_trigger']:.1f}%</td>
               <td>Trail {policy['trail_5_pct']:.1f}% below quote</td>
               <td>quote x {_multiplier_from_pct(float(policy['trail_5_pct']))}</td>
@@ -250,42 +246,15 @@ def _build_html(policy: Dict[str, object]) -> str:
               <td>{_trigger_to_stop_spacing(at_t5, stop_t5)}</td>
               <td>{_exit_pl_formula(entry, stop_t5)}</td>
             </tr>
-            <tr>
-              <td>5% TRAIL</td>
-              <td>>= +{policy['trail_4_trigger']:.1f}%</td>
-              <td>Trail {policy['trail_4_pct']:.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(policy['trail_4_pct']))}</td>
-              <td>{_money(at_t4)} -> {_money(stop_t4)}</td>
-              <td>{_trigger_to_stop_spacing(at_t4, stop_t4)}</td>
-              <td>{_exit_pl_formula(entry, stop_t4)}</td>
-            </tr>
-            <tr>
-              <td>6% TRAIL</td>
-              <td>>= +{policy['trail_3_trigger']:.1f}%</td>
-              <td>Trail {policy['trail_3_pct']:.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(policy['trail_3_pct']))}</td>
-              <td>{_money(at_t3)} -> {_money(stop_t3)}</td>
-              <td>{_trigger_to_stop_spacing(at_t3, stop_t3)}</td>
-              <td>{_exit_pl_formula(entry, stop_t3)}</td>
-            </tr>
-            <tr>
-              <td>7% TRAIL</td>
-              <td>>= +{policy['trail_2_trigger']:.1f}%</td>
-              <td>Trail {policy['trail_2_pct']:.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(policy['trail_2_pct']))}</td>
-              <td>{_money(at_t2)} -> {_money(stop_t2)}</td>
-              <td>{_trigger_to_stop_spacing(at_t2, stop_t2)}</td>
-              <td>{_exit_pl_formula(entry, stop_t2)}</td>
-            </tr>
-            <tr>
-              <td>8% TRAIL</td>
-              <td>>= +{policy['trail_1_trigger']:.1f}%</td>
-              <td>Trail {policy['trail_1_pct']:.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(policy['trail_1_pct']))}</td>
-              <td>{_money(at_t1)} -> {_money(stop_t1)}</td>
-              <td>{_trigger_to_stop_spacing(at_t1, stop_t1)}</td>
-              <td>{_exit_pl_formula(entry, stop_t1)}</td>
-            </tr>
+              <tr>
+                <td>4% Stop</td>
+                <td>>= +{policy['trail_2_trigger']:.1f}%</td>
+                <td>Trail {policy['trail_2_pct']:.1f}% below quote</td>
+                <td>quote x {_multiplier_from_pct(float(policy['trail_2_pct']))}</td>
+                <td>{_money(at_t2)} -> {_money(stop_t2)}</td>
+                <td>{_trigger_to_stop_spacing(at_t2, stop_t2)}</td>
+                <td>{_exit_pl_formula(entry, stop_t2)}</td>
+              </tr>
           </tbody>
         </table>
       </div>
@@ -308,7 +277,7 @@ def _build_html(policy: Dict[str, object]) -> str:
     </div>
   </div>
 
-  <div class=\"foot\">Print settings: Letter, Portrait, Fit to page.</div>
+    <div class="foot">Print settings: Letter, Landscape, Fit to page.</div>
 </body>
 </html>
 """
@@ -367,7 +336,7 @@ def _print_pdf(pdf_path: Path) -> Tuple[bool, str]:
             "-o",
             "media=Letter",
             "-o",
-            "orientation-requested=3",
+            "orientation-requested=4",
             "-o",
             "fit-to-page",
             str(pdf_path),
