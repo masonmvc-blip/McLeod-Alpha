@@ -1,0 +1,64 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41128,
+    "title": "Trading Room Video Recording - July 31, 2025",
+    "publication_date": "2025-07-31",
+    "source_url": "https://daytradespy.com/41128/trading-room-video-recording-july-31-2025/",
+    "duration_seconds": 4220,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1504, "first_timestamp": "00:00:00", "last_timestamp": "01:09:30", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:10:20 asset. Player volume was verified at 0 percent, the Play control remained present, and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 86, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:05:42", "classification": "CROSS_SESSION_RESOLUTION", "claim": "Prior challenge calls were reported sold the previous day for a 1,864-dollar loss."},
+    {"timestamp": "00:08:49", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Twenty August 8 638 challenge puts entered at 3.88 and later exited at 4.12."},
+    {"timestamp": "00:15:54", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The late-noticed formal OMG entered 638 puts at 3.96 and exited at 4.20."},
+    {"timestamp": "00:30:07", "classification": "AMBIGUOUS_EXIT", "claim": "Sixteen 639 calls entered at 5.00; a 5.15 exit was queued but not unambiguously narrated."},
+    {"timestamp": "00:37:30", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Two 640-call scalps completed at 4.49 to 4.60 and 4.48 to 4.60."},
+    {"timestamp": "01:08:40", "classification": "UNRESOLVED_TRADE", "claim": "Late 638 and 639 put positions remained unresolved at room close."}
+  ],
+  "claims": [
+    {"id": "DTS-20250731-P41128-C01", "timestamp": "00:15:54", "label": "LATE_FORMAL_OMG_ENTRY", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_GOVERNANCE", "claim": "The formal downside OMG was noticed late and entered after other downside trades.", "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE", "3m": "SOURCE_REPORTED_TARGET", "5m": "TRADE_CLOSED", "10m": "TRADE_CLOSED", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"}, "disconfirming_evidence_required": "Executable spread and comparison with an on-time entry."},
+    {"id": "DTS-20250731-P41128-C02", "timestamp": "00:30:07", "label": "AMBIGUOUS_AUDIBLE_FILL", "fact_classification": "AMBIGUOUS_EXIT", "status": "NEEDS_RECONCILIATION", "claim": "The 639-call target was queued and a fill sound occurred, but the terminal price was not clearly confirmed.", "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE", "3m": "PROBABLE_FILL", "5m": "AMBIGUOUS_TERMINAL_STATE", "10m": "AMBIGUOUS_TERMINAL_STATE", "15m": "AMBIGUOUS_TERMINAL_STATE", "remainder_session": "AMBIGUOUS_TERMINAL_STATE"}, "disconfirming_evidence_required": "Broker order and fill record."},
+    {"id": "DTS-20250731-P41128-C03", "timestamp": "00:37:30", "label": "HEAVY_SMALL_PREMIUM_SCALPS", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_GOVERNANCE", "claim": "Rapid call scalps sought small premium moves while the presenter described trading heavily.", "forward_outcomes": {"1m": "SOURCE_REPORTED_TARGET", "3m": "TRADE_CLOSED", "5m": "TRADE_CLOSED", "10m": "TRADE_CLOSED", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"}, "disconfirming_evidence_required": "Contract count, maximum loss, executable spread, and fees."},
+    {"id": "DTS-20250731-P41128-C04", "timestamp": "01:04:56", "label": "MODELED_PICK_RESULT", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_RECONCILIATION", "claim": "The published 638-put pick was modeled from 3.74 to 3.96 rather than broker verified.", "forward_outcomes": {"1m": "SOURCE_MODELED_FAVORABLE", "3m": "SOURCE_MODELED_TARGET", "5m": "SOURCE_MODELED_TARGET", "10m": "SOURCE_MODELED_TARGET", "15m": "SOURCE_MODELED_TARGET", "remainder_session": "SOURCE_MODELED_TARGET"}, "disconfirming_evidence_required": "Alert, simulator, and broker fills."},
+    {"id": "DTS-20250731-P41128-C05", "timestamp": "01:08:40", "label": "LATE_POSITIONS_UNRECONCILED", "fact_classification": "UNRESOLVED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "Two late put positions remained open and another put exit lacked its price.", "forward_outcomes": {"1m": "UNRESOLVED", "3m": "UNRESOLVED", "5m": "UNRESOLVED", "10m": "UNRESOLVED", "15m": "UNRESOLVED", "remainder_session": "TERMINAL_FILLS_UNAVAILABLE"}, "disconfirming_evidence_required": "Position ledger and terminal broker fills."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250731-P41128-T01", "type": "PUT_POSITION", "setup": "August 8 638 puts; challenge, 20 contracts", "entry_time": "00:08:49", "entry_premium": 3.88, "exit_time": "00:17:43", "exit_premium": 4.12, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250731-P41128-T02", "type": "PUT_POSITION", "setup": "August 8 639 puts; discretionary", "entry_time": "00:12:21", "entry_premium": 4.06, "exit_time": "00:15:35", "exit_premium": 4.40, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250731-P41128-T03", "type": "PUT_POSITION", "setup": "August 8 638 puts; formal downside OMG", "entry_time": "00:16:51", "entry_premium": 3.96, "exit_time": "00:18:09", "exit_premium": 4.20, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250731-P41128-T04", "type": "CALL_POSITION", "setup": "August 8 639 calls; challenge, 16 contracts", "entry_time": "00:30:07", "entry_premium": 5.00, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 5.15; probable but ambiguous fill"},
+    {"source_trade_id": "DTS-20250731-P41128-T05", "type": "CALL_POSITION", "setup": "August 8 640 calls; scalp 1", "entry_time": "00:37:30", "entry_premium": 4.49, "exit_time": "00:40:16", "exit_premium": 4.60, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250731-P41128-T06", "type": "CALL_POSITION", "setup": "August 8 640 calls; scalp 2", "entry_time": "00:43:05", "entry_premium": 4.48, "exit_time": "00:44:07", "exit_premium": 4.60, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250731-P41128-T07", "type": "PUT_POSITION", "setup": "August 8 639 puts; discretionary", "entry_time": "00:49:39", "entry_premium": 4.02, "exit_time": "00:59:47", "exit_premium": null, "stop_or_invalidation": "Exit reported, price unavailable"},
+    {"source_trade_id": "DTS-20250731-P41128-T08", "type": "PUT_POSITION", "setup": "August 8 638 puts; late challenge/scalp", "entry_time": "00:58:57", "entry_premium": 3.82, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target later near low of day; unresolved"},
+    {"source_trade_id": "DTS-20250731-P41128-T09", "type": "PUT_POSITION", "setup": "August 8 639 puts; late discretionary", "entry_time": "01:04:00", "entry_premium": 4.23, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 4.61; unresolved"},
+    {"source_trade_id": "DTS-20250731-P41128-T10", "type": "PUT_POSITION", "setup": "Published August 8 638-put pick; modeled", "entry_time": "SOURCE_MODELED_09_31", "entry_premium": 3.74, "exit_time": "SOURCE_MODELED_09_39", "exit_premium": 3.96, "stop_or_invalidation": "Target reportedly reached"},
+    {"source_trade_id": "DTS-20250731-P41128-T11", "type": "MODELED_SIGNAL", "setup": "Day Trade SPY call signal", "entry_time": null, "entry_premium": null, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Still waiting to fill at room close"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 11, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": ["Several 638 and 639 puts share one downside thesis."], "conflicts": ["Formal OMG was noticed late.", "Multiple puts overlapped.", "One call exit was ambiguous.", "Heavy scalps lacked size-adjusted risk.", "Late put positions lacked terminal fills."], "unavailable_evidence": ["Full visual review, broker and simulator events, complete quantities, unambiguous 639-call exit, terminal late-put fills, call-signal fill, aggregate risk, synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]},
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "EARNINGS_GAP", "evidence": "Meta and Microsoft earnings drove a large gap."},
+    {"timestamp": "00:08:49", "state": "SHARP_OPENING_REVERSAL", "evidence": "Puts entered during the opening decline."},
+    {"timestamp": "00:30:07", "state": "STRONG_REFLEX_BOUNCE", "evidence": "Calls entered during the retracement."},
+    {"timestamp": "00:49:39", "state": "RANGE_WITH_DOWNSIDE_BIAS", "evidence": "Late puts entered near resistance."},
+    {"timestamp": "01:08:40", "state": "UNRESOLVED_LATE_DOWNSIDE", "evidence": "Two puts remained open."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:15:54", "type": "TIMELY_VERSUS_LATE_OMG", "detail": "Compare on-time and late entries under executable spreads."},
+    {"timestamp": "00:37:30", "type": "SIZE_ADJUSTED_SCALP_RISK", "detail": "Normalize results by premium at risk and contracts."},
+    {"timestamp": "00:30:07", "type": "TERMINAL_FILL_CONFIRMATION", "detail": "Require verbal or broker-confirmed exits."},
+    {"timestamp": "00:49:39", "type": "AGGREGATE_SAME_THESIS_POSITIONS", "detail": "Combine overlapping put exposure."},
+    {"timestamp": "01:08:40", "type": "END_OF_ROOM_RECONCILIATION", "detail": "Require final status for every order and position."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator events", "Complete quantities", "Unambiguous 639-call exit", "Terminal late-put fills", "Call-signal fill", "Aggregate risk", "Synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250731-P41128-C01", "DTS-20250731-P41128-C02", "DTS-20250731-P41128-C03", "DTS-20250731-P41128-C04", "DTS-20250731-P41128-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
