@@ -93,6 +93,22 @@ def test_active_stop_reason_uses_the_actual_stop_price():
     assert active_stop_category(5.00, stop_price=5.15) == "4% Stop"
 
 
+def test_today_trades_renders_immutable_entry_checklist_count_before_gate_score():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "indicators = `${formatNumber(indicatorCountRaw)} / ${formatNumber(indicatorTotalRaw)}`;" in source
+    assert "const checklistPassed = Math.max(0, Math.min(5, gateRounded));" not in source
+
+
+def test_market_bells_use_independent_visible_dashboard_clock():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "function startMarketBellClock()" in source
+    assert "maybePlayMarketSessionBells(null);" in source
+    assert "}, 250);" in source
+    assert "startMarketBellClock();" in source
+
+
 def test_current_position_shows_stop_category_and_protective_stop_price():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

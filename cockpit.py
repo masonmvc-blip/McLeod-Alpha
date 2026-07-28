@@ -7503,6 +7503,7 @@ HTML_DASHBOARD = """
         const DASHBOARD_POLL_LEASE_MS = 5000;
         let isPollingLeader = false;
         let pollLeaderHeartbeatInterval = null;
+        let marketBellClockInterval = null;
         let previousHasOpenPosition = null;
         let previousOpenTradePnlDollars = null;
         let activeBellPlaybackCount = 0;
@@ -7607,6 +7608,15 @@ HTML_DASHBOARD = """
                 }
                 becomeLeader(false);
             }, Math.max(1000, Math.floor(DASHBOARD_POLL_LEASE_MS / 2)));
+        }
+
+        function startMarketBellClock() {
+            clearInterval(marketBellClockInterval);
+            marketBellClockInterval = setInterval(() => {
+                if (isDashboardVisible() && becomeLeader(false)) {
+                    maybePlayMarketSessionBells(null);
+                }
+            }, 250);
         }
 
         function setTitleBellMode(enabled) {
@@ -9012,17 +9022,10 @@ HTML_DASHBOARD = """
                     html += `<td data-label="#">${trade.contracts === null || trade.contracts === undefined ? '-' : trade.contracts}</td>`;
                     html += `<td data-label="Entry">${formatMoney(trade.entry_price || 0)}</td>`;
                     html += `<td data-label="Exit">${formatMoney(trade.exit_price || 0)}</td>`;
-                    const entryGateRaw = trade.entry_gate_score;
                     const indicatorCountRaw = trade.indicator_count;
                     const indicatorTotalRaw = trade.indicator_total;
                     let indicators = '-';
-                    if (entryGateRaw !== null && entryGateRaw !== undefined && !Number.isNaN(Number(entryGateRaw)) && Math.abs(Number(entryGateRaw) - Math.round(Number(entryGateRaw))) < 0.001) {
-                        // Entry gate can include extra confirmation points (>5),
-                        // but execution checklist pass/fail is out of 5.
-                        const gateRounded = Math.round(Number(entryGateRaw));
-                        const checklistPassed = Math.max(0, Math.min(5, gateRounded));
-                        indicators = `${formatNumber(checklistPassed)} / 5`;
-                    } else if (!(indicatorCountRaw === null || indicatorCountRaw === undefined || indicatorTotalRaw === null || indicatorTotalRaw === undefined)) {
+                    if (!(indicatorCountRaw === null || indicatorCountRaw === undefined || indicatorTotalRaw === null || indicatorTotalRaw === undefined)) {
                         indicators = `${formatNumber(indicatorCountRaw)} / ${formatNumber(indicatorTotalRaw)}`;
                     }
                     const cq = (trade.continuation_quality_score === null || trade.continuation_quality_score === undefined) ? '-' : formatNumber(trade.continuation_quality_score, 2);
@@ -9096,6 +9099,7 @@ HTML_DASHBOARD = """
         window.addEventListener('load', () => {
             becomeLeader(true);
             startLeaderHeartbeat();
+            startMarketBellClock();
             refreshPollingSchedule();
             refreshStatus();
             refreshLogs();
@@ -9135,6 +9139,7 @@ HTML_DASHBOARD = """
         });
 
         window.addEventListener('beforeunload', () => {
+            clearInterval(marketBellClockInterval);
             releaseLeaderLease();
         });
     </script>
