@@ -28,6 +28,31 @@ def _broker_trade(entry_order_id="entry-1", exit_order_id="exit-1"):
     }
 
 
+def test_today_trade_projection_prefers_broker_cash_and_preserves_diagnostics():
+    local = {
+        **_broker_trade("replaced-entry", "shared-exit"),
+        "entry_time": "2026-07-20T10:00:01-04:00",
+        "entry_price": 600.0,
+        "exit_price": 599.8,
+        "feature_payload": '{"checklist": {"passed": 5, "total": 5}}',
+    }
+    broker_cash = {
+        **_broker_trade("actual-entry", "shared-exit"),
+        "entry_time": "2026-07-20T10:00:03-04:00",
+        "entry_price": 1.0,
+        "exit_price": 1.2,
+        "pnl": 18.67,
+        "pnl_source": "broker_cash",
+    }
+
+    rows = cockpit._prefer_broker_cash_option_rows([local, broker_cash])
+
+    assert len(rows) == 1
+    assert rows[0]["pnl"] == 18.67
+    assert rows[0]["pnl_source"] == "broker_cash"
+    assert rows[0]["feature_payload"] == local["feature_payload"]
+
+
 def test_active_broker_protective_stop_price_uses_live_stop_order(monkeypatch):
     class Response:
         def raise_for_status(self):

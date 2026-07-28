@@ -3984,6 +3984,47 @@ def _collapse_split_trade_rows(rows):
     return sorted(collapsed, key=lambda t: str(t.get("entry_time") or ""), reverse=True)
 
 
+def _prefer_broker_cash_option_rows(rows):
+    """Keep one option trade when local and broker rows describe the same exit."""
+    retained = []
+    for row in rows or []:
+        trade = dict(row)
+        exit_order_id = str(trade.get("broker_exit_order_id") or "")
+        entry_time = _parse_iso_datetime(trade.get("entry_time"))
+        duplicate_index = None
+        if exit_order_id and entry_time is not None:
+            for index, existing in enumerate(retained):
+                existing_exit_id = str(existing.get("broker_exit_order_id") or "")
+                existing_entry_time = _parse_iso_datetime(existing.get("entry_time"))
+                if (
+                    existing_exit_id == exit_order_id
+                    and str(existing.get("option_symbol") or "") == str(trade.get("option_symbol") or "")
+                    and str(existing.get("direction") or "").upper() == str(trade.get("direction") or "").upper()
+                    and existing_entry_time is not None
+                    and abs((existing_entry_time - entry_time).total_seconds()) <= 90
+                ):
+                    duplicate_index = index
+                    break
+
+        if duplicate_index is None:
+            retained.append(trade)
+            continue
+
+        existing = retained[duplicate_index]
+        existing_is_broker_cash = str(existing.get("pnl_source") or "").lower() == "broker_cash"
+        trade_is_broker_cash = str(trade.get("pnl_source") or "").lower() == "broker_cash"
+        primary, secondary = (trade, existing) if trade_is_broker_cash and not existing_is_broker_cash else (existing, trade)
+        for field in (
+            "feature_payload", "entry_diagnostic_snapshot", "exit_diagnostic_snapshot",
+            "momentum_phase", "absorption_score", "manual_label",
+        ):
+            if not primary.get(field) and secondary.get(field):
+                primary[field] = secondary[field]
+        retained[duplicate_index] = primary
+
+    return retained
+
+
 def _schwab_transaction_day_net_pnl(trading_date: str):
     """Return net SPY option cash P&L for a day from Schwab transaction history."""
     if not trading_date:
@@ -5262,6 +5303,7 @@ def api_today_trades():
 
         # Keep one row per logical trade even when executions are split.
         trades = _collapse_split_trade_rows(trades)
+        trades = _prefer_broker_cash_option_rows(trades)
 
         # Enrich broker-derived rows with local diagnostics persisted at entry/exit.
         if trades and trading_date:
@@ -5600,6 +5642,16 @@ def api_today_trades():
                 trade['contracts'] = int(round(qty_value)) if abs(qty_value - round(qty_value)) < 1e-9 else qty_value
             except (TypeError, ValueError):
                 trade['contracts'] = None
+
+            # The dashboard is an options execution ledger: never display the
+            # underlying SPY reference price when option fills are available.
+            try:
+                if float(option_entry or 0) > 0:
+                    trade['entry_price'] = float(option_entry)
+                if float(option_exit or 0) > 0:
+                    trade['exit_price'] = float(option_exit)
+            except (TypeError, ValueError):
+                pass
 
             if str(trade.get('pnl_source') or '').lower() == 'broker_cash':
                 trade['pnl'] = round(float(trade.get('pnl', 0) or 0), 2)
