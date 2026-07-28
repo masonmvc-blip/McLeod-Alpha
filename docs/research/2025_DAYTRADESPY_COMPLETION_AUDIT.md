@@ -13,16 +13,16 @@ Audit date: 2026-07-28.
 - The 2025 archive registry contains 230 posts representing 208 publication
   dates; 21 dates contain duplicate, delayed, or reposted entries that require
   post-level resolution.
-- `docs/research` contains 106 dated 2025 daily-report filenames.
-- `data/research/daytradespy/records` contains 50 dated machine records.
-- The registry contains 91 post-level reviews with evidence metadata: 84 Tier C
-  transcript-based reviews and 7 Tier E access/content gaps. Another 139
+- `docs/research` contains 109 dated 2025 daily-report filenames.
+- `data/research/daytradespy/records` contains 53 dated machine records.
+- The registry contains 94 post-level reviews with evidence metadata: 87 Tier C
+  transcript-based reviews and 7 Tier E access/content gaps. Another 136
   archive posts remain pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
 - Reports dated May 6, May 7, and June 12 are evidence-gap placeholders, not substantive
   recording reviews.
-- May 8, May 9, May 12-23, May 27-30, and June 2, 3, 5, 9-11, 16, and 17 were upgraded from
+- May 8, May 9, May 12-23, May 27-30, and June 2, 3, 5, 9-11, 16-18, 23, and 24 were upgraded from
   apparent caption gaps or pending status to substantive Tier C reports after
   their complete authorized Vimeo transcripts were recovered from the player.
 - No 2025 recording is Tier A because full visual review and independent
@@ -48,7 +48,7 @@ Audit date: 2026-07-28.
    private-video denial; June 12 retains Tier E because its player reports that
    the video does not exist. Do not fabricate reviews.
 3. Continue missing substantive daily reports chronologically from the June
-   18 recording (post `40646`) through year-end.
+   25 recording (post `40726`) through year-end.
 4. Resolve duplicate/reposted posts by post ID so one dated filename does not
    silently represent two different assets.
 5. Backfill machine records and improve weaker January-March reports only after
@@ -89,10 +89,10 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording date: June 18, 2025
-- Post ID: `40646`
+- Recording date: June 25, 2025
+- Post ID: `40726`
 - Source:
-  `https://daytradespy.com/40646/trading-room-video-recording-june-18-2025/`
+  `https://daytradespy.com/40726/trading-room-video-recording-june-25-2025/`
 - Current status: registry pending
 
 ## Governance
