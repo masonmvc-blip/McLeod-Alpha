@@ -62,7 +62,16 @@ def test_status_prefers_indicator_snapshot_timestamp_for_candle_freshness():
     source = (cockpit.PROJECT_ROOT / "engine" / "runtime_status.py").read_text(encoding="utf-8")
 
     assert 'status["last_candle_at"] = indicator_candle_at.astimezone(EASTERN_TZ).isoformat()' in source
+    assert 'status["last_candle_posted_at"] = (' in source
+    assert 'timedelta(minutes=1)' in source
     assert 'if status.get("last_candle_at"):' in source
+
+
+def test_banner_uses_candle_posting_timestamp():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const candlePostedAt = status.last_candle_posted_at || candleAt;" in source
+    assert "const candleTimeText = formatTimeAMPM(candlePostedAt);" in source
 
 
 def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):

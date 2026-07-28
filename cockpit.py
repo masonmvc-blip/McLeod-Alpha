@@ -8257,7 +8257,8 @@ HTML_DASHBOARD = """
                         : `<span class="banner-price banner-tone-flat">$${spyPrice.toFixed(2)}</span>`;
                 }
                 const candleAt = status.last_candle_at || '';
-                const candleTimeText = formatTimeAMPM(candleAt);
+                const candlePostedAt = status.last_candle_posted_at || candleAt;
+                const candleTimeText = formatTimeAMPM(candlePostedAt);
 
                 if (tradeEntryEnabled) {
                     tradeEntryBanner.className = 'trade-entry-banner enabled';

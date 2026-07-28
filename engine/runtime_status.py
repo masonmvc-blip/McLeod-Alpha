@@ -232,6 +232,7 @@ def _build_runtime_status():
         "trend": "UNKNOWN",
         "market_trend": "UNKNOWN",
         "last_candle_at": None,
+        "last_candle_posted_at": None,
         "candle_age_seconds": None,
         "spy_price": None,
         "spy_change": None,
@@ -310,6 +311,9 @@ def _build_runtime_status():
             if indicator_candle_at.tzinfo is None:
                 indicator_candle_at = indicator_candle_at.replace(tzinfo=EASTERN_TZ)
             status["last_candle_at"] = indicator_candle_at.astimezone(EASTERN_TZ).isoformat()
+            status["last_candle_posted_at"] = (
+                indicator_candle_at.astimezone(EASTERN_TZ) + timedelta(minutes=1)
+            ).isoformat()
             status["candle_age_seconds"] = round(
                 max(0.0, (datetime.now(timezone.utc) - indicator_candle_at.astimezone(timezone.utc)).total_seconds()),
                 1,
@@ -630,6 +634,9 @@ def _build_runtime_status():
             try:
                 candle_at = datetime.fromisoformat(candle_match.group(1)).replace(tzinfo=timezone.utc)
                 status["last_candle_at"] = candle_at.astimezone(EASTERN_TZ).isoformat()
+                status["last_candle_posted_at"] = (
+                    candle_at.astimezone(EASTERN_TZ) + timedelta(minutes=1)
+                ).isoformat()
                 status["candle_age_seconds"] = round(
                     max(0.0, (datetime.now(timezone.utc) - candle_at).total_seconds()),
                     1,
