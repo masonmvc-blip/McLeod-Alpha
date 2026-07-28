@@ -1,0 +1,118 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40741,
+    "title": "Trading Room Video Recording - June 26, 2025",
+    "publication_date": "2025-06-26",
+    "source_url": "https://daytradespy.com/40741/trading-room-video-recording-june-26-2025/",
+    "duration_seconds": 4443,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 515,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:13:10",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Transcript IDs 0-514 reach the terminal available cue of the 01:14:03 asset; the recording remained muted throughout review."
+    },
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:09:43", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Prior-day real July 3 609 calls bought at 4.73 sold at 4.78."},
+    {"timestamp": "00:13:07", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Sixteen July 3 610 two-80 calls entered at 4.18."},
+    {"timestamp": "00:29:04", "classification": "PRESENTER_CLAIM", "claim": "The room maintained that no qualifying OMG close had occurred."},
+    {"timestamp": "00:39:36", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The first two-80 calls sold at 4.34; about 246 dollars net was reported."},
+    {"timestamp": "00:40:37", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Prior-day July 3 608 calls sold at 5.50; the narrated 24-cent gain conflicts with the explicit prior-day 5.28 entry."},
+    {"timestamp": "00:41:08", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A second two-80 trade entered July 3 610 calls at 4.30; later recap says ten of the intended fifteen contracts filled."},
+    {"timestamp": "00:44:17", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Real July 3 610 calls entered at 4.28 at narrated 10:05."},
+    {"timestamp": "00:55:57", "classification": "PRESENTER_CLAIM", "claim": "Price closed on, not above, the OMG line and the room explicitly declared no OMG."},
+    {"timestamp": "01:05:35", "classification": "PRESENTER_CLAIM", "claim": "The earlier discretionary 610-call entry was retrospectively reconstructed as an OMG model trade."},
+    {"timestamp": "01:10:45", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The reconstructed OMG, two-80 calls, real calls, and published pick had source-reported profitable exits."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250626-C01",
+      "timestamp": "00:55:57",
+      "label": "STRICT_CLOSE_VETO",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A close on the OMG boundary did not satisfy the contemporaneous rule requiring a close above it.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_UPSIDE_MOVE", "3m": "SOURCE_REPORTED_UPSIDE_MOVE", "5m": "SOURCE_REPORTED_UPSIDE_MOVE", "10m": "SOURCE_REPORTED_NEW_SESSION_HIGH", "15m": "SOURCE_REPORTED_NEW_SESSION_HIGH", "remainder_session": "SOURCE_REPORTED_UPSIDE_MOVE"},
+      "disconfirming_evidence_required": "Exact boundary, synchronized bars, formal signal code, and all close-on-line cases."
+    },
+    {
+      "id": "DTS-20250626-C02",
+      "timestamp": "01:05:35",
+      "label": "RETROSPECTIVE_SIGNAL_RELABELING",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A profitable discretionary entry was added to the OMG model after the favorable move despite the earlier no-signal declaration.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE_MOVE_ALREADY_KNOWN", "3m": "SOURCE_REPORTED_FAVORABLE_MOVE_ALREADY_KNOWN", "5m": "SOURCE_REPORTED_TARGET", "10m": "SOURCE_REPORTED_TARGET", "15m": "SOURCE_REPORTED_TARGET", "remainder_session": "SOURCE_REPORTED_TARGET"},
+      "disconfirming_evidence_required": "Immutable contemporaneous signal logs, order timestamps, model audit history, and all discretionary trades not later relabeled."
+    },
+    {
+      "id": "DTS-20250626-C03",
+      "timestamp": "01:07:45",
+      "label": "INTENDED_VERSUS_FILLED_QUANTITY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The second two-80 order intended fifteen contracts but later reported only ten fills, changing the stated trade economics.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_EXIT", "3m": "SOURCE_REPORTED_EXIT", "5m": "SOURCE_REPORTED_EXIT", "10m": "SOURCE_REPORTED_EXIT", "15m": "SOURCE_REPORTED_EXIT", "remainder_session": "SOURCE_REPORTED_EXIT"},
+      "disconfirming_evidence_required": "Broker order, partial-fill history, exact commissions, and account ledger."
+    },
+    {
+      "id": "DTS-20250626-C04",
+      "timestamp": "00:40:37",
+      "label": "POSSIBLE_CARRY_RESOLUTION_CONFLICT",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A 5.50 sale likely resolves the June 25 608-call add, but the narrated 24-cent gain conflicts with the prior explicit 5.28 entry.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_EXIT", "3m": "SOURCE_REPORTED_EXIT", "5m": "SOURCE_REPORTED_EXIT", "10m": "SOURCE_REPORTED_EXIT", "15m": "SOURCE_REPORTED_EXIT", "remainder_session": "SOURCE_REPORTED_EXIT"},
+      "disconfirming_evidence_required": "Immutable trade ID, exact entry fill, quantity, adjustments, and broker exit."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250626-T00", "type": "CALL_POSITION", "setup": "July 3 609 calls; June 25 real carry", "entry_time": "PRIOR_SESSION", "entry_premium": 4.73, "exit_time": "00:09:43", "exit_premium": 4.78, "stop_or_invalidation": "Source explicitly identifies these as prior-day calls"},
+    {"source_trade_id": "DTS-20250626-T01", "type": "CALL_POSITION", "setup": "16 July 3 610 calls; first two-80 trade", "entry_time": "00:13:07", "entry_premium": 4.18, "exit_time": "00:39:36", "exit_premium": 4.34, "stop_or_invalidation": "About 246 dollars net reported; no explicit stop audible"},
+    {"source_trade_id": "DTS-20250626-T02", "type": "CALL_POSITION", "setup": "July 3 608 calls; possible June 25 carry", "entry_time": "PRIOR_SESSION", "entry_premium": 5.28, "exit_time": "00:40:37", "exit_premium": 5.5, "stop_or_invalidation": "Lot continuity unproven; source says 24-cent gain, which implies a conflicting 5.26 entry"},
+    {"source_trade_id": "DTS-20250626-T03", "type": "CALL_POSITION", "setup": "10 filled July 3 610 calls; second two-80 trade", "entry_time": "00:41:08", "entry_premium": 4.3, "exit_time": "01:07:30", "exit_premium": 4.48, "stop_or_invalidation": "Fifteen intended but ten later reported filled; about 170 dollars net reported"},
+    {"source_trade_id": "DTS-20250626-T04", "type": "CALL_POSITION", "setup": "July 3 610 calls; real discretionary trade", "entry_time": "00:44:17", "entry_premium": 4.28, "exit_time": "01:07:11", "exit_premium": null, "stop_or_invalidation": "Source exit is truncated as 4.4x; exact cents unavailable"},
+    {"source_trade_id": "DTS-20250626-T05", "type": "CALL_POSITION", "setup": "July 3 610 calls; retrospectively reconstructed OMG model trade", "entry_time": "RETROSPECTIVE_BACKFILL_OF_00:44:17", "entry_premium": 4.28, "exit_time": "01:09:30", "exit_premium": 4.54, "stop_or_invalidation": "Backfilled after favorable outcome despite contemporaneous no-OMG declaration"},
+    {"source_trade_id": "DTS-20250626-T06", "type": "CALL_POSITION", "setup": "July 3 609 calls; real companion trade", "entry_time": "00:44:17_APPROX", "entry_premium": null, "exit_time": "01:09:41", "exit_premium": null, "stop_or_invalidation": "Entry and exit premiums unavailable"},
+    {"source_trade_id": "DTS-20250626-T07", "type": "CALL_POSITION", "setup": "July 3 610 calls; published pick", "entry_time": "00:09:31_NARRATED_CLOCK", "entry_premium": 4.15, "exit_time": "01:10:26", "exit_premium": 4.4, "stop_or_invalidation": "Six-percent target reached in source narration"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 8,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The room declared no OMG and later reconstructed a profitable discretionary trade as OMG.",
+      "The second two-80 order intended fifteen contracts but only ten were later reported filled.",
+      "The prior-day 608-call gain arithmetic conflicts with the explicit prior entry.",
+      "The real 610-call exit premium is truncated."
+    ],
+    "unavailable_evidence": ["Broker orders, immutable signal log, exact quantities, carry identity, complete real exits, synchronized bars, option paths, MFE/MAE, slippage, aggregate exposure, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:18:08", "state": "RANGE_BOUND_NO_OMG", "evidence": "Price remained inside the boundaries without a qualifying close."},
+    {"timestamp": "00:39:10", "state": "DATA_CATALYST_UPSIDE_BREAK", "evidence": "Pending-home-sales data triggered a favorable upside move."},
+    {"timestamp": "00:55:57", "state": "BOUNDARY_CLOSE_WITHOUT_SIGNAL", "evidence": "Price closed on rather than above the upper line."},
+    {"timestamp": "01:05:35", "state": "POST_OUTCOME_SIGNAL_RECONSTRUCTION", "evidence": "The earlier discretionary entry was entered into the OMG model retrospectively."},
+    {"timestamp": "01:10:45", "state": "UPSIDE_EXPANSION", "evidence": "Price reached new session highs and multiple source-reported targets."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:55:57", "type": "STRICT_BOUNDARY_COMPARATOR", "detail": "Keep close-on-line cases outside the named signal and evaluate them separately."},
+    {"timestamp": "01:05:35", "type": "IMMUTABLE_SIGNAL_LABEL", "detail": "Freeze signal identity before the outcome is known."},
+    {"timestamp": "01:07:45", "type": "FILLED_QUANTITY_RECONCILIATION", "detail": "Calculate returns only from broker-confirmed filled quantity."},
+    {"timestamp": "00:40:37", "type": "IMMUTABLE_CARRY_ID", "detail": "Reconcile cross-day positions by immutable ID, contract, quantity, and fill."}
+  ],
+  "hypothesis_references": ["DTS-20250626-C01", "DTS-20250626-C02", "DTS-20250626-C03", "DTS-20250626-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 8, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "instrumentation_gaps": ["Visual review", "Broker/account-mode evidence", "Immutable contemporaneous signal log", "Exact filled quantities", "Carry identity", "Complete real exit fills", "Executable option paths, synchronized bars, MFE, MAE, spreads, aggregate exposure, and complete fees"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
