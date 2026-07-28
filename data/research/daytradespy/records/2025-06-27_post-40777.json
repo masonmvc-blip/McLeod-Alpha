@@ -1,0 +1,88 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40777,
+    "title": "Trading Room Video Recording - June 27, 2025 [duplicate of canonical post 40753]",
+    "publication_date": "2025-06-27",
+    "source_url": "https://daytradespy.com/40777/trading-room-video-recording-june-27-2025/",
+    "duration_seconds": 4497,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "DUPLICATE_SOURCE_ASSET",
+      "completeness_pct": 0,
+      "path": "",
+      "timestamps_preserved": false,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Post 40777 embeds Vimeo asset 1096956515, title TR June 27, and caption asset 239351476, exactly matching canonical post 40753. The player volume was verified at 0 percent and playback was never started. Canonical transcript evidence was not copied or counted twice."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 0,
+    "trade_details_captured_pct": 0,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "DUPLICATE_SOURCE_ASSET_SAME_DATE_CANONICAL_POST_40753",
+    "tier": "E"
+  },
+  "timeline": [],
+  "claims": [],
+  "reported_trades": [],
+  "ledger_reconciliation": {
+    "source_reported_trades": 0,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Post 40777 is a second archive post for the exact Vimeo and caption assets already reviewed under post 40753.",
+      "No post-40777-specific transcript, trade, or outcome evidence can be distinguished."
+    ],
+    "unavailable_evidence": [
+      "A distinct source asset or independently verified post-specific recording, visual review, broker fills, underlying bars, option paths, and canonical ledger mapping"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN"
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "DUPLICATE_SOURCE_ASSET",
+      "detail": "Do not count the same immutable recording twice; evaluate June 27 evidence under canonical post 40753."
+    }
+  ],
+  "hypothesis_references": [],
+  "expected_value_tracking": {
+    "confidence": "NONE",
+    "evidence_count": 0,
+    "current_lifecycle_stage": "OBSERVATION_ONLY",
+    "replay_improvement": "UNAVAILABLE_EVIDENCE"
+  },
+  "instrumentation_gaps": [
+    "Distinct post-40777 source asset or independently verified recording",
+    "Visual chart and order review",
+    "Broker fills, timestamped underlying bars, executable option paths, fees, and canonical ledger mapping"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
