@@ -59,6 +59,8 @@ DAILY_LEARNING_TIME = dt_time(16, 5)
 DAILY_LEARNING_RUNTIME_STATE = Path("data/daily_learning_runtime_state.json")
 DAILY_LEARNING_MAX_ATTEMPTS = max(1, int(os.getenv("DAILY_LEARNING_MAX_ATTEMPTS", "8")))
 DAILY_LEARNING_RETRY_MINUTES = max(1, int(os.getenv("DAILY_LEARNING_RETRY_MINUTES", "15")))
+DAILY_TRADES_CHART_TIME = dt_time(16, 5)
+DAILY_TRADES_CHART_RUNTIME_STATE = Path("data/daily_trades_chart_runtime_state.json")
 _LAST_HISTORY_REFRESH_EPOCH = 0.0
 _LAST_HISTORY_FETCH_MINUTE = None
 OPTION_CHAIN_CACHE_REFRESH_SECONDS = max(1.0, float(os.getenv("OPTION_CHAIN_CACHE_REFRESH_SECONDS", "10")))
@@ -237,6 +239,10 @@ def _run_noncritical_schedulers():
         maybe_send_daily_trade_log_email()
     except Exception as exc:
         print(f"Daily trade-log scheduler warning: {exc}")
+    try:
+        maybe_generate_daily_trades_chart()
+    except Exception as exc:
+        print(f"Daily trades chart scheduler warning: {exc}")
     try:
         maybe_generate_morning_readiness(ENGINE_MODULE.get_schwab_positions)
     except Exception as exc:
@@ -668,6 +674,77 @@ def maybe_run_after_close_daily_learning(now_et=None, runner=None):
         "daily_learning_runtime_state",
         state,
         DAILY_LEARNING_RUNTIME_STATE,
+        source="phase3_monitor",
+    )
+    return True
+
+
+def maybe_generate_daily_trades_chart(now_et=None, runner=None):
+    """Create the Cockpit daily-trades chart once after each regular close."""
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    if now_et.weekday() >= 5 or now_et.time() < DAILY_TRADES_CHART_TIME:
+        return False
+
+    trading_date = now_et.date().isoformat()
+    memory = get_memory()
+    state = memory.load_setting(DAILY_TRADES_CHART_RUNTIME_STATE, {})
+    if state.get("last_success_date") == trading_date:
+        return False
+
+    if state.get("attempt_date") == trading_date:
+        try:
+            last_attempt_at = datetime.fromisoformat(str(state.get("last_attempt_at") or ""))
+        except ValueError:
+            last_attempt_at = None
+        if (
+            last_attempt_at is not None
+            and now_et < last_attempt_at + timedelta(minutes=DAILY_LEARNING_RETRY_MINUTES)
+        ):
+            return False
+
+    state.update({
+        "attempt_date": trading_date,
+        "last_attempt_at": now_et.isoformat(),
+    })
+    memory.save_setting(
+        "daily_trades_chart_runtime_state",
+        state,
+        DAILY_TRADES_CHART_RUNTIME_STATE,
+        source="phase3_monitor",
+    )
+
+    try:
+        if runner is None:
+            def runner(day):
+                response = requests.get(
+                    "http://127.0.0.1:5001/api/today-trades",
+                    params={"date": day},
+                    timeout=5,
+                )
+                response.raise_for_status()
+                payload = response.json()
+                if str(payload.get("trading_date") or "") != day:
+                    raise RuntimeError("Cockpit returned a chart for a different trading date")
+        runner(trading_date)
+    except Exception as exc:
+        state["last_result"] = "retryable_failure"
+        state["last_error"] = f"{type(exc).__name__}: {exc}"
+        memory.save_setting(
+            "daily_trades_chart_runtime_state",
+            state,
+            DAILY_TRADES_CHART_RUNTIME_STATE,
+            source="phase3_monitor",
+        )
+        return False
+
+    state["last_success_date"] = trading_date
+    state["last_success_at"] = datetime.now(EASTERN_TZ).isoformat()
+    state["last_result"] = "success"
+    state["last_error"] = None
+    memory.save_setting(
+        "daily_trades_chart_runtime_state",
+        state,
+        DAILY_TRADES_CHART_RUNTIME_STATE,
         source="phase3_monitor",
     )
     return True

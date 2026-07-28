@@ -264,6 +264,59 @@ def test_after_close_daily_learning_retries_at_interval_until_success(monkeypatc
     assert memory.state["last_result"] == "success"
 
 
+def test_after_close_daily_trades_chart_runs_once_per_date(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    eastern = ZoneInfo("America/New_York")
+
+    class Memory:
+        state = {}
+
+        def load_setting(self, *_args):
+            return dict(self.state)
+
+        def save_setting(self, _name, value, *_args, **_kwargs):
+            self.state = dict(value)
+
+    memory = Memory()
+    calls = []
+    monkeypatch.setattr(module, "get_memory", lambda: memory)
+    now = datetime(2026, 7, 27, 16, 6, tzinfo=eastern)
+
+    assert module.maybe_generate_daily_trades_chart(now, lambda day: calls.append(day)) is True
+    assert module.maybe_generate_daily_trades_chart(now, lambda day: calls.append(day)) is False
+    assert calls == ["2026-07-27"]
+    assert memory.state["last_success_date"] == "2026-07-27"
+
+
+def test_after_close_daily_trades_chart_retries_at_interval(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    eastern = ZoneInfo("America/New_York")
+
+    class Memory:
+        state = {}
+
+        def load_setting(self, *_args):
+            return dict(self.state)
+
+        def save_setting(self, _name, value, *_args, **_kwargs):
+            self.state = dict(value)
+
+    memory = Memory()
+    calls = []
+    monkeypatch.setattr(module, "get_memory", lambda: memory)
+    now = datetime(2026, 7, 27, 16, 6, tzinfo=eastern)
+
+    def runner(day):
+        calls.append(day)
+        if len(calls) == 1:
+            raise RuntimeError("Cockpit unavailable")
+
+    assert module.maybe_generate_daily_trades_chart(now, runner) is False
+    assert module.maybe_generate_daily_trades_chart(now + timedelta(minutes=14), runner) is False
+    assert module.maybe_generate_daily_trades_chart(now + timedelta(minutes=15), runner) is True
+    assert calls == ["2026-07-27", "2026-07-27"]
+
+
 def test_runner_manages_open_position_before_empty_candle_skip(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
     managed = []
