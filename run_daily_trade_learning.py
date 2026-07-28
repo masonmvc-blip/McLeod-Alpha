@@ -20,12 +20,20 @@ from typing import Any
 
 from engine.model_evaluator import run_model_evaluator
 from engine.weight_optimizer import run_weight_optimizer
+from reports.daily_loss_attribution import (
+    build_loss_attribution,
+    load_rows as load_loss_attribution_rows,
+    maybe_send_operator_warning,
+    write_report as write_loss_attribution_report,
+)
 
 
 WORKSPACE = Path(__file__).parent
 DATA_DIR = WORKSPACE / "data"
 REPORTS_DIR = WORKSPACE / "reports"
 LEARNING_DIR = REPORTS_DIR / "daily_trade_learning"
+LOSS_ATTRIBUTION_DIR = REPORTS_DIR / "daily_loss_attribution"
+LOSS_ATTRIBUTION_ALERT_STATE = DATA_DIR / "daily_loss_attribution_alert_state.json"
 DB_PATH = DATA_DIR / "mcleod_alpha.db"
 
 
@@ -559,6 +567,15 @@ def run_daily_learning(target_date: str | None = None) -> int:
     day_json = LEARNING_DIR / f"daily_trade_learning_{trading_date}.json"
     day_md = LEARNING_DIR / f"daily_trade_learning_{trading_date}.md"
     day_csv = LEARNING_DIR / f"daily_trade_learning_trades_{trading_date}.csv"
+    loss_attribution = build_loss_attribution(
+        load_loss_attribution_rows(DB_PATH, trading_date),
+        trading_date=trading_date,
+    )
+    loss_json, loss_md = write_loss_attribution_report(loss_attribution, LOSS_ATTRIBUTION_DIR)
+    maybe_send_operator_warning(
+        loss_attribution,
+        state_path=LOSS_ATTRIBUTION_ALERT_STATE,
+    )
 
     payload = {
         "trading_date": trading_date,
@@ -568,6 +585,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "scale_decision": scale_decision,
         "model_evaluator": evaluator_result,
         "weight_optimizer": optimizer_result,
+        "daily_loss_attribution": loss_attribution,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -607,6 +625,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {day_json}")
     print(f"Wrote: {day_md}")
     print(f"Wrote: {day_csv}")
+    print(f"Wrote: {loss_json}")
+    print(f"Wrote: {loss_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;
