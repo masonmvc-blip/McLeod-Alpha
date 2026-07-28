@@ -1,0 +1,39 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42152,
+    "title": "Trading Room Video Recording – October 31, 2025", "publication_date": "2025-10-31",
+    "source_url": "https://daytradespy.com/42152/trading-room-video-recording-october-31-2025/",
+    "duration_seconds": 4671, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 485, "first_timestamp": "00:00", "last_timestamp": "01:16:48", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:17:51 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 92, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:09:54", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 7 685-put scalp entered at 4.74."},
+    {"timestamp": "00:17:10", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal November 7 685-put OMG entered at 5.15."},
+    {"timestamp": "00:20:33", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal OMG sold at 5.52."},
+    {"timestamp": "01:10:42", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 7 683-call recovery scalp sold at 5.80."},
+    {"timestamp": "01:15:38", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Two call lineages remained open."}
+  ],
+  "claims": [
+    {"id": "DTS-20251031-P42152-C01", "timestamp": "00:20:33", "label": "FORMAL_PUT_OMG_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal November 7 685 puts completed 5.15 to 5.52 against a 5.46 target.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "TARGET_REACHED", "5m": "TARGET_REACHED", "10m": "TARGET_REACHED", "15m": "TARGET_REACHED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251031-P42152-C02", "timestamp": "01:15:38", "label": "CALL_LINEAGES_OPEN", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "Accidentally enlarged 685 calls at average 4.97 and 683-call re-entry at 5.84 remained open.", "forward_outcomes": {"1m": "OPEN", "3m": "OPEN", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker ledger showing exits."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251031-P42152-T01", "type": "PUT_POSITION", "setup": "November 7 685 puts; aggressive pre-OMG scalp", "entry_time": "00:09:54", "entry_premium": 4.74, "exit_time": "00:10:33", "exit_premium": 4.89, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251031-P42152-T02", "type": "CALL_POSITION", "setup": "November 7 685 calls; accidental add", "entry_time": "00:14:22", "entry_premium": 4.97, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Average basis after accidental add; open"},
+    {"source_trade_id": "DTS-20251031-P42152-T03", "type": "OMG", "setup": "November 7 685 puts; formal OMG", "entry_time": "00:17:10", "entry_premium": 5.15, "exit_time": "00:20:33", "exit_premium": 5.52, "stop_or_invalidation": "5.46 target exceeded"},
+    {"source_trade_id": "DTS-20251031-P42152-T04", "type": "CALL_POSITION", "setup": "November 7 683 calls; recovery scalp", "entry_time": "00:45:47", "entry_premium": 5.61, "exit_time": "01:10:42", "exit_premium": 5.80, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251031-P42152-T05", "type": "CALL_POSITION", "setup": "November 7 683 calls; re-entry", "entry_time": "01:12:15", "entry_premium": 5.84, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "6.05 target; open"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 5, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Two call lineages open at end.", "Accidental add changed basis without quantity evidence."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:17:10", "state": "SHARP_DOWNSIDE_OPEN", "evidence": "Formal puts followed confirmed lower break."}, {"timestamp": "01:10:42", "state": "DIFFICULT_RECOVERY", "evidence": "Call scalp required extended hold."}],
+  "counterfactuals": [{"timestamp": "00:15:39", "type": "ACCIDENTAL_ADD_CONTROL", "detail": "Track unintended order separately from thesis."}, {"timestamp": "01:12:15", "type": "REENTRY_RESET", "detail": "A re-entry is a new trade with a new terminal state."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251031-P42152-C01", "DTS-20251031-P42152-C02"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

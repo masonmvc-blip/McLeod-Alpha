@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42188,
+    "title": "Trading Room Video Recording – November 4, 2025", "publication_date": "2025-11-04",
+    "post_publication_date": "2025-11-05",
+    "source_url": "https://daytradespy.com/42188/trading-room-video-recording-november-4-2025/",
+    "duration_seconds": 5016, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 568, "first_timestamp": "00:00", "last_timestamp": "01:22:59", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:23:36 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 93, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:15:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal November 7 675-put OMG entered at 4.62."},
+    {"timestamp": "00:21:34", "classification": "PRESENTER_REPORTED_TRADE", "claim": "First recovery call scalp completed 5.66 to 5.88."},
+    {"timestamp": "00:37:25", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Fourth recovery call scalp completed."},
+    {"timestamp": "01:16:18", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal OMG remained open after strong reversal; 710-call carry near worthless."}
+  ],
+  "claims": [
+    {"id": "DTS-20251104-P42188-C01", "timestamp": "01:16:18", "label": "FORMAL_PUT_OMG_UNRESOLVED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "Formal November 7 675 puts at 4.62 never confirmed the 4.90 exit after an adverse reversal.", "forward_outcomes": {"1m": "ADVERSE", "3m": "ADVERSE", "5m": "ADVERSE", "10m": "ADVERSE", "15m": "ADVERSE", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker ledger showing terminal disposition."},
+    {"id": "DTS-20251104-P42188-C02", "timestamp": "00:54:35", "label": "FIVE_CALL_SCALPS_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Five call scalps completed during the recovery, all within one correlated reversal regime.", "forward_outcomes": {"1m": "MIXED", "3m": "FAVORABLE", "5m": "FAVORABLE", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option paths."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251104-P42188-T01", "type": "OMG", "setup": "November 7 675 puts; formal OMG", "entry_time": "00:15:29", "entry_premium": 4.62, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "4.90 target not confirmed"},
+    {"source_trade_id": "DTS-20251104-P42188-T02", "type": "CALL_POSITION", "setup": "November 7 675 calls; recovery scalp", "entry_time": "00:19:38", "entry_premium": 5.66, "exit_time": "00:21:34", "exit_premium": 5.88, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251104-P42188-T03", "type": "CALL_POSITION", "setup": "November 7 676 calls; recovery scalp", "entry_time": "00:25:13", "entry_premium": 5.35, "exit_time": "00:26:35", "exit_premium": 5.55, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251104-P42188-T04", "type": "CALL_POSITION", "setup": "November 7 677 calls; recovery scalp", "entry_time": "00:30:49", "entry_premium": 5.12, "exit_time": "00:32:49", "exit_premium": 5.40, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251104-P42188-T05", "type": "CALL_POSITION", "setup": "November 7 678 calls; recovery scalp", "entry_time": "00:36:24", "entry_premium": 4.70, "exit_time": "00:37:25", "exit_premium": 4.90, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251104-P42188-T06", "type": "CALL_POSITION", "setup": "November 7 678 calls; second recovery scalp", "entry_time": "00:51:38", "entry_premium": 5.04, "exit_time": "00:54:35", "exit_premium": 5.15, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251104-P42188-T07", "type": "CROSS_SESSION_CALL_POSITION", "setup": "November 7 710 calls; Hail Mary carry", "entry_time": "PRIOR_SOURCE", "entry_premium": 0.59, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Near worthless and expected to expire"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 7, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Formal put OMG unresolved while five opposing scalps completed.", "Call scalps share one correlated reversal regime."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:15:29", "state": "LIQUIDITY_GAP_DOWN", "evidence": "Put OMG followed lower close amid funding concerns."}, {"timestamp": "00:19:38", "state": "PERSISTENT_UPSIDE_REVERSAL", "evidence": "Five call scalps followed rapid recovery."}],
+  "counterfactuals": [{"timestamp": "01:16:18", "type": "FORMAL_TERMINAL_STATE", "detail": "Do not infer a put exit after adverse reversal."}, {"timestamp": "00:54:35", "type": "CORRELATED_TRADE_CLUSTER", "detail": "Do not treat five calls as independent regimes."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251104-P42188-C01", "DTS-20251104-P42188-C02"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
