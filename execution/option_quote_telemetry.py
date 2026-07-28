@@ -55,6 +55,10 @@ def build_option_management_cycle(
     quantity = max(0, int(getattr(position, "quantity", 0) or 0))
     spread_dollars = round(ask_value - bid_value, 6) if bid_value and ask_value and ask_value >= bid_value else None
     metadata = quote_metadata or {}
+    try:
+        feature_payload = json.loads(str(getattr(position, "feature_payload", "") or "{}"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        feature_payload = {}
     return {
         "schema_version": "option-management-cycle.v1",
         "recorded_at": timestamp.isoformat(),
@@ -87,6 +91,11 @@ def build_option_management_cycle(
         "mae_pct_live": _percent((low - entry) if low and entry else None, entry),
         "decision_action": str(action) if action is not None else None,
         "decision_reason": str(reason) if reason is not None else None,
+        "accepted_breakout_observer_id": feature_payload.get("accepted_breakout_observer_id"),
+        "accepted_breakout_admit": feature_payload.get("accepted_breakout_admit"),
+        "accepted_breakout_reason": feature_payload.get("accepted_breakout_reason"),
+        "structural_room": feature_payload.get("support_resistance"),
+        "broker_fees_dollars": feature_payload.get("broker_fees_dollars"),
     }
 
 

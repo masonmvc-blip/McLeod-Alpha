@@ -8,6 +8,7 @@ from reports.morning_readiness import maybe_generate_morning_readiness
 from reports.scheduler_health import maybe_generate_scheduler_health_dashboard
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
 from engine.brain.candidate_controls import candidate_entry_block_reason, load_candidate_controls
+from execution.accepted_breakout_observer import observe_candidate, record_candidate_observation
 from engine.memory import get_memory
 from spy_bot_reviewer import SpyBotReviewer
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
@@ -1389,6 +1390,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload = _build_entry_feature_payload(
             completed_candles, "CALL", regime, call_score, put_score, call_reasons, put_reasons
         )
+        feature_payload_data = json.loads(feature_payload)
+        observation = observe_candidate(completed_candles, "CALL")
+        feature_payload_data.update(observation)
+        record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
+        feature_payload = json.dumps(feature_payload_data, default=str)
         candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
@@ -1494,6 +1500,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload = _build_entry_feature_payload(
             completed_candles, "PUT", regime, call_score, put_score, call_reasons, put_reasons
         )
+        feature_payload_data = json.loads(feature_payload)
+        observation = observe_candidate(completed_candles, "PUT")
+        feature_payload_data.update(observation)
+        record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
+        feature_payload = json.dumps(feature_payload_data, default=str)
         candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
