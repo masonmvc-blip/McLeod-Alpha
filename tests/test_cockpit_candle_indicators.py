@@ -58,6 +58,34 @@ def test_indicator_snapshot_uses_strategy_score_for_closed_candles(tmp_path):
     assert snapshot["market_trend"] == expected["market_trend"]
 
 
+def test_indicator_snapshot_prefers_matching_monitor_decision_audit_scores():
+    snapshot = {
+        "call_passed": 1,
+        "put_passed": 3,
+        "regime": "NO_TRADE",
+        "market_trend": "BULL_TREND",
+    }
+    audit_event = {
+        "event_type": "entry_evaluation",
+        "call_score": 2,
+        "put_score": 5,
+        "regime": "BEAR_TREND",
+    }
+
+    merged = cockpit._apply_decision_audit_scores(snapshot, audit_event)
+
+    assert merged["call_passed"] == 2
+    assert merged["put_passed"] == 5
+    assert merged["regime"] == "BEAR_TREND"
+    assert merged["market_trend"] == "BULL_TREND"
+
+
+def test_indicator_snapshot_keeps_calculated_scores_without_complete_audit():
+    snapshot = {"call_passed": 1, "put_passed": 3, "regime": "NO_TRADE"}
+
+    assert cockpit._apply_decision_audit_scores(snapshot, {"event_type": "entry_evaluation"}) == snapshot
+
+
 def test_status_prefers_indicator_snapshot_timestamp_for_candle_freshness():
     source = (cockpit.PROJECT_ROOT / "engine" / "runtime_status.py").read_text(encoding="utf-8")
 

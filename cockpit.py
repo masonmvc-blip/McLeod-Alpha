@@ -2877,6 +2877,25 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
     }
 
 
+def _apply_decision_audit_scores(snapshot, audit_event):
+    """Prefer the monitor's logged decision scores for the matching candle."""
+    if not snapshot or not isinstance(audit_event, dict):
+        return snapshot
+    if audit_event.get("event_type") != "entry_evaluation":
+        return snapshot
+    try:
+        call_score = max(0, int(audit_event["call_score"]))
+        put_score = max(0, int(audit_event["put_score"]))
+    except (KeyError, TypeError, ValueError):
+        return snapshot
+
+    merged = dict(snapshot)
+    merged["call_passed"] = call_score
+    merged["put_passed"] = put_score
+    merged["regime"] = str(audit_event.get("regime") or snapshot.get("regime") or "UNKNOWN")
+    return merged
+
+
 def parse_bot_status():
     """Build the current runtime status through the dedicated status service."""
     from engine.runtime_status import parse_bot_status as build_runtime_status

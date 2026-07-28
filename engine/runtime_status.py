@@ -26,6 +26,18 @@ def _build_runtime_status():
     """Parse bot status from logs and position file"""
     active_log = _resolve_active_bot_log_file()
     candle_indicator_snapshot = _compute_candle_indicator_snapshot()
+    if candle_indicator_snapshot:
+        try:
+            decision_audit = get_memory().load_decision_audit_event(
+                PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl",
+                candle_indicator_snapshot.get("timestamp"),
+            )
+            candle_indicator_snapshot = _apply_decision_audit_scores(
+                candle_indicator_snapshot,
+                decision_audit,
+            )
+        except Exception:
+            pass
 
     def calculate_broker_period_pnl() -> tuple[float, float, float, float]:
         """Compute realized Today/WTD/MTD/YTD P&L, reconciling with completed local trades."""
