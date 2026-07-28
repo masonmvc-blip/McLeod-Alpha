@@ -52,6 +52,8 @@ CANDLE_HISTORY_REFRESH_SECONDS = max(30, int(os.getenv("CANDLE_HISTORY_REFRESH_S
 END_OF_DAY_EXIT_TIME = dt_time(15, 45)
 DAILY_LEARNING_TIME = dt_time(16, 5)
 DAILY_LEARNING_RUNTIME_STATE = Path("data/daily_learning_runtime_state.json")
+DAILY_LEARNING_MAX_ATTEMPTS = max(1, int(os.getenv("DAILY_LEARNING_MAX_ATTEMPTS", "8")))
+DAILY_LEARNING_RETRY_MINUTES = max(1, int(os.getenv("DAILY_LEARNING_RETRY_MINUTES", "15")))
 _LAST_HISTORY_REFRESH_EPOCH = 0.0
 _LAST_HISTORY_FETCH_MINUTE = None
 OPTION_CHAIN_CACHE_REFRESH_SECONDS = max(1.0, float(os.getenv("OPTION_CHAIN_CACHE_REFRESH_SECONDS", "10")))
@@ -546,7 +548,7 @@ def _manage_open_position_priority():
 
 
 def maybe_run_after_close_daily_learning(now_et=None, runner=None):
-    """Run the diagnostic learning workflow once after close without launchd."""
+    """Run daily learning after close, retrying until broker truth is complete."""
     now_et = now_et or datetime.now(EASTERN_TZ)
     if now_et.weekday() >= 5 or now_et.time() < DAILY_LEARNING_TIME:
         return False
@@ -557,8 +559,18 @@ def maybe_run_after_close_daily_learning(now_et=None, runner=None):
     if state.get("last_success_date") == trading_date:
         return False
     attempts = int(state.get("attempt_count") or 0) if state.get("attempt_date") == trading_date else 0
-    if attempts >= 2:
+    if attempts >= DAILY_LEARNING_MAX_ATTEMPTS:
         return False
+    if attempts:
+        try:
+            last_attempt_at = datetime.fromisoformat(str(state.get("last_attempt_at") or ""))
+        except ValueError:
+            last_attempt_at = None
+        if (
+            last_attempt_at is not None
+            and now_et < last_attempt_at + timedelta(minutes=DAILY_LEARNING_RETRY_MINUTES)
+        ):
+            return False
 
     state.update({
         "attempt_date": trading_date,
@@ -579,13 +591,31 @@ def maybe_run_after_close_daily_learning(now_et=None, runner=None):
         result = int(runner(trading_date))
     except Exception as exc:
         print(f"Daily learning runtime warning: {exc}")
+        state["last_result"] = "exception"
+        state["last_error"] = f"{type(exc).__name__}: {exc}"
+        memory.save_setting(
+            "daily_learning_runtime_state",
+            state,
+            DAILY_LEARNING_RUNTIME_STATE,
+            source="phase3_monitor",
+        )
         return False
     if result != 0:
         print(f"Daily learning runtime warning: runner returned {result}")
+        state["last_result"] = f"retryable_exit_{result}"
+        state["last_error"] = None
+        memory.save_setting(
+            "daily_learning_runtime_state",
+            state,
+            DAILY_LEARNING_RUNTIME_STATE,
+            source="phase3_monitor",
+        )
         return False
 
     state["last_success_date"] = trading_date
     state["last_success_at"] = datetime.now(EASTERN_TZ).isoformat()
+    state["last_result"] = "success"
+    state["last_error"] = None
     memory.save_setting(
         "daily_learning_runtime_state",
         state,

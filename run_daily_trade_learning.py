@@ -659,6 +659,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"weight_optimizer status: {opt_status}")
 
     nonfatal_optimizer = {"ok", "insufficient_history", "insufficient_samples"}
+    if not loss_attribution["reconciliation"]["complete"]:
+        return 2
     ok = eval_status == "ok" and opt_status in nonfatal_optimizer
     return 0 if ok else 1
 
