@@ -87,6 +87,21 @@ def test_directional_spy_run_resets_after_a_reversal():
     }
 
 
+def test_preclose_exposure_preflight_runs_only_in_final_seconds(monkeypatch):
+    module = importlib.import_module("phase3_monitor")
+    calls = []
+    monkeypatch.setattr(module, "ENGINE_MODULE", type("Engine", (), {
+        "current_position": None,
+        "preflight_entry_exposure": staticmethod(lambda: calls.append(True)),
+    }))
+    monkeypatch.setattr(module, "_is_regular_market_hours_now", lambda _now: True)
+
+    module._prewarm_entry_exposure(datetime(2026, 7, 28, 10, 0, 58))
+    module._prewarm_entry_exposure(datetime(2026, 7, 28, 10, 0, 45))
+
+    assert calls == [True]
+
+
 def test_session_market_trend_uses_today_open_and_session_vwap():
     module = importlib.import_module("phase3_monitor")
     candles = pd.DataFrame(

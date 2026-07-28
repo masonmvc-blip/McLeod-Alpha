@@ -1201,6 +1201,17 @@ def _refresh_option_chain_cache(*, force=False):
     return chain
 
 
+def _prewarm_entry_exposure(now_et):
+    """Keep broker exposure preflight off the post-close entry critical path."""
+    if (
+        getattr(ENGINE_MODULE, "current_position", None) is None
+        and _is_regular_market_hours_now(now_et)
+        and 57 <= now_et.second <= 59
+        and hasattr(ENGINE_MODULE, "preflight_entry_exposure")
+    ):
+        ENGINE_MODULE.preflight_entry_exposure()
+
+
 
 STARTUP_GUARD_BLOCKED_ATTEMPTS = 1
 startup_entry_attempts = 0
@@ -1829,6 +1840,10 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 _refresh_option_chain_cache()
             except Exception as exc:
                 print(f"Option-chain cache refresh unavailable: {exc}")
+        try:
+            _prewarm_entry_exposure(now_et)
+        except Exception as exc:
+            print(f"Entry exposure preflight unavailable: {exc}")
         signal_cycle = plan_signal_cycle(
             df,
             now_et,

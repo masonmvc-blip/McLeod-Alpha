@@ -520,6 +520,30 @@ def check_spy_option_exposure():
     return False, None
 
 
+def preflight_entry_exposure():
+    """Refresh broker exposure before the next closed-candle entry decision."""
+    global _entry_exposure_preflight, _last_entry_exposure_preflight_epoch
+
+    now_epoch = time.time()
+    if (now_epoch - float(_last_entry_exposure_preflight_epoch or 0.0)) < ENTRY_EXPOSURE_PREFLIGHT_REFRESH_SECONDS:
+        return _entry_exposure_preflight
+
+    has_exposure, details = check_spy_option_exposure()
+    _entry_exposure_preflight = (now_epoch, bool(has_exposure), details)
+    _last_entry_exposure_preflight_epoch = now_epoch
+    return _entry_exposure_preflight
+
+
+def _fresh_entry_exposure_preflight():
+    """Return a fresh pre-close broker result, or None when a live check is needed."""
+    if not _entry_exposure_preflight:
+        return None
+    captured_epoch, has_exposure, details = _entry_exposure_preflight
+    if (time.time() - float(captured_epoch or 0.0)) > ENTRY_EXPOSURE_PREFLIGHT_MAX_AGE_SECONDS:
+        return None
+    return bool(has_exposure), details
+
+
 def reconcile_startup():
     """
     Check Schwab on startup for existing SPY option positions or orders.
@@ -783,6 +807,10 @@ ORDER_QUANTITY = MAX_OPEN_CONTRACTS      # Target the configured maximum per tra
 ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "0.35"))
 ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "0.35"))
 ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
+ENTRY_EXPOSURE_PREFLIGHT_MAX_AGE_SECONDS = max(1.0, float(os.getenv("ENTRY_EXPOSURE_PREFLIGHT_MAX_AGE_SECONDS", "5")))
+ENTRY_EXPOSURE_PREFLIGHT_REFRESH_SECONDS = max(0.5, float(os.getenv("ENTRY_EXPOSURE_PREFLIGHT_REFRESH_SECONDS", "1.5")))
+_entry_exposure_preflight = None
+_last_entry_exposure_preflight_epoch = 0.0
 
 
 def normalize_option_tick(price):
@@ -2367,8 +2395,14 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
 
     quantity = int(quantity)
 
-    # CHECK SCHWAB FOR EXISTING SPY OPTION EXPOSURE (prevent duplicates)
-    has_exposure, exposure_details = check_spy_option_exposure()
+    # Reuse only a very recent pre-close exposure snapshot; otherwise perform
+    # the live broker check before any order submission.
+    prefetched_exposure = _fresh_entry_exposure_preflight()
+    if prefetched_exposure is None:
+        has_exposure, exposure_details = check_spy_option_exposure()
+    else:
+        has_exposure, exposure_details = prefetched_exposure
+        print("ENTRY PRECHECK: using fresh pre-close broker exposure snapshot")
     allowed, block_reason = can_open_trade()
     entry_admission = LIVE_BRAIN.evaluate_entry_admission(
         has_broker_exposure=has_exposure,
