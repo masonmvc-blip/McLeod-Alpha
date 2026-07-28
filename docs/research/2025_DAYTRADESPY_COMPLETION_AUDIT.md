@@ -15,14 +15,14 @@ Audit date: 2026-07-28.
   post-level resolution.
 - `docs/research` contains 93 dated 2025 daily-report filenames.
 - `data/research/daytradespy/records` contains 37 dated machine records.
-- The registry contains 78 post-level reviews with evidence metadata: 67 Tier C
-  transcript-based reviews and 11 Tier E access/content gaps. Another 152
+- The registry contains 78 post-level reviews with evidence metadata: 70 Tier C
+  transcript-based reviews and 8 Tier E access/content gaps. Another 152
   archive posts remain pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
-- Reports dated May 6, May 7, May 15-16, May 20, and May 22-23 are
+- Reports dated May 6, May 7, and May 22-23 are
   evidence-gap placeholders, not substantive recording reviews.
-- May 8, May 9, and May 12-14 were upgraded from apparent caption gaps to
+- May 8, May 9, and May 12-20 were upgraded from apparent caption gaps to
   substantive Tier C reports after their complete authorized Vimeo transcripts
   were recovered from the player.
 - No 2025 recording is Tier A because full visual review and independent
@@ -42,8 +42,8 @@ Audit date: 2026-07-28.
 ## Completion Order
 
 1. Upgrade May 8-May 23 caption-gap placeholders by reading the complete
-   authorized transcript from the Vimeo player. May 8-14 are complete at Tier
-   C; May 15 is next.
+   authorized transcript from the Vimeo player. May 8-20 are complete at Tier
+   C; May 22 is next.
 2. Recheck May 6 and May 7. If Vimeo still returns private-video denial, retain
    the Tier E access record rather than fabricating a review.
 3. Continue missing substantive daily reports chronologically from the May
@@ -88,10 +88,10 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording date: May 15, 2025
-- Post ID: `40282`
+- Recording date: May 22, 2025
+- Post ID: `40351`
 - Source:
-  `https://daytradespy.com/40282/trading-room-video-recording-may-15-2025/`
+  `https://daytradespy.com/40351/trading-room-video-recording-may-22-2025/`
 - Current status: Tier E placeholder pending complete signed-caption recovery
 
 ## Governance
