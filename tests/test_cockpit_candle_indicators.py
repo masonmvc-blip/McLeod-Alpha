@@ -210,7 +210,8 @@ def test_entry_block_reason_is_shown_only_on_the_blocked_indicator_side():
 
     assert 'const lastEntryCandidateDirection = String(status.last_entry_candidate_direction || \'\').toUpperCase();' in cockpit_source
     assert "lastEntryCandidateDirection === side && lastEntryBlockReason" in cockpit_source
-    assert "Blocked: ${blockReason}" in cockpit_source
+    assert "> ${blockReason}</span>" not in cockpit_source
+    assert ">${blockReason}</span>" in cockpit_source
     assert '"last_entry_candidate_direction": None' in runtime_status_source
     assert '"last_entry_block_reason": None' in runtime_status_source
     assert 'decision_audit.get("candidate_direction")' in runtime_status_source
@@ -235,7 +236,7 @@ def test_qualifying_indicator_cards_show_blocked_reason():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert "lastEntryBlockReason.replaceAll('_', ' ')" in source
-    assert "Blocked: ${conciseReason}" in source
+    assert ">${conciseReason}</span>" in source
 
 
 def test_full_indicator_cards_are_green():
@@ -265,7 +266,7 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert 'class="${candleTrendToneClass}"' in source
     assert "🕯️ ${escapeHtml(candleTrendLabel)} 🕯️" in source
     assert "Candle: ${escapeHtml(candleTrendLabel)}" not in source
-    assert "Blocked: ${escapeHtml(candleTrendLabel)}" in source
+    assert ">${escapeHtml(candleTrendLabel)}</span>" in source
     assert "Market Trend:" not in source
     assert "trendWithTimestamp" not in source
     assert "Market Trend: ${trendText}" not in source

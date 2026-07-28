@@ -8375,12 +8375,12 @@ HTML_DASHBOARD = """
 
                     if (lastEntryCandidateDirection === side && lastEntryBlockReason) {
                         const blockReason = escapeHtml(lastEntryBlockReason.replaceAll('_', ' '));
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${blockReason}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${blockReason}</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${escapeHtml(candleTrendLabel)}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${escapeHtml(candleTrendLabel)}</span>`;
                     }
 
                     if (!isNoTrade) {
@@ -8391,7 +8391,7 @@ HTML_DASHBOARD = """
                         || 'No entry conditions met';
                     const conciseReason = escapeHtml(conciseReasonRaw);
                     if (conciseReason) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">Blocked: ${conciseReason}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }
                     return `${base}${phaseText}`;
                 }
