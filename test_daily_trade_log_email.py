@@ -3,6 +3,15 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import execution.daily_trade_log_email as trade_email
+
+
+def test_unified_daily_review_disables_legacy_email(monkeypatch):
+    monkeypatch.setenv("DAILY_BOT_REVIEW_UNIFIED", "true")
+    monkeypatch.setenv("DAILY_TRADE_LOG_EMAIL_ENABLED", "true")
+
+    assert trade_email._enabled() is False
+
+
 def test_retired_mailapp_transport_uses_smtp(monkeypatch):
     monkeypatch.setenv("DAILY_TRADE_LOG_EMAIL_TRANSPORT", "")
     monkeypatch.setenv("DAILY_PNL_EMAIL_TRANSPORT", "mailapp")

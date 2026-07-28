@@ -67,6 +67,13 @@ _load_dotenv_if_present()
 
 
 def _enabled() -> bool:
+    if os.getenv("DAILY_BOT_REVIEW_UNIFIED", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return False
     return os.getenv("DAILY_TRADE_LOG_EMAIL_ENABLED", "true").strip().lower() in {
         "1",
         "true",
