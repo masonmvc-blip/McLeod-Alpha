@@ -1,6 +1,6 @@
 {
   "analysis_protocol_version": "2026-07-22.1",
-  "generated_at": "2026-07-28T16:04:20.250250+00:00",
+  "generated_at": "2026-07-28T16:09:03.532267+00:00",
   "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
   "recording_count": 799,
   "recordings": [
@@ -12520,14 +12520,14 @@
     {
       "analysis_protocol_version": "2026-07-22.1",
       "analysis_status": "coverage_incomplete",
-      "duration_seconds": null,
+      "duration_seconds": 5382,
       "evidence_quality": {
         "ledger_reconciliation_pct": 0,
         "option_excursion_data_pct": 0,
-        "overall_grade": "SOURCE_CONTENT_INCOMPLETE",
-        "tier": "E",
-        "trade_details_captured_pct": 0,
-        "transcript_completeness_pct": 0,
+        "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+        "tier": "C",
+        "trade_details_captured_pct": 85,
+        "transcript_completeness_pct": 100,
         "underlying_market_data_pct": 0
       },
       "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
@@ -12541,11 +12541,11 @@
       "source_url": "https://daytradespy.com/40140/trading-room-video-recording-may-8-2025-2/",
       "title": "Trading Room Video Recording \u2013 May 9, 2025",
       "transcript": {
-        "availability": "UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS",
-        "completeness_pct": 0,
+        "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+        "completeness_pct": 100,
         "path": "",
         "speaker_attribution_available": false,
-        "timestamps_preserved": false
+        "timestamps_preserved": true
       }
     },
     {

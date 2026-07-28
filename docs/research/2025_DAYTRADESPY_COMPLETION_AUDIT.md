@@ -22,9 +22,9 @@ Audit date: 2026-07-28.
   Several January-March reports predate complete machine-record backfill.
 - Reports dated May 6, May 7, May 9, May 12-16, May 20, and May 22-23 are
   evidence-gap placeholders, not substantive recording reviews.
-- May 8 was upgraded from an apparent caption gap to a substantive Tier C
-  report after the complete signed Vimeo caption track was recovered from the
-  authorized player.
+- May 8 and May 9 were upgraded from apparent caption gaps to substantive Tier
+  C reports after their complete signed Vimeo caption tracks were recovered
+  from the authorized player.
 - No 2025 recording is Tier A because full visual review and independent
   underlying, option-path, broker-fill, and ledger evidence are unavailable.
 
@@ -42,8 +42,8 @@ Audit date: 2026-07-28.
 ## Completion Order
 
 1. Upgrade May 8-May 23 caption-gap placeholders by reading the complete signed
-   caption tracks from the authorized Vimeo player. May 8 is complete at Tier C;
-   May 9 is next.
+   caption tracks from the authorized Vimeo player. May 8 and May 9 are
+   complete at Tier C; May 12 is next.
 2. Recheck May 6 and May 7. If Vimeo still returns private-video denial, retain
    the Tier E access record rather than fabricating a review.
 3. Continue missing substantive daily reports chronologically from the May
@@ -88,10 +88,10 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording date: May 9, 2025
-- Post ID: `40140`
+- Recording date: May 12, 2025
+- Post ID: `40161`
 - Source:
-  `https://daytradespy.com/40140/trading-room-video-recording-may-9-2025/`
+  `https://daytradespy.com/40161/trading-room-video-recording-may-12-2025/`
 - Current status: Tier E placeholder pending complete signed-caption recovery
 
 ## Governance
