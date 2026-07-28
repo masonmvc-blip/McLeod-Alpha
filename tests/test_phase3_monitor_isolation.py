@@ -207,7 +207,10 @@ def test_open_option_quote_uses_held_contract_direct_quote(monkeypatch) -> None:
 
     monkeypatch.setattr(module, "client", Client())
 
-    assert module.get_open_option_quote("SPY   260731C00750000") == (2.5, 2.4, None)
+    mark, bid, last, metadata = module.get_open_option_quote("SPY   260731C00750000")
+    assert (mark, bid, last) == (2.5, 2.4, None)
+    assert metadata["bid"] == 2.4
+    assert metadata["quote_source"] == "schwab_direct_option_quote"
 
 
 def test_authoritative_history_fetch_runs_once_after_each_closed_market_minute(monkeypatch) -> None:
@@ -404,6 +407,7 @@ def test_startup_guard_blocks_one_entry_then_releases_to_engine(monkeypatch) -> 
     engine_calls = []
     admissions = []
     monkeypatch.setattr(module, "startup_entry_attempts", 0)
+    monkeypatch.setattr(module, "_entries_are_paused", lambda: False)
     monkeypatch.setattr(module, "original_open_trade", lambda *args, **kwargs: engine_calls.append((args, kwargs)) or True)
     monkeypatch.setattr(module, "ENGINE_MODULE", SimpleNamespace())
     monkeypatch.setattr(

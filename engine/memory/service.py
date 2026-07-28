@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import csv
+import hashlib
 import json
 from pathlib import Path
 import sqlite3
@@ -91,6 +92,65 @@ class Memory:
                     direction TEXT, option_symbol TEXT, source TEXT, snapshot TEXT
                 )
             """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS canonical_completed_trades (
+                    canonical_trade_id TEXT PRIMARY KEY,
+                    entry_time TEXT NOT NULL,
+                    exit_time TEXT NOT NULL,
+                    trade_date TEXT NOT NULL,
+                    broker_entry_order_id TEXT,
+                    broker_exit_order_id TEXT,
+                    option_symbol TEXT,
+                    source TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            connection.execute("""
+                CREATE INDEX IF NOT EXISTS idx_canonical_completed_trades_date
+                ON canonical_completed_trades (trade_date, entry_time)
+            """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS canonical_completed_trade_versions (
+                    canonical_trade_id TEXT NOT NULL,
+                    canonical_version INTEGER NOT NULL,
+                    payload_sha256 TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    PRIMARY KEY (canonical_trade_id, canonical_version),
+                    UNIQUE (canonical_trade_id, payload_sha256)
+                )
+            """)
+            legacy_canonical_rows = connection.execute(
+                """
+                SELECT canonical_trade_id, source, created_at, payload
+                FROM canonical_completed_trades
+                WHERE canonical_trade_id NOT IN (
+                    SELECT canonical_trade_id FROM canonical_completed_trade_versions
+                )
+                """
+            ).fetchall()
+            for canonical_trade_id, source, created_at, raw_payload in legacy_canonical_rows:
+                try:
+                    payload = json.loads(raw_payload)
+                except (TypeError, json.JSONDecodeError):
+                    payload = {}
+                payload["canonical_trade_id"] = canonical_trade_id
+                payload["canonical_version"] = 1
+                payload["schema_version"] = "canonical-completed-trade.v2"
+                serialized = json.dumps(payload, default=str, separators=(",", ":"), sort_keys=True)
+                payload_sha256 = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+                connection.execute(
+                    """
+                    INSERT INTO canonical_completed_trade_versions (
+                        canonical_trade_id, canonical_version, payload_sha256, source, recorded_at, payload
+                    ) VALUES (?, 1, ?, ?, ?, ?)
+                    """,
+                    (canonical_trade_id, payload_sha256, source, created_at, serialized),
+                )
 
     def record_order(self, order_id, intent):
         order_id = str(order_id or "").strip()
@@ -126,6 +186,7 @@ class Memory:
 
     def record_trade(self, **trade):
         self.initialize_live_trade_store()
+        self.upsert_completed_trade(trade, source="live_execution")
         columns = (
             "entry_time", "exit_time", "direction", "entry_price", "exit_price", "pnl",
             "exit_reason", "feature_payload", "option_symbol", "option_entry", "option_exit",
@@ -150,6 +211,182 @@ class Memory:
             str(trade.get("broker_exit_order_id") or trade.get("broker_entry_order_id") or "") or None,
         ))
 
+    @staticmethod
+    def _canonical_trade_id(trade: dict[str, Any]) -> str:
+        entry_order_id = str(trade.get("broker_entry_order_id") or "")
+        exit_order_id = str(trade.get("broker_exit_order_id") or "")
+        if entry_order_id or exit_order_id:
+            identity = "broker|{}|{}|{}".format(entry_order_id, exit_order_id, trade.get("option_symbol") or "")
+        else:
+            identity = "local|{}|{}|{}|{}".format(
+                trade.get("entry_time") or "", trade.get("exit_time") or "",
+                trade.get("option_symbol") or "", trade.get("direction") or "",
+            )
+        return "completed-trade:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
+
+    @staticmethod
+    def _canonical_feature_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+        raw = payload.get("feature_payload") or payload.get("entry_features") or {}
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except json.JSONDecodeError:
+                raw = {"raw_feature_payload": raw}
+        features = dict(raw) if isinstance(raw, dict) else {}
+        metadata = {
+            "confidence_score": payload.get("confidence_score", payload.get("bot_confidence_score")),
+            "checklist_score": payload.get("checklist_score"),
+            "market_regime": payload.get("market_regime", features.get("market_regime")),
+            "trend_maturity": payload.get("trend_maturity", features.get("trend_maturity", payload.get("momentum_phase"))),
+            "signal_version": payload.get("signal_version", features.get("signal_version")),
+            "model_version": payload.get("model_version", features.get("model_version")),
+            "rule_version": payload.get("rule_version", features.get("rule_version")),
+        }
+        return {"all_features": features, "metadata": metadata}
+
+    def upsert_completed_trade(self, trade: dict[str, Any], source="live_execution") -> dict[str, Any]:
+        """Append an immutable version of the one canonical completed-trade object."""
+        self.initialize_live_trade_store()
+        payload = dict(trade or {})
+        entry_time = str(payload.get("entry_time") or "")
+        exit_time = str(payload.get("exit_time") or "")
+        if not entry_time or not exit_time:
+            raise ValueError("A completed trade requires entry_time and exit_time")
+        canonical_trade_id = str(payload.get("canonical_trade_id") or self._canonical_trade_id(payload))
+        now = datetime.now(timezone.utc).isoformat()
+        payload["canonical_trade_id"] = canonical_trade_id
+        payload["schema_version"] = "canonical-completed-trade.v2"
+        payload["source"] = str(source)
+        payload["feature_snapshot"] = self._canonical_feature_snapshot(payload)
+        with sqlite3.connect(self.db_path) as connection:
+            latest = connection.execute(
+                "SELECT canonical_version, payload_sha256 FROM canonical_completed_trade_versions WHERE canonical_trade_id = ? ORDER BY canonical_version DESC LIMIT 1",
+                (canonical_trade_id,),
+            ).fetchone()
+            fact_payload = dict(payload)
+            fact_payload.pop("canonical_version", None)
+            fact_sha256 = hashlib.sha256(
+                json.dumps(fact_payload, default=str, separators=(",", ":"), sort_keys=True).encode("utf-8")
+            ).hexdigest()
+            payload["canonical_version"] = int(latest[0] or 0) + 1 if latest else 1
+            serialized = json.dumps(payload, default=str, separators=(",", ":"), sort_keys=True)
+            payload_sha256 = fact_sha256
+            if latest is not None and payload_sha256 == latest[1]:
+                payload["canonical_version"] = int(latest[0])
+                return payload
+            connection.execute(
+                """
+                INSERT INTO canonical_completed_trades (
+                    canonical_trade_id, entry_time, exit_time, trade_date,
+                    broker_entry_order_id, broker_exit_order_id, option_symbol,
+                    source, schema_version, payload, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(canonical_trade_id) DO NOTHING
+                """,
+                (
+                    canonical_trade_id, entry_time, exit_time, entry_time[:10],
+                    str(payload.get("broker_entry_order_id") or ""),
+                    str(payload.get("broker_exit_order_id") or ""),
+                    str(payload.get("option_symbol") or ""), str(source),
+                    payload["schema_version"], serialized, now, now,
+                ),
+            )
+            connection.execute(
+                """
+                INSERT INTO canonical_completed_trade_versions (
+                    canonical_trade_id, canonical_version, payload_sha256, source, recorded_at, payload
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (canonical_trade_id, payload["canonical_version"], payload_sha256, str(source), now, serialized),
+            )
+        self.record_event(MemoryEvent(
+            "trade", "canonical_completed_trade_upserted", str(source), payload, canonical_trade_id,
+        ))
+        return payload
+
+    def load_completed_trades(self, start_date: str, end_date: str | None = None) -> list[dict[str, Any]]:
+        """Load canonical completed-trade objects; downstream consumers must use this API."""
+        self.initialize_live_trade_store()
+        end_date = str(end_date or start_date)
+        self._backfill_legacy_completed_trades(str(start_date), end_date)
+        with sqlite3.connect(self.db_path) as connection:
+            rows = connection.execute(
+                """
+                                SELECT version.payload
+                                FROM canonical_completed_trades AS trade
+                                JOIN canonical_completed_trade_versions AS version
+                                    ON version.canonical_trade_id = trade.canonical_trade_id
+                                WHERE trade.trade_date BETWEEN ? AND ?
+                                    AND version.canonical_version = (
+                                        SELECT MAX(candidate.canonical_version)
+                                        FROM canonical_completed_trade_versions AS candidate
+                                        WHERE candidate.canonical_trade_id = trade.canonical_trade_id
+                                    )
+                                ORDER BY trade.entry_time ASC, trade.canonical_trade_id ASC
+                """,
+                (str(start_date), end_date),
+            ).fetchall()
+        return [json.loads(row[0]) for row in rows]
+
+    def load_completed_trades_for_date(self, trade_date: str) -> list[dict[str, Any]]:
+        return self.load_completed_trades(trade_date)
+
+    def load_trade_reconciliation_metrics(self, trade_date: str, broker_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+        """Return count parity for broker facts and every canonical trade projection."""
+        canonical = self.load_completed_trades_for_date(trade_date)
+        canonical_ids = {str(trade.get("canonical_trade_id") or "") for trade in canonical}
+        broker_rows = list(broker_rows or [])
+        broker_ids = {self._canonical_trade_id(dict(row)) for row in broker_rows}
+        root = self.db_path.parent.parent
+        export_path = root / "data" / "reports" / "trade_logs" / f"daily_trade_review_data_{trade_date}.json"
+        try:
+            export_rows = list((json.loads(export_path.read_text(encoding="utf-8")) or {}).get("trades") or [])
+        except (OSError, json.JSONDecodeError):
+            export_rows = []
+        review_ids = {str(row.get("trade_id") or "") for row in export_rows}
+        replay_dir = root / "data" / "spy_bot_reviewer" / "replays"
+        replay_ready_ids = {
+            trade_id for trade_id in canonical_ids
+            if (replay_dir / f"{''.join(char for char in trade_id if char.isalnum() or char in '-_')}.json").exists()
+        }
+        outbox_path = root / "data" / "reports" / "trade_ledger_outbox.jsonl"
+        latest_outbox: dict[str, str] = {}
+        try:
+            for line in outbox_path.read_text(encoding="utf-8").splitlines():
+                event = json.loads(line)
+                if event.get("key"):
+                    latest_outbox[str(event["key"])] = str(event.get("event") or "")
+        except (OSError, json.JSONDecodeError):
+            pass
+        pending_outbox = sum(1 for event_type in latest_outbox.values() if event_type == "pending")
+        unreconciled = broker_ids - canonical_ids
+        return {
+            "trading_date": trade_date,
+            "broker_trades_today": len(broker_ids),
+            "canonical_completed_trades": len(canonical_ids),
+            "review_export_trades": len(review_ids),
+            "replay_ready_trades": len(replay_ready_ids),
+            "unreconciled_trades": len(unreconciled),
+            "pending_outbox_entries": pending_outbox,
+            "unreconciled_trade_ids": sorted(unreconciled),
+            "healthy": not unreconciled and pending_outbox == 0,
+        }
+
+    def _backfill_legacy_completed_trades(self, start_date: str, end_date: str) -> None:
+        """Compatibility migration for completed rows written before canonical-trade.v1."""
+        with sqlite3.connect(self.db_path) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = [dict(row) for row in connection.execute(
+                """
+                SELECT * FROM trade_log
+                WHERE exit_time IS NOT NULL AND TRIM(exit_time) <> ''
+                  AND substr(entry_time, 1, 10) BETWEEN ? AND ?
+                """,
+                (start_date, end_date),
+            ).fetchall()]
+        for row in rows:
+            self.upsert_completed_trade(row, source="legacy_trade_log_backfill")
+
     def reconcile_broker_trades(self, broker_rows, source="broker_reconciliation"):
         """Idempotently persist broker-paired trades and emit one event per inserted row."""
         self.initialize_live_trade_store()
@@ -161,13 +398,14 @@ class Memory:
             "broker_exit_order_id", "feature_payload", "entry_diagnostic_snapshot",
             "exit_diagnostic_snapshot",
         )
-        with sqlite3.connect(self.db_path) as connection:
-            for broker_row in broker_rows or ():
-                trade = dict(broker_row or {})
-                entry_order_id = str(trade.get("broker_entry_order_id") or "")
-                exit_order_id = str(trade.get("broker_exit_order_id") or "")
-                if not entry_order_id and not exit_order_id:
-                    continue
+        for broker_row in broker_rows or ():
+            trade = dict(broker_row or {})
+            entry_order_id = str(trade.get("broker_entry_order_id") or "")
+            exit_order_id = str(trade.get("broker_exit_order_id") or "")
+            if not entry_order_id and not exit_order_id:
+                continue
+            canonical = self.upsert_completed_trade(trade, source=source)
+            with sqlite3.connect(self.db_path) as connection:
                 exists = connection.execute(
                     """
                     SELECT 1 FROM trade_log
@@ -177,8 +415,10 @@ class Memory:
                     """,
                     (entry_order_id, exit_order_id),
                 ).fetchone()
-                if exists is not None:
-                    continue
+            if exists is not None:
+                inserted_trades.append(canonical)
+                continue
+            with sqlite3.connect(self.db_path) as connection:
                 payload = {
                     "entry_time": trade.get("entry_time"),
                     "exit_time": trade.get("exit_time"),
@@ -204,7 +444,7 @@ class Memory:
                     f"INSERT INTO trade_log ({', '.join(columns)}) VALUES ({', '.join('?' for _ in columns)})",
                     tuple(payload[column] for column in columns),
                 )
-                inserted_trades.append(payload)
+            inserted_trades.append(canonical)
         for trade in inserted_trades:
             correlation_id = "broker-trade:{}:{}".format(
                 trade["broker_entry_order_id"] or "-", trade["broker_exit_order_id"] or "-",
@@ -458,20 +698,14 @@ class Memory:
     def load_broker_daily_pnl_rows(self):
         self.initialize_live_trade_store()
         with sqlite3.connect(self.db_path) as connection:
-            connection.row_factory = sqlite3.Row
-            return [dict(row) for row in connection.execute(
-                """
-                SELECT
-                    date(entry_time) AS trade_date,
-                    COALESCE(option_pnl_dollars, pnl, 0.0) AS pnl_dollars,
-                    option_symbol,
-                    broker_entry_order_id,
-                    broker_exit_order_id
-                FROM trade_log
-                WHERE entry_time IS NOT NULL AND date(entry_time) IS NOT NULL
-                ORDER BY date(entry_time), id
-                """
-            ).fetchall()]
+            rows = connection.execute("SELECT payload FROM canonical_completed_trades ORDER BY entry_time, canonical_trade_id").fetchall()
+        return [{
+            "trade_date": str(trade.get("entry_time") or "")[:10],
+            "pnl_dollars": trade.get("option_pnl_dollars", trade.get("pnl", 0.0)),
+            "option_symbol": trade.get("option_symbol"),
+            "broker_entry_order_id": trade.get("broker_entry_order_id"),
+            "broker_exit_order_id": trade.get("broker_exit_order_id"),
+        } for (payload,) in rows for trade in [json.loads(payload)]]
 
     def load_trade_log_status_summary(self, db_path=None):
         """Return the small read-only trade-log summary needed by runtime status."""
@@ -507,50 +741,22 @@ class Memory:
                 for row in connection.execute("SELECT order_id FROM bot_order_audit").fetchall()
                 if str(row["order_id"] or "").strip()
             }
-            trades = [dict(row) for row in connection.execute(
-                """
-                SELECT
-                    id, entry_time, exit_time, direction, exit_reason, option_symbol,
-                    option_entry, option_exit, option_quantity, option_pnl_pct,
-                    COALESCE(option_pnl_dollars, pnl, 0) AS dollar_pnl,
-                    broker_entry_order_id, broker_exit_order_id, feature_payload,
-                    entry_diagnostic_snapshot, exit_diagnostic_snapshot,
-                    option_high_since_entry, option_low_since_entry, option_high_timestamp,
-                    option_low_timestamp, spy_price_at_option_high, spy_price_at_option_low,
-                    mfe_pct, mae_pct, exit_efficiency_pct, peak_capture_pct,
-                    profit_left_on_table_dollars, minutes_to_peak, minutes_after_peak_until_exit,
-                    entry_efficiency_pct, trade_quality_grade
-                FROM trade_log
-                WHERE substr(entry_time, 1, 10) = ?
-                ORDER BY entry_time ASC
-                """,
+            payload_rows = connection.execute(
+                "SELECT payload FROM canonical_completed_trades WHERE trade_date = ? ORDER BY entry_time, canonical_trade_id",
                 (str(trade_date),),
-            ).fetchall()]
+            ).fetchall()
+            trades = []
+            for (payload,) in payload_rows:
+                trade = json.loads(payload)
+                trade["id"] = trade.get("canonical_trade_id")
+                trade["dollar_pnl"] = trade.get("option_pnl_dollars", trade.get("pnl", 0))
+                trades.append(trade)
         return order_ids, trades
 
     def load_exit_quality_export_inputs(self, start_date, end_date):
         """Read completed trade quality fields for a reporting period."""
-        self.initialize_live_trade_store()
-        with sqlite3.connect(self.db_path) as connection:
-            connection.row_factory = sqlite3.Row
-            return [dict(row) for row in connection.execute(
-                """
-                SELECT
-                    id, entry_time, exit_time, direction, exit_reason, option_symbol,
-                    option_entry, option_exit, option_quantity,
-                    COALESCE(option_pnl_dollars, pnl, 0) AS dollar_pnl,
-                    option_high_since_entry, option_low_since_entry,
-                    option_high_timestamp, option_low_timestamp,
-                    spy_price_at_option_high, spy_price_at_option_low,
-                    mfe_pct, mae_pct, exit_efficiency_pct, peak_capture_pct,
-                    profit_left_on_table_dollars, minutes_to_peak,
-                    minutes_after_peak_until_exit, entry_efficiency_pct, trade_quality_grade
-                FROM trade_log
-                WHERE substr(exit_time, 1, 10) BETWEEN ? AND ?
-                ORDER BY exit_time ASC, id ASC
-                """,
-                (str(start_date), str(end_date)),
-            ).fetchall()]
+        trades = self.load_completed_trades(str(start_date), str(end_date))
+        return [dict(trade, id=trade.get("canonical_trade_id"), dollar_pnl=trade.get("option_pnl_dollars", trade.get("pnl", 0))) for trade in trades]
 
     def _record_report_projection(self, path, report_type, format_name, source, correlation_id):
         return self.record_report(
@@ -582,20 +788,15 @@ class Memory:
     def load_daily_trade_performance(self, date_str):
         """Return the Memory-owned trade performance snapshot for one trading date."""
         self.initialize_live_trade_store()
-        with sqlite3.connect(self.db_path) as connection:
-            columns = {row[1] for row in connection.execute("PRAGMA table_info(trade_log)")}
-            pnl_column = "option_pnl_dollars" if "option_pnl_dollars" in columns else "pnl"
-            connection.row_factory = sqlite3.Row
-            rows = [dict(row) for row in connection.execute(
-                f"""
-                SELECT id, entry_time, exit_time, direction, exit_reason,
-                       COALESCE({pnl_column}, 0) AS pnl_value, option_symbol
-                FROM trade_log
-                WHERE substr(entry_time, 1, 10) = ?
-                ORDER BY entry_time ASC
-                """,
-                (str(date_str),),
-            ).fetchall()]
+        rows = [
+            {
+                "id": trade.get("canonical_trade_id"), "entry_time": trade.get("entry_time"),
+                "exit_time": trade.get("exit_time"), "direction": trade.get("direction"),
+                "exit_reason": trade.get("exit_reason"), "option_symbol": trade.get("option_symbol"),
+                "pnl_value": trade.get("option_pnl_dollars", trade.get("pnl", 0)),
+            }
+            for trade in self.load_completed_trades_for_date(str(date_str))
+        ]
         pnl_values = [float(row.get("pnl_value") or 0.0) for row in rows]
         return {
             "date": str(date_str),

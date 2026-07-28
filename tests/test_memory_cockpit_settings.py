@@ -73,6 +73,65 @@ def test_entry_pause_toggle_is_persisted(monkeypatch, tmp_path):
     assert cockpit.toggle_entry_pause_command()["paused"] is False
 
 
+def test_exit_endpoint_queues_exit_even_when_status_has_not_seen_open_position(monkeypatch):
+    queued = []
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"bot_running": True, "mode": "LIVE TRADING", "has_open_position": False})
+    monkeypatch.setattr(cockpit, "queue_exit_trade_command", lambda: queued.append(True) or {"id": 123})
+    monkeypatch.setattr(cockpit, "toggle_entry_pause_command", lambda: (_ for _ in ()).throw(AssertionError("exit must not pause entries")))
+
+    response = cockpit.app.test_client().post("/api/exit-trade")
+
+    assert response.status_code == 200
+    assert response.get_json()["command_id"] == 123
+    assert queued == [True]
+
+
+def test_entry_pause_endpoint_uses_dedicated_control(monkeypatch):
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"bot_running": True, "mode": "LIVE TRADING"})
+    monkeypatch.setattr(cockpit, "toggle_entry_pause_command", lambda: {"paused": True})
+
+    response = cockpit.app.test_client().post("/api/toggle-entry-pause")
+
+    assert response.status_code == 200
+    assert response.get_json()["entry_paused"] is True
+
+
+def test_position_status_reports_local_exit_completion(monkeypatch, tmp_path):
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    response = cockpit.app.test_client().get("/api/position-status")
+
+    assert response.status_code == 200
+    assert response.get_json()["has_open_position"] is False
+
+    position_path = tmp_path / "data" / "open_position.json"
+    position_path.parent.mkdir(parents=True)
+    position_path.write_text('{"direction":"CALL","option_symbol":"SPY TEST"}', encoding="utf-8")
+    response = cockpit.app.test_client().get("/api/position-status")
+
+    assert response.get_json()["has_open_position"] is True
+    assert response.get_json()["direction"] == "CALL"
+
+
+def test_cockpit_has_market_open_paused_entry_prompt():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert 'Trading Paused' in source
+    assert 'Do you want to enter trades?' in source
+    assert 'maybePromptPausedEntriesAtMarketOpen(status)' in source
+    assert "time >= '09:30' && time < '09:35'" in source
+    assert "'/api/toggle-entry-pause'" in source
+
+
+def test_cockpit_watches_for_confirmed_exit_completion():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "function startExitCompletionWatch()" in source
+    assert "'/api/position-status'" in source
+    assert "setInterval(checkForCompletion, 250)" in source
+    assert "await refreshStatus(true)" in source
+    assert "updateTodaysTrades();" in source
+
+
 def test_explicit_go_live_clears_operator_stop_marker():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

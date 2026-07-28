@@ -4,7 +4,7 @@ Only lifecycle methods on :class:`Brain` are part of the live decision API.
 """
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -12,7 +12,6 @@ from . import live_rules
 from . import risk
 
 
-MAX_TRADE_HOLD_MINUTES = 20
 OPTION_MIN_DAYS_TO_EXPIRY = 7
 OPTION_MIN_DAILY_VOLUME = 500
 OPTION_MAX_ABSOLUTE_SPREAD = 0.05
@@ -305,7 +304,7 @@ class Brain:
                 "option_mark": option_mark,
                 "state_updates": state_updates,
             },
-            conditions=("manual", "max_hold"),
+            conditions=("manual",),
         )
         if early_exit.action is TradeAction.EXIT:
             return early_exit
@@ -360,7 +359,7 @@ class Brain:
             conditions=("stop", "target"),
         )
 
-    def evaluate_exit(self, position, market, conditions=("manual", "max_hold", "stop", "target")) -> TradeDecision:
+    def evaluate_exit(self, position, market, conditions=("manual", "stop", "target")) -> TradeDecision:
         """Return the canonical exit instruction for the supplied trade state."""
         if position is None:
             return TradeDecision(
@@ -381,17 +380,6 @@ class Brain:
             return TradeDecision(
                 action=TradeAction.EXIT,
                 reason=str(market.get("manual_exit_reason") or "MANUAL_EXIT_MARKET"),
-                state_transition="EXIT_REQUESTED",
-                exit_price=current_price,
-                metadata={"state_updates": state_updates, "exit_option_mark": option_mark},
-            )
-
-        opened = getattr(position, "opened", None)
-        now = market.get("now") or datetime.now()
-        if "max_hold" in enabled and isinstance(opened, datetime) and now - opened >= timedelta(minutes=MAX_TRADE_HOLD_MINUTES):
-            return TradeDecision(
-                action=TradeAction.EXIT,
-                reason="MAX_HOLD_20_MIN",
                 state_transition="EXIT_REQUESTED",
                 exit_price=current_price,
                 metadata={"state_updates": state_updates, "exit_option_mark": option_mark},

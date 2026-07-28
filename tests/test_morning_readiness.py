@@ -45,7 +45,34 @@ def test_readiness_passes_when_all_sources_are_flat(tmp_path, monkeypatch):
     monkeypatch.setattr(readiness, "_cockpit_status", lambda: {"bot_running_effective": True})
     _configure_channels(monkeypatch)
 
-    result = readiness.build_morning_readiness(datetime(2026, 7, 22, 9, 0, tzinfo=ZoneInfo("America/New_York")), _flat_broker, reports_dir=reports_dir, db_path=tmp_path / "trades.db", local_position_path=tmp_path / "open_position.json", scheduler_health_path=scheduler)
+    result = readiness.build_morning_readiness(datetime(2026, 7, 22, 9, 0, tzinfo=ZoneInfo("America/New_York")), _flat_broker, reports_dir=reports_dir, db_path=tmp_path / "trades.db", local_position_path=tmp_path / "open_position.json", scheduler_health_path=scheduler, entry_pause_path=tmp_path / "entry_pause.json")
 
     assert result["status"] == "PASS"
-    assert result["passed_checks"] == result["total_checks"] == 12
+    assert result["passed_checks"] == result["total_checks"] == 13
+
+
+def test_readiness_fails_and_explains_when_entries_are_paused(tmp_path, monkeypatch):
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir()
+    scheduler = reports_dir / "scheduler_health.json"
+    scheduler.write_text(json.dumps({"trade_date": "2026-07-22", "tasks": [{"task": "Daily Trade Email", "status": "scheduled"}]}), encoding="utf-8")
+    pause_path = tmp_path / "entry_pause.json"
+    pause_path.write_text(json.dumps({"paused": True, "reason": "operator pause", "updated_at": "2026-07-22T08:55:00-04:00"}), encoding="utf-8")
+    monkeypatch.setattr(readiness, "_cockpit_status", lambda: {"bot_running_effective": True})
+    _configure_channels(monkeypatch)
+
+    result = readiness.build_morning_readiness(
+        datetime(2026, 7, 22, 9, 0, tzinfo=ZoneInfo("America/New_York")),
+        _flat_broker,
+        reports_dir=reports_dir,
+        db_path=tmp_path / "trades.db",
+        local_position_path=tmp_path / "open_position.json",
+        scheduler_health_path=scheduler,
+        entry_pause_path=pause_path,
+    )
+
+    pause_check = next(check for check in result["checks"] if check["name"] == "Trade entries active")
+    assert result["status"] == "FAIL"
+    assert "Trade entries active" in result["failures"]
+    assert pause_check["status"] == "FAIL"
+    assert "entries are paused: operator pause" in pause_check["detail"]

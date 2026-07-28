@@ -10,13 +10,14 @@ Usage:
   python daily_performance_report.py  # uses today
 """
 
-import sqlite3
 import json
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
 import statistics
+
+from engine.memory import Memory
 
 
 def safe_parse_feature_payload(payload_str):
@@ -64,30 +65,9 @@ def format_time_duration(td):
 
 
 def get_trades_for_date(db_path, target_date):
-    """
-    Query trade_log for all trades with entry_time on target_date.
-    target_date should be a datetime.date object.
-    """
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    # Format date range for SQL
+    """Load canonical completed-trade objects for the requested date."""
     date_str = target_date.strftime("%Y-%m-%d")
-    next_date = target_date + timedelta(days=1)
-    next_date_str = next_date.strftime("%Y-%m-%d")
-
-    query = """
-    SELECT * FROM trade_log 
-    WHERE DATE(entry_time) = ?
-    ORDER BY entry_time ASC
-    """
-
-    cursor.execute(query, (date_str,))
-    rows = cursor.fetchall()
-    conn.close()
-
-    return [dict(row) for row in rows]
+    return Memory(db_path=db_path).load_completed_trades_for_date(date_str)
 
 
 def calculate_hold_time(entry_time_str, exit_time_str):

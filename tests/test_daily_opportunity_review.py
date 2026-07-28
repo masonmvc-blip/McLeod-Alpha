@@ -76,6 +76,26 @@ def test_logger_timestamps_are_eastern(tmp_path, monkeypatch):
         assert row["research"]["promotion_eligible"] is False
 
 
+def test_logger_preserves_blocked_candidate_plan(tmp_path, monkeypatch):
+    monkeypatch.setattr("execution.opportunity_logger.OPPORTUNITY_LOG_DIR", tmp_path)
+    frame = _sample_df()
+
+    log_evaluated_setups(
+        last=frame.iloc[-1], prev=frame.iloc[-2], df=frame, regime="BULL_TREND",
+        call_score=5, call_reasons=["bull_ema_stack"], put_score=1, put_reasons=[],
+        entry_threshold=5, allow_entry=True, in_position=False, in_market_hours=True,
+        entered_call=False, entered_put=False, feature_payload={},
+        selected_option_call={"symbol": "SPY_260717C00600000", "mark": 4.25},
+        blocked_entry={"direction": "CALL", "reason": "entry_paused", "intended_trade": {"underlying_entry": 600.5, "underlying_stop": 599.75, "underlying_target": 602.0, "quantity": 1, "option_symbol": "SPY_260717C00600000", "option_mark": 4.25}},
+    )
+
+    records = [json.loads(line) for line in (tmp_path / "opportunity_setups_2026-07-17.jsonl").read_text().splitlines()]
+    call_record = next(record for record in records if record["direction"] == "CALL")
+    assert call_record["blocked_trade"] is True
+    assert call_record["block_reason"] == "entry_paused"
+    assert call_record["intended_trade"]["option_mark"] == 4.25
+
+
 def test_executed_and_rejected_included_once(tmp_path, monkeypatch):
     monkeypatch.setattr(dor, "OPPORTUNITY_LOG_DIR", tmp_path)
     monkeypatch.setattr(dor, "REPORTS_DIR", tmp_path / "reports")

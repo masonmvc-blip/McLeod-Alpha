@@ -13,16 +13,12 @@ Use this as the quick-reference source of truth for live stops.
 
 | Condition | Local Stop Rule | Broker Order Action | Exit Trigger | Exit Reason |
 |---|---|---|---|---|
-| New fill (0% profit) | Stop = Entry x 0.95 | Submit SELL_TO_CLOSE STOP_LIMIT at stop (limit = stop x 0.99) | N/A at entry | N/A |
-| Profit >= 2% and < 3% | Stop = Entry x 0.97 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 3% and < 4% | Stop = Entry x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 4% and < 5% | Stop = Current option quote x 0.97 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 5% and < 6% | Stop = Current option quote x 0.975 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 6% and < 7% | Stop = Current option quote x 0.98 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 7% and < 8% | Stop = Current option quote x 0.985 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Profit >= 8% | Stop = Current option quote x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | OPTION_STOP |
-| Trade held for 20 minutes | Close through normal broker-safe exit path | Cancel stop, submit/confirm exit, then clear local position | Elapsed holding time >= 20 minutes | MAX_HOLD_20_MIN |
-| Time in trade | No live maximum-hold rule configured | No broker action | Not applicable | Not applicable |
+| New fill (0% profit) | Stop = Entry x 0.96 | Submit SELL_TO_CLOSE STOP_LIMIT at stop (limit = stop x 0.99) | N/A at entry | N/A |
+| Profit >= 1% and < 2% | Stop = Current option quote x 0.97 | Replace/sync broker stop upward | Option bid/mark <= stop | STOP |
+| Profit >= 2% and < 3% | Stop = Current option quote x 0.98 | Replace/sync broker stop upward | Option bid/mark <= stop | 2% Stop |
+| Profit >= 3% and < 4% | Stop = Current option quote x 0.985 | Replace/sync broker stop upward | Option bid/mark <= stop | 3% Stop |
+| Profit >= 4% | Stop = Current option quote x 0.99 | Replace/sync broker stop upward | Option bid/mark <= stop | 4% Stop |
+| Holding duration | No maximum holding period | Keep the broker protective stop active and ratchet it upward only | Price-based stop, target, manual, or protective-stop safety exit | Applicable exit reason |
 
 ### Quick Math
 
@@ -35,9 +31,9 @@ Use this as the quick-reference source of truth for live stops.
 1. Confirm protective stop was submitted after fill.
 2. Confirm stop only ratchets upward.
 3. Confirm broker stop sync happened after each ratchet.
-4. Confirm stop-hit exits are OPTION_STOP.
+4. Confirm stop-hit exits retain their active stop-tier reason.
 5. Confirm any failed exit attempt re-protects position.
-6. Confirm a live trade exits at 20 minutes via MAX_HOLD_20_MIN.
+6. Confirm a live trade remains protected regardless of holding duration.
 
 ## Stop Loss Strategy
 

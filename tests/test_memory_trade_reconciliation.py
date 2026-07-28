@@ -446,6 +446,35 @@ def test_today_trades_preserves_local_manual_exit_label_for_broker_rows(monkeypa
     assert trade["manual_label"] == "Mason"
 
 
+def test_today_trades_preserves_manual_exit_entry_state_fields(monkeypatch, tmp_path):
+    database_path = tmp_path / "data" / "mcleod_alpha.db"
+    memory = Memory(db_path=database_path)
+    today = datetime.now(cockpit.EASTERN_TZ).date().isoformat()
+    snapshot = {"trend_stage": {"stage": 2}, "momentum_phase": "EARLY_CONTINUATION", "continuation_quality_score": 3.4, "momentum_acceleration_score": 4.1, "checklist": {"entry_reasons": ["price_above_vwap"]}, "support_resistance": {"nearest_support": 600.0}}
+    memory.record_trade(
+        entry_time=f"{today}T09:45:00-04:00", exit_time=f"{today}T09:50:00-04:00",
+        direction="CALL", entry_price=1.0, exit_price=1.2, pnl=20.0, exit_reason="MANUAL_EXIT_LIMIT",
+        option_symbol="SPY  260720C00600000", option_entry=1.0, option_exit=1.2, option_quantity=1,
+        broker_entry_order_id="manual-entry", broker_exit_order_id="manual-exit",
+        entry_diagnostic_snapshot=json.dumps(snapshot),
+    )
+
+    monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("manual-entry", "manual-exit")])
+    monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
+    monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
+    monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
+    monkeypatch.setattr(cockpit, "_log_daily_trades_chart_snapshot", lambda *args: None)
+    monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"todays_pnl": 0.0})
+
+    trade = cockpit.app.test_client().get("/api/today-trades").get_json()["trades"][0]
+    assert trade["exit_reason"] == "MANUAL_EXIT_LIMIT"
+    assert trade["trend_stage"] == 2
+    assert trade["momentum_phase"] == "EARLY_CONTINUATION"
+    assert trade["continuation_quality_score"] == 3.4
+    assert trade["momentum_acceleration_score"] == 4.1
+
+
 def test_cockpit_has_no_direct_trade_log_mutation():
     tree = ast.parse(Path("cockpit.py").read_text(encoding="utf-8"))
     forbidden_prefixes = ("INSERT INTO TRADE_LOG", "UPDATE TRADE_LOG", "DELETE FROM TRADE_LOG", "REPLACE INTO TRADE_LOG")

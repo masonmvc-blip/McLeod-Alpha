@@ -78,9 +78,11 @@ def build_morning_readiness(
     broker_snapshot_provider: Callable[[], tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None, int | None, str | None]],
     *, reports_dir: Path = REPORTS_DIR, db_path: Path = DB_PATH,
     local_position_path: Path = LOCAL_POSITION_PATH, scheduler_health_path: Path = SCHEDULER_HEALTH_PATH,
+    entry_pause_path: Path | None = None,
 ) -> dict[str, Any]:
     now = now_et.astimezone(EASTERN_TZ)
     checks: list[dict[str, Any]] = []
+    entry_pause_path = entry_pause_path or ENTRY_PAUSE_PATH
 
     def add(name: str, passed: bool, detail: str) -> None:
         checks.append({"name": name, "status": "PASS" if passed else "FAIL", "passed": passed, "detail": detail})
@@ -89,6 +91,7 @@ def build_morning_readiness(
     broker = _broker_symbols(positions)
     cockpit = _cockpit_status()
     scheduler = _load_json(scheduler_health_path)
+    entry_pause = _load_json(entry_pause_path)
     email_task = next((task for task in scheduler.get("tasks", []) if task.get("task") == "Daily Trade Email"), {})
     scheduler_ok = scheduler.get("trade_date") == now.date().isoformat() and email_task.get("status") in {"scheduled", "healthy"}
     local_symbol = str(_load_json(local_position_path).get("option_symbol") or "").strip()
@@ -97,6 +100,14 @@ def build_morning_readiness(
     add("Broker connected", broker_status == 200, f"status={broker_status} error={broker_error or 'none'}")
     add("Cockpit running", bool(cockpit), "loopback status available" if cockpit else "loopback status unavailable")
     add("Live monitor running", bool(cockpit.get("bot_running_effective")), f"bot_running_effective={cockpit.get('bot_running_effective')}")
+    entries_paused = bool(entry_pause.get("paused"))
+    pause_reason = str(entry_pause.get("reason") or "operator pause")
+    pause_updated_at = str(entry_pause.get("updated_at") or "unknown time")
+    add(
+        "Trade entries active",
+        not entries_paused,
+        "entry admission is active" if not entries_paused else f"entries are paused: {pause_reason} (updated {pause_updated_at}); resume entries before trading",
+    )
     add("Scheduler healthy", scheduler_ok, f"daily_email_status={email_task.get('status', 'missing')}")
     add("SMTP healthy", _smtp_ok(), "SMTP credentials configured" if _smtp_ok() else "SMTP configuration incomplete")
     add("SMS healthy", _sms_ok(), "approved SMS gateway configured" if _sms_ok() else "SMS gateway disabled or incomplete")
@@ -118,7 +129,7 @@ def build_morning_readiness(
     payload = {"generated_at": now.isoformat(), "trade_date": now.date().isoformat(), "status": "PASS" if not failures else "FAIL", "checks": checks, "passed_checks": len(checks) - len(failures), "total_checks": len(checks), "failures": failures, "entry_approval": "APPROVED" if not failures else "NOT_APPROVED"}
     _save_json(reports_dir / f"morning_readiness_{payload['trade_date']}.json", payload)
     if failures:
-        _save_json(ENTRY_PAUSE_PATH, {"paused": True, "reason": "morning_readiness_failed", "failures": failures, "updated_at": now.isoformat()})
+        _save_json(entry_pause_path, {"paused": True, "reason": "morning_readiness_failed", "failures": failures, "updated_at": now.isoformat()})
     return payload
 
 

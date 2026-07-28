@@ -222,6 +222,7 @@ def _build_runtime_status():
         "last_no_trade_call_reason": None,
         "last_no_trade_put_reason": None,
         "latest_rejection_reason": None,
+        "qualified_entry_blocks": [],
         "trade_entry_enabled": False,
         "trade_entry_state": "DISABLED",
         "trade_entry_reason": "Bot is not running",
@@ -691,6 +692,28 @@ def _build_runtime_status():
             block_reason = decision_audit.get("entry_block_reason")
             if block_reason:
                 status["last_entry_block_reason"] = str(block_reason)
+            if not bool(decision_audit.get("entry_opened")):
+                qualified_blocks = []
+                regime = str(decision_audit.get("regime") or "UNKNOWN").upper()
+                fallback_reason = str(block_reason or decision_audit.get("entry_decision_reason") or "no entry reason recorded")
+                for side, score_key, required_regime in (
+                    ("CALL", "call_score", "BULL_TREND"),
+                    ("PUT", "put_score", "BEAR_TREND"),
+                ):
+                    try:
+                        score = int(decision_audit.get(score_key) or 0)
+                    except (TypeError, ValueError):
+                        score = 0
+                    if score < 5:
+                        continue
+                    if candidate_direction == side and block_reason:
+                        reason = str(block_reason)
+                    elif regime != required_regime:
+                        reason = f"regime mismatch: {side} requires {required_regime}"
+                    else:
+                        reason = fallback_reason
+                    qualified_blocks.append({"direction": side, "score": score, "reason": reason})
+                status["qualified_entry_blocks"] = qualified_blocks
         except Exception:
             pass
         

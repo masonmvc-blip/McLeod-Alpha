@@ -232,11 +232,14 @@ class SpyBotReviewer:
         return {"hypothesis": hypothesis, "rule_validation": validation, "automatic_live_deployment": False}
 
     def _capture_replay_bundle(self, trade: Dict[str, Any]) -> Dict[str, Any]:
-        trade_id = str(trade.get("trade_id") or hashlib.sha256(json.dumps(trade, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16])
+        trade_id = str(trade.get("canonical_trade_id") or trade.get("trade_id") or "")
+        if not trade_id.startswith("completed-trade:"):
+            raise ValueError("Replay requires a canonical completed-trade ID")
         safe_id = "".join(char for char in trade_id if char.isalnum() or char in "-_")
         path = self.replay_dir / f"{safe_id}.json"
         existing = self._read_json(path, None)
-        if isinstance(existing, dict):
+        canonical_version = trade.get("canonical_version")
+        if isinstance(existing, dict) and existing.get("canonical_version") == canonical_version:
             return {"trade_id": trade_id, "replay_path": str(path.relative_to(self.root)), "replay_sha256": self._sha256_file(path), "reused": True}
         entry = self._parse_time(trade.get("entry_time"))
         exit_time = self._parse_time(trade.get("exit_time")) or entry
@@ -249,10 +252,11 @@ class SpyBotReviewer:
             "schema_version": self.SCHEMA_VERSION,
             "reviewer_version": self.REVIEWER_VERSION,
             "trade_id": trade_id,
+            "canonical_version": canonical_version,
             "captured_at": datetime.now(timezone.utc).isoformat(),
             "trade": trade,
             "window": {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None, "minimum_required": "60m before entry through 30m after exit"},
-            "candles": {"1m": candles_1m, "5m": self._resample(candles_1m, 5), "15m": self._resample(candles_1m, 15), "source": "data/spy_1min_history.csv"},
+            "candles": {"1m": candles_1m, "5m": self._resample(candles_1m, 5), "15m": self._resample(candles_1m, 15), "source": "data/spy_1min_history.csv", "source_sha256": self._sha256_file(self.root / "data" / "spy_1min_history.csv")},
             "execution": self._execution_evidence(trade),
             "screenshots": self._screenshots_for_trade(trade) + chart_snapshots,
             "market_events": self._market_events(trade),
@@ -385,24 +389,13 @@ class SpyBotReviewer:
 
     def _execution_evidence(self, trade: Dict[str, Any]) -> Dict[str, Any]:
         evidence: Dict[str, Any] = {"entry_order_id": trade.get("broker_entry_order_id"), "exit_order_id": trade.get("broker_exit_order_id"), "option_symbol": trade.get("option_symbol"), "entry_price": trade.get("option_entry_price"), "exit_price": trade.get("option_exit_price"), "option_chain_snapshot": None, "bid_ask_spread": None, "fill_details": None, "strategy_version": None, "confidence_score": trade.get("entry_score"), "vix": None, "diagnostic_snapshots": []}
-        db_path = self.root / "data" / "mcleod_alpha.db"
-        trade_id = trade.get("trade_id")
-        if not db_path.exists() or trade_id is None:
-            return evidence
-        try:
-            with sqlite3.connect(db_path) as connection:
-                connection.row_factory = sqlite3.Row
-                row = connection.execute("SELECT feature_payload, entry_diagnostic_snapshot, exit_diagnostic_snapshot FROM trade_log WHERE id = ?", (trade_id,)).fetchone()
-                if row:
-                    for raw in row:
-                        snapshot = self._json_object(raw)
-                        if snapshot:
-                            evidence["diagnostic_snapshots"].append(snapshot)
-                            for key in ("option_chain_snapshot", "bid_ask_spread", "fill_details", "strategy_version", "confidence_score", "vix"):
-                                if evidence.get(key) is None and snapshot.get(key) is not None:
-                                    evidence[key] = snapshot[key]
-        except sqlite3.Error:
-            pass
+        for key in ("feature_payload", "entry_diagnostic_snapshot", "exit_diagnostic_snapshot"):
+            snapshot = self._json_object(trade.get(key))
+            if snapshot:
+                evidence["diagnostic_snapshots"].append(snapshot)
+                for evidence_key in ("option_chain_snapshot", "bid_ask_spread", "fill_details", "strategy_version", "confidence_score", "vix"):
+                    if evidence.get(evidence_key) is None and snapshot.get(evidence_key) is not None:
+                        evidence[evidence_key] = snapshot[evidence_key]
         return evidence
 
     def _screenshots_for_trade(self, trade: Dict[str, Any]) -> List[str]:

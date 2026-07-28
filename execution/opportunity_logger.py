@@ -557,6 +557,7 @@ def log_evaluated_setups(
     feature_payload: Dict[str, Any] | None,
     selected_option_call: Any = None,
     selected_option_put: Any = None,
+    blocked_entry: Dict[str, Any] | None = None,
 ) -> None:
     payload = feature_payload or {}
     market_state = classify_market_state(df)
@@ -586,6 +587,13 @@ def log_evaluated_setups(
         selected_option=selected_option_call,
     )
     call_record["shadow_market_state"] = market_state
+    if blocked_entry and blocked_entry.get("direction") == "CALL":
+        call_record.update({
+            "blocked_trade": True,
+            "block_reason": blocked_entry.get("reason"),
+            "intended_trade": blocked_entry.get("intended_trade"),
+            "rejection_reason": blocked_entry.get("reason"),
+        })
     call_record["research"] = _research_envelope(
         market_state=market_state,
         direction="CALL",
@@ -616,6 +624,13 @@ def log_evaluated_setups(
         selected_option=selected_option_put,
     )
     put_record["shadow_market_state"] = market_state
+    if blocked_entry and blocked_entry.get("direction") == "PUT":
+        put_record.update({
+            "blocked_trade": True,
+            "block_reason": blocked_entry.get("reason"),
+            "intended_trade": blocked_entry.get("intended_trade"),
+            "rejection_reason": blocked_entry.get("reason"),
+        })
     put_record["research"] = _research_envelope(
         market_state=market_state,
         direction="PUT",

@@ -5,11 +5,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import ssl
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+try:
+    import certifi
+except ImportError:  # pragma: no cover - optional runtime dependency
+    certifi = None
 
 
 API_URL = "https://daytradespy.com/wp-json/wp/v2/posts"
@@ -29,7 +35,12 @@ def _fetch_page(page: int, *, opener=urlopen) -> tuple[list[dict[str, Any]], int
         }
     )
     request = Request(f"{API_URL}?{query}", headers={"User-Agent": "McLeodAlphaResearch/1.0"})
-    with opener(request, timeout=30) as response:
+    ssl_context = ssl.create_default_context(cafile=certifi.where()) if certifi else None
+    if opener is urlopen:
+        response_context = opener(request, timeout=30, context=ssl_context)
+    else:
+        response_context = opener(request, timeout=30)
+    with response_context as response:
         payload = json.loads(response.read().decode("utf-8"))
         total_pages = int(response.headers.get("X-WP-TotalPages", "1"))
     if not isinstance(payload, list):
@@ -60,6 +71,7 @@ def build_manifest(*, fetch_page=_fetch_page, existing: dict[str, Any] | None = 
             "transcript_status": str(existing_by_post_id.get(int(post["id"]), {}).get("transcript_status") or "pending"),
             "transcript_path": str(existing_by_post_id.get(int(post["id"]), {}).get("transcript_path") or ""),
             "analysis_status": str(existing_by_post_id.get(int(post["id"]), {}).get("analysis_status") or "pending"),
+            "analysis_protocol_version": str(existing_by_post_id.get(int(post["id"]), {}).get("analysis_protocol_version") or ""),
         }
         for post in posts
     ]

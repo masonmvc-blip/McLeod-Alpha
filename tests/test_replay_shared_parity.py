@@ -163,7 +163,7 @@ def test_validation_and_backtest_paths_identical_settings():
     assert via_validation["by_exit_reason"] == via_backtest["by_exit_reason"]
 
 
-def test_brain_max_hold_is_not_overridden_by_replay_setting():
+def test_replay_max_hold_uses_replay_setting_independently_of_live_policy():
     pricer = EstimatedOptionPricer()
     entry_time = datetime(2026, 7, 13, 9, 30, tzinfo=TIMEZONE)
     state = initialize_trade_management_state(
@@ -185,7 +185,7 @@ def test_brain_max_hold_is_not_overridden_by_replay_setting():
             max_hold_minutes=15,
         )
     assert result is not None
-    assert result.exit_reason == "MAX_HOLD_20_MIN"
+    assert result.exit_reason == "MAX_HOLD_15_MIN"
 
 
 def test_end_of_day_boundary_does_not_override_brain_lifecycle():
@@ -249,7 +249,7 @@ def test_option_price_path_shared_between_inspector_and_manager():
     assert manual_marks == replay_df["estimated_option_price_before_slippage"].astype(float).round(6).tolist()
 
 
-def test_max_hold_preempts_stop_update_order():
+def test_replay_max_hold_preempts_stop_update_order():
     pricer = EstimatedOptionPricer()
     entry_time = datetime(2026, 7, 13, 9, 30, tzinfo=TIMEZONE)
     state = initialize_trade_management_state(
@@ -259,7 +259,7 @@ def test_max_hold_preempts_stop_update_order():
         entry_option_price=5.0,
     )
 
-    # Create a state where stop would otherwise update/hit, but max hold must win first.
+    # Replay studies retain their own configured maximum-hold policy.
     state.active_stop = 4.75
     before_peak = state.peak_option_price
     before_stop = state.active_stop
@@ -273,7 +273,7 @@ def test_max_hold_preempts_stop_update_order():
         max_hold_minutes=15,
     )
 
-    assert result.exit_reason == "MAX_HOLD_20_MIN"
+    assert result.exit_reason == "MAX_HOLD_15_MIN"
     assert state.peak_option_price == before_peak
     assert state.active_stop == before_stop
 

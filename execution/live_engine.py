@@ -16,11 +16,11 @@ from execution.position_store import save_position, load_position, clear_positio
 from execution.sms_alerts import send_trade_entry_alert, send_trade_exit_alert, send_emergency_alert
 from execution.contract_limits import MAX_OPEN_CONTRACTS
 from execution.diagnostic_snapshots import extract_entry_diagnostic_snapshot
+from execution.stop_telemetry import record_stop_event
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, time as dt_time, timezone
 from zoneinfo import ZoneInfo
 from engine.brain import Brain, TradeAction, can_open_trade, record_trade, record_stop
-from engine.brain.engine import MAX_TRADE_HOLD_MINUTES
 from engine.memory import get_memory
 from execution.trade_logger import log_trade, log_bot_order, log_trade_diagnostic_event
 from execution.exit_quality import exit_quality_metrics, update_option_extrema
@@ -48,6 +48,8 @@ BROKER_RECONCILE_MAX_ATTEMPTS = max(1, int(os.getenv("BROKER_RECONCILE_MAX_ATTEM
 BROKER_RECONCILE_RETRY_DELAY_SECONDS = max(1.0, float(os.getenv("BROKER_RECONCILE_RETRY_DELAY_SECONDS", "6")))
 OPTION_QUOTE_MAX_STALE_SECONDS_OPEN = max(1.0, float(os.getenv("OPTION_QUOTE_MAX_STALE_SECONDS_OPEN", "8")))
 OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SPREAD_PCT_OPEN", "15")))
+STOP_RATCHET_MAX_QUOTE_AGE_SECONDS = max(0.5, float(os.getenv("STOP_RATCHET_MAX_QUOTE_AGE_SECONDS", "3")))
+STOP_RATCHET_MAX_SPREAD_PCT = max(0.0, float(os.getenv("STOP_RATCHET_MAX_SPREAD_PCT", "12")))
 BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
 BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
 BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
@@ -1603,6 +1605,15 @@ def _submit_protective_stop(
         print(f"   Payload: {sanitize_for_logging(payload_str)}")
 
         _audit_bot_order(order_id, "PROTECTIVE_STOP")
+        record_stop_event(
+            "protective_stop_submitted",
+            option_symbol=option_symbol,
+            quantity=quantity,
+            stop_price=submitted_stop_price,
+            limit_price=submitted_limit_price,
+            broker_order_id=order_id,
+            replaced_order_id=existing_protective_stop[0] if existing_protective_stop else None,
+        )
 
         # Only after the new stop is confirmed do we retire the old one.
         if existing_protective_stop:
@@ -1645,6 +1656,13 @@ def _submit_protective_stop(
         
         _protective_stop_failed = True
         _protective_stop_failure_reason = f"Submission failed: {error_msg}"
+        record_stop_event(
+            "protective_stop_submission_failed",
+            option_symbol=option_symbol,
+            quantity=quantity,
+            requested_stop_price=stop_price,
+            error=error_msg,
+        )
         return None, None
 
 
@@ -2770,6 +2788,47 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     print(f"[LIVE MODE] Order closed on Schwab account")
 
     # Clear position from memory and disk BEFORE logging
+    ledger_trade = {
+        "entry_time": saved_position.opened.isoformat(),
+        "exit_time": exit_timestamp.isoformat(),
+        "direction": saved_position.direction,
+        "entry_price": saved_position.entry_price,
+        "exit_price": price,
+        "pnl": pnl,
+        "exit_reason": reason,
+        "feature_payload": saved_position.feature_payload,
+        "option_symbol": saved_position.option_symbol,
+        "option_entry": option_entry_price,
+        "option_exit": option_exit_price,
+        "option_quantity": saved_position.quantity,
+        "option_delta": saved_position.option_delta,
+        "option_return": option_return,
+        "option_pnl_dollars": option_pnl_dollars,
+        "option_pnl_pct": option_pnl_pct,
+        "broker_entry_order_id": str(saved_position.schwab_order_id or "") or None,
+        "broker_exit_order_id": str(exit_order_id or "") or None,
+        "momentum_freshness_score": momentum_freshness_score,
+        "momentum_phase": momentum_phase,
+        "absorption_score": absorption_score,
+        "entry_diagnostic_snapshot": entry_diagnostic_snapshot,
+        "exit_diagnostic_snapshot": exit_diagnostic_snapshot,
+        "option_high_since_entry": saved_position.option_high_since_entry,
+        "option_low_since_entry": saved_position.option_low_since_entry,
+        "option_high_timestamp": saved_position.option_high_timestamp,
+        "option_low_timestamp": saved_position.option_low_timestamp,
+        "spy_price_at_option_high": saved_position.spy_price_at_option_high,
+        "spy_price_at_option_low": saved_position.spy_price_at_option_low,
+        "entry_efficiency_pct": None,
+        "trade_quality_grade": None,
+        **quality,
+    }
+    try:
+        from execution.trade_ledger_outbox import queue_completed_trade
+
+        queue_completed_trade(ledger_trade)
+    except Exception as exc:
+        print(f"WARNING: Could not queue completed trade for ledger recovery: {exc}")
+
     try:
         clear_position()
     except Exception as exc:
@@ -2807,40 +2866,7 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
         except Exception as e:
             print(f"WARNING: Could not persist live EXIT diagnostic snapshot: {e}")
 
-        safe_log_trade(
-            entry_time=saved_position.opened.isoformat(),
-            exit_time=exit_timestamp.isoformat(),
-            direction=saved_position.direction,
-            entry_price=saved_position.entry_price,
-            exit_price=price,
-            pnl=pnl,
-            exit_reason=reason,
-            feature_payload=saved_position.feature_payload,
-            option_symbol=saved_position.option_symbol,
-            option_entry=option_entry_price,
-            option_exit=option_exit_price,
-            option_quantity=saved_position.quantity,
-            option_delta=saved_position.option_delta,
-            option_return=option_return,
-            option_pnl_dollars=option_pnl_dollars,
-            option_pnl_pct=option_pnl_pct,
-            broker_entry_order_id=str(saved_position.schwab_order_id or "") or None,
-            broker_exit_order_id=str(exit_order_id or "") or None,
-            momentum_freshness_score=momentum_freshness_score,
-            momentum_phase=momentum_phase,
-            absorption_score=absorption_score,
-            entry_diagnostic_snapshot=entry_diagnostic_snapshot,
-            exit_diagnostic_snapshot=exit_diagnostic_snapshot,
-            option_high_since_entry=saved_position.option_high_since_entry,
-            option_low_since_entry=saved_position.option_low_since_entry,
-            option_high_timestamp=saved_position.option_high_timestamp,
-            option_low_timestamp=saved_position.option_low_timestamp,
-            spy_price_at_option_high=saved_position.spy_price_at_option_high,
-            spy_price_at_option_low=saved_position.spy_price_at_option_low,
-            entry_efficiency_pct=None,
-            trade_quality_grade=None,
-            **quality,
-        )
+        safe_log_trade(**ledger_trade)
     except Exception as log_exc:
         print(f"\n⚠️  LOGGING ERROR (position already closed): {log_exc}")
         print(f"Position is CLOSED - logging failure does not affect trade")
@@ -2848,6 +2874,28 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
         print("Traceback:")
         traceback.print_exc()
         # Continue - position is already closed, don't re-throw
+
+    try:
+        from execution.strategy_research import analyze_completed_trade
+
+        analyze_completed_trade({
+            "entry_time": saved_position.opened.isoformat(),
+            "exit_time": exit_timestamp.isoformat(),
+            "direction": saved_position.direction,
+            "exit_reason": reason,
+            "option_symbol": saved_position.option_symbol,
+            "option_entry": option_entry_price,
+            "option_exit": option_exit_price,
+            "option_quantity": saved_position.quantity,
+            "option_pnl_pct": option_pnl_pct * 100.0 if option_pnl_pct is not None else None,
+            "broker_entry_order_id": str(saved_position.schwab_order_id or "") or None,
+            "broker_exit_order_id": str(exit_order_id or "") or None,
+            "entry_diagnostic_snapshot": entry_diagnostic_snapshot,
+            "exit_diagnostic_snapshot": exit_diagnostic_snapshot,
+            **quality,
+        })
+    except Exception as research_exc:
+        print(f"WARNING: Strategy research analysis unavailable: {research_exc}")
 
     send_trade_exit_alert(
         mode="LIVE",
@@ -2864,12 +2912,40 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     return True
 
 
-def manage_trade(current_price, option_mark=None, option_bid=None, option_last=None):
+def _stop_ratchet_quote_is_reliable(quote_metadata):
+    """Reject only an upward stop update based on unreliable option quote facts."""
+    metadata = quote_metadata or {}
+    issues = []
+    quote_age_seconds = metadata.get("quote_age_seconds")
+    if quote_age_seconds is not None and float(quote_age_seconds) > STOP_RATCHET_MAX_QUOTE_AGE_SECONDS:
+        issues.append("stale_quote")
+    spread_pct = metadata.get("quote_spread_pct")
+    if spread_pct is not None and float(spread_pct) > STOP_RATCHET_MAX_SPREAD_PCT:
+        issues.append("wide_spread")
+    bid = float(metadata.get("bid") or 0.0)
+    ask = float(metadata.get("ask") or 0.0)
+    if bid > 0 and ask > 0 and ask < bid:
+        issues.append("crossed_quote")
+    return not issues, issues
+
+
+def manage_trade(current_price, option_mark=None, option_bid=None, option_last=None, quote_metadata=None):
     """Execute the canonical Brain management decision against Schwab."""
     global current_position, _protective_stop_failed, _protective_stop_failure_reason
 
     if not in_trade():
         return
+    trade_key = f"{current_position.option_symbol}:{current_position.opened.isoformat()}"
+    record_stop_event(
+        "option_quote_observed",
+        trade_key=trade_key,
+        option_symbol=current_position.option_symbol,
+        bid=option_bid,
+        mark=option_mark,
+        last=option_last,
+        active_stop=current_position.option_stop,
+        quote_metadata=quote_metadata or {},
+    )
     extrema_updated = update_option_extrema(
         current_position,
         spy_price=current_price,
@@ -2909,8 +2985,22 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             "now": datetime.now(),
         },
     )
+    previous_option_stop = current_position.option_stop
     for field_name, value in decision.metadata.get("state_updates", {}).items():
         setattr(current_position, field_name, value)
+
+    record_stop_event(
+        "stop_management_decision",
+        trade_key=trade_key,
+        option_symbol=current_position.option_symbol,
+        action=str(decision.action),
+        reason=decision.reason,
+        prior_stop=previous_option_stop,
+        candidate_stop=decision.stop_price,
+        bid=option_bid,
+        mark=option_mark,
+        quote_metadata=quote_metadata or {},
+    )
 
     if decision.action is TradeAction.RESTORE_PROTECTIVE_STOP:
         _send_unprotected_position_alert(current_position.option_symbol, decision.quantity, decision.stop_price)
@@ -2949,6 +3039,20 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         return
 
     if decision.action is TradeAction.UPDATE_STOP:
+        quote_reliable, quote_issues = _stop_ratchet_quote_is_reliable(quote_metadata)
+        if not quote_reliable:
+            current_position.option_stop = previous_option_stop
+            record_stop_event(
+                "stop_ratchet_skipped_unreliable_quote",
+                trade_key=trade_key,
+                option_symbol=current_position.option_symbol,
+                prior_stop=previous_option_stop,
+                candidate_stop=decision.stop_price,
+                issues=quote_issues,
+                quote_metadata=quote_metadata or {},
+            )
+            save_position(current_position)
+            return
         order_id, submitted_stop = _submit_protective_stop(
             current_position.option_symbol,
             float(current_position.option_entry or 0.0),

@@ -107,6 +107,7 @@ def _log_shadow_opportunities(
     feature_payload=None,
     selected_option_call=None,
     selected_option_put=None,
+    blocked_entry=None,
 ):
     """Capture evaluated setups as non-blocking research telemetry."""
     try:
@@ -129,6 +130,7 @@ def _log_shadow_opportunities(
             feature_payload=payload,
             selected_option_call=selected_option_call,
             selected_option_put=selected_option_put,
+            blocked_entry=blocked_entry,
         )
     except Exception as exc:
         print(f"Shadow opportunity logging error: {exc}")
@@ -443,9 +445,24 @@ def get_open_option_quote(option_symbol):
             return None
 
     bid = _positive_float(quote.get("bidPrice") or quote.get("bid"))
+    ask = _positive_float(quote.get("askPrice") or quote.get("ask"))
     last = _positive_float(quote.get("lastPrice"))
     mark = _positive_float(quote.get("mark"))
-    return mark, bid, last
+    quote_epoch = _positive_float(quote.get("quoteTime") or quote.get("tradeTime"))
+    if quote_epoch and quote_epoch > 10_000_000_000:
+        quote_epoch /= 1000.0
+    quote_age_seconds = max(0.0, time.time() - quote_epoch) if quote_epoch else None
+    mid = ((bid + ask) / 2.0) if bid and ask and ask >= bid else None
+    spread_pct = (((ask - bid) / mid) * 100.0) if mid else None
+    return mark, bid, last, {
+        "bid": bid,
+        "ask": ask,
+        "mark": mark,
+        "last": last,
+        "quote_age_seconds": quote_age_seconds,
+        "quote_spread_pct": spread_pct,
+        "quote_source": "schwab_direct_option_quote",
+    }
 
 
 def _quote_continuity_candles(history_df, source_label):
@@ -1299,6 +1316,20 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("CALL", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
+        blocked_entry = None
+        if not opened and LAST_ENTRY_EXECUTION_METRICS.get("block_reason"):
+            blocked_entry = {
+                "direction": "CALL",
+                "reason": LAST_ENTRY_EXECUTION_METRICS["block_reason"],
+                "intended_trade": {
+                    "underlying_entry": entry, "underlying_stop": stop, "underlying_target": target,
+                    "quantity": quantity, "reason": trade_plan["reason"],
+                    "option_symbol": option.get("symbol") if isinstance(option, dict) else None,
+                    "option_mark": option.get("mark") if isinstance(option, dict) else None,
+                    "option_bid": option.get("bid") if isinstance(option, dict) else None,
+                    "option_ask": option.get("ask") if isinstance(option, dict) else None,
+                },
+            }
         _log_shadow_opportunities(
             last=last,
             prev=prev,
@@ -1312,6 +1343,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             entered_put=False,
             feature_payload=feature_payload,
             selected_option_call=option,
+            blocked_entry=blocked_entry,
         )
         return {
             "attempted": True,
@@ -1366,6 +1398,20 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("PUT", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
         open_trade_call_ms = _elapsed_ms(open_start_ms)
+        blocked_entry = None
+        if not opened and LAST_ENTRY_EXECUTION_METRICS.get("block_reason"):
+            blocked_entry = {
+                "direction": "PUT",
+                "reason": LAST_ENTRY_EXECUTION_METRICS["block_reason"],
+                "intended_trade": {
+                    "underlying_entry": entry, "underlying_stop": stop, "underlying_target": target,
+                    "quantity": quantity, "reason": trade_plan["reason"],
+                    "option_symbol": option.get("symbol") if isinstance(option, dict) else None,
+                    "option_mark": option.get("mark") if isinstance(option, dict) else None,
+                    "option_bid": option.get("bid") if isinstance(option, dict) else None,
+                    "option_ask": option.get("ask") if isinstance(option, dict) else None,
+                },
+            }
         _log_shadow_opportunities(
             last=last,
             prev=prev,
@@ -1379,6 +1425,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             entered_put=opened,
             feature_payload=feature_payload,
             selected_option_put=option,
+            blocked_entry=blocked_entry,
         )
         return {
             "attempted": True,
@@ -1539,18 +1586,19 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
         option_mark = None
         option_bid = None
         option_last = None
+        option_quote_metadata = None
 
         try:
             current_position = getattr(ENGINE_MODULE, "current_position", None)
             if current_position and getattr(current_position, "option_symbol", None):
-                option_mark, option_bid, option_last = get_open_option_quote(current_position.option_symbol)
+                option_mark, option_bid, option_last, option_quote_metadata = get_open_option_quote(current_position.option_symbol)
 
         except Exception as e:
             print(f"Option mark error: {e}")
         manage_start_ms = _perf_ms_now()
         manual_exit_requested = _process_manual_exit_command(float(latest.close), option_mark)
         if not manual_exit_requested:
-            manage_trade(float(latest.close), option_mark, option_bid, option_last)
+            manage_trade(float(latest.close), option_mark, option_bid, option_last, option_quote_metadata)
         manage_trade_ms = _elapsed_ms(manage_start_ms)
         try:
             SpyBotReviewer(Path(__file__).resolve().parent).maybe_run_after_session()

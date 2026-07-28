@@ -32,18 +32,18 @@ def test_evaluate_exit_returns_manual_exit_instruction():
     assert decision.reason == "MANUAL_EXIT_LIMIT"
 
 
-def test_evaluate_exit_returns_max_hold_stop_target_and_hold_instructions():
+def test_evaluate_exit_keeps_trade_open_past_former_max_hold_until_price_exit():
     brain = Brain()
     position = _position()
 
     hold_decision = brain.evaluate_exit(position, {"current_price": 505.0, "option_mark": 5.10, "now": position.opened + timedelta(minutes=19)})
-    hold_time_decision = brain.evaluate_exit(position, {"current_price": 505.0, "option_mark": 5.10, "now": position.opened + timedelta(minutes=20)})
+    extended_hold_decision = brain.evaluate_exit(position, {"current_price": 505.0, "option_mark": 5.10, "now": position.opened + timedelta(hours=2)})
     active_time = position.opened + timedelta(minutes=19)
     stop_decision = brain.evaluate_exit(position, {"current_price": 505.0, "option_bid": 4.70, "protective_stop_active": False, "now": active_time})
     target_decision = brain.evaluate_exit(position, {"current_price": 510.0, "option_mark": 5.10, "now": active_time})
 
     assert hold_decision.action is TradeAction.HOLD
-    assert hold_time_decision.reason == "MAX_HOLD_20_MIN"
+    assert extended_hold_decision.action is TradeAction.HOLD
     assert stop_decision.reason == "STOP"
     assert target_decision.reason == "TARGET_HIT"
 

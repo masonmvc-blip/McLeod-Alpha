@@ -216,7 +216,7 @@ def _bot_order_ids_from_audit() -> set:
 
 
 def _fetch_trades_for_date(trade_date: str) -> List[Dict[str, Any]]:
-    _, rows = get_memory().load_trade_log_export_inputs(trade_date)
+    rows = get_memory().load_completed_trades_for_date(trade_date)
     return _filter_placeholder_trade_rows(rows)
 
 
@@ -519,7 +519,8 @@ def _build_export_rows(trades: List[Dict[str, Any]], trade_date: str) -> List[Di
         )
 
         row = {
-            "trade_id": trade.get("id"),
+            "trade_id": trade.get("canonical_trade_id"),
+            "canonical_version": trade.get("canonical_version"),
             "entry_time": _to_iso(trade.get("entry_time")),
             "exit_time": _to_iso(trade.get("exit_time")),
             "direction": direction,
@@ -549,6 +550,14 @@ def _build_export_rows(trades: List[Dict[str, Any]], trade_date: str) -> List[Di
             ),
             "hold_duration_minutes": hold_minutes,
             "entry_score": _extract_entry_score(snap, direction),
+            "entry_features": snap,
+            "bot_confidence_score": snap.get("bot_confidence_score", snap.get("confidence_score")),
+            "checklist_score": snap.get("checklist_score"),
+            "probability_estimate": snap.get("probability_estimate", snap.get("entry_probability")),
+            "entry_price": trade.get("entry_price"),
+            "option_quantity": trade.get("option_quantity"),
+            "option_stop": snap.get("option_stop", snap.get("stop_price")),
+            "target_price": snap.get("target_price"),
             "positives": positives,
             "penalties": penalties,
             "market_regime": _extract_market_regime(snap),
@@ -724,6 +733,9 @@ def _export_files(trade_date: str, rows: List[Dict[str, Any]]) -> Tuple[Path, Pa
 
 def generate_daily_trade_review_data(trade_date: str) -> Path:
     """Export the canonical review dataset without sending email."""
+    from execution.trade_ledger_outbox import reconcile_completed_trade_outbox
+
+    reconcile_completed_trade_outbox()
     rows = _build_export_rows(_fetch_trades_for_date(trade_date), trade_date)
     _, json_path = _export_files(trade_date, rows)
     return json_path
@@ -906,6 +918,15 @@ def _attempt_send_for_date(trade_date: str) -> bool:
     except Exception as exc:
         # Review failures must never interfere with the trade-log delivery path.
         print(f"SPY Bot Reviewer generation warning: {exc}")
+
+    try:
+        from reports.trade_review_export import generate_trade_review_package
+
+        package_path = generate_trade_review_package(Path(__file__).resolve().parent.parent, trade_date, json_path)
+        print(f"Trade review package created: {package_path}")
+    except Exception as exc:
+        # Export evidence must not interfere with trade-log delivery or live monitoring.
+        print(f"Trade review package generation warning: {exc}")
 
     opportunity_paths: List[Path] = []
     try:

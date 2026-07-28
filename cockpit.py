@@ -3399,7 +3399,7 @@ def _to_et_iso(value):
 
 
 def _realized_spy_option_pnl_for_date(trading_date: str):
-    """Return realized SPY option P&L for a date using paired broker transactions."""
+    """Return realized SPY option P&L from canonical completed trades."""
     if not trading_date:
         return None
 
@@ -3410,7 +3410,7 @@ def _realized_spy_option_pnl_for_date(trading_date: str):
         return _BROKER_REALIZED_DAY_CACHE.get("pnl")
 
     try:
-        trades = _broker_transaction_trades_for_date(trading_date)
+        trades = get_memory().load_completed_trades_for_date(trading_date)
         realized = round(sum(float(t.get("pnl") or 0.0) for t in trades), 2) if trades else None
     except Exception:
         realized = None
@@ -3422,49 +3422,20 @@ def _realized_spy_option_pnl_for_date(trading_date: str):
 
 
 def _realized_spy_option_pnl_for_period(start_date: str, end_date: str):
-    """Return realized SPY option P&L for an inclusive date range from trade_log exits."""
+    """Return realized SPY option P&L from canonical completed trades."""
     if not start_date or not end_date:
         return None
 
-    db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
-    if not db_path.exists():
-        return None
-
-    con = None
     try:
-        con = sqlite3.connect(db_path)
-        con.row_factory = sqlite3.Row
-        cur = con.cursor()
-        cur.execute(
-            """
-                        SELECT ROUND(SUM(
-                                COALESCE(option_pnl_dollars, pnl, 0)
-                                - ABS(COALESCE(option_quantity, 0)) * ?
-                        ), 2) AS realized
-            FROM trade_log
-            WHERE exit_time IS NOT NULL
-              AND substr(exit_time, 1, 10) >= ?
-              AND substr(exit_time, 1, 10) <= ?
-            """,
-                        (
-                                (OPTION_COMMISSION_PER_CONTRACT_SIDE * 2) + OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE,
-                                str(start_date),
-                                str(end_date),
-                        ),
-        )
-        row = cur.fetchone()
-        value = row["realized"] if row else None
-        if value is None:
-            return 0.0
-        return round(float(value), 2)
+        trades = get_memory().load_completed_trades(str(start_date), str(end_date))
+        fees_per_contract = (OPTION_COMMISSION_PER_CONTRACT_SIDE * 2) + OPTION_REGULATORY_FEE_PER_CONTRACT_CLOSE
+        return round(sum(
+            float(trade.get("option_pnl_dollars", trade.get("pnl", 0)) or 0)
+            - abs(float(trade.get("option_quantity") or 0)) * fees_per_contract
+            for trade in trades
+        ), 2)
     except Exception:
         return None
-    finally:
-        if con is not None:
-            try:
-                con.close()
-            except Exception:
-                pass
 
 
 def _fallback_scores_from_recent_logs(entry_time_value, direction):
@@ -4903,19 +4874,49 @@ def _broker_filled_today_trades(trading_date: str):
 @app.route('/api/status', methods=['GET'])
 def api_status():
     """Get current bot status"""
-    return jsonify(_get_cached_status_snapshot())
+    force_refresh = request.args.get("fresh", "").strip().lower() in {"1", "true", "yes"}
+    response = jsonify(_get_cached_status_snapshot(force_refresh=force_refresh))
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.route('/api/bot/status', methods=['GET'])
 def api_status_legacy():
     """Backward-compatible status endpoint alias."""
-    return jsonify(_get_cached_status_snapshot())
+    return api_status()
+
+
+@app.route('/api/position-status', methods=['GET'])
+def api_position_status():
+    """Return the local position lifecycle state without expensive status aggregation."""
+    position_path = PROJECT_ROOT / "data" / "open_position.json"
+    try:
+        if not position_path.exists():
+            return jsonify({"has_open_position": False, "observed_at": datetime.now(timezone.utc).isoformat()})
+        payload = json.loads(position_path.read_text(encoding="utf-8"))
+        return jsonify({
+            "has_open_position": True,
+            "direction": str(payload.get("direction") or "").upper() or None,
+            "option_symbol": str(payload.get("option_symbol") or "") or None,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except (OSError, json.JSONDecodeError):
+        return jsonify({"has_open_position": True, "observed_at": datetime.now(timezone.utc).isoformat()})
 
 
 @app.route('/api/architecture-health', methods=['GET'])
 def api_architecture_health():
     """Expose source-derived consolidation metrics for the live runtime."""
     return jsonify(build_architecture_health(PROJECT_ROOT))
+
+
+@app.route('/api/trade-reconciliation-health', methods=['GET'])
+def api_trade_reconciliation_health():
+    """Expose count parity across broker facts and canonical trade projections."""
+    trading_date = datetime.now(EASTERN_TZ).date().isoformat()
+    broker_rows = _broker_transaction_trades_for_date(trading_date)
+    get_memory().reconcile_broker_trades(broker_rows, source="cockpit_health_reconciliation")
+    return jsonify(get_memory().load_trade_reconciliation_metrics(trading_date, broker_rows))
 
 
 def _get_cached_status_snapshot(force_refresh: bool = False):
@@ -5042,20 +5043,13 @@ def api_stop():
 
 @app.route('/api/exit-trade', methods=['POST'])
 def api_exit_trade():
-    """Exit an open trade, or toggle entry pause while flat."""
+    """Queue a manual exit command for the monitor process."""
     try:
         status = parse_bot_status()
         if not status.get("bot_running"):
             return jsonify({"status": "error", "message": "Bot is not running"}), 400
         if status.get("mode") != "LIVE TRADING":
             return jsonify({"status": "error", "message": "EXIT TRADE is only available in LIVE TRADING mode"}), 400
-        if not status.get("has_open_position"):
-            pause = toggle_entry_pause_command()
-            return jsonify({
-                "status": "success",
-                "message": "Trade entries paused; monitor remains active" if pause["paused"] else "Trade entries resumed; monitor remains active",
-                "entry_paused": pause["paused"],
-            })
 
         command = queue_exit_trade_command()
         return jsonify({
@@ -5065,6 +5059,26 @@ def api_exit_trade():
         })
     except Exception as e:
         return jsonify({"status": "error", "message": f"Failed to queue EXIT TRADE: {e}"}), 500
+
+
+@app.route('/api/toggle-entry-pause', methods=['POST'])
+def api_toggle_entry_pause():
+    """Toggle future-entry admission without affecting an open position."""
+    try:
+        status = parse_bot_status()
+        if not status.get("bot_running"):
+            return jsonify({"status": "error", "message": "Bot is not running"}), 400
+        if status.get("mode") != "LIVE TRADING":
+            return jsonify({"status": "error", "message": "Entry control is only available in LIVE TRADING mode"}), 400
+
+        pause = toggle_entry_pause_command()
+        return jsonify({
+            "status": "success",
+            "message": "Trade entries paused; monitor remains active" if pause["paused"] else "Trade entries resumed; monitor remains active",
+            "entry_paused": pause["paused"],
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to update entry pause: {e}"}), 500
 
 
 @app.route('/api/test-bell', methods=['POST'])
@@ -5217,16 +5231,22 @@ def api_today_trades():
             momentum_phase_select=momentum_phase_select,
         ), (today,))
         
-        trades = [dict(row) for row in cur.fetchall()]
+        # Broker transactions reconcile canonical objects before this consumer reads them.
+        try:
+            get_memory().reconcile_broker_trades(
+                _broker_transaction_trades_for_date(today), source="cockpit_broker_reconciliation",
+            )
+        except Exception:
+            pass
+
+        # The dashboard reads one canonical completed-trade object per close.
+        trades = get_memory().load_completed_trades_for_date(today)
         trades = _filter_synthetic_test_trade_rows(trades)
         trading_date = today
 
         # The dashboard's Today card is never allowed to roll back to a prior
         # trading day. An empty calendar day must remain an empty, zero-P&L day.
-        broker_trades = _broker_transaction_trades_for_date(today)
-        using_broker_trades = bool(broker_trades)
-        if using_broker_trades:
-            trades = broker_trades
+        using_broker_trades = False
 
         # Keep one row per logical trade even when executions are split.
         trades = _collapse_split_trade_rows(trades)
@@ -6413,7 +6433,7 @@ HTML_DASHBOARD = """
         
         .trades-actions {
             display: grid;
-            grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.25fr) minmax(150px, 1fr);
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
             gap: 8px;
             align-items: stretch;
             margin-bottom: 14px;
@@ -6421,6 +6441,32 @@ HTML_DASHBOARD = """
 
         .trades-actions .trade-summary-card {
             margin: 0;
+        }
+
+        .qualified-entry-blocks {
+            margin-top: 14px;
+            border: 1px solid #f4a7a3;
+            border-left: 5px solid #dc3545;
+            border-radius: 6px;
+            background: #fff5f5;
+            padding: 12px;
+        }
+        .qualified-entry-blocks[hidden] {
+            display: none;
+        }
+        .qualified-entry-blocks h3 {
+            color: #8b1e1e;
+            font-size: 14px;
+            margin: 0 0 7px;
+        }
+        .qualified-entry-block-row {
+            color: #3f1d1d;
+            font-size: 13px;
+            line-height: 1.4;
+            padding: 5px 0;
+        }
+        .qualified-entry-block-row + .qualified-entry-block-row {
+            border-top: 1px solid #f4caca;
         }
 
         .bot-toggle.running { background: #dc3545; color: white; }
@@ -6451,6 +6497,60 @@ HTML_DASHBOARD = """
         .btn-info {
             background: #007bff;
             color: white;
+        }
+        #exitTradeBtn {
+            background: #dc3545;
+            touch-action: manipulation;
+        }
+        #exitTradeBtn:hover:not(:disabled) {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+        #entryPauseBtn.entries-paused {
+            background: #dc3545;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.22);
+        }
+        .entry-pause-dialog[hidden] {
+            display: none;
+        }
+        .entry-pause-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(17, 24, 39, 0.58);
+        }
+        .entry-pause-dialog-panel {
+            width: min(100%, 380px);
+            background: #fff;
+            border: 2px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 16px 42px rgba(17, 24, 39, 0.32);
+            text-align: center;
+        }
+        .entry-pause-dialog-panel h2 {
+            color: #b71c1c;
+            font-size: 22px;
+            margin: 0 0 10px;
+        }
+        .entry-pause-dialog-panel p {
+            color: #1f2937;
+            font-size: 16px;
+            line-height: 1.4;
+            margin: 0 0 18px;
+        }
+        .entry-pause-dialog-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .entry-pause-dialog-actions button {
+            min-height: 48px;
         }
         .btn-info:hover:not(:disabled) {
             background: #0056b3;
@@ -7175,6 +7275,18 @@ HTML_DASHBOARD = """
             <button class="bot-toggle stopped" id="botToggleBtn" onclick="toggleBot()">▶ Start Bot</button>
             <div class="trade-summary-card neutral" id="todayPnlCard"><h4>Today's P&L</h4><div class="trade-summary-value" id="todayPnl">Loading...</div></div>
             <button class="btn-info" id="exitTradeBtn" onclick="exitTrade()" disabled>⏏ Exit Trade</button>
+            <button class="btn-primary" id="entryPauseBtn" onclick="toggleEntryPause()" disabled>⏸ Pause Entries</button>
+        </div>
+
+        <div class="entry-pause-dialog" id="entryPauseDialog" role="dialog" aria-modal="true" aria-labelledby="entryPauseDialogTitle" hidden>
+            <div class="entry-pause-dialog-panel">
+                <h2 id="entryPauseDialogTitle">Trading Paused</h2>
+                <p>Do you want to enter trades?</p>
+                <div class="entry-pause-dialog-actions">
+                    <button class="btn-primary" id="resumeEntriesFromDialogBtn" type="button">Yes</button>
+                    <button class="btn-danger" id="keepEntriesPausedBtn" type="button">No</button>
+                </div>
+            </div>
         </div>
         
         <div style="margin-bottom: 14px;">
@@ -7206,6 +7318,11 @@ HTML_DASHBOARD = """
             <div class="logs-title">📋 Recent Logs <span id="logsLastUpdated" class="logs-meta">(log updated: loading...)</span></div>
             <pre id="logsContent">Loading logs...</pre>
         </div>
+
+        <section class="qualified-entry-blocks" id="qualifiedEntryBlocks" hidden aria-live="polite">
+            <h3>Qualified Entries Not Taken</h3>
+            <div id="qualifiedEntryBlocksList"></div>
+        </section>
     </div>
     
     <script>
@@ -7235,6 +7352,8 @@ HTML_DASHBOARD = """
         let activeBellPlaybackCount = 0;
         let lastBellBroadcastId = 0;
         let bellBroadcastPrimed = false;
+        let entryPauseDialogVisible = false;
+        let exitStatusPollTimer = null;
 
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
@@ -7680,14 +7799,16 @@ HTML_DASHBOARD = """
 
         async function exitTrade() {
             const btn = document.getElementById('exitTradeBtn');
-            const hasOpenPosition = !!(lastStatusSnapshot && lastStatusSnapshot.has_open_position);
             btn.disabled = true;
-            btn.innerHTML = hasOpenPosition ? '<span class="spinner"></span> Exiting...' : '<span class="spinner"></span> Updating entries...';
+            btn.innerHTML = '<span class="spinner"></span> Exiting...';
 
             try {
                 const res = await fetch('/api/exit-trade', { method: 'POST' });
                 const data = await res.json();
                 showMessage(data.message || 'Exit request sent', data.status === 'success' ? 'success' : 'error');
+                if (data.status === 'success') {
+                    startExitCompletionWatch();
+                }
             } catch (err) {
                 showMessage(`Error: ${err.message}`, 'error');
             }
@@ -7695,7 +7816,112 @@ HTML_DASHBOARD = """
             setTimeout(refreshStatus, 500);
         }
 
-        async function refreshStatus() {
+        function startExitCompletionWatch() {
+            if (exitStatusPollTimer) {
+                clearInterval(exitStatusPollTimer);
+            }
+            let attempts = 0;
+            const checkForCompletion = async () => {
+                attempts += 1;
+                try {
+                    const res = await fetch('/api/position-status', { cache: 'no-store' });
+                    const data = await res.json();
+                    if (data.has_open_position === false) {
+                        clearInterval(exitStatusPollTimer);
+                        exitStatusPollTimer = null;
+                        await refreshStatus(true);
+                        updateTodaysTrades();
+                        showMessage('Trade exit confirmed', 'success');
+                        return;
+                    }
+                } catch (_) {
+                    // The normal status polling remains available if this quick check fails.
+                }
+                if (attempts >= 180) {
+                    clearInterval(exitStatusPollTimer);
+                    exitStatusPollTimer = null;
+                }
+            };
+            checkForCompletion();
+            exitStatusPollTimer = setInterval(checkForCompletion, 250);
+        }
+
+        async function toggleEntryPause() {
+            const btn = document.getElementById('entryPauseBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Updating...';
+
+            try {
+                const res = await fetch('/api/toggle-entry-pause', { method: 'POST' });
+                const data = await res.json();
+                showMessage(data.message || 'Entry status updated', data.status === 'success' ? 'success' : 'error');
+            } catch (err) {
+                showMessage(`Error: ${err.message}`, 'error');
+            }
+
+            setTimeout(refreshStatus, 500);
+        }
+
+        function entryPausePromptKey(status) {
+            const timestamp = status && status.server_time_et ? new Date(status.server_time_et) : new Date();
+            const date = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+            }).format(timestamp);
+            return `mcleodAlphaEntryPausePrompt:${date}`;
+        }
+
+        function isMarketOpenPromptWindow(status) {
+            if (!status || status.nyse_is_trading_day === false) return false;
+            const timestamp = status.server_time_et ? new Date(status.server_time_et) : new Date();
+            const time = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York', hour12: false, hour: '2-digit', minute: '2-digit',
+            }).format(timestamp);
+            return time >= '09:30' && time < '09:35';
+        }
+
+        function dismissEntryPauseDialog(status) {
+            document.getElementById('entryPauseDialog').hidden = true;
+            entryPauseDialogVisible = false;
+            try {
+                localStorage.setItem(entryPausePromptKey(status), 'acknowledged');
+            } catch (_) {}
+        }
+
+        function maybePromptPausedEntriesAtMarketOpen(status) {
+            const isLive = !!status.bot_running && String(status.mode || '').toUpperCase() === 'LIVE TRADING';
+            if (!isLive || !status.entry_paused || entryPauseDialogVisible || !isMarketOpenPromptWindow(status)) return;
+            try {
+                if (localStorage.getItem(entryPausePromptKey(status)) === 'acknowledged') return;
+            } catch (_) {}
+            document.getElementById('entryPauseDialog').hidden = false;
+            entryPauseDialogVisible = true;
+        }
+
+        document.getElementById('keepEntriesPausedBtn').addEventListener('click', () => {
+            dismissEntryPauseDialog(lastStatusSnapshot);
+        });
+
+        document.getElementById('resumeEntriesFromDialogBtn').addEventListener('click', async () => {
+            const button = document.getElementById('resumeEntriesFromDialogBtn');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner"></span> Resuming...';
+            try {
+                const res = await fetch('/api/toggle-entry-pause', { method: 'POST' });
+                const data = await res.json();
+                showMessage(data.message || 'Entry status updated', data.status === 'success' ? 'success' : 'error');
+                if (data.status === 'success' && data.entry_paused === false) {
+                    dismissEntryPauseDialog(lastStatusSnapshot);
+                }
+            } catch (err) {
+                showMessage(`Error: ${err.message}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Yes';
+                setTimeout(refreshStatus, 500);
+            }
+        });
+
+        async function refreshStatus(forceRefresh = false) {
             if (!isDashboardVisible()) {
                 return;
             }
@@ -7705,11 +7931,12 @@ HTML_DASHBOARD = """
             }
 
             try {
-                const res = await fetch('/api/status');
+                const res = await fetch(forceRefresh ? '/api/status?fresh=1' : '/api/status', { cache: 'no-store' });
                 const status = await res.json();
                 lastStatusSnapshot = status;
                 maybeHandleBellBroadcast(status);
                 maybePlayMarketSessionBells(status);
+                maybePromptPausedEntriesAtMarketOpen(status);
                 const closedTradeSignature = String(status.closed_trade_signature || '0:none');
                 if (lastIndicatorTradeSignature !== null && lastIndicatorTradeSignature !== closedTradeSignature) {
                     lastIndicatorPerformanceRefreshMs = 0;
@@ -7727,11 +7954,12 @@ HTML_DASHBOARD = """
 
                 const entryPauseButton = document.getElementById('exitTradeBtn');
                 const canControlEntries = !!(status.bot_running && status.mode === 'LIVE TRADING');
-                const entryMarketClosed = String(status.trade_entry_reason_code || '').toUpperCase() === 'MARKET_CLOSED';
                 entryPauseButton.disabled = !canControlEntries;
-                entryPauseButton.innerHTML = status.has_open_position
-                    ? '⏏ Exit Trade'
-                    : (entryMarketClosed ? 'Market Closed' : (status.entry_paused ? '▶ Resume Entries' : '⏸ Pause Entries'));
+                entryPauseButton.innerHTML = '⏏ Exit Trade';
+                const entryPauseControl = document.getElementById('entryPauseBtn');
+                entryPauseControl.disabled = !canControlEntries;
+                entryPauseControl.classList.toggle('entries-paused', !!status.entry_paused);
+                entryPauseControl.innerHTML = status.entry_paused ? '⚠ ENTRIES PAUSED - RESUME' : '⏸ Pause Entries';
                 
                 // Schwab is ready only for reconciled live trading.
                 const modeText = String(status.mode || '').toUpperCase();
@@ -8084,6 +8312,21 @@ HTML_DASHBOARD = """
                     putIndEl.className = 'status-value info';
                 } else {
                     putIndEl.className = 'status-value error';
+                }
+
+                const qualifiedBlocks = Array.isArray(status.qualified_entry_blocks)
+                    ? status.qualified_entry_blocks
+                    : [];
+                const qualifiedBlocksPanel = document.getElementById('qualifiedEntryBlocks');
+                const qualifiedBlocksList = document.getElementById('qualifiedEntryBlocksList');
+                if (qualifiedBlocksPanel && qualifiedBlocksList) {
+                    qualifiedBlocksPanel.hidden = qualifiedBlocks.length === 0;
+                    qualifiedBlocksList.innerHTML = qualifiedBlocks.map((block) => {
+                        const direction = escapeHtml(String(block.direction || 'UNKNOWN').toUpperCase());
+                        const score = escapeHtml(String(block.score || 0));
+                        const reason = escapeHtml(String(block.reason || 'no entry reason recorded').replaceAll('_', ' '));
+                        return `<div class="qualified-entry-block-row"><strong>${direction} ${score}/5:</strong> ${reason}</div>`;
+                    }).join('');
                 }
 
                 // Current trade P&L (unrealized)
