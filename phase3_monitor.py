@@ -47,6 +47,7 @@ LIVE_CANDLE_BUILDER = LiveMinuteCandleBuilder(symbol=SYMBOL, max_candles=390)
 SCHWAB_QUOTE_FRESHNESS_SECONDS = int(os.getenv("SCHWAB_QUOTE_FRESHNESS_SECONDS", "180"))
 SCHWAB_AUTH_RETRY_SECONDS = max(5, int(os.getenv("SCHWAB_AUTH_RETRY_SECONDS", "20")))
 CANDLE_HISTORY_REFRESH_SECONDS = max(30, int(os.getenv("CANDLE_HISTORY_REFRESH_SECONDS", "180")))
+END_OF_DAY_EXIT_TIME = dt_time(15, 45)
 _LAST_HISTORY_REFRESH_EPOCH = 0.0
 _LAST_HISTORY_FETCH_MINUTE = None
 OPTION_CHAIN_CACHE_REFRESH_SECONDS = max(1.0, float(os.getenv("OPTION_CHAIN_CACHE_REFRESH_SECONDS", "10")))
@@ -463,6 +464,72 @@ def get_open_option_quote(option_symbol):
         "quote_spread_pct": spread_pct,
         "quote_source": "schwab_direct_option_quote",
     }
+
+
+def _enforce_end_of_day_exit(now_et=None):
+    """Attempt the hard 3:45 PM ET exit without depending on candle availability."""
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    position = getattr(ENGINE_MODULE, "current_position", None)
+    if (
+        position is None
+        or now_et.weekday() >= 5
+        or now_et.time() < END_OF_DAY_EXIT_TIME
+    ):
+        return False
+
+    spy_price = float(getattr(position, "entry_price", 0.0) or 0.0)
+    option_mark = None
+    option_bid = None
+    option_last = None
+    quote_metadata = None
+
+    try:
+        quote_snapshot = LIVE_CANDLE_BUILDER.update_from_quote_payload(get_spy_live_quote())
+        if quote_snapshot.price is not None:
+            spy_price = float(quote_snapshot.price)
+    except Exception as exc:
+        print(f"END-OF-DAY EXIT: SPY quote unavailable; using position fallback price: {exc}")
+
+    try:
+        if getattr(position, "option_symbol", None):
+            option_mark, option_bid, option_last, quote_metadata = get_open_option_quote(position.option_symbol)
+    except Exception as exc:
+        print(f"END-OF-DAY EXIT: option quote unavailable; submitting market exit anyway: {exc}")
+
+    print("END-OF-DAY EXIT: enforcing mandatory 3:45 PM ET market close")
+    manage_trade(spy_price, option_mark, option_bid, option_last, quote_metadata)
+    return True
+
+
+def _manage_open_position_priority():
+    """Manage an open position from direct broker quotes before candle processing."""
+    position = getattr(ENGINE_MODULE, "current_position", None)
+    if position is None:
+        return False
+
+    spy_price = float(getattr(position, "entry_price", 0.0) or 0.0)
+    option_mark = None
+    option_bid = None
+    option_last = None
+    quote_metadata = None
+
+    try:
+        quote_snapshot = LIVE_CANDLE_BUILDER.update_from_quote_payload(get_spy_live_quote())
+        if quote_snapshot.price is not None:
+            spy_price = float(quote_snapshot.price)
+    except Exception as exc:
+        print(f"POSITION MANAGEMENT: SPY quote unavailable; using position fallback price: {exc}")
+
+    try:
+        if getattr(position, "option_symbol", None):
+            option_mark, option_bid, option_last, quote_metadata = get_open_option_quote(position.option_symbol)
+    except Exception as exc:
+        print(f"POSITION MANAGEMENT: option quote unavailable: {exc}")
+
+    manual_exit_requested = _process_manual_exit_command(spy_price, option_mark)
+    if not manual_exit_requested:
+        manage_trade(spy_price, option_mark, option_bid, option_last, quote_metadata)
+    return True
 
 
 def _quote_continuity_candles(history_df, source_label):
@@ -1522,6 +1589,13 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
     while max_cycles is None or completed_cycles < max_cycles:
         completed_cycles += 1
         cycle_start_ms = _perf_ms_now()
+        position_management_ran = False
+        try:
+            position_management_ran = _enforce_end_of_day_exit()
+            if not position_management_ran:
+                position_management_ran = _manage_open_position_priority()
+        except Exception as exc:
+            print(f"Priority position management error: {exc}")
         try:
             maybe_send_daily_trade_log_email()
         except Exception as exc:
@@ -1583,22 +1657,9 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 f"{SYMBOL} {latest.close:.2f} | {latest_regime}"
             )
 
-        option_mark = None
-        option_bid = None
-        option_last = None
-        option_quote_metadata = None
-
-        try:
-            current_position = getattr(ENGINE_MODULE, "current_position", None)
-            if current_position and getattr(current_position, "option_symbol", None):
-                option_mark, option_bid, option_last, option_quote_metadata = get_open_option_quote(current_position.option_symbol)
-
-        except Exception as e:
-            print(f"Option mark error: {e}")
         manage_start_ms = _perf_ms_now()
-        manual_exit_requested = _process_manual_exit_command(float(latest.close), option_mark)
-        if not manual_exit_requested:
-            manage_trade(float(latest.close), option_mark, option_bid, option_last, option_quote_metadata)
+        if not position_management_ran and getattr(ENGINE_MODULE, "current_position", None) is None:
+            manage_trade(float(latest.close), None, None, None, None)
         manage_trade_ms = _elapsed_ms(manage_start_ms)
         try:
             SpyBotReviewer(Path(__file__).resolve().parent).maybe_run_after_session()

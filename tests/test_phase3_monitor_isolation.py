@@ -171,6 +171,46 @@ def test_bounded_runner_uses_injected_runtime_and_never_sleeps(monkeypatch) -> N
     assert sleeps[0] > 0
 
 
+def test_end_of_day_exit_uses_market_exit_even_when_quotes_fail(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    eastern = ZoneInfo("America/New_York")
+    position = SimpleNamespace(entry_price=598.25, option_symbol="SPY_TEST")
+    calls = []
+
+    monkeypatch.setattr(module, "ENGINE_MODULE", SimpleNamespace(current_position=position))
+    monkeypatch.setattr(module, "get_spy_live_quote", lambda: (_ for _ in ()).throw(RuntimeError("spy quote unavailable")))
+    monkeypatch.setattr(module, "get_open_option_quote", lambda *_: (_ for _ in ()).throw(RuntimeError("option quote unavailable")))
+    monkeypatch.setattr(module, "manage_trade", lambda *args: calls.append(args), raising=False)
+
+    assert module._enforce_end_of_day_exit(datetime(2026, 7, 20, 15, 45, tzinfo=eastern)) is True
+    assert calls == [(598.25, None, None, None, None)]
+
+
+def test_runner_enforces_end_of_day_exit_before_empty_candle_skip(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    enforced = []
+
+    monkeypatch.setattr(module, "get_candles", lambda: pd.DataFrame())
+    monkeypatch.setattr(module, "_enforce_end_of_day_exit", lambda: enforced.append(True) or True)
+
+    module.run_monitor(max_cycles=1, runtime_initializer=lambda: None, sleep_fn=lambda _: None)
+
+    assert enforced == [True]
+
+
+def test_runner_manages_open_position_before_empty_candle_skip(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    managed = []
+
+    monkeypatch.setattr(module, "get_candles", lambda: pd.DataFrame())
+    monkeypatch.setattr(module, "_enforce_end_of_day_exit", lambda: False)
+    monkeypatch.setattr(module, "_manage_open_position_priority", lambda: managed.append(True) or True)
+
+    module.run_monitor(max_cycles=1, runtime_initializer=lambda: None, sleep_fn=lambda _: None)
+
+    assert managed == [True]
+
+
 def test_market_cycle_wakes_at_closed_candle_evaluation_second(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
     eastern = ZoneInfo("America/New_York")

@@ -1430,6 +1430,7 @@ def _submit_protective_stop(
     quantity,
     stop_price_override=None,
     existing_stop_order_id=None,
+    skip_existing_order_scan=False,
 ):
     """
     Submit broker-held SELL_TO_CLOSE protective stop order.
@@ -1441,6 +1442,7 @@ def _submit_protective_stop(
         fill_price: Confirmed entry fill price
         quantity: Filled quantity
         stop_price_override: Optional explicit stop trigger to submit
+        skip_existing_order_scan: Submit immediately for a freshly confirmed entry
         
     Returns:
         (order_id, stop_price) tuple on success
@@ -1530,7 +1532,7 @@ def _submit_protective_stop(
         }
         if existing_protective_stop:
             print(f"   Replacing known protective stop {existing_protective_stop[0]} without account scan")
-        else:
+        elif not skip_existing_order_scan:
             try:
                 existing_resp = _schwab_client.get_orders_for_account(_schwab_account_hash)
                 existing_resp.raise_for_status()
@@ -2487,7 +2489,12 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     # STEP 4: Submit protective stop immediately after entry fill confirmed
     print("\n[STEP 4] Submitting broker-held protective stop...")
     protective_stop_start_ms = _perf_ms_now()
-    protective_stop_id, protective_stop_price = _submit_protective_stop(option_symbol, float(fill_price), quantity)
+    protective_stop_id, protective_stop_price = _submit_protective_stop(
+        option_symbol,
+        float(fill_price),
+        quantity,
+        skip_existing_order_scan=True,
+    )
     metrics["protective_stop_ms"] = _elapsed_ms(protective_stop_start_ms)
 
     if not protective_stop_id:
