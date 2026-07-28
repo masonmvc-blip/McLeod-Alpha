@@ -319,21 +319,27 @@ class Memory:
         with sqlite3.connect(self.db_path) as connection:
             rows = connection.execute(
                 """
-                                SELECT version.payload
-                                FROM canonical_completed_trades AS trade
-                                JOIN canonical_completed_trade_versions AS version
-                                    ON version.canonical_trade_id = trade.canonical_trade_id
-                                WHERE trade.trade_date BETWEEN ? AND ?
-                                    AND version.canonical_version = (
-                                        SELECT MAX(candidate.canonical_version)
-                                        FROM canonical_completed_trade_versions AS candidate
-                                        WHERE candidate.canonical_trade_id = trade.canonical_trade_id
-                                    )
-                                ORDER BY trade.entry_time ASC, trade.canonical_trade_id ASC
+                SELECT trade.canonical_trade_id, trade.entry_time, version.canonical_version, version.payload
+                FROM canonical_completed_trades AS trade
+                JOIN canonical_completed_trade_versions AS version
+                    ON version.canonical_trade_id = trade.canonical_trade_id
+                WHERE trade.trade_date BETWEEN ? AND ?
+                ORDER BY trade.entry_time ASC, trade.canonical_trade_id ASC, version.canonical_version ASC
                 """,
                 (str(start_date), end_date),
             ).fetchall()
-        return [json.loads(row[0]) for row in rows]
+        selected = {}
+        for canonical_trade_id, entry_time, canonical_version, raw_payload in rows:
+            payload = json.loads(raw_payload)
+            existing = selected.get(canonical_trade_id)
+            is_broker_cash = str(payload.get("pnl_source") or "").lower() == "broker_cash"
+            existing_is_broker_cash = bool(existing and str(existing.get("pnl_source") or "").lower() == "broker_cash")
+            if existing is None or (is_broker_cash and not existing_is_broker_cash) or (
+                is_broker_cash == existing_is_broker_cash
+                and int(canonical_version) > int(existing.get("canonical_version") or 0)
+            ):
+                selected[canonical_trade_id] = payload
+        return sorted(selected.values(), key=lambda trade: (str(trade.get("entry_time") or ""), str(trade.get("canonical_trade_id") or "")))
 
     def load_completed_trades_for_date(self, trade_date: str) -> list[dict[str, Any]]:
         return self.load_completed_trades(trade_date)
