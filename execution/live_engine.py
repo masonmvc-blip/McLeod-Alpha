@@ -45,12 +45,15 @@ BROKER_SYNC_MIN_INTERVAL_SECONDS = float(os.getenv("BROKER_SYNC_MIN_INTERVAL_SEC
 PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS = float(os.getenv("PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS", "1.0"))
 _last_protective_stop_check_epoch = 0.0
 _last_protective_stop_check_ok = True
+_last_protective_stop_submission_epoch = 0.0
 BROKER_RECONCILE_MAX_ATTEMPTS = max(1, int(os.getenv("BROKER_RECONCILE_MAX_ATTEMPTS", "3")))
 BROKER_RECONCILE_RETRY_DELAY_SECONDS = max(1.0, float(os.getenv("BROKER_RECONCILE_RETRY_DELAY_SECONDS", "6")))
 OPTION_QUOTE_MAX_STALE_SECONDS_OPEN = max(1.0, float(os.getenv("OPTION_QUOTE_MAX_STALE_SECONDS_OPEN", "8")))
 OPTION_QUOTE_MAX_SPREAD_PCT_OPEN = max(0.0, float(os.getenv("OPTION_QUOTE_MAX_SPREAD_PCT_OPEN", "15")))
 STOP_RATCHET_MAX_QUOTE_AGE_SECONDS = max(0.5, float(os.getenv("STOP_RATCHET_MAX_QUOTE_AGE_SECONDS", "3")))
 STOP_RATCHET_MAX_SPREAD_PCT = max(0.0, float(os.getenv("STOP_RATCHET_MAX_SPREAD_PCT", "12")))
+STOP_RATCHET_MIN_INTERVAL_SECONDS = max(1.0, float(os.getenv("STOP_RATCHET_MIN_INTERVAL_SECONDS", "5")))
+STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS = max(0.01, float(os.getenv("STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS", "0.10")))
 BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
 BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
 BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
@@ -218,6 +221,7 @@ def set_schwab_client(client, account_number, account_hash):
     _last_broker_sync_epoch = 0.0
     _last_protective_stop_check_epoch = 0.0
     _last_protective_stop_check_ok = True
+    _last_protective_stop_submission_epoch = 0.0
     _last_broker_request_epoch = 0.0
     _broker_rate_limited_until_epoch = _load_broker_rate_limit_cooldown()
     LAST_OPEN_TRADE_METRICS = {
@@ -1436,7 +1440,7 @@ def _submit_protective_stop(
     """
     Submit broker-held SELL_TO_CLOSE protective stop order.
     
-    Uses STOP_LIMIT order type with the canonical protective-stop trigger.
+    Uses a STOP market order with the canonical protective-stop trigger.
     
     Args:
         option_symbol: Exact Schwab option symbol (e.g., "SPY 260724C00754000")
@@ -1468,15 +1472,11 @@ def _submit_protective_stop(
         _protective_stop_failure_reason = "Invalid stop price"
         return None, None
 
-    # STOP_LIMIT requires a limit; set it slightly below stop to improve fill odds.
-    stop_limit_price = normalize_option_tick(stop_price * 0.99)
-
     existing_protective_stop = (str(existing_stop_order_id), 0.0) if existing_stop_order_id else None
 
-    def _submit_stop_limit_once(target_stop_price):
-        """Submit one STOP_LIMIT protective order and return extracted order_id or None."""
+    def _submit_stop_once(target_stop_price):
+        """Submit one STOP protective order and return its broker order ID."""
         target_stop_price = normalize_option_tick(float(target_stop_price))
-        target_limit_price = normalize_option_tick(target_stop_price * 0.99)
 
         from schwab.orders.generic import OrderBuilder
         from schwab.orders.common import OptionInstruction, Session, Duration, OrderType, OrderStrategyType
@@ -1486,9 +1486,8 @@ def _submit_protective_stop(
             .set_session(Session.NORMAL)
             .set_duration(Duration.DAY)
             .set_order_strategy_type(OrderStrategyType.SINGLE)
-            .set_order_type(OrderType.STOP_LIMIT)
+            .set_order_type(OrderType.STOP)
             .set_stop_price(str(target_stop_price))
-            .set_price(str(target_limit_price))
             .add_option_leg(OptionInstruction.SELL_TO_CLOSE, option_symbol, quantity)
         )
 
@@ -1513,9 +1512,9 @@ def _submit_protective_stop(
                 order_id = None
 
         if not order_id:
-            return None, target_stop_price, target_limit_price, order
+            return None, target_stop_price, order
 
-        return order_id, target_stop_price, target_limit_price, order
+        return order_id, target_stop_price, order
     
     try:
         # When the in-memory position already has the broker stop ID, avoid a
@@ -1587,7 +1586,7 @@ def _submit_protective_stop(
             except Exception as order_cleanup_exc:
                 print(f"WARNING: Could not pre-clean conflicting exit orders: {order_cleanup_exc}")
 
-        order_id, submitted_stop_price, submitted_limit_price, order = _submit_stop_limit_once(stop_price)
+        order_id, submitted_stop_price, order = _submit_stop_once(stop_price)
         
         if not order_id:
             print("WARNING: No order ID returned while submitting replacement stop")
@@ -1598,11 +1597,10 @@ def _submit_protective_stop(
         
         print(f"\n✓ PROTECTIVE STOP SUBMITTED to Schwab")
         print(f"   Order ID: {order_id}")
-        print(f"   Type: SELL_TO_CLOSE STOP_LIMIT")
+        print(f"   Type: SELL_TO_CLOSE STOP")
         print(f"   Symbol: {option_symbol}")
         print(f"   Quantity: {quantity}")
         print(f"   Stop Price: ${submitted_stop_price:.2f}")
-        print(f"   Limit Price: ${submitted_limit_price:.2f}")
         import json
         payload_str = json.dumps(order.__dict__, default=str)
         print(f"   Payload: {sanitize_for_logging(payload_str)}")
@@ -1613,7 +1611,7 @@ def _submit_protective_stop(
             option_symbol=option_symbol,
             quantity=quantity,
             stop_price=submitted_stop_price,
-            limit_price=submitted_limit_price,
+            limit_price=None,
             broker_order_id=order_id,
             replaced_order_id=existing_protective_stop[0] if existing_protective_stop else None,
         )
@@ -2953,6 +2951,7 @@ def _stop_ratchet_quote_is_reliable(quote_metadata):
 def manage_trade(current_price, option_mark=None, option_bid=None, option_last=None, quote_metadata=None):
     """Execute the canonical Brain management decision against Schwab."""
     global current_position, _protective_stop_failed, _protective_stop_failure_reason
+    global _last_protective_stop_submission_epoch
 
     if not in_trade():
         return
@@ -3106,6 +3105,23 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             )
             save_position(current_position)
             return
+        stop_improvement = float(decision.stop_price or 0.0) - float(previous_option_stop or 0.0)
+        seconds_since_last_submission = time.time() - float(_last_protective_stop_submission_epoch or 0.0)
+        if (
+            stop_improvement < STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS
+            or seconds_since_last_submission < STOP_RATCHET_MIN_INTERVAL_SECONDS
+        ):
+            current_position.option_stop = previous_option_stop
+            record_stop_event(
+                "stop_ratchet_deferred",
+                trade_key=trade_key,
+                option_symbol=current_position.option_symbol,
+                prior_stop=previous_option_stop,
+                candidate_stop=decision.stop_price,
+                quote_metadata=quote_metadata or {},
+            )
+            save_position(current_position)
+            return
         order_id, submitted_stop = _submit_protective_stop(
             current_position.option_symbol,
             float(current_position.option_entry or 0.0),
@@ -3114,19 +3130,22 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             existing_stop_order_id=current_position.protective_stop_order_id or None,
         )
         if not order_id:
-            _protective_stop_failed = True
-            _protective_stop_failure_reason = "Ratcheted protective-stop sync failed; manual broker verification required"
-            protection_decision = LIVE_BRAIN.evaluate_protective_stop_result(
-                current_position,
-                restored=False,
-                restore_count=int(current_position.protective_stop_restore_count or 0),
+            current_position.option_stop = previous_option_stop
+            record_stop_event(
+                "stop_ratchet_submission_failed",
+                trade_key=trade_key,
+                option_symbol=current_position.option_symbol,
+                prior_stop=previous_option_stop,
+                candidate_stop=decision.stop_price,
+                quote_metadata=quote_metadata or {},
             )
-            close_trade(current_price, protection_decision.reason, option_mark)
+            save_position(current_position)
             return
         current_position.protective_stop_order_id = str(order_id)
         current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
         current_position.protective_stop_status = "PLACED"
         current_position.active_stop_reason = decision.reason
+        _last_protective_stop_submission_epoch = time.time()
         save_position(current_position)
         return
 

@@ -104,9 +104,9 @@ def test_known_stop_replacement_skips_account_scan_and_cancels_only_after_submit
     client.get_orders_for_account.assert_not_called()
     assert client.place_order.call_count == 1
     submitted_order = client.place_order.call_args[0][1]
-    assert str(getattr(submitted_order, "_orderType", "")) == "STOP_LIMIT"
+    assert str(getattr(submitted_order, "_orderType", "")) == "STOP"
+    assert not getattr(submitted_order, "_price", None)
     assert str(getattr(submitted_order, "_stopPrice", "")) == "5.25"
-    assert str(getattr(submitted_order, "_price", "")) == "5.2"
     client.cancel_order.assert_called_once_with("old-stop", "account-hash")
 
 
@@ -322,7 +322,7 @@ def test_live_close_when_protective_restore_fails(monkeypatch):
     assert close_calls.get("reason") == "PROTECTIVE_STOP_SYNC_FAILED"
 
 
-def test_live_close_when_ratcheted_stop_sync_fails(monkeypatch):
+def test_live_preserves_existing_stop_when_ratcheted_stop_sync_fails(monkeypatch):
     pos = _live_position()
     pos.opened = datetime(2026, 7, 17, 9, 59, 0)
     pos.option_stop = 4.95
@@ -346,7 +346,33 @@ def test_live_close_when_ratcheted_stop_sync_fails(monkeypatch):
 
     live_engine.manage_trade(current_price=500.0, option_mark=5.40, option_bid=5.40)
 
-    assert close_calls.get("reason") == "PROTECTIVE_STOP_SYNC_FAILED"
+    assert close_calls == {}
+    assert live_engine.current_position.option_stop == 4.95
+
+
+def test_live_ratchet_defers_small_stop_improvements(monkeypatch):
+    pos = _live_position()
+    pos.opened = datetime(2026, 7, 17, 9, 59, 0)
+    pos.option_stop = 5.25
+    pos.option_initial_stop = 4.75
+    live_engine.current_position = pos
+
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("small ratchet must not submit a broker replacement"),
+    )
+    monkeypatch.setattr(live_engine, "STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS", 0.10)
+    live_engine._last_protective_stop_check_epoch = 0.0
+    live_engine._last_protective_stop_check_ok = True
+    live_engine._last_protective_stop_submission_epoch = 0.0
+
+    live_engine.manage_trade(current_price=500.0, option_mark=5.40, option_bid=5.40)
+
+    assert live_engine.current_position.option_stop == 5.25
 
 
 def test_live_ratchet_does_not_wait_for_recent_stop_health_check(monkeypatch):

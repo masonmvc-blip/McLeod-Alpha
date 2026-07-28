@@ -17,7 +17,7 @@ from engine.brain import Brain
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def test_pending_cockpit_exit_uses_near_market_limit_with_fallback(monkeypatch):
+def test_pending_cockpit_exit_uses_immediate_market_exit(monkeypatch):
     module = importlib.import_module("phase3_monitor")
 
     class Memory:
@@ -47,7 +47,7 @@ def test_pending_cockpit_exit_uses_near_market_limit_with_fallback(monkeypatch):
 
     assert module._process_manual_exit_command(750.0, 5.25) is True
     assert close_calls == [
-        ((750.0, "MANUAL_EXIT_LIMIT", 5.25), {"execution_mode": "limit_near_market", "fallback_to_market": True})
+        ((750.0, "MANUAL_EXIT_MARKET", 5.25), {"execution_mode": "market", "fallback_to_market": False})
     ]
     assert memory.command["status"] == "COMPLETED"
 

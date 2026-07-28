@@ -1244,14 +1244,14 @@ def _process_manual_exit_command(current_price, option_mark):
     command["status"] = "SUBMITTING"
     command["last_attempt_at"] = datetime.now(UTC_TZ).isoformat()
     get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
-    print("MANUAL EXIT: submitting near-market limit close with market fallback")
+    print("MANUAL EXIT: submitting immediate full-position market close")
 
     closed = bool(ENGINE_MODULE.close_trade(
         float(current_price),
-        "MANUAL_EXIT_LIMIT",
+        "MANUAL_EXIT_MARKET",
         option_mark,
-        execution_mode="limit_near_market",
-        fallback_to_market=True,
+        execution_mode="market",
+        fallback_to_market=False,
     ))
     if closed:
         command["status"] = "COMPLETED"
