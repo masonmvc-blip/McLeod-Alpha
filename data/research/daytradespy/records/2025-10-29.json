@@ -1,0 +1,43 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42108,
+    "title": "Trading Room Video Recording – October 29, 2025", "publication_date": "2025-10-29",
+    "source_url": "https://daytradespy.com/42108/trading-room-video-recording-october-29-2025/",
+    "duration_seconds": 4973, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 555, "first_timestamp": "00:00", "last_timestamp": "01:22:03", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:22:53 asset; player remained muted, volume zero, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 89, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:09:30", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Carried 700 calls reported sold 0.25 to 0.55."},
+    {"timestamp": "00:25:07", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal November 7 689-call OMG entered at 6.96."},
+    {"timestamp": "00:38:24", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Presenter scaled out of formal-contract position below target."},
+    {"timestamp": "01:03:39", "classification": "MODELED_TRADE", "claim": "October 31 690-call pick modeled 3.52 to 3.73."},
+    {"timestamp": "01:15:25", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Same-day 689 calls entered at 2.17 and remained open."}
+  ],
+  "claims": [
+    {"id": "DTS-20251029-P42108-C01", "timestamp": "00:40:23", "label": "FORMAL_TARGET_NOT_CONFIRMED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED_FORMAL_FILL", "claim": "Formal 689-call OMG targeted 7.38; cited bid/high reached 7.37 while presenter scaled out lower.", "forward_outcomes": {"1m": "OPEN", "3m": "FAVORABLE", "5m": "FAVORABLE", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "TARGET_NOT_CONFIRMED"}, "disconfirming_evidence_required": "Executable path or ledger confirming 7.38 limit fill."},
+    {"id": "DTS-20251029-P42108-C02", "timestamp": "01:04:29", "label": "PUBLISHED_PICK_TARGET", "fact_classification": "MODELED_TRADE", "status": "SOURCE_SUPPORTED_MODEL", "claim": "October 31 690-call pick modeled 3.52 to 3.73 within minutes.", "forward_outcomes": {"1m": "TARGET_REACHED", "3m": "TARGET_REACHED", "5m": "TARGET_REACHED", "10m": "TARGET_REACHED", "15m": "TARGET_REACHED", "remainder_session": "TARGET_REACHED"}, "disconfirming_evidence_required": "Executable option path and subscriber ledger."},
+    {"id": "DTS-20251029-P42108-C03", "timestamp": "01:19:55", "label": "LATE_ZERO_DTE_OPEN", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "Same-day 689 calls at 2.17 remained open at recording end.", "forward_outcomes": {"1m": "OPEN", "3m": "OPEN", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker ledger showing exit."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251029-P42108-T01", "type": "CROSS_SESSION_CALL_POSITION", "setup": "October 31 700 calls; carried account", "entry_time": "PRIOR_SESSION", "entry_premium": 0.25, "exit_time": "00:09:30", "exit_premium": 0.55, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251029-P42108-T02", "type": "CALL_POSITION", "setup": "October 31 700 calls; accidentally enlarged", "entry_time": "00:13:35", "entry_premium": 0.51, "exit_time": "00:23:50", "exit_premium": null, "stop_or_invalidation": "Completed near 0.65-0.67; exact caption ambiguous"},
+    {"source_trade_id": "DTS-20251029-P42108-T03", "type": "OMG", "setup": "November 7 689 calls; formal OMG contract", "entry_time": "00:25:07", "entry_premium": 6.96, "exit_time": "00:39:16", "exit_premium": null, "stop_or_invalidation": "Presenter scaled half near 7.30 and rest near 7.34; formal 7.38 target unconfirmed"},
+    {"source_trade_id": "DTS-20251029-P42108-T04", "type": "CALL_POSITION", "setup": "October 31 690 calls; presenter scalp", "entry_time": "00:26:09", "entry_premium": 4.09, "exit_time": "00:40:52", "exit_premium": 4.25, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251029-P42108-T05", "type": "CALL_POSITION", "setup": "October 31 689 calls; presenter scalp", "entry_time": "00:27:41", "entry_premium": 4.55, "exit_time": "00:31:09", "exit_premium": 4.70, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251029-P42108-T06", "type": "MODELED_PICK", "setup": "October 31 690 calls; published pick", "entry_time": "09:32_MARKET_TIME", "entry_premium": 3.52, "exit_time": "09:36_MARKET_TIME", "exit_premium": 3.73, "stop_or_invalidation": "Modeled 6% target"},
+    {"source_trade_id": "DTS-20251029-P42108-T07", "type": "CALL_POSITION", "setup": "Same-day 689 calls; late FOMC scalp", "entry_time": "01:15:25", "entry_premium": 2.17, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Open; 2.25-2.30 discussed"},
+    {"source_trade_id": "DTS-20251029-P42108-T08", "type": "CALL_POSITION", "setup": "Longer-dated 710 calls; expiration narration unclear", "entry_time": "PRIOR_SOURCE", "entry_premium": 0.59, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Open; 0.64 target"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 8, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Formal 7.38 target not confirmed.", "Accidental-add exit captions ambiguous.", "Two positions open at end."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:25:07", "state": "PRE_FOMC_UPSIDE_BREAK", "evidence": "Formal calls followed upper close."}, {"timestamp": "01:15:25", "state": "INDECISIVE_PRE_FOMC_RANGE", "evidence": "Late same-day scalp entered during low-resolution chop."}],
+  "counterfactuals": [{"timestamp": "00:40:23", "type": "NO_NEAR_TARGET_FILL", "detail": "Do not count 7.37 as a 7.38 limit fill."}, {"timestamp": "00:13:35", "type": "ACCIDENTAL_ORDER_CONTROL", "detail": "Track accidental adds as execution defects."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251029-P42108-C01", "DTS-20251029-P42108-C02", "DTS-20251029-P42108-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
