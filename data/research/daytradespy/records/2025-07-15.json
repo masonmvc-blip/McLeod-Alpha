@@ -1,0 +1,109 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40928,
+    "title": "Trading Room Video Recording - July 15, 2025",
+    "publication_date": "2025-07-15",
+    "source_url": "https://daytradespy.com/40928/trading-room-video-recording-july-14-2025-2/",
+    "duration_seconds": 4092,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER",
+      "cue_count": 1038,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:08:03",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:08:12 asset. Player volume was verified at 0 percent and playback was never started."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 80,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {"timestamp": "00:05:00", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Prior-close July 18 631 calls at 1.10 were nearly 50 percent higher but did not fill a 1.65 sell order."},
+    {"timestamp": "00:21:03", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A downside OMG activated July 18 626 puts at 2.89 and exited at 3.09."},
+    {"timestamp": "00:35:49", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A discretionary July 18 626-put trade entered at 3.20 with an initial 3.40 target."},
+    {"timestamp": "00:58:06", "classification": "PRESENTER_CLAIM", "claim": "The overnight calls had reached 1.63, missed a 1.65 limit, and returned to about 1.15."},
+    {"timestamp": "01:07:33", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The discretionary puts sold at 3.35 after the target was reduced."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250715-P40928-C01",
+      "timestamp": "00:05:00",
+      "label": "NEAR_MISS_EXIT_DECAY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "A 1.65 sell missed a 1.63 high and a nearly 50 percent unrealized gain later contracted to about 5 percent.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_NEAR_TARGET", "3m": "UNRESOLVED", "5m": "UNRESOLVED", "10m": "UNRESOLVED", "15m": "SOURCE_REPORTED_ADVERSE_MOVE", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Broker orders, fills, quantity, executable quotes, and terminal exit."
+    },
+    {
+      "id": "DTS-20250715-P40928-C02",
+      "timestamp": "00:21:03",
+      "label": "DOWNSIDE_OMG_COMPLETED",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "July 18 626 OMG puts were narrated from 2.89 to 3.09.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_TARGET_HIT", "3m": "SOURCE_REPORTED_EXITED", "5m": "SOURCE_REPORTED_EXITED", "10m": "SOURCE_REPORTED_EXITED", "15m": "SOURCE_REPORTED_EXITED", "remainder_session": "SOURCE_REPORTED_EXITED"},
+      "disconfirming_evidence_required": "Immutable simulator order, fill, quantity, spread, and fee events."
+    },
+    {
+      "id": "DTS-20250715-P40928-C03",
+      "timestamp": "00:35:49",
+      "label": "DISCRETIONARY_TARGET_REDUCTION",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "A 3.20 put entry with a 3.40 target was sold at 3.35 after follow-through stalled.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_ADVERSE_MOVE", "3m": "SOURCE_REPORTED_MIXED", "5m": "SOURCE_REPORTED_FAVORABLE_MOVE", "10m": "SOURCE_REPORTED_MIXED", "15m": "SOURCE_REPORTED_MIXED", "remainder_session": "SOURCE_REPORTED_EXITED"},
+      "disconfirming_evidence_required": "Predeclared adjustment rule, order events, MFE, MAE, and executable option path."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250715-P40928-T01", "type": "CALL_POSITION", "setup": "July 18 631 calls; prior-close discretionary carry", "entry_time": "PRIOR_SESSION_CLOSE", "entry_premium": 1.10, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "High 1.63, unfilled sell at 1.65, later about 1.15; unresolved"},
+    {"source_trade_id": "DTS-20250715-P40928-T02", "type": "PUT_POSITION", "setup": "July 18 626 puts; formal downside OMG", "entry_time": "00:23:42", "entry_premium": 2.89, "exit_time": "00:24:41", "exit_premium": 3.09, "stop_or_invalidation": "Stated target 3.06"},
+    {"source_trade_id": "DTS-20250715-P40928-T03", "type": "PUT_POSITION", "setup": "July 18 626 puts; discretionary continuation", "entry_time": "00:35:49", "entry_premium": 3.20, "exit_time": "01:07:33", "exit_premium": 3.35, "stop_or_invalidation": "Initial target 3.40; reduced near room close"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": ["A near-50-percent unrealized call gain was not realized and later nearly vanished.", "The discretionary put target changed without a predeclared adjustment rule.", "Calls and puts were simultaneously open without aggregate exposure reporting."],
+    "unavailable_evidence": ["Full visual review, broker and simulator orders, quantities, pick ledger, aggregate exposure, synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "RECORD_HIGH_WITH_EVENT_RISK", "evidence": "CPI, semiconductor strength, Fed commentary, and earnings framed the open."},
+    {"timestamp": "00:21:03", "state": "LOWER_BOUNDARY_BREAK", "evidence": "A five-minute downside close activated 626 puts."},
+    {"timestamp": "00:35:49", "state": "EXTENDED_DECLINE", "evidence": "A second put position entered after the formal trade had completed."},
+    {"timestamp": "00:58:06", "state": "LOW_CONVICTION_RANGE", "evidence": "SPY oscillated near support while the overnight calls remained unresolved."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:05:00", "type": "NEAR_MISS_FALLBACK_EXIT", "detail": "Compare a defined fallback after a near-missed limit with leaving the original limit unchanged."},
+    {"timestamp": "00:21:03", "type": "IMMUTABLE_OMG_LEDGER", "detail": "Reconcile exact narration against simulator order events."},
+    {"timestamp": "00:35:49", "type": "RULED_TARGET_ADJUSTMENT", "detail": "Replay a declared time/price adjustment rule versus discretionary reduction."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator orders", "Quantities and aggregate exposure", "Pick ledger", "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250715-P40928-C01", "DTS-20250715-P40928-C02", "DTS-20250715-P40928-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

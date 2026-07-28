@@ -1,0 +1,96 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40943,
+    "title": "Trading Room Video Recording - July 16, 2025",
+    "publication_date": "2025-07-16",
+    "source_url": "https://daytradespy.com/40943/trading-room-video-recording-july-16-2025/",
+    "duration_seconds": 4259,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1332, "first_timestamp": "00:00:00", "last_timestamp": "01:10:57", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:10:59 asset. Player volume was verified at 0 percent and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:11:03", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Twenty-six July 25 624 challenge calls filled at 2.58 and were later modeled sold at 2.75 because the simulator exit failed."},
+    {"timestamp": "00:21:22", "classification": "SOURCE_TRANSCRIPT_CONTRADICTION", "claim": "A prior pick's 40-percent stop treatment was acknowledged as inconsistent with the EOD rule."},
+    {"timestamp": "00:23:33", "classification": "PRESENTER_REPORTED_TRADE", "claim": "July 25 623 OMG puts entered at 4.65 and exited at 4.94."},
+    {"timestamp": "00:37:48", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Discretionary 623 puts entered at 5.15 and exited at 5.43."},
+    {"timestamp": "01:04:30", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Late July 25 622 puts entered at 4.65 with a 4.85 target and remained open after an adverse upside break."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250716-P40943-C01",
+      "timestamp": "00:11:03",
+      "label": "MODELED_SIMULATOR_EXIT",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The challenge's 2.75 exit was modeled rather than executed after a simulator failure.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE_MOVE", "3m": "SOURCE_REPORTED_TARGET_AVAILABLE", "5m": "SOURCE_REPORTED_TARGET_AVAILABLE", "10m": "MODELED_EXIT", "15m": "MODELED_EXIT", "remainder_session": "MODELED_EXIT"},
+      "disconfirming_evidence_required": "Simulator logs, executable quotes, order rejection, fills, quantity, and fees."
+    },
+    {
+      "id": "DTS-20250716-P40943-C02",
+      "timestamp": "00:21:22",
+      "label": "MUTABLE_PICK_OUTCOME_RULE",
+      "fact_classification": "SOURCE_TRANSCRIPT_CONTRADICTION",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "A prior pick was reported at a 40-percent stop even though the applicable rule was later said to be EOD.",
+      "forward_outcomes": {"1m": "HISTORICAL_CORRECTION", "3m": "HISTORICAL_CORRECTION", "5m": "HISTORICAL_CORRECTION", "10m": "HISTORICAL_CORRECTION", "15m": "HISTORICAL_CORRECTION", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Versioned publication-time rule, original report, correction event, and EOD fill."
+    },
+    {
+      "id": "DTS-20250716-P40943-C03",
+      "timestamp": "00:23:33",
+      "label": "DOWNSIDE_OMG_COMPLETED",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "July 25 623 OMG puts were narrated from 4.65 to 4.94.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE_MOVE", "3m": "SOURCE_REPORTED_TARGET_HIT", "5m": "SOURCE_REPORTED_EXITED", "10m": "SOURCE_REPORTED_EXITED", "15m": "SOURCE_REPORTED_EXITED", "remainder_session": "SOURCE_REPORTED_EXITED"},
+      "disconfirming_evidence_required": "Immutable simulator orders, fills, quantity, spreads, and fees."
+    },
+    {
+      "id": "DTS-20250716-P40943-C04",
+      "timestamp": "01:04:30",
+      "label": "SACRIFICIAL_TRADE_WITHOUT_STOP",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Late 622 puts remained open after a contrary upside break and were described as sacrificial.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_MIXED", "3m": "SOURCE_REPORTED_ADVERSE_MOVE", "5m": "SOURCE_REPORTED_ADVERSE_MOVE", "10m": "UNRESOLVED_OPEN_POSITION", "15m": "UNRESOLVED_OPEN_POSITION", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Predeclared maximum loss, quantity, broker ledger, and terminal exit."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250716-P40943-T01", "type": "CALL_POSITION", "setup": "26 July 25 624 calls; challenge", "entry_time": "00:12:08", "entry_premium": 2.58, "exit_time": "MODELED_00_18_55", "exit_premium": 2.75, "stop_or_invalidation": "Simulator exit failed; 2.75 was modeled after high of 2.85"},
+    {"source_trade_id": "DTS-20250716-P40943-T02", "type": "PUT_POSITION", "setup": "July 25 623 puts; formal downside OMG", "entry_time": "00:23:47", "entry_premium": 4.65, "exit_time": "00:28:45", "exit_premium": 4.94, "stop_or_invalidation": "Target 4.93"},
+    {"source_trade_id": "DTS-20250716-P40943-T03", "type": "PUT_POSITION", "setup": "July 25 623 puts; discretionary continuation", "entry_time": "00:37:50", "entry_premium": 5.15, "exit_time": "00:46:19", "exit_premium": 5.43, "stop_or_invalidation": "Target 5.35"},
+    {"source_trade_id": "DTS-20250716-P40943-T04", "type": "PUT_POSITION", "setup": "July 25 622 puts; late discretionary trade", "entry_time": "01:04:30", "entry_premium": 4.65, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Initial target 4.85; no maximum loss, unresolved after adverse break"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 4,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": ["An unnamed trade was said to mirror the formal OMG and may duplicate the same downside signal."],
+    "conflicts": ["Challenge exit was modeled after a simulator failure.", "Prior pick reporting changed from a 40-percent stop to an EOD rule.", "Reportable EOD and personal overnight treatment diverged.", "Late puts lacked a maximum loss."],
+    "unavailable_evidence": ["Full visual review, simulator exit, broker orders, discretionary quantities, mirrored-trade premium, final pick and late-put exits, aggregate exposure, synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "PPI_AND_EARNINGS_EVENT_RISK", "evidence": "Inflation data, bank earnings, and Fed speakers framed the session."},
+    {"timestamp": "00:23:33", "state": "PIVOT_BREAK_AND_DOWNSIDE_OMG", "evidence": "SPY broke the downside boundary and prior close."},
+    {"timestamp": "00:37:48", "state": "GAP_FILL_CONTINUATION", "evidence": "A discretionary continuation put entered near the open-gap test."},
+    {"timestamp": "01:04:30", "state": "RECOVERY_ATTEMPT_NEAR_622_20", "evidence": "Late puts entered while price repeatedly tested support and then broke upward."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:11:03", "type": "EXECUTABLE_FILLS_ONLY", "detail": "Exclude modeled simulator exits from realized performance."},
+    {"timestamp": "00:21:22", "type": "IMMUTABLE_PICK_RULE", "detail": "Freeze the publication-time outcome rule and append corrections."},
+    {"timestamp": "00:23:33", "type": "DEDUPLICATE_MIRRORED_SIGNAL", "detail": "Count the OMG and mirroring trade as correlated exposure."},
+    {"timestamp": "01:04:30", "type": "FIXED_LATE_TRADE_STOP", "detail": "Compare a quantified stop with sacrificial holding."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Simulator and broker order events", "Discretionary quantities and mirrored-trade premium", "Pick and late-put terminal fills", "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250716-P40943-C01", "DTS-20250716-P40943-C02", "DTS-20250716-P40943-C03", "DTS-20250716-P40943-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 4, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
