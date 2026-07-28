@@ -198,6 +198,14 @@ if [[ "$RUN_BACKGROUND" == "1" ]]; then
   SCHWAB_CALLBACK_URL="$REQUIRED_SCHWAB_CALLBACK_URL" \
   nohup "$PYTHON_BIN" "$ROOT/cockpit.py" > "$ROOT/cockpit_stdout.log" 2>&1 &
   cockpit_pid=$!
+  for _ in $(seq 1 30); do
+    listener_pid="$(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null | head -n 1)"
+    if [[ -n "$listener_pid" ]]; then
+      cockpit_pid="$listener_pid"
+      break
+    fi
+    sleep 0.5
+  done
   echo "$cockpit_pid" > "$COCKPIT_PID_FILE"
   echo "cockpit started in background pid=$cockpit_pid"
 else
