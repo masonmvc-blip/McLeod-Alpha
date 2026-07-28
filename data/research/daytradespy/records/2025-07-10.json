@@ -1,0 +1,341 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40894,
+    "title": "Trading Room Video Recording - July 10, 2025",
+    "publication_date": "2025-07-10",
+    "source_url": "https://daytradespy.com/40894/trading-room-video-recording-july-10-2025/",
+    "duration_seconds": 4488,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER",
+      "cue_count": 1470,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:14:36",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:14:48 asset. Player volume was verified at 0 percent and playback was never started."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 82,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:14:16",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The presenter said he exited July 9 July 18 624 calls, but supplied no exit premium."
+    },
+    {
+      "timestamp": "00:18:00",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The published 623-put pick was modeled from 3.53 to 3.74, with a high-entry path from 3.63 to 3.85."
+    },
+    {
+      "timestamp": "00:26:32",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Seventeen July 18 624 challenge calls entered at 4.70."
+    },
+    {
+      "timestamp": "00:39:42",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A one-cent downside close activated 623 OMG puts at 4.02; John entered 624 puts at 4.42."
+    },
+    {
+      "timestamp": "00:57:24",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Challenge calls sold at 4.81 for a reported 177 dollars net."
+    },
+    {
+      "timestamp": "00:58:23",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "OMG puts had shown roughly 0.12 to 0.15 favorable excursion without an exit."
+    },
+    {
+      "timestamp": "01:09:18",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A second 17-contract challenge entered at 4.56 and sold at 4.72."
+    },
+    {
+      "timestamp": "01:13:27",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "OMG puts remained open with end-of-day liquidation planned if target failed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250710-P40894-C01",
+      "timestamp": "00:18:00",
+      "label": "RETROSPECTIVE_PICK_ENTRY_PATHS",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The pick was evaluated from a midpoint entry and a separate high-entry path.",
+      "forward_outcomes": {
+        "1m": "SOURCE_MODELED_FAVORABLE_MOVE",
+        "3m": "SOURCE_MODELED_MIDPOINT_TARGET",
+        "5m": "SOURCE_MODELED_FAVORABLE_MOVE",
+        "10m": "SOURCE_MODELED_HIGH_ENTRY_TARGET",
+        "15m": "SOURCE_MODELED_HIGH_ENTRY_TARGET",
+        "remainder_session": "SOURCE_MODELED_TARGET"
+      },
+      "disconfirming_evidence_required": "Contemporaneous immutable signal, executable entry rule, quotes, and subscriber orders."
+    },
+    {
+      "id": "DTS-20250710-P40894-C02",
+      "timestamp": "00:39:42",
+      "label": "ONE_CENT_BOUNDARY_ADMISSION",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A one-cent close below the boundary admitted the downside OMG directly into support.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_REVERSAL",
+        "15m": "SOURCE_REPORTED_REVERSAL",
+        "remainder_session": "UNRESOLVED_EOD_EXIT"
+      },
+      "disconfirming_evidence_required": "Synchronized bars, exact boundary, executable option path, MFE, MAE, and later exit."
+    },
+    {
+      "id": "DTS-20250710-P40894-C03",
+      "timestamp": "00:39:42",
+      "label": "SAME_SIGNAL_DIFFERENT_STRIKES",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The same downside signal was implemented with 623 and 624 puts by different presenters.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_REVERSAL",
+        "15m": "SOURCE_REPORTED_REVERSAL",
+        "remainder_session": "BOTH_UNRESOLVED"
+      },
+      "disconfirming_evidence_required": "Contract Greeks, quantities, executable quotes, targets, fills, and fees for both strikes."
+    },
+    {
+      "id": "DTS-20250710-P40894-C04",
+      "timestamp": "00:57:24",
+      "label": "VOLATILITY_REDUCED_CHALLENGE_TARGET",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The challenge accepted 0.11 rather than the initial 0.20 target in a low-volatility range.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_RECOVERY",
+        "10m": "SOURCE_REPORTED_RECOVERY",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Predeclared volatility scaling, order modifications, option path, and alternative fixed-target outcome."
+    },
+    {
+      "id": "DTS-20250710-P40894-C05",
+      "timestamp": "01:13:27",
+      "label": "PLANNED_EOD_EXIT_UNEVIDENCED",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "End-of-day liquidation was planned but no executed fill appeared in the recording.",
+      "forward_outcomes": {
+        "1m": "UNRESOLVED_OPEN_POSITION",
+        "3m": "UNRESOLVED_OPEN_POSITION",
+        "5m": "UNRESOLVED_OPEN_POSITION",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Timestamped EOD orders, fills, premium, quantity, and realized PnL."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250710-P40894-T01",
+      "type": "CALL_POSITION",
+      "setup": "July 9 July 18 624 calls; cross-day carry",
+      "entry_time": "PRIOR_SESSION",
+      "entry_premium": 5.35,
+      "exit_time": "00:14:16",
+      "exit_premium": null,
+      "stop_or_invalidation": "Source said he exited; premium, quantity, time-of-market fill, and PnL unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T02",
+      "type": "PUT_POSITION",
+      "setup": "July 18 623 puts; retrospectively modeled published pick",
+      "entry_time": "SOURCE_MODELED_09_31",
+      "entry_premium": 3.53,
+      "exit_time": "SOURCE_MODELED_09_34",
+      "exit_premium": 3.74,
+      "stop_or_invalidation": "High-entry 3.63 path required 3.85 and reportedly reached it later"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T03",
+      "type": "CALL_POSITION",
+      "setup": "17 July 18 624 calls; challenge trade 1",
+      "entry_time": "00:26:32",
+      "entry_premium": 4.70,
+      "exit_time": "00:57:24",
+      "exit_premium": 4.81,
+      "stop_or_invalidation": "Initial 4.90 target reduced; source reported 177 dollars net"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T04",
+      "type": "CALL_POSITION",
+      "setup": "John July 18 624 calls; real scalp",
+      "entry_time": "UNAVAILABLE_EVIDENCE",
+      "entry_premium": null,
+      "exit_time": "00:57:24",
+      "exit_premium": 4.78,
+      "stop_or_invalidation": "Entry premium and quantity unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T05",
+      "type": "PUT_POSITION",
+      "setup": "July 18 623 puts; formal downside OMG",
+      "entry_time": "00:39:42",
+      "entry_premium": 4.02,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Target 4.26; end-of-day exit planned but not evidenced"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T06",
+      "type": "PUT_POSITION",
+      "setup": "John July 18 624 puts; parallel real trade",
+      "entry_time": "00:39:42",
+      "entry_premium": 4.42,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Exact target and later exit unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250710-P40894-T07",
+      "type": "CALL_POSITION",
+      "setup": "17 July 18 624 calls; challenge trade 2",
+      "entry_time": "01:09:18",
+      "entry_premium": 4.56,
+      "exit_time": "01:12:18",
+      "exit_premium": 4.72,
+      "stop_or_invalidation": "Source reported 262 dollars net and 439 dollars combined daily net"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 7,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [
+      "The July 9 Hugh 5.35 call carry corresponds to the July 10 source-reported exit without premium."
+    ],
+    "conflicts": [
+      "The published pick used retrospective midpoint and high-entry paths.",
+      "The same OMG signal used different strikes and target mechanics.",
+      "The first challenge target was reduced after a prolonged range.",
+      "The named OMG and parallel put remained open despite a stated EOD rule."
+    ],
+    "unavailable_evidence": [
+      "Full visual review, broker orders, prior-day exit premium, contemporaneous pick signal, John-call entry, EOD put exits, synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:00:00",
+      "state": "LOW_NEWS_MIXED_PREOPEN",
+      "evidence": "Tariffs, Fed minutes, and jobless claims framed mixed futures."
+    },
+    {
+      "timestamp": "00:26:32",
+      "state": "RANGE_RECOVERY_CALL_SCALP",
+      "evidence": "Calls entered after price reclaimed clustered moving averages."
+    },
+    {
+      "timestamp": "00:39:03",
+      "state": "MARGINAL_DOWNSIDE_BREAK",
+      "evidence": "Price closed one cent below the lower OMG boundary."
+    },
+    {
+      "timestamp": "00:58:23",
+      "state": "RANGE_REVERSAL",
+      "evidence": "Puts surrendered a modest favorable excursion."
+    },
+    {
+      "timestamp": "01:09:18",
+      "state": "SECOND_CALL_RECOVERY",
+      "evidence": "A second challenge call scalp entered from support."
+    },
+    {
+      "timestamp": "01:13:27",
+      "state": "OMG_OPEN_AT_TERMINAL_CUE",
+      "evidence": "Downside puts remained unresolved with EOD exit planned."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:18:00",
+      "type": "CONTEMPORANEOUS_PICK_ENTRY",
+      "detail": "Recompute the pick from an immutable executable entry rule."
+    },
+    {
+      "timestamp": "00:39:03",
+      "type": "MINIMUM_BOUNDARY_BREAK_FILTER",
+      "detail": "Compare the one-cent admission with a larger minimum-break threshold."
+    },
+    {
+      "timestamp": "00:39:42",
+      "type": "STRIKE_SPECIFIC_EXPECTED_VALUE",
+      "detail": "Evaluate 623 and 624 puts separately by delta, spread, and fill."
+    },
+    {
+      "timestamp": "00:57:24",
+      "type": "PREDECLARED_VOLATILITY_TARGET",
+      "detail": "Compare a volatility-scaled target declared before entry with the fixed 6 percent rule."
+    },
+    {
+      "timestamp": "01:13:27",
+      "type": "IMMUTABLE_EOD_EXIT",
+      "detail": "Require a captured fill before classifying the signal outcome."
+    }
+  ],
+  "instrumentation_gaps": [
+    "Full visual review",
+    "Broker and simulator orders",
+    "Prior-day carry exit premium and PnL",
+    "Contemporaneous published-pick entry",
+    "John-call entry and both EOD put exits",
+    "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+  ],
+  "hypothesis_references": [
+    "DTS-20250710-P40894-C01",
+    "DTS-20250710-P40894-C02",
+    "DTS-20250710-P40894-C03",
+    "DTS-20250710-P40894-C04",
+    "DTS-20250710-P40894-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

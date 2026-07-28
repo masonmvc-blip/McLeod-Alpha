@@ -1,0 +1,351 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40875,
+    "title": "Trading Room Video Recording - July 9, 2025",
+    "publication_date": "2025-07-09",
+    "source_url": "https://daytradespy.com/40875/trading-room-video-recording-july-9-2025/",
+    "duration_seconds": 4180,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER",
+      "cue_count": 1467,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:09:27",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:09:40 asset. Player volume was verified at 0 percent and playback was never started."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 84,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:08:42",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "July 18 624 calls carried from July 7 at a 3.96 average were sold at 2.55 for a stated 1.41 loss."
+    },
+    {
+      "timestamp": "00:14:02",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A qualifying upside close activated July 11 624 calls at 2.34 for both the challenge and formal OMG."
+    },
+    {
+      "timestamp": "00:15:47",
+      "classification": "SOURCE_TRANSCRIPT_CONTRADICTION",
+      "claim": "A 2.55 exit was announced, retracted as an order-state mistake, and later actually filled."
+    },
+    {
+      "timestamp": "00:19:32",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The 32-contract challenge reported 672 dollars gross and 662 dollars net."
+    },
+    {
+      "timestamp": "00:24:39",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "July 18 625 calls entered at 4.72 and later exited by trailing stop at 4.88."
+    },
+    {
+      "timestamp": "00:41:00",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The published July 18 623-call pick was retrospectively modeled from 5.12 to 5.42."
+    },
+    {
+      "timestamp": "00:43:33",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Two presenters entered July 18 624 calls near 5.33 to 5.35."
+    },
+    {
+      "timestamp": "01:08:45",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The late 624-call positions remained open after the morning rally reversed; holding and later repair were proposed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250709-P40875-C01",
+      "timestamp": "00:14:02",
+      "label": "SHARED_FILL_DUAL_LEDGER",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "One 2.34 call fill served both the OMG and challenge ledgers.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_TARGET_NEAR",
+        "5m": "SOURCE_REPORTED_TARGET",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Broker orders, quantity allocation, account identity, and immutable ledger events."
+    },
+    {
+      "id": "DTS-20250709-P40875-C02",
+      "timestamp": "00:15:47",
+      "label": "NARRATED_EXIT_PRECEDED_FILL",
+      "fact_classification": "SOURCE_TRANSCRIPT_CONTRADICTION",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source narrated a 2.55 exit before acknowledging that only the entry had filled.",
+      "forward_outcomes": {
+        "1m": "FALSE_EXIT_RETRACTED",
+        "3m": "POSITION_OPEN",
+        "5m": "SOURCE_REPORTED_ACTUAL_EXIT",
+        "10m": "SOURCE_REPORTED_ACTUAL_EXIT",
+        "15m": "SOURCE_REPORTED_ACTUAL_EXIT",
+        "remainder_session": "SOURCE_REPORTED_ACTUAL_EXIT"
+      },
+      "disconfirming_evidence_required": "Timestamped order submission, acknowledgment, fill, cancellation, and narration events."
+    },
+    {
+      "id": "DTS-20250709-P40875-C03",
+      "timestamp": "00:24:39",
+      "label": "TRENDING_TRAILING_STOP_SCALP",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A trailing stop exited the 625-call scalp at 4.88 after a 4.72 entry.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_EXIT",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Quantity, stop trail rule, executable quotes, broker fill, MFE, MAE, spreads, slippage, and fees."
+    },
+    {
+      "id": "DTS-20250709-P40875-C04",
+      "timestamp": "00:43:33",
+      "label": "LATE_EXTENSION_CALL_ENTRIES",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Two late July 18 624-call entries near 5.33 to 5.35 remained open after a full reversal.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_SMALL_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_CONSOLIDATION",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "15m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "remainder_session": "UNRESOLVED_OPEN_POSITIONS"
+      },
+      "disconfirming_evidence_required": "Exact presenter identity, entry fills, quantities, maximum loss, later exits, and portfolio exposure."
+    },
+    {
+      "id": "DTS-20250709-P40875-C05",
+      "timestamp": "01:08:45",
+      "label": "CARRY_AND_REPAIR_WITHOUT_INVALIDATION",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Expiration time and possible repair replaced a price invalidation for the late call positions.",
+      "forward_outcomes": {
+        "1m": "UNRESOLVED_OPEN_POSITIONS",
+        "3m": "UNRESOLVED_OPEN_POSITIONS",
+        "5m": "UNRESOLVED_OPEN_POSITIONS",
+        "10m": "UNRESOLVED_OPEN_POSITIONS",
+        "15m": "UNRESOLVED_OPEN_POSITIONS",
+        "remainder_session": "UNRESOLVED_OPEN_POSITIONS"
+      },
+      "disconfirming_evidence_required": "Predeclared carry rule, maximum loss, repair sizing, later fills, and cross-day PnL."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250709-P40875-T01",
+      "type": "CALL_POSITION",
+      "setup": "July 18 624 calls carried from July 7",
+      "entry_time": "PRIOR_SESSION",
+      "entry_premium": 3.96,
+      "exit_time": "00:18:20",
+      "exit_premium": 2.55,
+      "stop_or_invalidation": "Source reported a 1.41 loss; quantity, repair history, and fees unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T02",
+      "type": "CALL_POSITION",
+      "setup": "32 July 11 624 calls; three-20 challenge",
+      "entry_time": "00:14:24",
+      "entry_premium": 2.34,
+      "exit_time": "00:18:20",
+      "exit_premium": 2.55,
+      "stop_or_invalidation": "Shared fill with OMG; source reported 662 dollars net"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T03",
+      "type": "CALL_POSITION",
+      "setup": "July 11 624 calls; formal upside OMG",
+      "entry_time": "00:14:24",
+      "entry_premium": 2.34,
+      "exit_time": "00:18:20",
+      "exit_premium": 2.55,
+      "stop_or_invalidation": "Six-percent target 2.48 was raised; same fill as challenge"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T04",
+      "type": "CALL_POSITION",
+      "setup": "July 18 625 calls; under-specified presenter position",
+      "entry_time": "UNAVAILABLE_EVIDENCE",
+      "entry_premium": null,
+      "exit_time": "00:22:33",
+      "exit_premium": 5.29,
+      "stop_or_invalidation": "Entry, quantity, and exact presenter allocation unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T05",
+      "type": "CALL_POSITION",
+      "setup": "July 18 625 calls; real trailing-stop scalp",
+      "entry_time": "00:24:39",
+      "entry_premium": 4.72,
+      "exit_time": "00:28:37",
+      "exit_premium": 4.88,
+      "stop_or_invalidation": "Trailing-stop exit; quantity unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T06",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; retrospectively modeled published pick",
+      "entry_time": "SOURCE_MODELED_09_31",
+      "entry_premium": 5.12,
+      "exit_time": "SOURCE_MODELED_09_34",
+      "exit_premium": 5.42,
+      "stop_or_invalidation": "Retrospective midpoint entry and six-percent target; immutable signal unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T07",
+      "type": "CALL_POSITION",
+      "setup": "Hugh July 18 624 calls; late real entry",
+      "entry_time": "00:43:33",
+      "entry_premium": 5.35,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Open at terminal cue; hold and possible repair discussed"
+    },
+    {
+      "source_trade_id": "DTS-20250709-P40875-T08",
+      "type": "CALL_POSITION",
+      "setup": "John July 18 624 calls; parallel real entry",
+      "entry_time": "00:43:56",
+      "entry_premium": 5.33,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Entry alternately narrated as 5.34 and 5.33; open at terminal cue"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 8,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [
+      "The July 7 repaired 624-call position corresponds to the 3.96-average carry sold on July 9."
+    ],
+    "conflicts": [
+      "One 2.34 fill was counted in both OMG and challenge ledgers.",
+      "A 2.55 exit was narrated before an actual fill.",
+      "John's late 624-call entry was reported as both 5.34 and 5.33.",
+      "Late calls remained open without a maximum loss after the morning rally reversed."
+    ],
+    "unavailable_evidence": [
+      "Full visual review, broker orders, shared-fill allocation, discretionary quantities, exact repair lineage, later exits, synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:00:00",
+      "state": "TARIFF_AND_FED_MINUTES_PREOPEN",
+      "evidence": "Tariffs and afternoon Fed minutes framed a strong pre-open."
+    },
+    {
+      "timestamp": "00:14:02",
+      "state": "QUALIFIED_UPSIDE_BREAK",
+      "evidence": "Price closed above the revised upper OMG boundary."
+    },
+    {
+      "timestamp": "00:18:20",
+      "state": "MOMENTUM_TARGET_EXIT",
+      "evidence": "Shared OMG/challenge calls exited at 2.55."
+    },
+    {
+      "timestamp": "00:24:39",
+      "state": "EXTENDED_UPTREND",
+      "evidence": "Fresh 625 calls entered during continued bear capitulation."
+    },
+    {
+      "timestamp": "00:43:33",
+      "state": "LATE_PULLBACK_REENTRY",
+      "evidence": "Two 624-call entries followed the first material pullback."
+    },
+    {
+      "timestamp": "01:08:25",
+      "state": "FULL_OPENING_RALLY_REVERSAL",
+      "evidence": "SPY traded below its opening price and late calls remained open."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:14:02",
+      "type": "SHARED_FILL_ALLOCATION",
+      "detail": "Allocate quantity and PnL explicitly when one fill serves multiple named ledgers."
+    },
+    {
+      "timestamp": "00:15:47",
+      "type": "IMMUTABLE_ORDER_EVENTS",
+      "detail": "Separate order submission, acknowledgment, and fill from narration."
+    },
+    {
+      "timestamp": "00:24:39",
+      "type": "TRAILING_STOP_VERSUS_FIXED_TARGET",
+      "detail": "Compare trailing stops with fixed targets on opening momentum scalps."
+    },
+    {
+      "timestamp": "00:43:33",
+      "type": "LATE_ENTRY_TIME_AND_PRICE_STOP",
+      "detail": "Require maximum loss and time stop for entries after an extended move."
+    },
+    {
+      "timestamp": "01:08:45",
+      "type": "PERSISTENT_CROSS_DAY_POSITION_ID",
+      "detail": "Carry repairs and exits under one immutable position identity."
+    }
+  ],
+  "instrumentation_gaps": [
+    "Full visual review",
+    "Broker and simulator orders",
+    "Shared-fill quantity and PnL allocation",
+    "Discretionary position quantities",
+    "Exact July 7 repair lineage and later July 18 624-call exits",
+    "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+  ],
+  "hypothesis_references": [
+    "DTS-20250709-P40875-C01",
+    "DTS-20250709-P40875-C02",
+    "DTS-20250709-P40875-C03",
+    "DTS-20250709-P40875-C04",
+    "DTS-20250709-P40875-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

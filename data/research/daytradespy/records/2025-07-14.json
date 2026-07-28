@@ -1,0 +1,346 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40918,
+    "title": "Trading Room Video Recording - July 14, 2025",
+    "publication_date": "2025-07-14",
+    "source_url": "https://daytradespy.com/40918/trading-room-video-recording-july-14-2025/",
+    "duration_seconds": 4316,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER",
+      "cue_count": 1439,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:30",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:11:56 asset. Player volume was verified at 0 percent and playback was never started."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 80,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:07:23",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Downside-boundary placement was discussed in relation to avoiding another reportable loss."
+    },
+    {
+      "timestamp": "00:10:45",
+      "classification": "SOURCE_TRANSCRIPT_CONTRADICTION",
+      "claim": "Twenty July 18 624 challenge calls were first reported at 3.51 and later restated at 3.56."
+    },
+    {
+      "timestamp": "00:11:17",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The first real July 18 623-call scalp entered at 3.97 and sold at 4.10."
+    },
+    {
+      "timestamp": "00:14:53",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A second 623-call scalp entered at 3.91 and sold at 4.00."
+    },
+    {
+      "timestamp": "00:16:38",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A third 623-call scalp entered at 3.92 and later sold at 4.10."
+    },
+    {
+      "timestamp": "00:28:38",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A qualifying upside close activated July 18 623 OMG calls at 4.05 with a 4.29 target."
+    },
+    {
+      "timestamp": "00:30:37",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A fourth real trade entered July 18 624 calls at 3.54 and remained open."
+    },
+    {
+      "timestamp": "01:06:19",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The published 623-call pick was modeled from 4.05 to 4.29 and remained unresolved."
+    },
+    {
+      "timestamp": "01:08:20",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Challenge, OMG, pick, and real 624 calls remained open while EOD reporting and discretionary holding rules diverged."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250714-P40918-C01",
+      "timestamp": "00:07:23",
+      "label": "OUTCOME_SENSITIVE_BOUNDARY_PLACEMENT",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Avoiding an unattractive reportable loss influenced downside-boundary discussion.",
+      "forward_outcomes": {
+        "1m": "BOUNDARY_PREOPEN",
+        "3m": "BOUNDARY_PREOPEN",
+        "5m": "BOUNDARY_PREOPEN",
+        "10m": "NO_DOWNSIDE_SIGNAL",
+        "15m": "NO_DOWNSIDE_SIGNAL",
+        "remainder_session": "NO_DOWNSIDE_SIGNAL"
+      },
+      "disconfirming_evidence_required": "Pre-open immutable boundary policy, contemporaneous structural inputs, and all candidate thresholds."
+    },
+    {
+      "id": "DTS-20250714-P40918-C02",
+      "timestamp": "00:10:45",
+      "label": "CHALLENGE_ENTRY_CONTRADICTION",
+      "fact_classification": "SOURCE_TRANSCRIPT_CONTRADICTION",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The 20-contract challenge entry was reported as both 3.51 and 3.56.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_RECOVERY",
+        "15m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Immutable order submission, fill, quantity, account, and simulator ledger."
+    },
+    {
+      "id": "DTS-20250714-P40918-C03",
+      "timestamp": "00:28:38",
+      "label": "OMG_PICK_SHARED_RECONSTRUCTION",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "OMG and published pick shared the same modeled contract, 4.05 entry, and 4.29 target.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_RECOVERY",
+        "15m": "SOURCE_REPORTED_TARGET_NEAR",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Contemporaneous pick signal, separate orders, quantities, fills, and independent management."
+    },
+    {
+      "id": "DTS-20250714-P40918-C04",
+      "timestamp": "00:30:37",
+      "label": "SCALP_CONVERTED_TO_CARRY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "A tight 624-call scalp remained open and became eligible for an overnight earnings hold.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_RECOVERY",
+        "15m": "SOURCE_REPORTED_NEAR_BREAKEVEN",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Predeclared carry authorization, maximum loss, quantity, later fill, and event-risk exposure."
+    },
+    {
+      "id": "DTS-20250714-P40918-C05",
+      "timestamp": "01:08:20",
+      "label": "REPORTING_AND_DISCRETIONARY_EXIT_DIVERGENCE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Reporting required EOD clearing while discretionary holders could continue on an earnings thesis.",
+      "forward_outcomes": {
+        "1m": "UNRESOLVED_OPEN_POSITIONS",
+        "3m": "UNRESOLVED_OPEN_POSITIONS",
+        "5m": "UNRESOLVED_OPEN_POSITIONS",
+        "10m": "UNRESOLVED_OPEN_POSITIONS",
+        "15m": "UNRESOLVED_OPEN_POSITIONS",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "EOD reporting fills, personal-account fills, later exits, and an immutable policy separating the ledgers."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250714-P40918-T01",
+      "type": "CALL_POSITION",
+      "setup": "20 July 18 624 calls; three-20 challenge",
+      "entry_time": "00:10:45",
+      "entry_premium": 3.51,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Entry later restated as 3.56; target 3.70, unresolved at terminal cue"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T02",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; real scalp 1",
+      "entry_time": "00:11:17",
+      "entry_premium": 3.97,
+      "exit_time": "00:12:37",
+      "exit_premium": 4.10,
+      "stop_or_invalidation": "Quick discretionary scalp; quantity unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T03",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; real scalp 2",
+      "entry_time": "00:14:53",
+      "entry_premium": 3.91,
+      "exit_time": "00:15:29",
+      "exit_premium": 4.00,
+      "stop_or_invalidation": "Quick discretionary scalp; quantity unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T04",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; real scalp 3",
+      "entry_time": "00:16:38",
+      "entry_premium": 3.92,
+      "exit_time": "00:29:15",
+      "exit_premium": 4.10,
+      "stop_or_invalidation": "Repeated retracement before source-reported exit; quantity unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T05",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; formal upside OMG",
+      "entry_time": "00:28:38",
+      "entry_premium": 4.05,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Target 4.29; EOD clearing planned, unresolved at terminal cue"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T06",
+      "type": "CALL_POSITION",
+      "setup": "July 18 624 calls; real scalp converted to possible carry",
+      "entry_time": "00:30:37",
+      "entry_premium": 3.54,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Target 3.65; overnight earnings hold considered, no maximum loss"
+    },
+    {
+      "source_trade_id": "DTS-20250714-P40918-T07",
+      "type": "CALL_POSITION",
+      "setup": "July 18 623 calls; retrospectively modeled published pick",
+      "entry_time": "SOURCE_MODELED_09_31",
+      "entry_premium": 4.05,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Modeled target 4.29; same contract, entry, and target as OMG, unresolved"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 7,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [
+      "The formal OMG and published pick may be the same modeled signal rather than independent trades."
+    ],
+    "conflicts": [
+      "Downside-boundary selection referenced avoiding a reportable loss.",
+      "Challenge entry was reported as both 3.51 and 3.56.",
+      "A tight scalp became a possible overnight carry.",
+      "EOD reporting and discretionary holding rules diverged."
+    ],
+    "unavailable_evidence": [
+      "Full visual review, broker orders, definitive challenge entry, discretionary quantities, EOD fills, later carry outcome, aggregate exposure, synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:00:00",
+      "state": "TARIFF_RISK_AND_EARNINGS_PREOPEN",
+      "evidence": "Weekend tariffs and upcoming bank earnings framed an initially weak but resilient pre-open."
+    },
+    {
+      "timestamp": "00:10:45",
+      "state": "OPENING_UPSIDE_SCALPS",
+      "evidence": "Challenge and real calls entered during an opening rebound."
+    },
+    {
+      "timestamp": "00:21:23",
+      "state": "DEEP_RETRACEMENT",
+      "evidence": "SPY retraced most of the initial move."
+    },
+    {
+      "timestamp": "00:28:38",
+      "state": "QUALIFIED_UPSIDE_BREAK",
+      "evidence": "A close above the upper OMG boundary activated 623 calls."
+    },
+    {
+      "timestamp": "00:30:37",
+      "state": "BREAKOUT_REJECTION_AND_REENTRY",
+      "evidence": "A 624-call scalp entered as the new high met sellers."
+    },
+    {
+      "timestamp": "01:08:20",
+      "state": "HIGHER_LOWS_WITH_POSITIONS_UNRESOLVED",
+      "evidence": "Price continued oscillating upward while named calls remained open."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:07:23",
+      "type": "PREOPEN_BOUNDARY_FREEZE",
+      "detail": "Freeze OMG boundaries before the outcome and record all candidate thresholds."
+    },
+    {
+      "timestamp": "00:10:45",
+      "type": "IMMUTABLE_CHALLENGE_FILL",
+      "detail": "Resolve the 3.51 versus 3.56 contradiction from order events."
+    },
+    {
+      "timestamp": "00:28:38",
+      "type": "DEDUPLICATE_SHARED_SIGNAL",
+      "detail": "Count OMG and pick once when contract, entry, and target coincide."
+    },
+    {
+      "timestamp": "00:30:37",
+      "type": "STRICT_SCALP_TIME_STOP",
+      "detail": "Compare a fixed scalp time stop with discretionary overnight conversion."
+    },
+    {
+      "timestamp": "01:08:20",
+      "type": "UNIFIED_AGGREGATE_EXPOSURE_CAP",
+      "detail": "Track all same-direction scalps and carries under one risk cap."
+    }
+  ],
+  "instrumentation_gaps": [
+    "Full visual review",
+    "Broker and simulator orders",
+    "Definitive challenge entry premium",
+    "Discretionary scalp quantities and aggregate exposure",
+    "EOD fills and later carry resolution",
+    "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"
+  ],
+  "hypothesis_references": [
+    "DTS-20250714-P40918-C01",
+    "DTS-20250714-P40918-C02",
+    "DTS-20250714-P40918-C03",
+    "DTS-20250714-P40918-C04",
+    "DTS-20250714-P40918-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
