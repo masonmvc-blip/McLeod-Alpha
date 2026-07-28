@@ -1,0 +1,131 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39512,
+    "title": "Trading Room Video Recording - April 21, 2025",
+    "publication_date": "2025-04-21",
+    "source_url": "https://daytradespy.com/39512/trading-room-video-recording-april-21-2025/",
+    "duration_seconds": 4274,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 494,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:10:48",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Keyboard-driven Home/PageDown navigation hydrated 494 unique browser-visible transcript cues through the terminal cue, 26 seconds before the 01:11:14 asset duration."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 85,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:15:48",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source described six April 25 520 puts at a captioned 7.85 entry, then posted an 8.30 sell limit; the later 8.10 result is source-reported only."
+    },
+    {
+      "timestamp": "00:18:48",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source reported a 10-contract April 25 520-put OMG trade filled at 7.60 with an 8.06 target and later 8.09 fill."
+    },
+    {
+      "timestamp": "00:37:42",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source reported an April 25 520-put scalp at 8.82, later sold at 9.60."
+    },
+    {
+      "timestamp": "00:39:58",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source reported six April 25 520 puts filled at 9.39 and later sold at 9.66, with a presenter-stated net result after commission."
+    },
+    {
+      "timestamp": "00:58:56",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source reported a real April 25 470-put fill at 0.42, later discussed sale targets, but did not report a completed exit."
+    },
+    {
+      "timestamp": "00:54:32",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source described downside control after a support breach and considered lower-strike puts; bar data are unavailable to verify the described chart state."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250421-C01",
+      "timestamp": "00:18:48",
+      "label": "OMG_520_PUT_TARGET",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source reported an April 25 520-put OMG fill at 7.60 and a later 8.09 fill after an 8.06 target.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable option marks, deterministic OMG labels, fees, MFE/MAE, and ledger mapping."
+    },
+    {
+      "id": "DTS-20250421-C02",
+      "timestamp": "00:37:42",
+      "label": "520_PUT_SCALP_AND_REENTRY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source reported a 520-put scalp from 8.82 to 9.60 and a separate six-contract 520-put entry from 9.39 to 9.66.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable option marks, fees, MFE/MAE, and ledger mapping separating the two 520-put positions."
+    },
+    {
+      "id": "DTS-20250421-C03",
+      "timestamp": "00:58:56",
+      "label": "470_PUT_OPEN_POSITION",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source reported an April 25 470-put fill at 0.42 but only later discussed 0.47 and 0.50 sale targets; no completed exit was reported.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable marks, overnight position evidence, fees, MFE/MAE, and ledger mapping."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250421-T01", "type": "PUT_TRADE", "setup": "Six April 25 520 puts; source discussed a 7.85 captioned entry and later stated an 8.10 result.", "entry_time": "00:15:48 source statement", "entry_premium": "7.85 captioned source value", "exit_time": "00:30:45 source statement", "exit_premium": "8.10 source-reported result; prior 8.30 limit was not a confirmed fill", "stop_or_invalidation": "Support break and bounce concerns discussed; no deterministic stop reported"},
+    {"source_trade_id": "DTS-20250421-T02", "type": "OMG_PUT_TRADE", "setup": "Ten April 25 520 puts after source-described OMG close and one-minute reversal.", "entry_time": "00:18:48 source statement", "entry_premium": "7.60 captioned source value", "exit_time": "00:25:33 source statement", "exit_premium": "8.09 source-reported fill; 8.06 was a target", "stop_or_invalidation": "Source reduced target near described 519 support; no deterministic stop reported"},
+    {"source_trade_id": "DTS-20250421-T03", "type": "PUT_SCALP", "setup": "April 25 520 puts after source-described support break.", "entry_time": "00:37:42 source statement", "entry_premium": "8.82 captioned source value", "exit_time": "00:43:47 source statement", "exit_premium": "9.60 source-reported sale", "stop_or_invalidation": "No deterministic stop reported; source described a 516.30 underlying target and a bounce concern"},
+    {"source_trade_id": "DTS-20250421-T04", "type": "PUT_SCALP", "setup": "Six April 25 520 puts, described as a second $240-target trade.", "entry_time": "00:39:58 source statement", "entry_premium": "9.39 captioned source value", "exit_time": "00:44:42 source statement", "exit_premium": "9.66 source-reported sale", "stop_or_invalidation": "No deterministic stop reported; source stated a 516.30 underlying target"},
+    {"source_trade_id": "DTS-20250421-T05", "type": "PUT_POSITION", "setup": "April 25 470 puts after source-described support breach and downside continuation.", "entry_time": "00:58:56 source statement", "entry_premium": "0.42 captioned source value", "exit_time": "NOT_REPORTED", "exit_premium": "0.47 and 0.50 were source-discussed targets only", "stop_or_invalidation": "Source discussed theta and required underlying downside to 513.25/513.40; no filled exit or deterministic stop reported"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Source-reported premiums, contracts, stated net results, and source labels such as 'real' lack broker-fill evidence.",
+      "The 8.30, 8.06, 0.47, and 0.50 values include targets or posted orders and are not all completed sales.",
+      "The transcript does not supply stable speaker attribution, order identifiers, or enough lineage to merge similarly named 520-put positions beyond the explicit source statements."
+    ],
+    "unavailable_evidence": ["No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."]
+  },
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "SOURCE_DESCRIBED_DOWNSIDE_CONTROL_WITH_BOUNCES", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "Source discussed 519, 516.30, 513.25, and 513.40 levels; bar-based verification unavailable"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "The described support breaches, OMG close, Fibonacci extensions, moving averages, reversal pattern, and target effectiveness cannot be assessed without synchronized bars, executable marks, fills, and baseline replay."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "OBSERVATION_ONLY", "replay_improvement": "UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Visual chart and order review", "Speaker attribution", "Deterministic OMG, support, resistance, Fibonacci, and moving-average labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option bid/ask/mark and excursion data", "Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

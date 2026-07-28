@@ -1,0 +1,44 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39607,
+    "title": "Trading Room Video Recording - April 22, 2025",
+    "publication_date": "2025-04-22",
+    "source_url": "https://daytradespy.com/39607/trading-room-video-recording-april-22-2025/",
+    "duration_seconds": 4391,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 501, "first_timestamp": "00:00:00", "last_timestamp": "01:12:51", "raw_transcript_persisted": false, "coverage_note": "Keyboard-driven Home/PageDown navigation hydrated the virtualized transcript through its terminal browser-visible cue, 20 seconds before asset duration."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:10:08", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported a nine-contract April 25 520-call fill at 6.74 and later a 7.36 sale."},
+    {"timestamp": "00:15:32", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported a real April 25 520-call fill at 6.71 and later a 7.00 sale."},
+    {"timestamp": "00:19:14", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported a second April 25 520-call fill at 6.72 and later a 7.10 sale."},
+    {"timestamp": "00:31:58", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported an April 25 521-call fill at 6.88, discussed a 7.10 sale target, and did not report a completed exit."},
+    {"timestamp": "00:42:47", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported another April 25 521-call scalp entry at 6.93, posted a 7.15 sale order, and did not report a completed exit."},
+    {"timestamp": "00:17:51", "classification": "PRESENTER_CLAIM", "claim": "Source described an OMG close, upside trend context, and a 520-call target; deterministic chart reconstruction is unavailable."}
+  ],
+  "claims": [
+    {"id": "DTS-20250422-C01", "timestamp": "00:17:51", "label": "OMG_520_CALL_TARGET", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source described an OMG 520-call setup with a 7.58 target in an asserted upside trend.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Deterministic OMG and chart labels, timestamped bars, executable marks, fills, costs, and baseline replay."},
+    {"id": "DTS-20250422-C02", "timestamp": "00:22:53", "label": "520_CALL_SCALP_RESULTS", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported 520-call results of 6.74 to 7.36, 6.71 to 7.00, and 6.72 to 7.10.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable marks, fees, MFE/MAE, and ledger mapping."},
+    {"id": "DTS-20250422-C03", "timestamp": "00:31:58", "label": "521_CALL_UNRESOLVED_SCALPS", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported 521-call entries at 6.88 and 6.93 but did not report completed exits; 7.10 and 7.15 were target/order values only.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable marks, fees, MFE/MAE, and ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250422-T01", "type": "CALL_SCALP", "setup": "Nine April 25 520 calls in source-described upside context.", "entry_time": "00:10:08 source statement", "entry_premium": "6.74 captioned source value", "exit_time": "00:22:53 source statement", "exit_premium": "7.36 source-reported sale", "stop_or_invalidation": "No deterministic stop reported"},
+    {"source_trade_id": "DTS-20250422-T02", "type": "CALL_SCALP", "setup": "April 25 520 calls described as a real trade.", "entry_time": "00:15:32 source statement", "entry_premium": "6.71 captioned source value", "exit_time": "00:23:26 source statement", "exit_premium": "7.00 source-reported sale", "stop_or_invalidation": "No deterministic stop reported"},
+    {"source_trade_id": "DTS-20250422-T03", "type": "CALL_SCALP", "setup": "Second April 25 520-call trade.", "entry_time": "00:19:14 source statement", "entry_premium": "6.72 captioned source value", "exit_time": "00:23:26 source statement", "exit_premium": "7.10 source-reported sale", "stop_or_invalidation": "No deterministic stop reported"},
+    {"source_trade_id": "DTS-20250422-T04", "type": "CALL_POSITION", "setup": "April 25 521-call scalp after source-described resistance break.", "entry_time": "00:31:58 source statement", "entry_premium": "6.88 captioned source value", "exit_time": "NOT_REPORTED", "exit_premium": "7.10 target only", "stop_or_invalidation": "No deterministic stop or completed sale reported"},
+    {"source_trade_id": "DTS-20250422-T05", "type": "CALL_POSITION", "setup": "Second April 25 521-call scalp after source-described resistance break.", "entry_time": "00:42:47 source statement", "entry_premium": "6.93 captioned source value", "exit_time": "NOT_REPORTED", "exit_premium": "7.15 posted sale order only", "stop_or_invalidation": "No deterministic stop or completed sale reported"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 5, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Captioned prices, contract count, and stated results lack broker evidence.", "The 7.58 OMG, 7.10, and 7.15 values include targets or posted orders and do not establish completed exits.", "The transcript has no stable speaker attribution or contract/order lineage."], "unavailable_evidence": ["No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "SOURCE_DESCRIBED_UPSIDE_TREND_WITH_RESISTANCE_PAUSES", "trend_strength": "UNKNOWN", "volatility": "Source discussed option implied-volatility values; not independently verified", "vwap_state": "UNKNOWN", "room_to_target": "Source discussed 520/521 call targets and resistance; bar verification unavailable"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "The described OMG, support, resistance, 10-EMA, Fibonacci, and scalp effectiveness cannot be assessed without synchronized bars, executable marks, fills, and baseline replay."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "OBSERVATION_ONLY", "replay_improvement": "UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Visual chart and order review", "Speaker attribution", "Deterministic OMG, support, resistance, Fibonacci, and moving-average labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option bid/ask/mark and excursion data", "Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

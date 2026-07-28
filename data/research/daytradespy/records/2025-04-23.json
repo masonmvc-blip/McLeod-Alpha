@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39609,
+    "title": "Trading Room Video Recording - April 23, 2025",
+    "publication_date": "2025-04-23",
+    "source_url": "https://daytradespy.com/39609/trading-room-video-recording-april-23-2025/",
+    "duration_seconds": 4586,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 524, "first_timestamp": "00:00:00", "last_timestamp": "01:16:23", "raw_transcript_persisted": false, "coverage_note": "Keyboard-driven Home/PageDown navigation hydrated the virtualized transcript through its terminal browser-visible cue, three seconds before asset duration."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 70, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:12:18", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported an April 25 540-call entry at 6.46 and later an 8.31 sale."},
+    {"timestamp": "00:21:21", "classification": "PRESENTER_CLAIM", "claim": "Source described May 2 541 calls as an OMG setup with an 11.79 target; the target is not a completed result."},
+    {"timestamp": "00:27:28", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported an April 25 544-call entry at 6.15 and posted a 6.40 sale order, without a confirmed exit."},
+    {"timestamp": "00:28:40", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source discussed a 9.68 entry in a separate position but did not provide contract lineage or a completed exit."}
+  ],
+  "claims": [
+    {"id": "DTS-20250423-C01", "timestamp": "00:12:18", "label": "540_CALL_SOURCE_RESULT", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported April 25 540 calls from a 6.46 entry to an 8.31 sale.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable marks, fees, MFE/MAE, and ledger mapping."},
+    {"id": "DTS-20250423-C02", "timestamp": "00:21:21", "label": "MAY2_541_OMG_TARGET", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source described a May 2 541-call OMG target of 11.79.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Deterministic OMG and chart labels, timestamped bars, executable marks, fills, costs, and baseline replay."},
+    {"id": "DTS-20250423-C03", "timestamp": "00:27:28", "label": "544_CALL_UNRESOLVED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported an April 25 544-call entry at 6.15 but only posted a 6.40 sale order; no exit was reported.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"}, "disconfirming_evidence_required": "Contract/order identifiers, broker fills, executable marks, fees, MFE/MAE, and ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250423-T01", "type": "CALL_TRADE", "setup": "April 25 540 calls in source-described upside context.", "entry_time": "00:12:18 source statement", "entry_premium": "6.46 captioned source value", "exit_time": "00:18:42 source statement", "exit_premium": "8.31 source-reported sale", "stop_or_invalidation": "No deterministic stop reported"},
+    {"source_trade_id": "DTS-20250423-T02", "type": "OMG_CALL_POSITION", "setup": "May 2 541 calls under source-described OMG condition.", "entry_time": "UNKNOWN", "entry_premium": "UNKNOWN", "exit_time": "NOT_REPORTED", "exit_premium": "11.79 target only", "stop_or_invalidation": "No confirmed fill, stop, or outcome reported"},
+    {"source_trade_id": "DTS-20250423-T03", "type": "CALL_POSITION", "setup": "April 25 544-call scalp.", "entry_time": "00:27:28 source statement", "entry_premium": "6.15 captioned source value", "exit_time": "NOT_REPORTED", "exit_premium": "6.40 posted sale order only", "stop_or_invalidation": "No deterministic stop or completed sale reported"},
+    {"source_trade_id": "DTS-20250423-T04", "type": "UNRESOLVED_POSITION", "setup": "Separate source-discussed position.", "entry_time": "00:28:40 source statement", "entry_premium": "9.68 captioned source value", "exit_time": "NOT_REPORTED", "exit_premium": "UNKNOWN", "stop_or_invalidation": "Instrument and order lineage unavailable"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Captioned prices and stated results lack broker evidence.", "The 11.79 and 6.40 values were target/order language rather than confirmed sales.", "The 9.68 position lacks sufficient contract/order lineage to identify or reconcile it."], "unavailable_evidence": ["No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "SOURCE_DESCRIBED_UPSIDE_CONTEXT", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "Source described OMG and call targets; bar verification unavailable"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "The described OMG, support, resistance, and call-trade effectiveness cannot be assessed without synchronized bars, executable marks, fills, and baseline replay."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "OBSERVATION_ONLY", "replay_improvement": "UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Visual chart and order review", "Speaker attribution", "Deterministic OMG, support, resistance, Fibonacci, and moving-average labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option bid/ask/mark and excursion data", "Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
