@@ -1,0 +1,62 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 40575, "title": "Trading Room Video Recording - June 11, 2025", "publication_date": "2025-06-11",
+    "source_url": "https://daytradespy.com/40575/trading-room-video-recording-june-11-2025/", "duration_seconds": 3662, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL", "cue_count": 347, "first_timestamp": "00:00:00", "last_timestamp": "01:00:49", "raw_transcript_persisted": false, "coverage_note": "Transcript reaches the terminal substantive cue of the 01:01:02 asset."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 70, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:10:12", "classification": "PRESENTER_CLAIM", "claim": "The opening decline reached 78 percent support, so the first downside boundary close was not automatically traded."},
+    {"timestamp": "00:25:50", "classification": "PRESENTER_REPORTED_TRADE", "claim": "June 20 603 puts filled at 5.93."},
+    {"timestamp": "00:26:22", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The put target was 6.29."},
+    {"timestamp": "00:34:13", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Recovery calls were narrated as June 20 601 calls at 4.81, though nearby strike references conflict."},
+    {"timestamp": "00:35:16", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The call target was 4.95."},
+    {"timestamp": "00:38:15", "classification": "PRESENTER_CLAIM", "claim": "The simulator filled the put later and at a worse structural location than intended."},
+    {"timestamp": "00:52:17", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The call was described as a tough 14-cent trade, implying the 4.95 target."},
+    {"timestamp": "00:53:32", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The 603 puts remained open as the presenter forecast a return to 602.80."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250611-C01", "timestamp": "00:10:12", "label": "STRUCTURAL_ROOM_VETO", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The first downside close was correctly deferred because it had already reached support and lacked structural room.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_SUPPORT_HOLD", "3m": "SOURCE_REPORTED_SUPPORT_HOLD", "5m": "SOURCE_REPORTED_RECOVERY", "10m": "SOURCE_REPORTED_RECOVERY", "15m": "SOURCE_REPORTED_RECOVERY", "remainder_session": "SOURCE_REPORTED_RECOVERY"},
+      "disconfirming_evidence_required": "Synchronized bars, exact support level, alternative-entry option path, and MFE/MAE."
+    },
+    {
+      "id": "DTS-20250611-C02", "timestamp": "00:38:15", "label": "STALE_LIMIT_EXECUTION", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A delayed simulator fill changed the downside setup by executing after price had moved away from the intended structure.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_ADVERSE_MOVE", "3m": "SOURCE_REPORTED_ADVERSE_MOVE", "5m": "SOURCE_REPORTED_ADVERSE_MOVE", "10m": "SOURCE_REPORTED_ADVERSE_MOVE", "15m": "SOURCE_REPORTED_ADVERSE_MOVE", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Order submission and fill timestamps, simulator log, underlying path, and executable option quotes."
+    },
+    {
+      "id": "DTS-20250611-C03", "timestamp": "00:34:13", "label": "FAILED_BREAK_RECOVERY_SCALP", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A bounded recovery-call scalp followed the failed downside continuation and reportedly earned 14 cents.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_MIXED_MOVE", "3m": "SOURCE_REPORTED_MIXED_MOVE", "5m": "SOURCE_REPORTED_RECOVERY", "10m": "SOURCE_REPORTED_RECOVERY", "15m": "SOURCE_REPORTED_TARGET", "remainder_session": "SOURCE_REPORTED_EXIT"},
+      "disconfirming_evidence_required": "Definitive strike, explicit exit, broker fill, synchronized bars, and option path."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250611-T01", "type": "PUT_POSITION", "setup": "June 20 603 puts; delayed downside fill", "entry_time": "00:25:50", "entry_premium": 5.93, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 6.29; remained open after recovery invalidated the original location"},
+    {"source_trade_id": "DTS-20250611-T02", "type": "CALL_POSITION", "setup": "June 20 601 calls; recovery scalp", "entry_time": "00:34:13", "entry_premium": 4.81, "exit_time": "00:52:17", "exit_premium": 4.95, "stop_or_invalidation": "Exit and strike are source-implied rather than definitively announced"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 2, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["The put simulator filled after the intended entry context changed.", "The call strike was narrated inconsistently.", "The call exit is implied by 14-cent arithmetic rather than an explicit sell cue."], "unavailable_evidence": ["Broker orders, simulator log, definitive call strike and exit, synchronized bars, executable option paths, MFE/MAE, complete fees, net Greeks, and final put resolution"]},
+  "market_state_timeline": [
+    {"timestamp": "00:10:12", "state": "OPENING_DROP_INTO_SUPPORT", "evidence": "Price retraced the CPI rise to the 78 percent support level."},
+    {"timestamp": "00:25:50", "state": "LATE_DOWNSIDE_ATTEMPT", "evidence": "Puts filled after the cleaner resistance-failure location had passed."},
+    {"timestamp": "00:38:15", "state": "FAILED_BREAK_RECOVERY", "evidence": "Price recovered while the simulator filled the stale downside order."},
+    {"timestamp": "00:52:17", "state": "RECOVERY_TOWARD_RETRACEMENT_RESISTANCE", "evidence": "The recovery call reportedly completed for 14 cents."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:25:50", "type": "STALE_LIMIT_CANCEL", "detail": "Cancel the limit if the underlying leaves the intended entry structure before fill."},
+    {"timestamp": "00:38:15", "type": "FILL_REQUALIFICATION", "detail": "Treat a delayed fill as a new setup requiring fresh admission."},
+    {"timestamp": "00:53:32", "type": "FAILED_BREAK_EXIT", "detail": "Exit puts when the failed break reclaims and holds the retest level."},
+    {"timestamp": "00:34:13", "type": "NET_EXPOSURE_LIMIT", "detail": "Quantify aggregate delta and maximum loss before adding an opposing call."}
+  ],
+  "hypothesis_references": ["DTS-20250611-C01", "DTS-20250611-C02", "DTS-20250611-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "instrumentation_gaps": ["Visual review", "Broker/account-mode evidence", "Simulator execution log", "Definitive call strike and exit", "Executable option paths, synchronized bars, MFE, MAE, spreads, complete fees, net Greeks, and final put resolution"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
