@@ -2893,6 +2893,12 @@ def _apply_decision_audit_scores(snapshot, audit_event):
     merged["call_passed"] = call_score
     merged["put_passed"] = put_score
     merged["regime"] = str(audit_event.get("regime") or snapshot.get("regime") or "UNKNOWN")
+    audit_timestamp = audit_event.get("candle_time")
+    if audit_timestamp:
+        try:
+            merged["timestamp"] = datetime.fromisoformat(str(audit_timestamp).replace("Z", "+00:00")).astimezone(EASTERN_TZ).isoformat()
+        except ValueError:
+            pass
     return merged
 
 

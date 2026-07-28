@@ -723,6 +723,25 @@ class Memory:
                 return event
         return None
 
+    def load_latest_decision_audit_event(self, projection_path):
+        """Read the newest monitor decision with complete scored candle data."""
+        path = Path(projection_path)
+        if not path.exists():
+            return None
+        try:
+            events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except (OSError, json.JSONDecodeError):
+            return None
+        for event in reversed(events):
+            if event.get("event_type") != "entry_evaluation":
+                continue
+            if self._parse_projection_timestamp(event.get("candle_time")) is None:
+                continue
+            if event.get("call_score") is None or event.get("put_score") is None:
+                continue
+            return event
+        return None
+
     @staticmethod
     def _parse_projection_timestamp(value):
         if isinstance(value, datetime):

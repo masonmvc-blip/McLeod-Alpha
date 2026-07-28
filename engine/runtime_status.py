@@ -32,6 +32,10 @@ def _build_runtime_status():
                 PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl",
                 candle_indicator_snapshot.get("timestamp"),
             )
+            if decision_audit is None:
+                decision_audit = get_memory().load_latest_decision_audit_event(
+                    PROJECT_ROOT / "data" / "reports" / "decision_audit_history.jsonl",
+                )
             candle_indicator_snapshot = _apply_decision_audit_scores(
                 candle_indicator_snapshot,
                 decision_audit,

@@ -70,6 +70,7 @@ def test_indicator_snapshot_prefers_matching_monitor_decision_audit_scores():
         "call_score": 2,
         "put_score": 5,
         "regime": "BEAR_TREND",
+        "candle_time": "2026-07-20T14:15:00+00:00",
     }
 
     merged = cockpit._apply_decision_audit_scores(snapshot, audit_event)
@@ -78,6 +79,7 @@ def test_indicator_snapshot_prefers_matching_monitor_decision_audit_scores():
     assert merged["put_passed"] == 5
     assert merged["regime"] == "BEAR_TREND"
     assert merged["market_trend"] == "BULL_TREND"
+    assert merged["timestamp"] == "2026-07-20T10:15:00-04:00"
 
 
 def test_indicator_snapshot_keeps_calculated_scores_without_complete_audit():
