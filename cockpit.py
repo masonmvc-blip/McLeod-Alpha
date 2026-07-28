@@ -8486,7 +8486,7 @@ HTML_DASHBOARD = """
                     ? 'Bull Candles'
                     : candleTrend === 'BEAR_TREND'
                         ? 'Bear Candles'
-                        : candleTrend.replaceAll('_', ' ');
+                        : 'Netural';
                 let candleTrendToneClass = 'trend-tone-neutral';
                 if (candleTrend === 'BEAR_TREND') {
                     candleTrendToneClass = 'trend-tone-bearish';

@@ -438,6 +438,7 @@ def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():
     assert 'indicator-performance-wins' in source
     assert 'indicator-performance-losses' in source
     assert "trend === 'NEUTRAL' ? 'Neutral'" in source
+    assert ": 'Netural';" in source
 
 
 def test_cash_register_plays_when_a_trade_opens():
