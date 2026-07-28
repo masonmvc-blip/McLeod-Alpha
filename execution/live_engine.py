@@ -24,6 +24,7 @@ from engine.brain import Brain, TradeAction, can_open_trade, record_trade, recor
 from engine.memory import get_memory
 from execution.trade_logger import log_trade, log_bot_order, log_trade_diagnostic_event
 from execution.exit_quality import exit_quality_metrics, update_option_extrema
+from execution.option_quote_telemetry import record_option_management_cycle
 import os
 import time
 import json
@@ -2787,6 +2788,19 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
             / option_entry_price
         )
 
+    record_option_management_cycle(
+        saved_position,
+        spy_price=price,
+        bid=option_bid,
+        mark=option_exit_price,
+        last=option_last,
+        action=TradeAction.EXIT,
+        reason=reason,
+        event_type="option_trade_closed",
+        broker_exit_order_id=exit_order_id,
+        observed_at=exit_timestamp,
+    )
+
     # Record trade exit first (before logging)
     record_trade(pnl)
     print(f"🔴 LIVE CLOSE {reason}")  # Live mode indicator
@@ -2962,6 +2976,17 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         observed_at=datetime.now(EASTERN_TZ),
     )
     if _is_end_of_day_exit_due():
+        record_option_management_cycle(
+            current_position,
+            spy_price=current_price,
+            bid=option_bid,
+            ask=(quote_metadata or {}).get("ask"),
+            mark=option_mark,
+            last=option_last,
+            quote_metadata=quote_metadata,
+            action=TradeAction.EXIT,
+            reason="END_OF_DAY_EXIT",
+        )
         close_trade(current_price, "END_OF_DAY_EXIT", option_mark)
         return
     _sync_position_with_broker(current_price)
@@ -3007,6 +3032,17 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         bid=option_bid,
         mark=option_mark,
         quote_metadata=quote_metadata or {},
+    )
+    record_option_management_cycle(
+        current_position,
+        spy_price=current_price,
+        bid=option_bid,
+        ask=(quote_metadata or {}).get("ask"),
+        mark=option_mark,
+        last=option_last,
+        quote_metadata=quote_metadata,
+        action=decision.action,
+        reason=decision.reason,
     )
 
     if decision.action is TradeAction.RESTORE_PROTECTIVE_STOP:
