@@ -8441,9 +8441,21 @@ HTML_DASHBOARD = """
                     trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span class="${candleTrendToneClass}" style="font-size:11px;font-weight:500;opacity:0.85;">🕯️ ${escapeHtml(candleTrendLabel)} 🕯️</span>`;
                 }
 
+                function formatIndicatorCardText(value) {
+                    return String(value || '')
+                        .replaceAll('_', ' ')
+                        .toLowerCase()
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .map(word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+                        .join(' ');
+                }
+
                 function renderIndicatorText(passed, side) {
                     const base = `${passed}/${indicatorTotal} Passed`;
-                    const momentumStage = side === 'CALL' ? callMomentumStage : putMomentumStage;
+                    const momentumStage = formatIndicatorCardText(
+                        side === 'CALL' ? callMomentumStage : putMomentumStage,
+                    );
                     const phaseText = momentumStage
                         ? `<br><span style="font-size:11px;font-weight:500;opacity:0.85;">${escapeHtml(momentumStage)}</span>`
                         : '';
@@ -8452,13 +8464,13 @@ HTML_DASHBOARD = """
                     }
 
                     if (lastEntryCandidateDirection === side && lastEntryBlockReason) {
-                        const blockReason = escapeHtml(lastEntryBlockReason.replaceAll('_', ' '));
+                        const blockReason = escapeHtml(formatIndicatorCardText(lastEntryBlockReason));
                         return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${blockReason}</span>`;
                     }
 
                     const requiredRegime = side === 'CALL' ? 'BULL_TREND' : 'BEAR_TREND';
                     if (indicatorRegime !== requiredRegime) {
-                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${escapeHtml(candleTrendLabel)}</span>`;
+                        return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${escapeHtml(formatIndicatorCardText(candleTrendLabel))}</span>`;
                     }
 
                     if (!isNoTrade) {
@@ -8467,7 +8479,7 @@ HTML_DASHBOARD = """
                     const conciseReasonRaw = tradeEntryReason
                         || status.last_decision_reason
                         || 'No entry conditions met';
-                    const conciseReason = escapeHtml(conciseReasonRaw);
+                    const conciseReason = escapeHtml(formatIndicatorCardText(conciseReasonRaw));
                     if (conciseReason) {
                         return `${base}${phaseText}<br><span style="font-size:12px;font-weight:500;opacity:0.9;">${conciseReason}</span>`;
                     }

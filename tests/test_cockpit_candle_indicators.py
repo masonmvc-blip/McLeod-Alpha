@@ -260,7 +260,7 @@ def test_option_label_includes_strike_for_calls_and_puts():
 def test_qualifying_indicator_cards_show_blocked_reason():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert "lastEntryBlockReason.replaceAll('_', ' ')" in source
+    assert "formatIndicatorCardText(lastEntryBlockReason)" in source
     assert ">${conciseReason}</span>" in source
 
 
@@ -275,6 +275,12 @@ def test_full_indicator_cards_are_green():
 def test_indicator_cards_show_current_trend_without_direction_requirement_copy():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
+    assert "function formatIndicatorCardText(value)" in source
+    assert ".replaceAll('_', ' ')" in source
+    assert ".toLowerCase()" in source
+    assert ".map(word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)" in source
+    assert "const momentumStage = formatIndicatorCardText(" in source
+    assert "formatIndicatorCardText(lastEntryBlockReason)" in source
     assert "const phaseText = momentumStage" in source
     assert "${escapeHtml(momentumStage)}" in source
     assert "callMomentumStrength" not in source
@@ -291,7 +297,7 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert 'class="${candleTrendToneClass}"' in source
     assert "🕯️ ${escapeHtml(candleTrendLabel)} 🕯️" in source
     assert "Candle: ${escapeHtml(candleTrendLabel)}" not in source
-    assert ">${escapeHtml(candleTrendLabel)}</span>" in source
+    assert "formatIndicatorCardText(candleTrendLabel)" in source
     assert "Market Trend:" not in source
     assert "trendWithTimestamp" not in source
     assert "Market Trend: ${trendText}" not in source
