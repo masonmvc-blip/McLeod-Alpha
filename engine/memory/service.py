@@ -344,6 +344,9 @@ class Memory:
         canonical_ids = {str(trade.get("canonical_trade_id") or "") for trade in canonical}
         broker_rows = list(broker_rows or [])
         broker_ids = {self._canonical_trade_id(dict(row)) for row in broker_rows}
+        canonical_pnl = sum(float(trade.get("option_pnl_dollars", trade.get("pnl", 0.0)) or 0.0) for trade in canonical)
+        broker_pnl = sum(float(row.get("option_pnl_dollars", row.get("pnl", 0.0)) or 0.0) for row in broker_rows)
+        pnl_variance = canonical_pnl - broker_pnl
         root = self.db_path.parent.parent
         export_path = root / "data" / "reports" / "trade_logs" / f"daily_trade_review_data_{trade_date}.json"
         try:
@@ -367,16 +370,26 @@ class Memory:
             pass
         pending_outbox = sum(1 for event_type in latest_outbox.values() if event_type == "pending")
         unreconciled = broker_ids - canonical_ids
+        extra_canonical = canonical_ids - broker_ids
+        count_reconciled = canonical_ids == broker_ids
+        pnl_reconciled = abs(pnl_variance) <= 0.01
         return {
             "trading_date": trade_date,
             "broker_trades_today": len(broker_ids),
             "canonical_completed_trades": len(canonical_ids),
+            "broker_pnl_dollars": round(broker_pnl, 2),
+            "canonical_pnl_dollars": round(canonical_pnl, 2),
+            "pnl_variance_dollars": round(pnl_variance, 2),
+            "count_reconciled": count_reconciled,
+            "pnl_reconciled": pnl_reconciled,
             "review_export_trades": len(review_ids),
             "replay_ready_trades": len(replay_ready_ids),
             "unreconciled_trades": len(unreconciled),
+            "extra_canonical_trades": len(extra_canonical),
             "pending_outbox_entries": pending_outbox,
             "unreconciled_trade_ids": sorted(unreconciled),
-            "healthy": not unreconciled and pending_outbox == 0,
+            "extra_canonical_trade_ids": sorted(extra_canonical),
+            "healthy": count_reconciled and pnl_reconciled and pending_outbox == 0,
         }
 
     def _backfill_legacy_completed_trades(self, start_date: str, end_date: str) -> None:
@@ -423,7 +436,6 @@ class Memory:
                     (entry_order_id, exit_order_id),
                 ).fetchone()
             if exists is not None:
-                inserted_trades.append(canonical)
                 continue
             with sqlite3.connect(self.db_path) as connection:
                 payload = {

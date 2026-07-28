@@ -22,6 +22,7 @@ from engine.model_evaluator import run_model_evaluator
 from engine.weight_optimizer import run_weight_optimizer
 from reports.daily_loss_attribution import (
     build_loss_attribution,
+    fetch_reconciliation_health,
     load_rows as load_loss_attribution_rows,
     maybe_send_operator_warning,
     write_report as write_loss_attribution_report,
@@ -570,8 +571,29 @@ def run_daily_learning(target_date: str | None = None) -> int:
     loss_attribution = build_loss_attribution(
         load_loss_attribution_rows(DB_PATH, trading_date),
         trading_date=trading_date,
+        reconciliation=fetch_reconciliation_health(trading_date),
     )
     loss_json, loss_md = write_loss_attribution_report(loss_attribution, LOSS_ATTRIBUTION_DIR)
+    if not loss_attribution["reconciliation"]["complete"]:
+        lessons = [{
+            "priority": "high",
+            "theme": "data_integrity",
+            "title": "Learning conclusions withheld",
+            "signal": loss_attribution["operator_warning"]["reason"],
+            "action": "Reconcile broker count and P&L before changing strategy or size.",
+        }]
+        scale_decision = {
+            "decision": "HOLD",
+            "increase_allowed": False,
+            "contract_step": 0,
+            "rationale": "Broker count/P&L reconciliation is incomplete; learning conclusions are withheld.",
+            "checks": [{
+                "name": "canonical_broker_reconciliation",
+                "passed": False,
+                "detail": loss_attribution["operator_warning"]["reason"],
+            }],
+            "failed_checks": ["canonical_broker_reconciliation"],
+        }
     maybe_send_operator_warning(
         loss_attribution,
         state_path=LOSS_ATTRIBUTION_ALERT_STATE,

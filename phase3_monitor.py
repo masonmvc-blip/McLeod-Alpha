@@ -50,6 +50,8 @@ SCHWAB_QUOTE_FRESHNESS_SECONDS = int(os.getenv("SCHWAB_QUOTE_FRESHNESS_SECONDS",
 SCHWAB_AUTH_RETRY_SECONDS = max(5, int(os.getenv("SCHWAB_AUTH_RETRY_SECONDS", "20")))
 CANDLE_HISTORY_REFRESH_SECONDS = max(30, int(os.getenv("CANDLE_HISTORY_REFRESH_SECONDS", "180")))
 END_OF_DAY_EXIT_TIME = dt_time(15, 45)
+DAILY_LEARNING_TIME = dt_time(16, 5)
+DAILY_LEARNING_RUNTIME_STATE = Path("data/daily_learning_runtime_state.json")
 _LAST_HISTORY_REFRESH_EPOCH = 0.0
 _LAST_HISTORY_FETCH_MINUTE = None
 OPTION_CHAIN_CACHE_REFRESH_SECONDS = max(1.0, float(os.getenv("OPTION_CHAIN_CACHE_REFRESH_SECONDS", "10")))
@@ -540,6 +542,56 @@ def _manage_open_position_priority():
     manual_exit_requested = _process_manual_exit_command(spy_price, option_mark)
     if not manual_exit_requested:
         manage_trade(spy_price, option_mark, option_bid, option_last, quote_metadata)
+    return True
+
+
+def maybe_run_after_close_daily_learning(now_et=None, runner=None):
+    """Run the diagnostic learning workflow once after close without launchd."""
+    now_et = now_et or datetime.now(EASTERN_TZ)
+    if now_et.weekday() >= 5 or now_et.time() < DAILY_LEARNING_TIME:
+        return False
+
+    trading_date = now_et.date().isoformat()
+    memory = get_memory()
+    state = memory.load_setting(DAILY_LEARNING_RUNTIME_STATE, {})
+    if state.get("last_success_date") == trading_date:
+        return False
+    attempts = int(state.get("attempt_count") or 0) if state.get("attempt_date") == trading_date else 0
+    if attempts >= 2:
+        return False
+
+    state.update({
+        "attempt_date": trading_date,
+        "attempt_count": attempts + 1,
+        "last_attempt_at": now_et.isoformat(),
+    })
+    memory.save_setting(
+        "daily_learning_runtime_state",
+        state,
+        DAILY_LEARNING_RUNTIME_STATE,
+        source="phase3_monitor",
+    )
+
+    try:
+        if runner is None:
+            from run_daily_trade_learning import run_daily_learning
+            runner = run_daily_learning
+        result = int(runner(trading_date))
+    except Exception as exc:
+        print(f"Daily learning runtime warning: {exc}")
+        return False
+    if result != 0:
+        print(f"Daily learning runtime warning: runner returned {result}")
+        return False
+
+    state["last_success_date"] = trading_date
+    state["last_success_at"] = datetime.now(EASTERN_TZ).isoformat()
+    memory.save_setting(
+        "daily_learning_runtime_state",
+        state,
+        DAILY_LEARNING_RUNTIME_STATE,
+        source="phase3_monitor",
+    )
     return True
 
 
@@ -1675,6 +1727,10 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             maybe_generate_scheduler_health_dashboard()
         except Exception as exc:
             print(f"Scheduler health warning: {exc}")
+        try:
+            maybe_run_after_close_daily_learning()
+        except Exception as exc:
+            print(f"Daily learning scheduler warning: {exc}")
         try:
             candles_fetch_start_ms = _perf_ms_now()
             df = get_candles()

@@ -4914,7 +4914,11 @@ def api_architecture_health():
 @app.route('/api/trade-reconciliation-health', methods=['GET'])
 def api_trade_reconciliation_health():
     """Expose count parity across broker facts and canonical trade projections."""
-    trading_date = datetime.now(EASTERN_TZ).date().isoformat()
+    trading_date = str(request.args.get("date") or datetime.now(EASTERN_TZ).date().isoformat())
+    try:
+        datetime.strptime(trading_date, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "date must use YYYY-MM-DD"}), 400
     broker_rows = _broker_transaction_trades_for_date(trading_date)
     get_memory().reconcile_broker_trades(broker_rows, source="cockpit_health_reconciliation")
     return jsonify(get_memory().load_trade_reconciliation_metrics(trading_date, broker_rows))

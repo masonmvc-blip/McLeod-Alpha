@@ -78,6 +78,26 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
     assert json.loads(events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
+def test_reconciliation_health_requires_count_and_pnl_parity(tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    trade = _broker_trade()
+    memory.reconcile_broker_trades([trade])
+
+    healthy = memory.load_trade_reconciliation_metrics("2026-07-20", [trade])
+    assert healthy["healthy"] is True
+    assert healthy["count_reconciled"] is True
+    assert healthy["pnl_reconciled"] is True
+    assert healthy["pnl_variance_dollars"] == 0.0
+
+    incomplete = memory.load_trade_reconciliation_metrics(
+        "2026-07-20",
+        [{**trade, "broker_exit_order_id": "different-exit", "pnl": 10.0}],
+    )
+    assert incomplete["healthy"] is False
+    assert incomplete["count_reconciled"] is False
+    assert incomplete["pnl_reconciled"] is False
+
+
 def test_broker_period_trade_pairing_uses_closed_trade_cash_pnl(monkeypatch):
     class Response:
         def raise_for_status(self):

@@ -11,9 +11,12 @@ from datetime import datetime
 import json
 import math
 from pathlib import Path
-import sqlite3
 from statistics import mean, stdev
 from typing import Any, Iterable
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
+from engine.memory import Memory
 
 
 MINIMUM_SETUP_TRADES = 10
@@ -127,6 +130,7 @@ def build_loss_attribution(
     rows: Iterable[dict[str, Any]],
     *,
     trading_date: str,
+    reconciliation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized = list(rows)
     today = [row for row in normalized if str(row.get("trade_date") or "") == trading_date]
@@ -164,12 +168,19 @@ def build_loss_attribution(
 
     setups: list[dict[str, Any]] = []
     warning_setups: list[str] = []
+    reconciliation = dict(reconciliation or {})
+    reconciliation_complete = bool(
+        reconciliation.get("healthy")
+        and reconciliation.get("count_reconciled")
+        and reconciliation.get("pnl_reconciled")
+        and int(reconciliation.get("pending_outbox_entries") or 0) == 0
+    )
     for key in sorted(setup_values):
         values = setup_values[key]
         upper_bound = _conservative_upper_bound(values)
         enough_days = len(setup_days[key] - {""}) >= MINIMUM_SETUP_DAYS
         convincingly_negative = bool(
-            upper_bound is not None and enough_days and upper_bound < 0.0
+            reconciliation_complete and upper_bound is not None and enough_days and upper_bound < 0.0
         )
         if convincingly_negative:
             warning_setups.append(key)
@@ -198,6 +209,11 @@ def build_loss_attribution(
         "attribution_boundary": (
             "Flags identify available evidence, may be multi-label, and do not establish causality."
         ),
+        "learning_status": "eligible_for_diagnostic_conclusions" if reconciliation_complete else "withheld_incomplete_reconciliation",
+        "reconciliation": {
+            "complete": reconciliation_complete,
+            **reconciliation,
+        },
         "today": {
             "all_recorded_trades": len(today),
             "broker_backed_trades": len(broker_today),
@@ -216,42 +232,43 @@ def build_loss_attribution(
             "reason": (
                 "Conservative expectancy upper bound is below zero."
                 if warning_setups
-                else "No setup crosses the conservative negative-evidence threshold."
+                else (
+                    "Learning conclusions are withheld because broker count/P&L reconciliation is incomplete."
+                    if not reconciliation_complete
+                    else "No setup crosses the conservative negative-evidence threshold."
+                )
             ),
         },
     }
 
 
 def load_rows(db_path: Path, trading_date: str, *, limit: int = ROLLING_TRADE_LIMIT) -> list[dict[str, Any]]:
-    with sqlite3.connect(str(db_path)) as con:
-        con.row_factory = sqlite3.Row
-        rows = con.execute(
-            """
-            SELECT
-                id,
-                date(entry_time) AS trade_date,
-                entry_time,
-                exit_time,
-                direction,
-                exit_reason,
-                pnl,
-                option_pnl_dollars,
-                option_symbol,
-                broker_entry_order_id,
-                broker_exit_order_id,
-                feature_payload,
-                entry_diagnostic_snapshot,
-                exit_efficiency_pct,
-                peak_capture_pct
-            FROM trade_log
-            WHERE entry_time IS NOT NULL
-              AND date(entry_time) <= ?
-            ORDER BY entry_time DESC, id DESC
-            LIMIT ?
-            """,
-            (trading_date, limit),
-        ).fetchall()
-    return [dict(row) for row in reversed(rows)]
+    """Load canonical completed trades; trade_log is not a learning source."""
+    memory = Memory(db_path=db_path)
+    rows = memory.load_completed_trades("2020-01-01", trading_date)
+    normalized = []
+    for trade in rows[-limit:]:
+        row = dict(trade)
+        row["id"] = row.get("canonical_trade_id")
+        row["trade_date"] = row.get("trade_date") or str(row.get("entry_time") or "")[:10]
+        normalized.append(row)
+    return normalized
+
+
+def fetch_reconciliation_health(
+    trading_date: str | None = None,
+    url: str = "http://127.0.0.1:5001/api/trade-reconciliation-health",
+) -> dict[str, Any]:
+    """Trigger broker reconciliation through the existing local Cockpit boundary."""
+    try:
+        if trading_date:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}{urlencode({'date': trading_date})}"
+        with urlopen(url, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except Exception as exc:
+        return {"healthy": False, "error": f"reconciliation_health_unavailable:{type(exc).__name__}"}
 
 
 def write_report(report: dict[str, Any], output_dir: Path) -> tuple[Path, Path]:
@@ -269,6 +286,8 @@ def write_report(report: dict[str, Any], output_dir: Path) -> tuple[Path, Path]:
         f"# Daily Loss Attribution: {trading_date}",
         "",
         f"- Diagnostic only: `{report['diagnostic_only']}`",
+        f"- Learning status: `{report['learning_status']}`",
+        f"- Reconciliation complete: `{report['reconciliation']['complete']}`",
         f"- All recorded trades: {today['all_recorded_trades']}",
         f"- Broker-backed trades: {today['broker_backed_trades']}",
         f"- Excluded unlinked/missing-P&L trades: {today['excluded_unlinked_or_missing_pnl']}",
