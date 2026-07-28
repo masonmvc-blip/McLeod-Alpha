@@ -8914,6 +8914,7 @@ HTML_DASHBOARD = """
                 const container = document.getElementById('indicatorPerformanceContainer');
                 const columns = `<div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
+                    <span>Today's Trades</span>
                     <span>W / L (Win %)</span>
                     <span>Avg P&amp;L</span>
                     <span>Guidance</span>
@@ -8947,8 +8948,11 @@ HTML_DASHBOARD = """
                     .join(' ');
                 const todayIndicatorResult = (row) => {
                     const trades = Number(row.today_trades || 0);
-                    if (!trades) return '--';
-                    return `${trades} ${trades === 1 ? 'trade' : 'trades'} · ${Number(row.today_wins || 0)}W / ${Number(row.today_losses || 0)}L`;
+                    if (!trades) return '';
+                    const wins = Number(row.today_wins || 0);
+                    const losses = Number(row.today_losses || 0);
+                    const winRate = (wins / trades) * 100;
+                    return `<span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)`;
                 };
 
                 if (!rows.length) {
@@ -8969,7 +8973,7 @@ HTML_DASHBOARD = """
                     const averageTone = averageReturn > 0 ? 'positive' : (averageReturn < 0 ? 'negative' : '');
                     return `<article class="indicator-performance-row">
                         <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
-                        <div class="indicator-performance-stats">${escapeText(todayTrades)}</div>
+                        <div class="indicator-performance-stats">${todayTrades}</div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)</div>
                         <div class="indicator-performance-stats indicator-performance-average ${averageTone}">${money(averageReturn)}</div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>

@@ -433,6 +433,10 @@ def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():
 
     assert "Today's Trades" in source
     assert "todayIndicatorResult" in source
+    assert "if (!trades) return '';" in source
+    assert 'const winRate = (wins / trades) * 100;' in source
+    assert 'indicator-performance-wins' in source
+    assert 'indicator-performance-losses' in source
     assert "trend === 'NEUTRAL' ? 'Neutral'" in source
 
 
