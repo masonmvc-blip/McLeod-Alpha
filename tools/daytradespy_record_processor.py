@@ -81,7 +81,7 @@ def register_record(record_path: Path, registry_path: Path) -> None:
                     "duration_seconds": record["recording"].get("duration_seconds"),
                     "evidence_quality": record["evidence_quality"],
                     "analysis_protocol_version": ANALYSIS_PROTOCOL_VERSION,
-                    "reprocess_required": False,
+                    "reprocess_required": not coverage_complete(record),
                     "machine_record_path": str(record_path),
                     "output_bundle_path": f"data/research/daytradespy/output/{post_id}",
                     "transcript": record["recording"]["transcript"],
