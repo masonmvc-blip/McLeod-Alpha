@@ -8898,7 +8898,9 @@ HTML_DASHBOARD = """
                 const formatIndicatorName = (value) => String(value || '')
                     .split('_')
                     .filter(Boolean)
-                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .map((word) => /^ema/i.test(word)
+                        ? word.replace(/^ema/i, 'EMA')
+                        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                     .join(' ');
 
                 if (!rows.length) {
