@@ -1,1 +1,293 @@
-{"schema_version":"daytradespy-record.v2","recording":{"analysis_protocol_version":"2026-07-22.1","post_id":40161,"title":"Trading Room Video Recording - May 12, 2025","publication_date":"2025-05-12","source_url":"https://daytradespy.com/40161/trading-room-video-recording-may-12-2025/","duration_seconds":null,"reviewed_at":"2026-07-28T00:00:00+00:00","reviewer_version":"recording-first-source-access-review.v1","transcript":{"availability":"UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS","completeness_pct":0,"path":"","timestamps_preserved":false,"speaker_attribution_available":false},"transcript_probe":{"source":"AUTHORIZED_DAYTRADESPY_MEMBER_AND_VIMEO_SESSION","cue_count":6,"first_timestamp":"PARTIAL","last_timestamp":"PARTIAL","raw_transcript_persisted":false,"coverage_note":"Vimeo asset 1083606887 was authorized and playable, but its transcript panel exposed only initial cues and did not hydrate further after transcript navigation attempts."},"visual_review":{"status":"UNAVAILABLE_EVIDENCE","coverage_pct":0,"chart_references":[]}},"evidence_quality":{"transcript_completeness_pct":0,"trade_details_captured_pct":0,"ledger_reconciliation_pct":0,"underlying_market_data_pct":0,"option_excursion_data_pct":0,"overall_grade":"SOURCE_CONTENT_INCOMPLETE","tier":"E"},"timeline":[],"claims":[],"reported_trades":[],"ledger_reconciliation":{"source_reported_trades":0,"mcleod_alpha_trades":"UNAVAILABLE_EVIDENCE","confirmed_matches":[],"possible_matches":[],"conflicts":[],"unavailable_evidence":["Authorized Vimeo asset 1083606887 exposes only incomplete captions.","No verified chart, order, trade, fill, or outcome evidence was captured."]},"market_state_timeline":[],"counterfactuals":[{"timestamp":"UNKNOWN","type":"UNAVAILABLE_EVIDENCE","detail":"Incomplete captions prevent replay, counterfactual, or outcome analysis."}],"hypothesis_references":[],"expected_value_tracking":{"confidence":"NONE","evidence_count":0,"current_lifecycle_stage":"SOURCE_CONTENT_GAP","replay_improvement":"UNAVAILABLE_EVIDENCE"},"instrumentation_gaps":["Complete Vimeo transcript captions","Visual chart and order review","Speaker attribution","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],"final_governance_decision":"RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"}
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40161,
+    "title": "Trading Room Video Recording - May 12, 2025",
+    "publication_date": "2025-05-12",
+    "source_url": "https://daytradespy.com/40161/trading-room-video-recording-may-12-2025/",
+    "duration_seconds": 4339,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 501,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:12:05",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The authorized transcript reaches 01:12:05 of the 01:12:19 asset; the uncaptured tail contains no substantive captioned trading discussion."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 90,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:12:01",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported 230 same-day 580 puts filled at 2.50 for an explicitly aggressive opening profit-taking trade."
+    },
+    {
+      "timestamp": "00:15:00",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "After a downside OMG close, May 16 579 puts filled at 4.41 with a 4.67 target placed before SPY support near 578.60."
+    },
+    {
+      "timestamp": "00:18:08",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A presenter labeled a May 23 579-put entry at 6.39 as a real trade selected for greater management comfort."
+    },
+    {
+      "timestamp": "00:25:53",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The real May 23 puts were sold at 6.60 after entry at 6.39."
+    },
+    {
+      "timestamp": "00:27:44",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported re-entering May 23 579 puts at 6.46."
+    },
+    {
+      "timestamp": "00:30:20",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The downside OMG option was reconciled as sold at 4.72, above its 4.67 target."
+    },
+    {
+      "timestamp": "00:38:24",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 230 same-day 580 puts were sold at 2.73 after repeated target reductions near underlying support."
+    },
+    {
+      "timestamp": "00:41:47",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 16 579 calls filled at 5.14 on a premature double-bottom attempt and remained open after the 5.42 target failed."
+    },
+    {
+      "timestamp": "00:56:49",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Fifteen May 16 580 calls filled at 5.05 for a small recovery scalp."
+    },
+    {
+      "timestamp": "01:09:56",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The second real May 23 579-put scalp was reconciled as sold at 6.60 after a 6.46 entry."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250512-C01",
+      "timestamp": "00:13:53",
+      "label": "GAP_DOWN_OMG_WITH_STRUCTURAL_ROOM",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The formal downside OMG entry followed a boundary close and placed the option target before nearby SPY support.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_TARGET_REACHED",
+        "10m": "SOURCE_REPORTED_EXIT_ABOVE_TARGET",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Synchronized SPY bars, deterministic OMG/support labels, executable option paths, fills, spreads, and fees."
+    },
+    {
+      "id": "DTS-20250512-C02",
+      "timestamp": "00:38:24",
+      "label": "ZERO_DAY_EXIT_BEFORE_SUPPORT_BOUNCE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source reduced a zero-day put target and accepted 2.73 rather than hold 230 contracts through repeated support bounces.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_EXIT",
+        "3m": "SOURCE_REPORTED_UNDERLYING_BOUNCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Executable depth for 230 contracts, full option path, fees, partial fills, and a fixed-target replay."
+    },
+    {
+      "id": "DTS-20250512-C03",
+      "timestamp": "00:41:47",
+      "label": "FAILED_CALL_SCALP_EXTENDS_HORIZON",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A premature 579-call scalp was retained for the week after moving against entry instead of closing when the immediate premise failed.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_TARGET_NOT_FILLED",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Exact fill, option MFE/MAE, stop baseline, end-of-day mark, and later exit."
+    },
+    {
+      "id": "DTS-20250512-C04",
+      "timestamp": "00:43:32",
+      "label": "POST_WIN_ADRENALINE_RISK",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source identified unusually large prior gains and giddiness as reasons to stop or reduce trading.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "ADDITIONAL_TRADES_OCCURRED"
+      },
+      "disconfirming_evidence_required": "Trader state, prior realized PnL, subsequent trade quality, and matched control sessions."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250512-T01",
+      "type": "PUT_POSITION",
+      "setup": "Same-day 580 puts; opening profit-taking trade",
+      "entry_time": "00:12:01 source-reported fill",
+      "entry_premium": 2.5,
+      "exit_time": "00:38:24 source-reported exit",
+      "exit_premium": 2.73,
+      "stop_or_invalidation": "No fixed stop reported; urgency tied to zero-day bounce risk"
+    },
+    {
+      "source_trade_id": "DTS-20250512-T02",
+      "type": "PUT_POSITION",
+      "setup": "May 16 579 puts; downside OMG close",
+      "entry_time": "00:15:00 source-reported fill",
+      "entry_premium": 4.41,
+      "exit_time": "00:30:20 reconciled source report",
+      "exit_premium": 4.72,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250512-T03",
+      "type": "PUT_POSITION",
+      "setup": "May 23 579 puts; presenter-labeled real scalp",
+      "entry_time": "00:18:08 source-reported fill",
+      "entry_premium": 6.39,
+      "exit_time": "00:25:53 source-reported exit",
+      "exit_premium": 6.6,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250512-T04",
+      "type": "PUT_POSITION",
+      "setup": "May 23 579 puts; presenter-labeled real re-entry",
+      "entry_time": "00:27:44 source-reported fill",
+      "entry_premium": 6.46,
+      "exit_time": "01:09:56 reconciled source report",
+      "exit_premium": 6.6,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250512-T05",
+      "type": "CALL_POSITION",
+      "setup": "May 16 579 calls; premature double-bottom scalp",
+      "entry_time": "00:41:47 source-reported fill",
+      "entry_premium": 5.14,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "5.42 TARGET NOT REPORTED FILLED",
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250512-T06",
+      "type": "CALL_POSITION",
+      "setup": "May 16 580 calls; support recovery scalp",
+      "entry_time": "00:56:49 source-reported fill",
+      "entry_premium": 5.05,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "5.20 THEN 5.10 TARGET NOT REPORTED FILLED",
+      "stop_or_invalidation": "Underlying concern near 578.35 was discussed but not enforced"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [],
+    "unavailable_evidence": [
+      "Broker order IDs, OCC symbols, account statements, fees, and partial fills",
+      "Synchronized SPY and executable option bid/ask paths",
+      "Canonical McLeod Alpha ledger mapping"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:07:22",
+      "state": "LARGE_NEWS_GAP",
+      "evidence": "The source described an approximately 18-point tariff-truce gap and removed obsolete pivots."
+    },
+    {
+      "timestamp": "00:13:53",
+      "state": "OPENING_PROFIT_TAKING",
+      "evidence": "SPY closed below the downside OMG boundary."
+    },
+    {
+      "timestamp": "00:24:25",
+      "state": "SUPPORT_NEAR_578_50",
+      "evidence": "The source repeatedly identified a bounce and possible double bottom near 578.50-579."
+    },
+    {
+      "timestamp": "00:51:15",
+      "state": "RECOVERY_ROTATION",
+      "evidence": "SPY recovered through Fibonacci levels toward moving-average resistance."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:38:24",
+      "type": "EXIT_POLICY",
+      "detail": "Replay holding the zero-day puts for the original target versus exiting at the first repeated support defense."
+    },
+    {
+      "timestamp": "00:41:47",
+      "type": "ENTRY_AND_INVALIDATION",
+      "detail": "Replay waiting for accepted double-bottom recovery and enforcing a failed-scalp exit."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250512-C01",
+    "DTS-20250512-C02",
+    "DTS-20250512-C03",
+    "DTS-20250512-C04"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 4,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Full visual chart and order review",
+    "Reliable speaker attribution",
+    "Broker fills, OCC symbols, sizes, fees, and account logs",
+    "Synchronized SPY bars and executable option paths",
+    "MFE, MAE, spread, depth, and partial-fill evidence",
+    "Deterministic scalp-failure and post-large-win state labels"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

@@ -1,1 +1,245 @@
-{"schema_version":"daytradespy-record.v2","recording":{"analysis_protocol_version":"2026-07-22.1","post_id":40190,"title":"Trading Room Video Recording - May 13, 2025","publication_date":"2025-05-13","source_url":"https://daytradespy.com/40190/trading-room-video-recording-may-13-2025/","duration_seconds":null,"reviewed_at":"2026-07-28T00:00:00+00:00","reviewer_version":"recording-first-source-access-review.v1","transcript":{"availability":"UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS","completeness_pct":0,"path":"","timestamps_preserved":false,"speaker_attribution_available":false},"transcript_probe":{"source":"AUTHORIZED_DAYTRADESPY_MEMBER_AND_VIMEO_SESSION","cue_count":4,"first_timestamp":"PARTIAL","last_timestamp":"PARTIAL","raw_transcript_persisted":false,"coverage_note":"Vimeo asset 1084284403 was authorized and playable, but its transcript panel exposed only initial cues and did not hydrate further after transcript navigation attempts."},"visual_review":{"status":"UNAVAILABLE_EVIDENCE","coverage_pct":0,"chart_references":[]}},"evidence_quality":{"transcript_completeness_pct":0,"trade_details_captured_pct":0,"ledger_reconciliation_pct":0,"underlying_market_data_pct":0,"option_excursion_data_pct":0,"overall_grade":"SOURCE_CONTENT_INCOMPLETE","tier":"E"},"timeline":[],"claims":[],"reported_trades":[],"ledger_reconciliation":{"source_reported_trades":0,"mcleod_alpha_trades":"UNAVAILABLE_EVIDENCE","confirmed_matches":[],"possible_matches":[],"conflicts":[],"unavailable_evidence":["Authorized Vimeo asset 1084284403 exposes only incomplete captions.","No verified chart, order, trade, fill, or outcome evidence was captured."]},"market_state_timeline":[],"counterfactuals":[{"timestamp":"UNKNOWN","type":"UNAVAILABLE_EVIDENCE","detail":"Incomplete captions prevent replay, counterfactual, or outcome analysis."}],"hypothesis_references":[],"expected_value_tracking":{"confidence":"NONE","evidence_count":0,"current_lifecycle_stage":"SOURCE_CONTENT_GAP","replay_improvement":"UNAVAILABLE_EVIDENCE"},"instrumentation_gaps":["Complete Vimeo transcript captions","Visual chart and order review","Speaker attribution","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],"final_governance_decision":"RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"}
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40190,
+    "title": "Trading Room Video Recording - May 13, 2025",
+    "publication_date": "2025-05-13",
+    "source_url": "https://daytradespy.com/40190/trading-room-video-recording-may-13-2025/",
+    "duration_seconds": 4418,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 405,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:13:15",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The authorized transcript reaches 01:13:15 of the 01:13:38 asset; the remaining tail is outro audio without substantive trading discussion."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 82,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:10:17",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Twenty May 16 582 puts filled at 3.11 on an anticipated reversal before downside confirmation."
+    },
+    {
+      "timestamp": "00:17:21",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 16 584 calls filled at 4.00 around 9:39, before the required five-minute OMG close."
+    },
+    {
+      "timestamp": "00:20:52",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source acknowledged jumping the gun and reset the rules-based OMG record to a 4.07 entry and 4.31 target from the 9:40 bar."
+    },
+    {
+      "timestamp": "00:23:22",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source rejected taking a reduced loss on the puts because four days remained to expiration."
+    },
+    {
+      "timestamp": "00:29:12",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 584 calls traded at 4.33 and the source reported the 4.31 target achieved at about 9:51."
+    },
+    {
+      "timestamp": "00:50:48",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source acknowledged that every downside call had been wrong while the market continued advancing."
+    },
+    {
+      "timestamp": "00:52:59",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source disclosed additional unannounced high-risk trades whose entries and outcomes were not reconstructable."
+    },
+    {
+      "timestamp": "01:04:45",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 582 puts remained open at a major loss; expiration and possible future profit taking were used to justify holding."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250513-C01",
+      "timestamp": "00:10:17",
+      "label": "DIVERGENCE_REVERSAL_BEFORE_CONFIRMATION",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The 582-put trade relied on bearish divergence and extension before price confirmed a reversal.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_NEAR_TARGET_THEN_REVERSAL",
+        "15m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "remainder_session": "UNRESOLVED_MAJOR_LOSS"
+      },
+      "disconfirming_evidence_required": "Synchronized bars, executable option path, exact target, MFE/MAE, and confirmed reversal baseline."
+    },
+    {
+      "id": "DTS-20250513-C02",
+      "timestamp": "00:20:52",
+      "label": "PREMATURE_OMG_VERSUS_RULES_ENTRY",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source entered the upside OMG before the required close, while the reconstructed rules-based entry also reached target.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_CONSOLIDATION",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_TARGET_FILL",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Five-minute bars, exact option quotes at 9:39 and 9:40, fills, spread, slippage, and repeated OMG samples."
+    },
+    {
+      "id": "DTS-20250513-C03",
+      "timestamp": "00:50:48",
+      "label": "TAPE_DISCONFIRMS_BEARISH_THESIS",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Successive resistance breaks and sustained buying contradicted the bearish thesis, but the put remained open.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_CONTINUED_UPTREND",
+        "3m": "SOURCE_REPORTED_CONTINUED_UPTREND",
+        "5m": "SOURCE_REPORTED_CONTINUED_UPTREND",
+        "10m": "SOURCE_REPORTED_CONTINUED_UPTREND",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Deterministic resistance and trend labels, put exit baseline, option path, and opportunity-cost replay."
+    },
+    {
+      "id": "DTS-20250513-C04",
+      "timestamp": "01:04:45",
+      "label": "EXPIRATION_SUBSTITUTES_FOR_INVALIDATION",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Remaining days to expiration were used to retain a failed intraday reversal trade without a price-based stop.",
+      "forward_outcomes": {
+        "1m": "UNRESOLVED_OPEN_POSITION",
+        "3m": "UNRESOLVED_OPEN_POSITION",
+        "5m": "UNRESOLVED_OPEN_POSITION",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "End-of-day mark, next-day continuation, theta, MFE/MAE, and a predeclared stop baseline."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250513-T01",
+      "type": "PUT_POSITION",
+      "setup": "May 16 582 puts; anticipated reversal",
+      "entry_time": "00:10:17 source-reported fill",
+      "entry_premium": 3.11,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "MAJOR LOSS ACKNOWLEDGED",
+      "stop_or_invalidation": "No price stop; retained because four days remained"
+    },
+    {
+      "source_trade_id": "DTS-20250513-T02",
+      "type": "CALL_POSITION",
+      "setup": "May 16 584 calls; upside OMG",
+      "entry_time": "00:17:21 actual early fill at 4.00; rules replay 4.07 at 9:40",
+      "entry_premium": 4.0,
+      "exit_time": "00:29:12 source-reported target",
+      "exit_premium": 4.33,
+      "stop_or_invalidation": "NOT_REPORTED"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 2,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The actual 584-call fill preceded the rules-based OMG entry; both are retained separately in the evidence narrative."
+    ],
+    "unavailable_evidence": [
+      "Broker fills, symbols, fees, account type, and order IDs",
+      "Executable option paths and synchronized underlying bars",
+      "Details of deliberately unannounced high-risk trades"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:08:30",
+      "state": "BULLISH_OPEN_WITH_BEARISH_EXPECTATION",
+      "evidence": "The source looked for puts while price pressure remained upward."
+    },
+    {
+      "timestamp": "00:17:01",
+      "state": "UPSIDE_OMG_BREAK",
+      "evidence": "SPY approached and then closed above the upside boundary."
+    },
+    {
+      "timestamp": "00:40:42",
+      "state": "PERSISTENT_UPTREND",
+      "evidence": "Successive resistance levels broke and sellers did not sustain pressure."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:10:17",
+      "type": "ENTRY_CONFIRMATION",
+      "detail": "Replay divergence-only reversal entries versus waiting for a support break and failed reclaim."
+    },
+    {
+      "timestamp": "00:20:52",
+      "type": "PROTOCOL_ADHERENCE",
+      "detail": "Compare the actual pre-close OMG fill with the rules-based post-close entry."
+    },
+    {
+      "timestamp": "00:50:48",
+      "type": "INVALIDATION",
+      "detail": "Exit the puts after repeated resistance breaks versus hold because expiration remains."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250513-C01",
+    "DTS-20250513-C02",
+    "DTS-20250513-C03",
+    "DTS-20250513-C04"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 4,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Visual chart and order review",
+    "Reliable speaker attribution",
+    "Broker orders, symbols, fees, and account logs",
+    "Synchronized SPY and executable option paths",
+    "MFE/MAE and exact near-target excursion for the puts",
+    "Records for unannounced high-risk trades"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
