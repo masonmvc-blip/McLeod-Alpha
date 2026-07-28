@@ -1,0 +1,43 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41903,
+    "title": "Trading Room Video Recording – October 15, 2025",
+    "publication_date": "2025-10-15",
+    "source_url": "https://daytradespy.com/41903/trading-room-video-recording-october-15-2025/",
+    "duration_seconds": 4350,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 1565, "first_timestamp": "00:00:00", "last_timestamp": "01:12:06", "raw_transcript_persisted": false, "coverage_note": "Complete VTT for the 01:12:30 asset. Player remained muted and paused at 00:00; no audio played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 94, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:17:15", "classification": "PRESENTER_REPORTED_TRADE", "claim": "First same-day call scalp entered."},
+    {"timestamp": "00:45:38", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Carried 674 calls sold at 1.45."},
+    {"timestamp": "00:46:35", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Presenter reported 65.5% loss versus 4.21 average."},
+    {"timestamp": "01:03:11", "classification": "MODELED_TRADE", "claim": "No live OMG; hindsight model constructed."}
+  ],
+  "claims": [
+    {"id": "DTS-20251015-P41903-C01", "timestamp": "00:46:35", "label": "CARRIED_REPAIR_REALIZED_LOSS", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "October 17 674 calls were sold at 1.45 versus 4.21 average, a reported 65.5% loss.", "forward_outcomes": {"1m": "CLOSED_LOSS", "3m": "CLOSED_LOSS", "5m": "CLOSED_LOSS", "10m": "CLOSED_LOSS", "15m": "CLOSED_LOSS", "remainder_session": "CLOSED_LOSS"}, "disconfirming_evidence_required": "Broker ledger and quantities."},
+    {"id": "DTS-20251015-P41903-C02", "timestamp": "01:03:11", "label": "RETROSPECTIVE_OMG_NOT_FILL", "fact_classification": "MODELED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "October 24 669-call OMG was constructed after the move and not traded live.", "forward_outcomes": {"1m": "MODELED", "3m": "MODELED", "5m": "MODELED", "10m": "TARGET_REACHED", "15m": "CLOSED", "remainder_session": "MODELED"}, "disconfirming_evidence_required": "Broker order showing a live fill."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251015-P41903-T01", "type": "CALL_POSITION", "setup": "October 15 667 calls; zero-day scalp", "entry_time": "00:17:15", "entry_premium": 1.64, "exit_time": "00:19:59", "exit_premium": 1.80, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251015-P41903-T02", "type": "CALL_POSITION", "setup": "October 15 668 calls; zero-day scalp", "entry_time": "00:21:20", "entry_premium": 1.31, "exit_time": "00:23:30", "exit_premium": 1.50, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251015-P41903-T03", "type": "CALL_POSITION", "setup": "October 15 668 calls; zero-day scalp", "entry_time": "00:25:11", "entry_premium": 1.26, "exit_time": "00:33:57", "exit_premium": 1.60, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251015-P41903-T04", "type": "CALL_POSITION", "setup": "October 17 674 calls; execution-error repair from October 10", "entry_time": "PRIOR_SESSION", "entry_premium": 4.21, "exit_time": "00:45:38", "exit_premium": 1.45, "stop_or_invalidation": "Reported 65.5% loss"},
+    {"source_trade_id": "DTS-20251015-P41903-T05", "type": "CALL_POSITION", "setup": "October 15 670 calls; zero-day recovery scalp", "entry_time": "00:51:56", "entry_premium": 1.20, "exit_time": "01:02:39", "exit_premium": 1.25, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251015-P41903-T06", "type": "MODELED_OMG", "setup": "October 24 669 calls; missed formal OMG reconstructed after move", "entry_time": "10:00_MARKET_TIME", "entry_premium": 6.71, "exit_time": "10:07_MARKET_TIME", "exit_premium": 7.11, "stop_or_invalidation": "No presenter fill; retrospective model only"},
+    {"source_trade_id": "DTS-20251015-P41903-T07", "type": "MODELED_PICK", "setup": "October 15 670 calls; published pick", "entry_time": "EARLY_SESSION", "entry_premium": null, "exit_time": "01:03:07", "exit_premium": null, "stop_or_invalidation": "Reported worked; separate model details not restated"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 7, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Missed OMG was retrospective, not a live fill.", "Carried 674-call repair realized a large loss."], "unavailable_evidence": ["Full visual review", "Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees"]},
+  "market_state_timeline": [{"timestamp": "00:17:15", "state": "STRONG_UPSIDE_RECOVERY", "evidence": "Repeated same-day call scalps."}, {"timestamp": "00:45:38", "state": "CARRY_REPAIR_EXIT", "evidence": "674 calls sold after underlying rebound."}],
+  "counterfactuals": [{"timestamp": "00:45:38", "type": "EARLIER_REBOUND_LIQUIDATION", "detail": "Compare earlier partial or full liquidation with the eventual 65.5% loss."}, {"timestamp": "01:03:11", "type": "NO_RETROSPECTIVE_WIN_COUNT", "detail": "Exclude missed modeled OMG from executed statistics."}],
+  "instrumentation_gaps": ["Full visual review", "Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees"],
+  "hypothesis_references": ["DTS-20251015-P41903-C01", "DTS-20251015-P41903-C02"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
