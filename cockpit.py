@@ -7524,7 +7524,7 @@ HTML_DASHBOARD = """
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
         const INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS = 30000;
-        const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1000;
+        const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 250;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
         const DASHBOARD_POLL_LEASE_MS = 5000;
@@ -8147,7 +8147,10 @@ HTML_DASHBOARD = """
 
             statusRefreshInFlight = true;
             try {
-                const res = await fetch(forceRefresh ? '/api/status?fresh=1' : '/api/status', { cache: 'no-store' });
+                const statusUrl = forceRefresh || isDashboardVisible()
+                    ? '/api/status?fresh=1'
+                    : '/api/status';
+                const res = await fetch(statusUrl, { cache: 'no-store' });
                 const status = await res.json();
                 lastStatusSnapshot = status;
                 maybeHandleBellBroadcast(status);

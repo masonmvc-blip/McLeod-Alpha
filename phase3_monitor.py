@@ -105,6 +105,30 @@ def _append_decision_audit_event(payload):
         print(f"Decision audit write error: {exc}")
 
 
+def _publish_indicator_scores(last, regime, call_score, put_score, call_reasons, put_reasons, volume_trend):
+    """Publish the exact logged scores before slower entry handling continues."""
+    _append_decision_audit_event({
+        "ts_utc": datetime.now(UTC_TZ).isoformat(),
+        "ts_et": datetime.now(EASTERN_TZ).isoformat(),
+        "symbol": SYMBOL,
+        "event_type": "entry_evaluation",
+        "event_phase": "scores_published",
+        "candle_source": LAST_CANDLE_SOURCE,
+        "candle_time": str(last.name),
+        "spy_open": float(last.open),
+        "spy_high": float(last.high),
+        "spy_low": float(last.low),
+        "spy_close": float(last.close),
+        "spy_volume": float(last.volume),
+        "regime": regime,
+        "call_score": call_score,
+        "put_score": put_score,
+        "call_reasons": call_reasons or [],
+        "put_reasons": put_reasons or [],
+        "volume_trend": volume_trend,
+    })
+
+
 def _candidate_control_block_reason(feature_payload, option):
     """Evaluate opt-in research controls after selecting an executable contract."""
     try:
@@ -1462,6 +1486,15 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
     print(f"Put reasons: {put_reasons}")
 
     log_signal(float(last.close), regime, call_score, put_score)
+    _publish_indicator_scores(
+        last,
+        regime,
+        call_score,
+        put_score,
+        call_reasons,
+        put_reasons,
+        vol.get("trend"),
+    )
 
     candidate_direction = entry_decision["direction"]
     if candidate_direction in {"CALL", "PUT"}:

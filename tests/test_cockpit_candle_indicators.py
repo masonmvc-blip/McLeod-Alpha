@@ -395,6 +395,22 @@ def test_indicator_snapshot_includes_side_specific_momentum():
     assert '"put_momentum": momentum_snapshot("PUT")' in source
 
 
+def test_indicator_scores_publish_immediately_after_recent_log_score():
+    source = (cockpit.PROJECT_ROOT / "phase3_monitor.py").read_text(encoding="utf-8")
+
+    score_log_index = source.index("log_signal(float(last.close), regime, call_score, put_score)")
+    assert source.index("_publish_indicator_scores(", score_log_index) > score_log_index
+    assert '"event_phase": "scores_published"' in source
+
+
+def test_visible_dashboard_requests_fresh_indicator_status_quarter_secondly():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 250;" in source
+    assert "const statusUrl = forceRefresh || isDashboardVisible()" in source
+    assert "? '/api/status?fresh=1'" in source
+
+
 def test_indicator_performance_refreshes_when_closed_trade_signature_changes():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
