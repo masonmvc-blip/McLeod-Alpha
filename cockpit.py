@@ -8198,10 +8198,10 @@ HTML_DASHBOARD = """
                 let trendText = trend.replaceAll('_', ' ');
                 let trendToneClass = 'trend-tone-neutral';
                 if (trend === 'BEAR_TREND') {
-                    trendText = '🐻 BEAR TREND 🐻';
+                    trendText = '🐻 BEAR MARKET 🐻';
                     trendToneClass = 'trend-tone-bearish';
                 } else if (trend === 'BULL_TREND') {
-                    trendText = '🐂 BULL TREND 🐂';
+                    trendText = '🐂 BULL MARKET 🐂';
                     trendToneClass = 'trend-tone-bullish';
                 }
 
@@ -8446,7 +8446,11 @@ HTML_DASHBOARD = """
                 const lastEntryBlockReason = String(status.last_entry_block_reason || '').trim();
                 const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();
                 const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';
-                const candleTrendLabel = candleTrend.replaceAll('_', ' ');
+                const candleTrendLabel = candleTrend === 'BULL_TREND'
+                    ? 'BULL CANDLES'
+                    : candleTrend === 'BEAR_TREND'
+                        ? 'BEAR CANDLES'
+                        : candleTrend.replaceAll('_', ' ');
                 let candleTrendToneClass = 'trend-tone-neutral';
                 if (candleTrend === 'BEAR_TREND') {
                     candleTrendToneClass = 'trend-tone-bearish';

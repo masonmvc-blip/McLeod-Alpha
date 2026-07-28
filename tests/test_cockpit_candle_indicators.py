@@ -319,7 +319,10 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "const indicatorRegime = String(status.continuation_regime || 'UNKNOWN').toUpperCase();" in source
     assert "const trend = trendMap[trendRaw] || 'NEUTRAL';" in source
     assert "const candleTrend = trendMap[indicatorRegime] || 'NEUTRAL';" in source
-    assert "const candleTrendLabel = candleTrend.replaceAll('_', ' ');" in source
+    assert "trendText = '🐂 BULL MARKET 🐂';" in source
+    assert "trendText = '🐻 BEAR MARKET 🐻';" in source
+    assert "? 'BULL CANDLES'" in source
+    assert "? 'BEAR CANDLES'" in source
     assert "#trendStatus .trend-tone-neutral" in source
     assert "#trendStatus .trend-tone-bearish" in source
     assert "#trendStatus .trend-tone-bullish" in source
