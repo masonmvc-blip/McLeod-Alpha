@@ -3345,6 +3345,28 @@ def _indicator_performance_summary(trades, minimum_sample_size=10):
     )
 
 
+def _today_indicator_trade_outcomes(trades, trading_date):
+    outcomes = {}
+    for trade in _filter_synthetic_test_trade_rows(trades):
+        exit_at = _parse_iso_datetime(trade.get("exit_time"))
+        if exit_at is None or exit_at.astimezone(EASTERN_TZ).date().isoformat() != trading_date:
+            continue
+        try:
+            pnl = float(trade.get("option_pnl_dollars") if trade.get("option_pnl_dollars") is not None else trade.get("pnl") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        for label in _indicator_labels_from_trade(trade):
+            bucket = outcomes.setdefault(label, {"today_trades": 0, "today_wins": 0, "today_losses": 0, "today_breakeven": 0})
+            bucket["today_trades"] += 1
+            if pnl > 0:
+                bucket["today_wins"] += 1
+            elif pnl < 0:
+                bucket["today_losses"] += 1
+            else:
+                bucket["today_breakeven"] += 1
+    return outcomes
+
+
 def _broker_verified_trade_signatures(trading_date: str):
     _, payload = _load_latest_schwab_transaction_export()
     if not payload:
@@ -4732,7 +4754,17 @@ def api_indicator_performance():
                 WHERE exit_time IS NOT NULL AND TRIM(exit_time) <> ''
             """).fetchall()]
         closed_trades = _filter_synthetic_test_trade_rows(rows)
-        return jsonify({"minimum_sample_size": 10, "closed_trades": len(closed_trades), "indicators": _indicator_performance_summary(closed_trades)})
+        today = datetime.now(EASTERN_TZ).date().isoformat()
+        today_outcomes = _today_indicator_trade_outcomes(closed_trades, today)
+        indicators = _indicator_performance_summary(closed_trades)
+        for indicator in indicators:
+            indicator.update(today_outcomes.get(indicator["indicator"], {
+                "today_trades": 0,
+                "today_wins": 0,
+                "today_losses": 0,
+                "today_breakeven": 0,
+            }))
+        return jsonify({"minimum_sample_size": 10, "closed_trades": len(closed_trades), "trading_date": today, "indicators": indicators})
     except Exception as exc:
         return jsonify({"minimum_sample_size": 10, "closed_trades": 0, "indicators": [], "error": str(exc)})
 
@@ -6302,7 +6334,7 @@ HTML_DASHBOARD = """
         .indicator-performance-columns,
         .indicator-performance-row {
             display: grid;
-            grid-template-columns: minmax(145px, 1.5fr) minmax(145px, 1fr) minmax(92px, 0.7fr) minmax(150px, 1.1fr);
+            grid-template-columns: minmax(145px, 1.4fr) minmax(110px, 0.8fr) minmax(145px, 1fr) minmax(92px, 0.7fr) minmax(150px, 1.1fr);
             align-items: center;
             gap: 10px;
         }
@@ -7491,6 +7523,7 @@ HTML_DASHBOARD = """
             <div class="indicator-performance-list" id="indicatorPerformanceContainer">
                 <div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
+                    <span>Today's Trades</span>
                     <span>W / L (Win %)</span>
                     <span>Avg P&amp;L</span>
                     <span>Guidance</span>
@@ -8198,7 +8231,7 @@ HTML_DASHBOARD = """
                     'NEUTRAL': 'NEUTRAL',
                 };
                 const trend = trendMap[trendRaw] || 'NEUTRAL';
-                let trendText = trend.replaceAll('_', ' ');
+                let trendText = trend === 'NEUTRAL' ? 'Neutral' : trend.replaceAll('_', ' ');
                 let trendToneClass = 'trend-tone-neutral';
                 if (trend === 'BEAR_TREND') {
                     trendText = '🐻 Bear Market 🐻';
@@ -8902,6 +8935,11 @@ HTML_DASHBOARD = """
                         ? word.replace(/^ema/i, 'EMA')
                         : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                     .join(' ');
+                const todayIndicatorResult = (row) => {
+                    const trades = Number(row.today_trades || 0);
+                    if (!trades) return '--';
+                    return `${trades} ${trades === 1 ? 'trade' : 'trades'} · ${Number(row.today_wins || 0)}W / ${Number(row.today_losses || 0)}L`;
+                };
 
                 if (!rows.length) {
                     container.innerHTML = `${columns}<div style="text-align: center; color: #999; padding: 12px;">No closed trades with recorded entry indicators yet.</div>`;
@@ -8913,6 +8951,7 @@ HTML_DASHBOARD = """
                     const wins = Number(row.wins || 0);
                     const losses = Number(row.losses || 0);
                     const winRate = Number(row.win_rate_pct || 0);
+                    const todayTrades = todayIndicatorResult(row);
                     const guidance = String(row.guidance || 'Keep monitoring');
                     const tone = guidance === 'Candidate to increase weight'
                         ? 'candidate'
@@ -8920,6 +8959,7 @@ HTML_DASHBOARD = """
                     const averageTone = averageReturn > 0 ? 'positive' : (averageReturn < 0 ? 'negative' : '');
                     return `<article class="indicator-performance-row">
                         <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
+                        <div class="indicator-performance-stats">${escapeText(todayTrades)}</div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)</div>
                         <div class="indicator-performance-stats indicator-performance-average ${averageTone}">${money(averageReturn)}</div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>

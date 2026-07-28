@@ -230,6 +230,47 @@ def test_indicator_performance_summary_tracks_wins_losses_and_guidance():
     }]
 
 
+def test_today_indicator_trade_outcomes_track_used_indicators_wins_and_losses():
+    trades = [
+        {
+            "exit_time": "2026-07-28T10:05:00-04:00",
+            "pnl": 20.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260728C00600000",
+            "feature_payload": json.dumps({"entry_reasons": ["price_above_vwap"]}),
+        },
+        {
+            "exit_time": "2026-07-28T10:10:00-04:00",
+            "pnl": -10.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260728C00600000",
+            "feature_payload": json.dumps({"entry_reasons": ["price_above_vwap", "macd_improving"]}),
+        },
+        {
+            "exit_time": "2026-07-27T10:10:00-04:00",
+            "pnl": 50.0,
+            "direction": "CALL",
+            "option_symbol": "SPY  260727C00600000",
+            "feature_payload": json.dumps({"entry_reasons": ["price_above_vwap"]}),
+        },
+    ]
+
+    outcomes = cockpit._today_indicator_trade_outcomes(trades, "2026-07-28")
+
+    assert outcomes["price_above_vwap"] == {
+        "today_trades": 2,
+        "today_wins": 1,
+        "today_losses": 1,
+        "today_breakeven": 0,
+    }
+    assert outcomes["macd_improving"] == {
+        "today_trades": 1,
+        "today_wins": 0,
+        "today_losses": 1,
+        "today_breakeven": 0,
+    }
+
+
 def test_indicator_performance_uses_nested_diagnostic_checklist_reasons():
     trades = [{
         "exit_time": "2026-07-21T10:05:00-04:00",

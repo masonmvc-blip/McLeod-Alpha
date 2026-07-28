@@ -424,6 +424,14 @@ def test_indicator_performance_renders_ema_as_an_acronym():
     assert "word.replace(/^ema/i, 'EMA')" in source
 
 
+def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "Today's Trades" in source
+    assert "todayIndicatorResult" in source
+    assert "trend === 'NEUTRAL' ? 'Neutral'" in source
+
+
 def test_cash_register_plays_when_a_trade_opens():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
