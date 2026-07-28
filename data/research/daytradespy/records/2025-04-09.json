@@ -1,0 +1,143 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39400,
+    "title": "Trading Room Video Recording - April 9, 2025",
+    "publication_date": "2025-04-09",
+    "source_url": "https://daytradespy.com/39400/trading-room-video-recording-april-9-2025/",
+    "duration_seconds": 4611,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT",
+      "completeness_pct": 97,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 527,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:14:27",
+      "raw_transcript_persisted": false,
+      "coverage_note": "A full-position sweep and terminal scroll of the authenticated Vimeo virtualized transcript list reached its final browser-visible cue at 01:14:27, 144 seconds before the 01:16:51 asset duration."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 97,
+    "trade_details_captured_pct": 65,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_PARTIAL_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:11:02",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source cautioned against trading until described option volatility came down."
+    },
+    {
+      "timestamp": "00:15:03",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated that an OMG close had not occurred and that the setup would be reconsidered only upon a close."
+    },
+    {
+      "timestamp": "00:18:31",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source explicitly called a proposed options purchase a simulated trade, not a real trade."
+    },
+    {
+      "timestamp": "00:22:03",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source stated it entered two 501 calls at a captioned 18.27 value for a $200-trade experiment."
+    },
+    {
+      "timestamp": "00:26:29",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source described a 78% Fibonacci retracement and a back-test of the OMG line while discussing a potential hold/bounce."
+    },
+    {
+      "timestamp": "00:31:51",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated the 501-call target had been hit but then said the simulated trade had not filled as expected."
+    },
+    {
+      "timestamp": "00:35:29",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source later stated a captioned 18.99 fill and described it as a slightly better fill, without broker or order evidence."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250409-C01",
+      "timestamp": "00:11:02",
+      "label": "HIGH_VOLATILITY_NO_TRADE_GATE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source advised against trading until described option volatility declined and linked high volatility to adverse premium and spread conditions.",
+      "forward_outcomes": {"1m":"UNAVAILABLE_EVIDENCE","3m":"UNAVAILABLE_EVIDENCE","5m":"UNAVAILABLE_EVIDENCE","10m":"UNAVAILABLE_EVIDENCE","15m":"UNAVAILABLE_EVIDENCE","remainder_session":"UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Timestamped implied-volatility, spread, and mark data; deterministic trade labels; fills, costs, and a cost-adjusted baseline replay."
+    },
+    {
+      "id": "DTS-20250409-C02",
+      "timestamp": "00:15:03",
+      "label": "OMG_CLOSE_AND_RETEST_REQUIREMENT",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source required an OMG close, then discussed retest and hold behavior around the OMG line and a 78% Fibonacci retracement.",
+      "forward_outcomes": {"1m":"UNAVAILABLE_EVIDENCE","3m":"UNAVAILABLE_EVIDENCE","5m":"UNAVAILABLE_EVIDENCE","10m":"UNAVAILABLE_EVIDENCE","15m":"UNAVAILABLE_EVIDENCE","remainder_session":"UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Deterministic OMG-close, retest, Fibonacci, and support labels; timestamped bars; executable marks; fills; and out-of-sample replay."
+    },
+    {
+      "id": "DTS-20250409-C03",
+      "timestamp": "00:22:03",
+      "label": "SIMULATED_501_CALL_TARGET_LIFECYCLE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source described a simulated two-contract 501-call experiment at a captioned 18.27 value, later cited target/fill language around 18.93 and 18.99.",
+      "forward_outcomes": {"1m":"UNAVAILABLE_EVIDENCE","3m":"UNAVAILABLE_EVIDENCE","5m":"UNAVAILABLE_EVIDENCE","10m":"UNAVAILABLE_EVIDENCE","15m":"UNAVAILABLE_EVIDENCE","remainder_session":"UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Clear simulation-versus-live designation, contract and order identity, broker fills, executable marks, fees, MFE/MAE, and canonical ledger mapping."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250409-T01",
+      "type": "SIMULATED_CALL_EXPERIMENT",
+      "setup": "Two 501 calls discussed as a $200-trade/OMG experiment after a stated break and retest",
+      "entry_time": "00:22:03 source statement",
+      "entry_premium": "18.27 captioned source value",
+      "exit_time": "00:35:29 source statement",
+      "exit_premium": "18.99 captioned source value; source also discussed an 18.93 target/fill",
+      "stop_or_invalidation": "Source described waiting for close, retest, and hold; no executable stop reported"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 1,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The source explicitly characterized the options purchase as simulated rather than real.",
+      "Captioned 18.27, 18.93, and 18.99 values have no order or broker-fill evidence.",
+      "The transcript ends 144 seconds before asset duration, so no later qualification can be ruled out."
+    ],
+    "unavailable_evidence": [
+      "No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."
+    ]
+  },
+  "market_state_timeline": [{"timestamp":"UNKNOWN","market_direction":"UNKNOWN","trend_strength":"UNKNOWN","volatility":"SOURCE_DESCRIBED_HIGH","vwap_state":"UNKNOWN","room_to_target":"UNKNOWN"}],
+  "counterfactuals": [{"timestamp":"UNKNOWN","type":"UNAVAILABLE_EVIDENCE","detail":"The effect of a high-volatility gate, OMG close/retest/hold criteria, and the simulated target lifecycle cannot be assessed without synchronized bars, executable marks, fills, and baseline replay."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence":"LOW","evidence_count":3,"current_lifecycle_stage":"OBSERVATION_ONLY","replay_improvement":"UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Visual chart and order review","Speaker attribution","Deterministic OMG, pivot, support, resistance, Fibonacci, and moving-average labels","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

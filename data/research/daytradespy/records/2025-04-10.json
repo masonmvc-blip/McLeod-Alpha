@@ -1,0 +1,64 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39419,
+    "title": "Trading Room Video Recording - April 10, 2025",
+    "publication_date": "2025-04-10",
+    "source_url": "https://daytradespy.com/39419/trading-room-video-recording-april-10-2025/",
+    "duration_seconds": 4611,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "DUPLICATE_SOURCE_ASSET",
+      "completeness_pct": 0,
+      "path": "",
+      "timestamps_preserved": false,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The April 10 date-labeled page embeds Vimeo asset 1074075369 with duration 01:16:51, the same asset and duration embedded by the April 9 page (post 39400). April 9 transcript evidence was not copied or treated as April 10-specific evidence."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 0,
+    "trade_details_captured_pct": 0,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "DUPLICATE_SOURCE_ASSET_NO_DATE_SPECIFIC_EVIDENCE",
+    "tier": "E"
+  },
+  "timeline": [],
+  "claims": [],
+  "reported_trades": [],
+  "ledger_reconciliation": {
+    "source_reported_trades": 0,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The April 10 date-labeled page embeds the same Vimeo asset identifier and duration as the April 9 page.",
+      "No April 10-specific transcript, trade, or outcome evidence can be distinguished from the April 9 source asset."
+    ],
+    "unavailable_evidence": [
+      "Date-specific captions, visual review, broker fills, underlying bars, option bid/ask/mark data, option excursion data, and canonical ledger mapping are unavailable."
+    ]
+  },
+  "market_state_timeline": [{"timestamp":"UNKNOWN","market_direction":"UNKNOWN","trend_strength":"UNKNOWN","volatility":"UNKNOWN","vwap_state":"UNKNOWN","room_to_target":"UNKNOWN"}],
+  "counterfactuals": [{"timestamp":"UNKNOWN","type":"DUPLICATE_SOURCE_ASSET","detail":"No April 10 setup or outcome can be evaluated because the source page embeds the April 9 asset and no date-specific evidence is available."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence":"NONE","evidence_count":0,"current_lifecycle_stage":"OBSERVATION_ONLY","replay_improvement":"UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Correct April 10 source asset or independently verified date-specific recording","Visual chart and order review","Speaker attribution","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

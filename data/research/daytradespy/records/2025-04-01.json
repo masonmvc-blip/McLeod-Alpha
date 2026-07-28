@@ -1,0 +1,129 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39151,
+    "title": "Trading Room Video Recording - April 1, 2025",
+    "publication_date": "2025-04-01",
+    "source_url": "https://daytradespy.com/39151/trading-room-video-recording-april-1-2025/",
+    "duration_seconds": 4190,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 439,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:09:50",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The authenticated Vimeo transcript was collected by incrementally scrolling its virtualized parent container. The final player segment was uncued or unavailable."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 99,
+    "trade_details_captured_pct": 65,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:09:05",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source described an eight-contract 556-put position while correcting an initial call/put caption ambiguity."
+    },
+    {
+      "timestamp": "00:15:07",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source described another eight 555 puts at 5.80."
+    },
+    {
+      "timestamp": "00:17:51",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source described seven April 4 557 calls at 9.50."
+    },
+    {
+      "timestamp": "00:27:44",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated a 7.18 sell target and linked it to an OMG-labelled target discussion."
+    },
+    {
+      "timestamp": "00:29:13",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source discussed pivot and retracement context around a stated 559 bounce area."
+    },
+    {
+      "timestamp": "01:08:26",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated an initial 7.40 target but reserved later discretion over the exit."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250401-C01",
+      "timestamp": "00:27:44",
+      "label": "OMG_TARGET_GATE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source associated a 7.18 sell target with an OMG-labelled target discussion.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Deterministic OMG labels, timestamped bars, executable option marks, and broker fills."
+    },
+    {
+      "id": "DTS-20250401-C02",
+      "timestamp": "00:29:13",
+      "label": "PIVOT_RETRACEMENT_TARGET_CONTEXT",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source used a pivot, a 50% retracement, and a stated 559 bounce area to frame a target.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Visual review, deterministic level reconstruction, underlying bars, and executable option data."
+    },
+    {
+      "id": "DTS-20250401-C03",
+      "timestamp": "01:08:26",
+      "label": "DISCRETIONARY_TARGET_REVISION",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source described an initial 7.40 target while reserving discretion to determine the eventual exit later.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNAVAILABLE_EVIDENCE"},
+      "disconfirming_evidence_required": "Time-stamped order history, actual fills, option marks, and a predeclared target-management policy."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250401-T01", "type": "PUT_POSITION", "setup": "Eight 556 puts; caption initially says call then corrects to puts", "entry_time": "UNKNOWN", "entry_premium": "UNKNOWN", "exit_time": "NOT_REPORTED", "exit_premium": "UNKNOWN", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250401-T02", "type": "PUT_POSITION", "setup": "Eight 555 puts", "entry_time": "UNKNOWN", "entry_premium": "5.80", "exit_time": "NOT_REPORTED", "exit_premium": "UNKNOWN", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250401-T03", "type": "CALL_POSITION", "setup": "Seven April 4 557 calls", "entry_time": "UNKNOWN", "entry_premium": "9.50", "exit_time": "NOT_REPORTED", "exit_premium": "7.18 then 7.40 targets discussed", "stop_or_invalidation": "UNKNOWN"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The first option discussion is captioned first as 556 calls and then corrected to puts.",
+      "The 7.18 and 7.40 values are targets or intended management, not confirmed sales.",
+      "The source describes later discretion over exit, so no stated target establishes realized performance."
+    ],
+    "unavailable_evidence": ["No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."]
+  },
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "The impact of the stated OMG, pivot, retracement, and target-management ideas cannot be assessed without synchronized bars, executable option marks, fills, and baseline replay."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "OBSERVATION_ONLY", "replay_improvement": "UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Visual chart and order review", "Speaker attribution", "Deterministic OMG, pivot, retracement, and moving-average labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option bid/ask/mark and excursion data", "Broker fills, fees, and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

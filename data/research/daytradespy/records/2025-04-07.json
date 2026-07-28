@@ -1,0 +1,203 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39299,
+    "title": "Trading Room Video Recording - April 7, 2025",
+    "publication_date": "2025-04-07",
+    "source_url": "https://daytradespy.com/39299/trading-room-video-recording-april-7-2025/",
+    "duration_seconds": 4274,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 369,
+      "first_timestamp": "00:00:01",
+      "last_timestamp": "01:10:45",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The authenticated Vimeo transcript was collected through its final browser-visible cue by incrementally scrolling the virtualized parent container; the final cue is 29 seconds before the 01:11:14 asset duration."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 99,
+    "trade_details_captured_pct": 55,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:06:34",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source identified an approximately 487-486 support area and a nearby pivot while discussing a broad market decline."
+    },
+    {
+      "timestamp": "00:08:34",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source stated they were sitting in 546 calls on a stated $200 trade; contract expiry, size, entry, and fill are not identified."
+    },
+    {
+      "timestamp": "00:17:55",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source rejected an OMG trade while describing volatility as exceptionally high."
+    },
+    {
+      "timestamp": "00:22:15",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source stated they were closing puts taken on Friday without identifying the contract, entry, exit, or realized result."
+    },
+    {
+      "timestamp": "00:35:37",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source retrospectively described a setup that tested a one-minute 50 moving average, fell back, and then moved through it."
+    },
+    {
+      "timestamp": "00:47:23",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source described a pennant using trend lines and treated a solid break as the relevant entry condition."
+    },
+    {
+      "timestamp": "00:49:08",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source said the directional call was right but execution was sloppy after missing the discussed upside move."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250407-C01",
+      "timestamp": "00:17:55",
+      "label": "HIGH_VOLATILITY_OMG_NO_TRADE_GATE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source declined an OMG trade when it described the options environment as exceptionally high volatility.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic OMG labels, timestamped implied-volatility and option-spread data, executable marks, fills, and a cost-adjusted baseline replay."
+    },
+    {
+      "id": "DTS-20250407-C02",
+      "timestamp": "00:47:23",
+      "label": "PENNANT_SOLID_BREAK_ENTRY",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source treated a solid break from a trend-line-defined pennant as the relevant entry condition, while later reporting missed execution.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic pennant and break labels, timestamped underlying bars, option bid/ask/mark data, fills, costs, and out-of-sample replay."
+    },
+    {
+      "id": "DTS-20250407-C03",
+      "timestamp": "00:35:37",
+      "label": "MOVING_AVERAGE_TEST_THROUGH_SETUP",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source retrospectively identified a one-minute 50-moving-average test, pullback, and subsequent move through the level as a setup.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Timestamped bars, a specified moving-average calculation, option marks, fills, MFE/MAE, and a baseline replay."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250407-T01",
+      "type": "CALL_POSITION",
+      "setup": "546 calls described as a stated $200 trade",
+      "entry_time": "UNKNOWN",
+      "entry_premium": "UNKNOWN",
+      "exit_time": "NOT_REPORTED",
+      "exit_premium": "UNKNOWN",
+      "stop_or_invalidation": "UNKNOWN"
+    },
+    {
+      "source_trade_id": "DTS-20250407-T02",
+      "type": "PUT_POSITION",
+      "setup": "Puts reportedly taken on Friday and closed during the session",
+      "entry_time": "UNKNOWN",
+      "entry_premium": "UNKNOWN",
+      "exit_time": "00:22:15 source statement only",
+      "exit_premium": "UNKNOWN",
+      "stop_or_invalidation": "UNKNOWN"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 2,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The 546-call statement lacks expiry, size, entry, exit, and fill identity.",
+      "The Friday-put closure lacks contract identity and a realized result.",
+      "The source described a missed upside execution; it is not evidence of a completed source trade.",
+      "Participant-reported results were not merged with presenter execution claims."
+    ],
+    "unavailable_evidence": [
+      "No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "SOURCE_DESCRIBED_DOWNSIDE_EARLY_THEN_INTRADAY_RECOVERY",
+      "trend_strength": "UNKNOWN",
+      "volatility": "SOURCE_DESCRIBED_HIGH",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN"
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "UNAVAILABLE_EVIDENCE",
+      "detail": "The effectiveness of a high-volatility no-trade gate, support/pivot labels, moving-average transitions, and pennant breaks cannot be assessed without synchronized bars, option marks, fills, and baseline replay."
+    }
+  ],
+  "hypothesis_references": [],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "OBSERVATION_ONLY",
+    "replay_improvement": "UNAVAILABLE_EVIDENCE"
+  },
+  "instrumentation_gaps": [
+    "Visual chart and order review",
+    "Speaker attribution",
+    "Deterministic OMG, pivot, support, resistance, pennant, Fibonacci, and moving-average labels",
+    "Contract symbols and order identifiers",
+    "Timestamped underlying bars",
+    "Option bid/ask/mark and excursion data",
+    "Broker fills, fees, and canonical ledger mapping"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

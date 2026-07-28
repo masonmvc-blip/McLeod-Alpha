@@ -1,0 +1,198 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39375,
+    "title": "Trading Room Video Recording - April 8, 2025",
+    "publication_date": "2025-04-08",
+    "source_url": "https://daytradespy.com/39375/trading-room-video-recording-april-8-2025/",
+    "duration_seconds": 4393,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME",
+      "cue_count": 486,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:13:02",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The authenticated Vimeo transcript was collected by sweeping the virtualized parent container through its terminal browser-visible cue, which is 11 seconds before the 01:13:13 asset duration."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 99,
+    "trade_details_captured_pct": 70,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:05:23",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source identified a 522-area high, 523-area resistance, a 504.67 pivot, and 529.87 first resistance while discussing a positive session."
+    },
+    {
+      "timestamp": "00:06:51",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source stated it was considering exiting 546 calls before Friday expiry; entry, contract lineage, and actual exit are not identified."
+    },
+    {
+      "timestamp": "00:20:52",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated there was no OMG trade while price remained inside the discussed lines."
+    },
+    {
+      "timestamp": "00:38:20",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source identified April 11 525 calls for an OMG trade and stated a 9.12 captioned entry value."
+    },
+    {
+      "timestamp": "00:38:55",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Source stated a 9.67 target and an estimated 524.27 underlying target for the April 11 525-call setup."
+    },
+    {
+      "timestamp": "00:43:53",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Source reported selling the OMG call position at a captioned 10.05 after stating the 9.67 target."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250408-C01",
+      "timestamp": "00:20:52",
+      "label": "OMG_INSIDE_LINES_NO_TRADE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source withheld an OMG trade while price was described as inside the relevant lines.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic OMG-line and close labels, timestamped bars, executable option marks, fills, costs, and baseline replay."
+    },
+    {
+      "id": "DTS-20250408-C02",
+      "timestamp": "00:38:20",
+      "label": "OMG_CALL_BREAKOUT_WITH_ROOM",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source reported an April 11 525-call OMG trade after an upside break and cited room to the next pivot/resistance level.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Contract symbol and size, broker order/fill lineage, deterministic break and room labels, executable marks, fees, and canonical ledger mapping."
+    },
+    {
+      "id": "DTS-20250408-C03",
+      "timestamp": "00:43:53",
+      "label": "OMG_TARGET_LIFECYCLE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The source stated a 9.67 target and later reported a sale at a captioned 10.05 for the OMG call position.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Broker orders and fills, exact contract quantity, executable option marks, fees, MFE/MAE, and canonical ledger mapping."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250408-T01",
+      "type": "CALL_POSITION",
+      "setup": "546 calls held near Friday expiry",
+      "entry_time": "UNKNOWN",
+      "entry_premium": "UNKNOWN",
+      "exit_time": "NOT_REPORTED",
+      "exit_premium": "UNKNOWN",
+      "stop_or_invalidation": "Source discussed avoiding expiry-to-zero risk"
+    },
+    {
+      "source_trade_id": "DTS-20250408-T02",
+      "type": "OMG_CALL_TRADE",
+      "setup": "April 11 525 calls after stated OMG upside break with room to pivot/resistance",
+      "entry_time": "00:38:20 source statement",
+      "entry_premium": "9.12 captioned source value",
+      "exit_time": "00:43:53 source statement",
+      "exit_premium": "10.05 captioned source value; target stated as 9.67",
+      "stop_or_invalidation": "UNKNOWN"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 2,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The 546-call position lacks expiry, size, entry, exit, and fill identity.",
+      "The 9.12 and 10.05 values are auto-captioned source values without broker verification.",
+      "The stated 9.67 target is distinct from the later source-reported sale value.",
+      "Participant-reported results were not merged with presenter execution claims."
+    ],
+    "unavailable_evidence": [
+      "No canonical ledger mapping, broker fills, underlying bars, option bid/ask/mark data, or option excursion data was available."
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "SOURCE_DESCRIBED_POSITIVE_SESSION",
+      "trend_strength": "UNKNOWN",
+      "volatility": "SOURCE_DESCRIBED_HIGH",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "SOURCE_DESCRIBED_ROOM_TO_529.87_PIVOT_RESISTANCE"
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "UNAVAILABLE_EVIDENCE",
+      "detail": "The effectiveness of OMG inside-line filtering, upside-break entries, structural room, and target management cannot be assessed without synchronized bars, executable marks, fills, and a baseline replay."
+    }
+  ],
+  "hypothesis_references": [],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "OBSERVATION_ONLY",
+    "replay_improvement": "UNAVAILABLE_EVIDENCE"
+  },
+  "instrumentation_gaps": [
+    "Visual chart and order review",
+    "Speaker attribution",
+    "Deterministic OMG, pivot, support, resistance, Fibonacci, and moving-average labels",
+    "Contract symbols and order identifiers",
+    "Timestamped underlying bars",
+    "Option bid/ask/mark and excursion data",
+    "Broker fills, fees, and canonical ledger mapping"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
