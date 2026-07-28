@@ -1,0 +1,44 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42218,
+    "title": "Trading Room Video Recording – November 7, 2025", "publication_date": "2025-11-07",
+    "post_publication_date": "2025-11-07",
+    "source_url": "https://daytradespy.com/42218/trading-room-video-recording-november-7-2025/",
+    "duration_seconds": 4756, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 535, "first_timestamp": "00:00", "last_timestamp": "01:18:14", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:19:16 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 92, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:15:12", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal November 14 667-put OMG filled at 7.50 after 6.98 entry and 7.40 target."},
+    {"timestamp": "00:36:03", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 14 667-call scalp completed 6.58 to 6.85."},
+    {"timestamp": "00:48:36", "classification": "PRESENTER_REPORTED_TRADE", "claim": "665-call scalp completed 7.52 to 7.70 in 27 seconds."},
+    {"timestamp": "01:04:11", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Published 667-put pick separately modeled 6.46 to 6.85."},
+    {"timestamp": "01:16:54", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Late November 14 666-put scalp completed 6.90 to 7.02."}
+  ],
+  "claims": [
+    {"id": "DTS-20251107-P42218-C01", "timestamp": "00:15:12", "label": "FORMAL_PUT_OMG_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal November 14 667-put OMG entered at 6.98 and reported a 7.50 fill beyond the 7.40 target.", "forward_outcomes": {"1m": "COMPLETED", "3m": "COMPLETED", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable quote path."},
+    {"id": "DTS-20251107-P42218-C02", "timestamp": "01:04:11", "label": "PUBLISHED_PICK_SEPARATE_LINEAGE", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Published 667-put pick used a modeled 6.46 average and 6.85 fill, separate from the live formal OMG.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "COMPLETED", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Original alert and broker ledger."},
+    {"id": "DTS-20251107-P42218-C03", "timestamp": "01:16:54", "label": "MULTIPLE_SCALPS_COMPLETED_IN_HIGH_VOLATILITY", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Multiple call and put scalps completed during a high-volatility daily-50-EMA test.", "forward_outcomes": {"1m": "MIXED", "3m": "MIXED", "5m": "MIXED", "10m": "MIXED", "15m": "MIXED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option paths."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251107-P42218-T01", "type": "OMG", "setup": "November 14 667 puts; formal OMG", "entry_time": "00:14:00", "entry_premium": 6.98, "exit_time": "00:15:12", "exit_premium": 7.50, "stop_or_invalidation": "7.40 target; completed"},
+    {"source_trade_id": "DTS-20251107-P42218-T02", "type": "CALL_POSITION", "setup": "November 14 667 calls; rebound scalp", "entry_time": "00:32:01", "entry_premium": 6.58, "exit_time": "00:36:03", "exit_premium": 6.85, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251107-P42218-T03", "type": "PUT_POSITION", "setup": "666 puts; entry unavailable", "entry_time": "UNAVAILABLE_EVIDENCE", "entry_premium": null, "exit_time": "00:45:12", "exit_premium": 7.45, "stop_or_invalidation": "Partial lineage only"},
+    {"source_trade_id": "DTS-20251107-P42218-T04", "type": "CALL_POSITION", "setup": "665 calls; rapid rebound scalp", "entry_time": "00:48:09", "entry_premium": 7.52, "exit_time": "00:48:36", "exit_premium": 7.70, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251107-P42218-T05", "type": "CALL_POSITION", "setup": "November 14 667 calls; rebound scalp", "entry_time": "00:57:57", "entry_premium": 6.63, "exit_time": "00:59:05", "exit_premium": 6.85, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251107-P42218-T06", "type": "CALL_POSITION", "setup": "November 14 667 calls; managed partial exits", "entry_time": "01:00:33", "entry_premium": 6.90, "exit_time": "01:05:08", "exit_premium": 6.92, "stop_or_invalidation": "Partial fill near 6.91; remainder 6.92"},
+    {"source_trade_id": "DTS-20251107-P42218-T07", "type": "PUBLISHED_PICK", "setup": "November 14 667 puts; published-pick modeled average", "entry_time": "00:09:31", "entry_premium": 6.46, "exit_time": "00:09:33", "exit_premium": 6.85, "stop_or_invalidation": "Separate from live OMG lineage"},
+    {"source_trade_id": "DTS-20251107-P42218-T08", "type": "PUT_POSITION", "setup": "November 14 666 puts; late scalp", "entry_time": "01:12:44", "entry_premium": 6.90, "exit_time": "01:16:54", "exit_premium": 7.02, "stop_or_invalidation": "Completed"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 8, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Formal OMG and published pick are separate lineages despite overlapping contract.", "One 666-put exit lacks a recoverable entry.", "Partial call fills should not be collapsed into an idealized single exit."], "unavailable_evidence": ["Broker ledger, orders, and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:14:00", "state": "INSTITUTIONAL_SELLING_DAILY_50_EMA_TEST", "evidence": "Formal put OMG completed during rapid decline."}, {"timestamp": "00:32:01", "state": "HIGH_VOLATILITY_REBOUND", "evidence": "Repeated short call scalps followed large bounces."}],
+  "counterfactuals": [{"timestamp": "01:04:11", "type": "LINEAGE_SEPARATION", "detail": "Do not combine published-pick modeling with the live formal OMG."}, {"timestamp": "01:16:54", "type": "EXECUTABILITY", "detail": "Reported rapid fills require bid/ask replay before EV use."}],
+  "instrumentation_gaps": ["Broker ledger, orders, and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251107-P42218-C01", "DTS-20251107-P42218-C02", "DTS-20251107-P42218-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
