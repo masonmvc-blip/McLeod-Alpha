@@ -13,18 +13,18 @@ Audit date: 2026-07-28.
 - The 2025 archive registry contains 230 posts representing 208 publication
   dates; 21 dates contain duplicate, delayed, or reposted entries that require
   post-level resolution.
-- `docs/research` contains 93 dated 2025 daily-report filenames.
-- `data/research/daytradespy/records` contains 37 dated machine records.
-- The registry contains 78 post-level reviews with evidence metadata: 70 Tier C
-  transcript-based reviews and 8 Tier E access/content gaps. Another 152
+- `docs/research` contains 94 dated 2025 daily-report filenames.
+- `data/research/daytradespy/records` contains 38 dated machine records.
+- The registry contains 79 post-level reviews with evidence metadata: 73 Tier C
+  transcript-based reviews and 6 Tier E access/content gaps. Another 151
   archive posts remain pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
-- Reports dated May 6, May 7, and May 22-23 are
-  evidence-gap placeholders, not substantive recording reviews.
-- May 8, May 9, and May 12-20 were upgraded from apparent caption gaps to
-  substantive Tier C reports after their complete authorized Vimeo transcripts
-  were recovered from the player.
+- Reports dated May 6 and May 7 are evidence-gap placeholders, not substantive
+  recording reviews.
+- May 8, May 9, May 12-23, and May 27 were upgraded from apparent caption gaps
+  or pending status to substantive Tier C reports after their complete
+  authorized Vimeo transcripts were recovered from the player.
 - No 2025 recording is Tier A because full visual review and independent
   underlying, option-path, broker-fill, and ledger evidence are unavailable.
 
@@ -42,12 +42,12 @@ Audit date: 2026-07-28.
 ## Completion Order
 
 1. Upgrade May 8-May 23 caption-gap placeholders by reading the complete
-   authorized transcript from the Vimeo player. May 8-20 are complete at Tier
-   C; May 22 is next.
-2. Recheck May 6 and May 7. If Vimeo still returns private-video denial, retain
-   the Tier E access record rather than fabricating a review.
+   authorized transcript from the Vimeo player. All available May 8-23
+   recordings are complete at Tier C.
+2. May 6 and May 7 retain Tier E access records after Vimeo returned
+   private-video denial; do not fabricate reviews.
 3. Continue missing substantive daily reports chronologically from the May
-   27 recording (post `40391`) through year-end.
+   28 recording (post `40394`) through year-end.
 4. Resolve duplicate/reposted posts by post ID so one dated filename does not
    silently represent two different assets.
 5. Backfill machine records and improve weaker January-March reports only after
@@ -88,11 +88,11 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording date: May 22, 2025
-- Post ID: `40351`
+- Recording date: May 28, 2025
+- Post ID: `40394`
 - Source:
-  `https://daytradespy.com/40351/trading-room-video-recording-may-22-2025/`
-- Current status: Tier E placeholder pending complete signed-caption recovery
+  `https://daytradespy.com/40394/trading-room-video-recording-may-28-2025/`
+- Current status: registry pending
 
 ## Governance
 

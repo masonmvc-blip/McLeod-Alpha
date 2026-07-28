@@ -1,1 +1,266 @@
-{"schema_version":"daytradespy-record.v2","recording":{"analysis_protocol_version":"2026-07-22.1","post_id":40353,"title":"Trading Room Video Recording - May 23, 2025","publication_date":"2025-05-23","source_url":"https://daytradespy.com/40353/trading-room-video-recording-may-23-2025/","duration_seconds":null,"reviewed_at":"2026-07-28T00:00:00+00:00","reviewer_version":"recording-first-source-access-review.v1","transcript":{"availability":"UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS","completeness_pct":0,"path":"","timestamps_preserved":false,"speaker_attribution_available":false},"transcript_probe":{"source":"AUTHORIZED_DAYTRADESPY_MEMBER_AND_VIMEO_SESSION","cue_count":4,"first_timestamp":"PARTIAL","last_timestamp":"PARTIAL","raw_transcript_persisted":false,"coverage_note":"Vimeo asset 1087253340 was authorized and playable, but its transcript panel exposed only initial cues and did not hydrate further after transcript navigation attempts."},"visual_review":{"status":"UNAVAILABLE_EVIDENCE","coverage_pct":0,"chart_references":[]}},"evidence_quality":{"transcript_completeness_pct":0,"trade_details_captured_pct":0,"ledger_reconciliation_pct":0,"underlying_market_data_pct":0,"option_excursion_data_pct":0,"overall_grade":"SOURCE_CONTENT_INCOMPLETE","tier":"E"},"timeline":[],"claims":[],"reported_trades":[],"ledger_reconciliation":{"source_reported_trades":0,"mcleod_alpha_trades":"UNAVAILABLE_EVIDENCE","confirmed_matches":[],"possible_matches":[],"conflicts":[],"unavailable_evidence":["Authorized Vimeo asset 1087253340 exposes only incomplete captions.","No verified chart, order, trade, fill, or outcome evidence was captured."]},"market_state_timeline":[],"counterfactuals":[{"timestamp":"UNKNOWN","type":"UNAVAILABLE_EVIDENCE","detail":"Incomplete captions prevent replay, counterfactual, or outcome analysis."}],"hypothesis_references":[],"expected_value_tracking":{"confidence":"NONE","evidence_count":0,"current_lifecycle_stage":"SOURCE_CONTENT_GAP","replay_improvement":"UNAVAILABLE_EVIDENCE"},"instrumentation_gaps":["Complete Vimeo transcript captions","Visual chart and order review","Speaker attribution","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],"final_governance_decision":"RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"}
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40353,
+    "title": "Trading Room Video Recording - May 23, 2025",
+    "publication_date": "2025-05-23",
+    "source_url": "https://daytradespy.com/40353/trading-room-video-recording-may-23-2025/",
+    "duration_seconds": 4338,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 518,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:19",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Transcript reaches the terminal substantive cue of the 01:12:18 asset."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 86,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:09:23",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The speaker reported retaining half of the prior-day puts and then selling the remainder."
+    },
+    {
+      "timestamp": "00:11:05",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Ten May 30 577 model calls filled at 6.95."
+    },
+    {
+      "timestamp": "00:13:14",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 30 576 calls sold at 7.74 after a 7.34 entry."
+    },
+    {
+      "timestamp": "00:14:42",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 30 577 upside-OMG calls filled at 7.19, target 7.62."
+    },
+    {
+      "timestamp": "00:32:44",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 30 577 calls filled at 7.03 after a 50% retracement and recovery setup."
+    },
+    {
+      "timestamp": "00:52:03",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 9:51 577-call trade reportedly filled its exit after the breakout."
+    },
+    {
+      "timestamp": "01:10:20",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The 7.19 OMG and 6.95 model calls remained unresolved at recording end."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250523-C01",
+      "timestamp": "00:14:42",
+      "label": "OPTION_TARGET_NOT_EXECUTABLE_ON_TOUCH",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The underlying approached the intended level while the option target did not fill because premium lagged and spreads were wide.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_NEAR_TARGET",
+        "3m": "SOURCE_REPORTED_NO_FILL",
+        "5m": "UNRESOLVED_OPEN_POSITION",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Executable bid/ask path, order queue evidence, fees, and fill-policy replay."
+    },
+    {
+      "id": "DTS-20250523-C02",
+      "timestamp": "00:32:44",
+      "label": "RETRACEMENT_RECOVERY_BREAKOUT",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The later call waited for a 50% retracement, support hold, and renewed break before entry.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Exact bars, executable option path, MFE/MAE, and anticipatory-entry control."
+    },
+    {
+      "id": "DTS-20250523-C03",
+      "timestamp": "00:45:42",
+      "label": "DUPLICATE_DIRECTIONAL_EXPOSURE",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Overlapping 577-call positions caused presenters to confuse which target should have filled.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_STATE_CONFUSION",
+        "3m": "SOURCE_REPORTED_STATE_CONFUSION",
+        "5m": "UNRESOLVED_OPEN_POSITIONS",
+        "10m": "UNRESOLVED_OPEN_POSITIONS",
+        "15m": "UNRESOLVED_OPEN_POSITIONS",
+        "remainder_session": "UNRESOLVED_OPEN_POSITIONS"
+      },
+      "disconfirming_evidence_required": "Canonical order IDs, account labels, aggregate delta, and setup-level risk budget."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250523-T01",
+      "type": "PUT_POSITION",
+      "setup": "Residual May 22 downside OMG puts carried overnight",
+      "entry_time": "PRIOR_SESSION",
+      "entry_premium": 6.48,
+      "exit_time": "00:09:39",
+      "exit_premium": "Captioned as 9.74; attribution and decimal accuracy uncertain",
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250523-T02",
+      "type": "CALL_POSITION",
+      "setup": "Ten May 30 577 calls; model recovery",
+      "entry_time": "00:11:05",
+      "entry_premium": 6.95,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "Target discussed near 7.70",
+      "stop_or_invalidation": "Day-end holiday-weekend exit stated but not observed"
+    },
+    {
+      "source_trade_id": "DTS-20250523-T03",
+      "type": "CALL_POSITION",
+      "setup": "May 30 576 calls; opening recovery",
+      "entry_time": "00:11:16",
+      "entry_premium": 7.34,
+      "exit_time": "00:13:14",
+      "exit_premium": 7.74,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250523-T04",
+      "type": "CALL_POSITION",
+      "setup": "Real May 30 577 calls",
+      "entry_time": "00:12:01",
+      "entry_premium": 6.91,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "Target discussed near 7.70",
+      "stop_or_invalidation": "Day-end holiday-weekend exit stated but not observed"
+    },
+    {
+      "source_trade_id": "DTS-20250523-T05",
+      "type": "CALL_POSITION",
+      "setup": "May 30 577 calls; upside OMG",
+      "entry_time": "00:14:42",
+      "entry_premium": 7.19,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "7.62 TARGET NOT REPORTED FILLED",
+      "stop_or_invalidation": "Day-end holiday-weekend exit stated but not observed"
+    },
+    {
+      "source_trade_id": "DTS-20250523-T06",
+      "type": "CALL_POSITION",
+      "setup": "May 30 577 calls; 50% retracement recovery",
+      "entry_time": "00:32:44",
+      "entry_premium": 7.03,
+      "exit_time": "00:52:03",
+      "exit_premium": 7.54,
+      "stop_or_invalidation": "50% retracement support failure"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Prior-day put exit premium is captioned as 9.74 and cannot be reconciled.",
+      "Several May 30 577-call positions overlap across real, model, and OMG contexts."
+    ],
+    "unavailable_evidence": [
+      "Broker orders, account-mode identifiers, sizes for all trades, fees, synchronized bars, option paths, aggregate Greeks, and day-end exits"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:08:48",
+      "state": "OPENING_RECOVERY",
+      "evidence": "SPY recovered from tariff-related pre-market weakness."
+    },
+    {
+      "timestamp": "00:28:42",
+      "state": "FIFTY_PERCENT_RETRACEMENT_SUPPORT",
+      "evidence": "The one-minute move retraced to 50% while the five-minute chart held its 26% level."
+    },
+    {
+      "timestamp": "00:52:03",
+      "state": "BREAKOUT_WITH_PREMIUM_LAG",
+      "evidence": "SPY broke resistance, but option targets did not all execute equally."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:14:42",
+      "type": "EXECUTABLE_TARGET",
+      "detail": "Evaluate the OMG against the executable bid rather than an underlying touch."
+    },
+    {
+      "timestamp": "00:32:44",
+      "type": "ENTRY_CONFIRMATION",
+      "detail": "Use the completed retracement-and-rebreak as the control against opening anticipation."
+    },
+    {
+      "timestamp": "00:45:42",
+      "type": "AGGREGATE_RISK_CAP",
+      "detail": "Treat all same-direction 577 calls as one setup family with one risk budget."
+    },
+    {
+      "timestamp": "01:03:59",
+      "type": "TIME_STOP",
+      "detail": "Log the actual Friday cutoff fill for every unresolved option."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250523-C01",
+    "DTS-20250523-C02",
+    "DTS-20250523-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Visual review",
+    "Broker/account-mode evidence",
+    "Reliable speaker attribution",
+    "Executable bid/ask history and order queue",
+    "MFE, MAE, fees, sizes, and aggregate Greeks",
+    "Day-end resolution"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

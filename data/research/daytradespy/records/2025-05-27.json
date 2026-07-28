@@ -1,0 +1,247 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40391,
+    "title": "Trading Room Video Recording - May 27, 2025",
+    "publication_date": "2025-05-27",
+    "source_url": "https://daytradespy.com/40391/trading-room-video-recording-may-27-2025/",
+    "duration_seconds": 4213,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 460,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:10:10",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Transcript reaches the terminal substantive cue of the 01:10:13 asset."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 90,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:13:57",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 30 585 downside-OMG puts filled at 4.70, target 4.98."
+    },
+    {
+      "timestamp": "00:17:02",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The puts reached about 4.93-4.94 before SPY bounced from support."
+    },
+    {
+      "timestamp": "00:21:51",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "May 30 586 recovery calls filled at 4.69; quantity was initially reported as 70 contracts."
+    },
+    {
+      "timestamp": "00:28:57",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The speaker corrected the intended call quantity to 15 contracts without reporting a position adjustment."
+    },
+    {
+      "timestamp": "00:38:41",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 586 calls sold at 5.02 on the consumer-confidence pop, with P&L stated using 15 contracts."
+    },
+    {
+      "timestamp": "00:44:28",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Fifteen May 30 587 continuation calls filled at 4.49."
+    },
+    {
+      "timestamp": "00:56:16",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 587 calls sold at 4.68 just below identified resistance."
+    },
+    {
+      "timestamp": "01:08:15",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The downside OMG remained unresolved in the presenter simulation near recording end."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250527-C01",
+      "timestamp": "00:13:57",
+      "label": "OMG_NEAR_TARGET_THEN_REVERSAL",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The put stopped just short of its fixed target at known support and remained open through a strong reversal.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_NEAR_TARGET",
+        "3m": "SOURCE_REPORTED_ADVERSE_REVERSAL",
+        "5m": "UNRESOLVED_OPEN_POSITION",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Executable bid/ask path, simulated order rules, MFE/MAE, and first-support exit replay."
+    },
+    {
+      "id": "DTS-20250527-C02",
+      "timestamp": "00:21:51",
+      "label": "UNRECONCILED_ORDER_QUANTITY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The call was announced as 70 contracts but later results were calculated on 15 without a reported adjustment.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_QUANTITY_CONFLICT",
+        "3m": "SOURCE_REPORTED_QUANTITY_CONFLICT",
+        "5m": "SOURCE_REPORTED_QUANTITY_CONFLICT",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Broker order, submitted quantity, fills, cancellations, and any 55-contract reduction."
+    },
+    {
+      "id": "DTS-20250527-C03",
+      "timestamp": "00:44:28",
+      "label": "CONTINUATION_TO_FIRST_RESISTANCE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The second call entered after recovery consolidation and exited just below identified resistance.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Exact bars, executable option path, MFE/MAE, spread, fees, and alternate entry replay."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250527-T01",
+      "type": "PUT_POSITION",
+      "setup": "May 30 585 puts; downside OMG",
+      "entry_time": "00:13:57",
+      "entry_premium": 4.7,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "4.98 target reportedly executable live but not filled in presenter simulation",
+      "stop_or_invalidation": "A recovery hold near SPY 586 discussed, no exit reported"
+    },
+    {
+      "source_trade_id": "DTS-20250527-T02",
+      "type": "CALL_POSITION",
+      "setup": "May 30 586 calls; opening recovery",
+      "entry_time": "00:21:51",
+      "entry_premium": 4.69,
+      "exit_time": "00:38:41",
+      "exit_premium": 5.02,
+      "stop_or_invalidation": "Quantity reported as 70 then 15; no adjustment documented"
+    },
+    {
+      "source_trade_id": "DTS-20250527-T03",
+      "type": "CALL_POSITION",
+      "setup": "15 May 30 587 calls; continuation scalp",
+      "entry_time": "00:44:28",
+      "entry_premium": 4.49,
+      "exit_time": "00:56:16",
+      "exit_premium": 4.68,
+      "stop_or_invalidation": "Target placed below SPY resistance near 587.50"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The first call quantity was reported as 70 contracts and later as 15 with no adjustment fill.",
+      "The OMG target reportedly traded live but did not fill in the presenter simulation."
+    ],
+    "unavailable_evidence": [
+      "Broker orders, actual filled quantity, simulator rules, fees, synchronized bars, option paths, aggregate exposure, and final OMG exit"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:11:44",
+      "state": "OPENING_DOWNSIDE_REVERSAL",
+      "evidence": "SPY broke the lower OMG boundary after a strong gap."
+    },
+    {
+      "timestamp": "00:17:02",
+      "state": "SUPPORT_BOUNCE",
+      "evidence": "The first selloff stopped at a major retracement/support cluster."
+    },
+    {
+      "timestamp": "00:38:41",
+      "state": "EVENT_ACCELERATED_RECOVERY",
+      "evidence": "Better-than-expected consumer confidence accelerated the upside move."
+    },
+    {
+      "timestamp": "00:48:16",
+      "state": "STEADY_UPTREND_CONSOLIDATION",
+      "evidence": "SPY advanced through repeated lateral pauses toward resistance."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:15:42",
+      "type": "FIRST_SUPPORT_EXIT",
+      "detail": "Compare the fixed 6% target with an executable exit before the support cluster."
+    },
+    {
+      "timestamp": "00:28:57",
+      "type": "ORDER_RECONCILIATION",
+      "detail": "Require actual submitted and filled quantity before accepting P&L."
+    },
+    {
+      "timestamp": "00:44:28",
+      "type": "CONTINUATION_ENTRY",
+      "detail": "Use the consolidation entry as the control against the opening bounce entry."
+    },
+    {
+      "timestamp": "00:59:39",
+      "type": "DETERMINISTIC_FILL_RULE",
+      "detail": "Freeze a bid-based simulation fill rule before the session."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250527-C01",
+    "DTS-20250527-C02",
+    "DTS-20250527-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Visual review",
+    "Broker/account-mode evidence",
+    "Actual filled quantity and adjustment history",
+    "Deterministic simulator fill rules",
+    "Synchronized bars and executable option paths",
+    "MFE, MAE, spreads, fees, and aggregate exposure",
+    "Final OMG resolution"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
