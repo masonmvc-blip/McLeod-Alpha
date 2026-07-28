@@ -54,6 +54,8 @@ class Memory:
     def initialize_live_trade_store(self):
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.db_path) as connection:
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA synchronous=NORMAL")
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS trade_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, entry_time TEXT, exit_time TEXT,
@@ -502,10 +504,11 @@ class Memory:
             ))
         return len(inserted_trades)
 
-    def record_event(self, event: MemoryEvent) -> MemoryEvent:
+    def record_event(self, event: MemoryEvent, *, timeout_seconds: float = 5.0) -> MemoryEvent:
         event = event.normalized()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.db_path) as connection:
+        with sqlite3.connect(self.db_path, timeout=max(0.0, float(timeout_seconds))) as connection:
+            connection.execute(f"PRAGMA busy_timeout={max(0, int(float(timeout_seconds) * 1000))}")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS memory_events (
@@ -595,10 +598,15 @@ class Memory:
         ))
 
     def record_latency(self, payload, projection_path=None, source="monitor"):
-        event = self.record_event(MemoryEvent("latency", "latency_recorded", source, payload))
         if projection_path is not None:
             self._append_jsonl_projection(projection_path, payload)
-        return event
+        event = MemoryEvent("latency", "latency_recorded", source, payload).normalized()
+        try:
+            return self.record_event(event, timeout_seconds=0.05)
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower():
+                raise
+            return event
 
     def record_decision(self, payload, projection_path=None, source="brain", correlation_id=None):
         event = self.record_event(MemoryEvent("decision", "decision_recorded", source, payload, correlation_id))

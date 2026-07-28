@@ -208,6 +208,25 @@ def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None,
     })
 
 
+def _run_noncritical_schedulers():
+    try:
+        maybe_send_daily_trade_log_email()
+    except Exception as exc:
+        print(f"Daily trade-log scheduler warning: {exc}")
+    try:
+        maybe_generate_morning_readiness(ENGINE_MODULE.get_schwab_positions)
+    except Exception as exc:
+        print(f"Morning readiness warning: {exc}")
+    try:
+        maybe_generate_scheduler_health_dashboard()
+    except Exception as exc:
+        print(f"Scheduler health warning: {exc}")
+    try:
+        maybe_run_after_close_daily_learning()
+    except Exception as exc:
+        print(f"Daily learning scheduler warning: {exc}")
+
+
 def _resolve_schwab_callback_url() -> str:
     """Return a Schwab callback URL with an allowed localhost hostname."""
     raw = str(os.getenv("SCHWAB_CALLBACK_URL", "")).strip()
@@ -1764,28 +1783,13 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
         except Exception as exc:
             print(f"Priority position management error: {exc}")
         try:
-            maybe_send_daily_trade_log_email()
-        except Exception as exc:
-            print(f"Daily trade-log scheduler warning: {exc}")
-        try:
-            maybe_generate_morning_readiness(ENGINE_MODULE.get_schwab_positions)
-        except Exception as exc:
-            print(f"Morning readiness warning: {exc}")
-        try:
-            maybe_generate_scheduler_health_dashboard()
-        except Exception as exc:
-            print(f"Scheduler health warning: {exc}")
-        try:
-            maybe_run_after_close_daily_learning()
-        except Exception as exc:
-            print(f"Daily learning scheduler warning: {exc}")
-        try:
             candles_fetch_start_ms = _perf_ms_now()
             df = get_candles()
             candles_fetch_ms = _elapsed_ms(candles_fetch_start_ms)
         except Exception as e:
             print(f"Candle fetch error: {e}")
             _append_latency_skip_event(reason="candle_fetch_error", cycle_start_ms=cycle_start_ms)
+            _run_noncritical_schedulers()
             sleep_fn(_cycle_sleep_seconds())
             continue
         latest_candle_time = df.iloc[-1].name if not df.empty else None
@@ -1800,6 +1804,7 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 cycle_start_ms=cycle_start_ms,
                 candles_fetch_ms=candles_fetch_ms,
             )
+            _run_noncritical_schedulers()
             sleep_fn(_cycle_sleep_seconds())
             continue
 
@@ -1815,6 +1820,7 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
+            _run_noncritical_schedulers()
             sleep_fn(_cycle_sleep_seconds())
             continue
 
@@ -1863,6 +1869,7 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
+            _run_noncritical_schedulers()
             sleep_fn(_cycle_sleep_seconds())
             continue
 
@@ -1881,6 +1888,7 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 candles_fetch_ms=candles_fetch_ms,
                 indicators_ms=indicators_ms,
             )
+            _run_noncritical_schedulers()
             sleep_fn(_cycle_sleep_seconds())
             continue
 
@@ -1987,6 +1995,8 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             "report_ms": report_ms,
             "cycle_total_ms": cycle_total_ms,
         })
+
+        _run_noncritical_schedulers()
 
         last_processed_candle_time = signal_cycle.candle_timestamp
 
