@@ -1,0 +1,247 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40394,
+    "title": "Trading Room Video Recording - May 28, 2025",
+    "publication_date": "2025-05-28",
+    "source_url": "https://daytradespy.com/40394/trading-room-video-recording-may-28-2025/",
+    "duration_seconds": 4349,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 460,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:12:09",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Transcript reaches the terminal substantive cue of the 01:12:29 asset."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 86,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:10:41",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The opening call size was corrected from an erroneous 65 contracts to 18 before entry."
+    },
+    {
+      "timestamp": "00:12:18",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Eighteen May 30 592 calls entered at 3.90."
+    },
+    {
+      "timestamp": "00:18:23",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The opening 592 calls sold at 4.37; the source stated 836 dollars net."
+    },
+    {
+      "timestamp": "00:20:51",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 593 upside-OMG calls entered at 6.43 and May 30 592 calls re-entered at 4.35."
+    },
+    {
+      "timestamp": "00:54:52",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 590 puts entered at 5.86 with a 6.14 target."
+    },
+    {
+      "timestamp": "01:07:33",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The second 592-call position would be held into the next day without a defined exit."
+    },
+    {
+      "timestamp": "01:08:15",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The upside OMG was declared successful, while the late put and second 592-call trade lacked final exits."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250528-C01",
+      "timestamp": "00:12:18",
+      "label": "CONFIRMED_OPENING_FOLLOW_THROUGH",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The first call waited for recovery and resistance pressure, then exited while momentum remained favorable.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Synchronized bars, executable option path, spread, fees, MFE/MAE, and fixed-target replay."
+    },
+    {
+      "id": "DTS-20250528-C02",
+      "timestamp": "00:20:51",
+      "label": "DUPLICATE_RISK_AFTER_WIN",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The immediate 592-call re-entry duplicated the first trade after a large win and became an unplanned overnight hold.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_NEAR_FLAT",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Broker ledger, full option path, aggregate exposure, stop policy, and no-reentry counterfactual."
+    },
+    {
+      "id": "DTS-20250528-C03",
+      "timestamp": "00:54:52",
+      "label": "SUPPORT_CONSTRAINED_PUT",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The late put retained an available small gain despite acknowledged support and weak downside pressure.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_SUPPORT_BOUNCE",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Executable bid/ask path, first-support level, MFE/MAE, and final exit."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250528-T01",
+      "type": "CALL_POSITION",
+      "setup": "18 May 30 592 calls; opening follow-through",
+      "entry_time": "00:12:18",
+      "entry_premium": 3.9,
+      "exit_time": "00:18:23",
+      "exit_premium": 4.37,
+      "stop_or_invalidation": "No explicit stop; resistance and momentum were monitored"
+    },
+    {
+      "source_trade_id": "DTS-20250528-T02",
+      "type": "CALL_POSITION",
+      "setup": "June 6 593 calls; upside OMG",
+      "entry_time": "00:20:51",
+      "entry_premium": 6.43,
+      "exit_time": "SOURCE_DECLARED_SUCCESS",
+      "exit_premium": "UNAVAILABLE_EVIDENCE",
+      "stop_or_invalidation": "Target 6.82; exact exit unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250528-T03",
+      "type": "CALL_POSITION",
+      "setup": "16 May 30 592 calls; same-direction re-entry",
+      "entry_time": "00:20:51",
+      "entry_premium": 4.35,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "UNAVAILABLE_EVIDENCE",
+      "stop_or_invalidation": "No defined stop or end-of-recording exit"
+    },
+    {
+      "source_trade_id": "DTS-20250528-T04",
+      "type": "PUT_POSITION",
+      "setup": "June 6 590 puts; late downside test",
+      "entry_time": "00:54:52",
+      "entry_premium": 5.86,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "UNAVAILABLE_EVIDENCE",
+      "stop_or_invalidation": "Target 6.14; support and an available small gain were discussed"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 4,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The initial size calculation was 65 contracts before correction to 18.",
+      "The upside OMG was declared successful without a reported exit premium.",
+      "Two positions remained unresolved at recording end."
+    ],
+    "unavailable_evidence": [
+      "Broker orders, executable option paths, exact OMG exit, final put exit, aggregate exposure, MFE/MAE, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:09:34",
+      "state": "OPENING_UPSIDE_RECOVERY",
+      "evidence": "SPY recovered toward resistance with improving short-term volume."
+    },
+    {
+      "timestamp": "00:18:53",
+      "state": "UPSIDE_BREAK_PULLBACK",
+      "evidence": "An OMG close was followed by a test before call admission."
+    },
+    {
+      "timestamp": "00:27:44",
+      "state": "LIGHT_VOLUME_REVERSAL",
+      "evidence": "Price returned toward the session low without a clear news catalyst."
+    },
+    {
+      "timestamp": "01:02:30",
+      "state": "SUPPORT_CONSTRAINED_CHOP",
+      "evidence": "Buyers returned at support while downside volume remained limited."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:20:51",
+      "type": "NO_REENTRY_AFTER_OPENING_WIN",
+      "detail": "End same-direction trading after the first target-exceeding winner unless a new setup independently qualifies."
+    },
+    {
+      "timestamp": "00:32:13",
+      "type": "CONSISTENT_EVENT_RISK_EXIT",
+      "detail": "Apply the smaller-loss event-risk advice to every open presenter position."
+    },
+    {
+      "timestamp": "01:02:30",
+      "type": "FIRST_SUPPORT_EXIT",
+      "detail": "Compare the late put target with an executable exit at the first defended support."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250528-C01",
+    "DTS-20250528-C02",
+    "DTS-20250528-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 4,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Visual review",
+    "Broker/account-mode evidence",
+    "Executable option paths and synchronized bars",
+    "MFE, MAE, spreads, complete fees, and aggregate exposure",
+    "Exact OMG exit and final late-put exit",
+    "Final same-direction call resolution"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

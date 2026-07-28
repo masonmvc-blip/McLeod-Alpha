@@ -1,0 +1,340 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40432,
+    "title": "Trading Room Video Recording - May 30, 2025",
+    "publication_date": "2025-05-30",
+    "source_url": "https://daytradespy.com/40432/trading-room-video-recording-may-30-2025/",
+    "duration_seconds": 4133,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_TRANSCRIPT_PANEL",
+      "cue_count": 472,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:08:29",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Transcript reaches the terminal substantive cue of the 01:08:53 asset."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 91,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:08:32",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The prior carried calls were reported sold for a substantial loss after consuming the May 29 session."
+    },
+    {
+      "timestamp": "00:12:11",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Fifteen June 6 590 calls entered at 4.88; the presenter said the entry jumped the gun."
+    },
+    {
+      "timestamp": "00:17:41",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 589 calls entered at 5.25 for a recovery scalp and were later taken out near 5.40."
+    },
+    {
+      "timestamp": "00:24:29",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 590 calls re-entered at 4.70 and later sold at 4.85."
+    },
+    {
+      "timestamp": "00:27:31",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 587 downside-OMG puts entered at 5.40 with a 5.72 target."
+    },
+    {
+      "timestamp": "00:30:21",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The downside OMG target filled within roughly two minutes."
+    },
+    {
+      "timestamp": "00:41:05",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 588 calls entered at 5.77 and sold at 5.96 about one minute later."
+    },
+    {
+      "timestamp": "00:44:45",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "June 6 590 continuation calls entered at 5.06 and sold at 5.20."
+    },
+    {
+      "timestamp": "00:47:08",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The opening 4.88 call order was finally identified as sold at 5.13; the source stated 365 dollars net."
+    },
+    {
+      "timestamp": "00:58:37",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "Two presenters entered June 6 590 gap-fill calls near 5.32 and 5.31."
+    },
+    {
+      "timestamp": "01:03:30",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The 5.31 gap-fill scalp sold at 5.45."
+    },
+    {
+      "timestamp": "01:07:34",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The other 5.32 gap-fill call remained unresolved at recording end."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250530-C01",
+      "timestamp": "00:27:31",
+      "label": "CONFIRMED_OMG_WITH_STRUCTURAL_ROOM",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The downside OMG combined a confirmed close, room toward lower support, and an explicit bounded target.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "3m": "SOURCE_REPORTED_TARGET",
+        "5m": "SOURCE_REPORTED_EXIT",
+        "10m": "SOURCE_REPORTED_EXIT",
+        "15m": "SOURCE_REPORTED_EXIT",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Synchronized bars, executable option path, exact fill, spread, fees, and MFE/MAE."
+    },
+    {
+      "id": "DTS-20250530-C02",
+      "timestamp": "00:12:11",
+      "label": "OUTCOME_HIDES_PREMATURE_ENTRY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The opening call eventually profited despite the presenter's admission that its entry was premature.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "3m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "5m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "10m": "SOURCE_REPORTED_ADVERSE_MOVE",
+        "15m": "SOURCE_REPORTED_RECOVERY",
+        "remainder_session": "SOURCE_REPORTED_EXIT"
+      },
+      "disconfirming_evidence_required": "Exact bars, executable option path, MFE/MAE, confirmation-only entry replay, and opportunity cost."
+    },
+    {
+      "id": "DTS-20250530-C03",
+      "timestamp": "00:47:03",
+      "label": "OVERLAPPING_ORDER_STATE_FAILURE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Multiple simultaneous trades caused explicit uncertainty about which order had filled.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_FILL_CONFUSION",
+        "3m": "SOURCE_REPORTED_RECONCILIATION",
+        "5m": "SOURCE_REPORTED_NEW_TRADE",
+        "10m": "SOURCE_REPORTED_NEW_TRADE",
+        "15m": "SOURCE_REPORTED_NEW_TRADE",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Broker order log, position snapshots, alert mapping, aggregate exposure, and order-state timestamps."
+    },
+    {
+      "id": "DTS-20250530-C04",
+      "timestamp": "00:58:37",
+      "label": "REPETITION_RECREATES_TAIL_RISK",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Another same-direction gap-fill entry after multiple completed scalps recreated an unresolved end-of-recording hold.",
+      "forward_outcomes": {
+        "1m": "SOURCE_REPORTED_MIXED_MOVE",
+        "3m": "SOURCE_REPORTED_MIXED_MOVE",
+        "5m": "SOURCE_REPORTED_ONE_EXIT",
+        "10m": "UNRESOLVED_OPEN_POSITION",
+        "15m": "UNRESOLVED_OPEN_POSITION",
+        "remainder_session": "UNRESOLVED_OPEN_POSITION"
+      },
+      "disconfirming_evidence_required": "Final exit, aggregate same-direction exposure, setup-count replay, and full executable option path."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250530-T01",
+      "type": "CALL_POSITION",
+      "setup": "15 June 6 590 calls; premature opening recovery",
+      "entry_time": "00:12:11",
+      "entry_premium": 4.88,
+      "exit_time": "00:47:08",
+      "exit_premium": 5.13,
+      "stop_or_invalidation": "No explicit stop; presenter admitted entry was premature"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T02",
+      "type": "CALL_POSITION",
+      "setup": "June 6 589 calls; first recovery scalp",
+      "entry_time": "00:17:41",
+      "entry_premium": 5.25,
+      "exit_time": "00:24:07",
+      "exit_premium": "Approximately 5.40",
+      "stop_or_invalidation": "Small scalp objective; exact broker fill unavailable"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T03",
+      "type": "CALL_POSITION",
+      "setup": "June 6 590 calls; second recovery scalp",
+      "entry_time": "00:24:29",
+      "entry_premium": 4.7,
+      "exit_time": "00:38:20",
+      "exit_premium": 4.85,
+      "stop_or_invalidation": "Target adjusted to 4.85; no explicit stop"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T04",
+      "type": "PUT_POSITION",
+      "setup": "June 6 587 puts; downside OMG",
+      "entry_time": "00:27:31",
+      "entry_premium": 5.4,
+      "exit_time": "00:30:21",
+      "exit_premium": 5.72,
+      "stop_or_invalidation": "Lower support was identified; no explicit stop"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T05",
+      "type": "CALL_POSITION",
+      "setup": "June 6 588 calls; recovery scalp",
+      "entry_time": "00:41:05",
+      "entry_premium": 5.77,
+      "exit_time": "00:42:00",
+      "exit_premium": 5.96,
+      "stop_or_invalidation": "Target near SPY resistance around 588.40"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T06",
+      "type": "CALL_POSITION",
+      "setup": "June 6 590 calls; continuation scalp",
+      "entry_time": "00:44:45",
+      "entry_premium": 5.06,
+      "exit_time": "00:49:58",
+      "exit_premium": 5.2,
+      "stop_or_invalidation": "Target below identified resistance"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T07",
+      "type": "CALL_POSITION",
+      "setup": "June 6 590 calls; gap-fill attempt",
+      "entry_time": "00:58:37",
+      "entry_premium": 5.32,
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "UNAVAILABLE_EVIDENCE",
+      "stop_or_invalidation": "Target 5.64-5.65; no reported stop"
+    },
+    {
+      "source_trade_id": "DTS-20250530-T08",
+      "type": "CALL_POSITION",
+      "setup": "June 6 590 calls; second presenter gap-fill scalp",
+      "entry_time": "00:59:22",
+      "entry_premium": 5.31,
+      "exit_time": "01:03:30",
+      "exit_premium": 5.45,
+      "stop_or_invalidation": "Small scalp objective inside the gap-fill thesis"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 8,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Overlapping orders caused uncertainty about which trade had filled.",
+      "The first recovery-scalp exit premium is approximate.",
+      "One gap-fill call remained unresolved at recording end."
+    ],
+    "unavailable_evidence": [
+      "Broker orders, executable option paths, exact first-scalp fill, aggregate exposure, MFE/MAE, complete fees, and final gap-fill exit"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:08:32",
+      "state": "HEADLINE_DRIVEN_OPENING_WEAKNESS",
+      "evidence": "China-trade headlines pressured SPY before and after the open."
+    },
+    {
+      "timestamp": "00:26:49",
+      "state": "CONFIRMED_DOWNSIDE_BREAK",
+      "evidence": "A large red bar closed through the downside OMG boundary."
+    },
+    {
+      "timestamp": "00:31:01",
+      "state": "PREMARKET_SUPPORT_RECOVERY",
+      "evidence": "The selloff completed into a series of pre-market lows and rebounded."
+    },
+    {
+      "timestamp": "00:37:21",
+      "state": "EVENT_ACCELERATED_UPSIDE_RECOVERY",
+      "evidence": "Consumer-sentiment data accelerated a move through retracement levels and averages."
+    },
+    {
+      "timestamp": "00:53:59",
+      "state": "LATE_STAGE_UPSIDE_CONSOLIDATION",
+      "evidence": "The recovery had already produced multiple legs and was described as long in the tooth."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:12:11",
+      "type": "CONFIRMATION_ONLY_ENTRY",
+      "detail": "Compare the admitted premature call with entry after a completed support reclaim."
+    },
+    {
+      "timestamp": "00:47:03",
+      "type": "ORDER_STATE_GATE",
+      "detail": "Block new orders until every current position, quantity, target, and fill is reconciled."
+    },
+    {
+      "timestamp": "00:58:37",
+      "type": "SETUP_REPETITION_CAP",
+      "detail": "End same-direction trading after one re-entry or a fixed number of completed setup-family trades."
+    },
+    {
+      "timestamp": "01:00:14",
+      "type": "FIRST_STRUCTURAL_TARGET",
+      "detail": "Compare the full gap-fill objective with the first nearby structural target."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250530-C01",
+    "DTS-20250530-C02",
+    "DTS-20250530-C03",
+    "DTS-20250530-C04"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 8,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Visual review",
+    "Broker/account-mode evidence",
+    "Executable option paths and synchronized bars",
+    "Exact first recovery-scalp fill",
+    "MFE, MAE, spreads, complete fees, and aggregate exposure",
+    "Final gap-fill call resolution"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
