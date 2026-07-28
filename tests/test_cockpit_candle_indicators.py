@@ -58,6 +58,13 @@ def test_indicator_snapshot_uses_strategy_score_for_closed_candles(tmp_path):
     assert snapshot["market_trend"] == expected["market_trend"]
 
 
+def test_status_prefers_indicator_snapshot_timestamp_for_candle_freshness():
+    source = (cockpit.PROJECT_ROOT / "engine" / "runtime_status.py").read_text(encoding="utf-8")
+
+    assert 'status["last_candle_at"] = indicator_candle_at.astimezone(EASTERN_TZ).isoformat()' in source
+    assert 'if status.get("last_candle_at"):' in source
+
+
 def test_qualifying_side_shows_matching_closed_candle_no_entry_reason(tmp_path):
     audit_path = tmp_path / "decision_audit_history.jsonl"
     snapshot = {"timestamp": "2026-07-20T10:16:00-04:00"}

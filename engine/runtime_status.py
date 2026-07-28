@@ -305,6 +305,17 @@ def _build_runtime_status():
         status["continuation_last_test_at"] = candle_indicator_snapshot.get("timestamp")
         status["continuation_regime"] = str(candle_indicator_snapshot.get("regime") or "UNKNOWN")
         status["market_trend"] = str(candle_indicator_snapshot.get("market_trend") or "UNKNOWN")
+        try:
+            indicator_candle_at = datetime.fromisoformat(str(candle_indicator_snapshot["timestamp"]))
+            if indicator_candle_at.tzinfo is None:
+                indicator_candle_at = indicator_candle_at.replace(tzinfo=EASTERN_TZ)
+            status["last_candle_at"] = indicator_candle_at.astimezone(EASTERN_TZ).isoformat()
+            status["candle_age_seconds"] = round(
+                max(0.0, (datetime.now(timezone.utc) - indicator_candle_at.astimezone(timezone.utc)).total_seconds()),
+                1,
+            )
+        except (KeyError, TypeError, ValueError):
+            pass
 
     try:
         status["entry_paused"] = bool((get_memory().load_setting(ENTRY_PAUSE_FILE, {}) or {}).get("paused"))
@@ -607,6 +618,8 @@ def _build_runtime_status():
         # Use the latest candle timestamp emitted by the monitor, rather than
         # the log-file write time, for the banner candle clock.
         for line in reversed(file_all.splitlines()):
+            if status.get("last_candle_at"):
+                break
             candle_match = re.search(
                 r"^Candles received:.*\blatest=(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})\b",
                 line,
