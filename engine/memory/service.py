@@ -1057,6 +1057,11 @@ class Memory:
             "schwab_fill_price": 0.0, "schwab_fill_timestamp": "",
             "submitted_limit_price": 0.0, "protective_stop_order_id": "",
             "protective_stop_price": 0.0, "protective_stop_status": "",
+            "protective_stop_restore_count": 0,
+            "option_high_since_entry": 0.0, "option_low_since_entry": 0.0,
+            "option_high_timestamp": "", "option_low_timestamp": "",
+            "spy_price_at_option_high": 0.0, "spy_price_at_option_low": 0.0,
+            "option_trailing_high_bid": 0.0,
         }
 
     @classmethod

@@ -48,6 +48,26 @@ def test_evaluate_exit_keeps_trade_open_past_former_max_hold_until_price_exit():
     assert target_decision.reason == "TARGET_HIT"
 
 
+def test_manage_trade_ratchets_from_retained_high_bid():
+    position = _position()
+    position.option_stop = 4.95
+
+    decision = Brain().manage_trade(
+        position,
+        {
+            "current_price": 505.0,
+            "option_bid": 5.25,
+            "option_mark": 5.26,
+            "option_trailing_high_bid": 5.40,
+            "protective_stop_active": True,
+        },
+    )
+
+    assert decision.action is TradeAction.UPDATE_STOP
+    assert decision.stop_price == pytest.approx(5.346)
+    assert decision.reason == "4% Stop"
+
+
 def test_normalize_exit_reason_uses_canonical_stop_bands_and_vocabulary():
     brain = Brain()
 

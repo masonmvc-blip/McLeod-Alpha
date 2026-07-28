@@ -534,6 +534,70 @@ def test_live_ratchet_skips_wide_quote_without_weakening_existing_stop(monkeypat
     assert pos.option_stop == 4.95
 
 
+def test_live_ratchet_retains_only_reliable_high_bid(monkeypatch):
+    pos = _live_position()
+    pos.option_trailing_high_bid = 5.20
+    live_engine.current_position = pos
+
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
+    monkeypatch.setattr(live_engine, "save_position", lambda _pos: None)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("unreliable quote must not ratchet stop"),
+    )
+    live_engine._last_protective_stop_check_epoch = live_engine.time.time()
+    live_engine._last_protective_stop_check_ok = True
+
+    live_engine.manage_trade(
+        current_price=500.0,
+        option_mark=6.00,
+        option_bid=5.90,
+        quote_metadata={"bid": 5.90, "ask": 6.90, "quote_spread_pct": 15.6, "quote_age_seconds": 0.1},
+    )
+
+    assert pos.option_trailing_high_bid == 5.20
+
+
+def test_live_exits_when_price_crosses_deferred_high_water_stop(monkeypatch):
+    pos = _live_position()
+    pos.option_stop = 4.95
+    pos.option_initial_stop = 4.75
+    pos.option_trailing_high_bid = 5.40
+    live_engine.current_position = pos
+
+    close_calls = {}
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
+    monkeypatch.setattr(live_engine, "save_position", lambda _pos: None)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("crossed high-water stop must exit, not submit above market"),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "close_trade",
+        lambda _price, reason, option_mark=None: close_calls.update(reason=reason, mark=option_mark),
+    )
+    live_engine._last_protective_stop_check_epoch = live_engine.time.time()
+    live_engine._last_protective_stop_check_ok = True
+    live_engine._last_protective_stop_submission_epoch = 0.0
+
+    live_engine.manage_trade(
+        current_price=500.0,
+        option_mark=5.31,
+        option_bid=5.30,
+        quote_metadata={"bid": 5.30, "ask": 5.32, "quote_spread_pct": 0.38, "quote_age_seconds": 0.1},
+    )
+
+    assert close_calls == {"reason": "4% Stop", "mark": 5.31}
+    assert pos.option_stop == 4.95
+
+
 def test_live_does_not_close_at_former_twenty_minute_maximum_hold(monkeypatch):
     pos = _live_position()
     pos.opened = datetime(2026, 7, 17, 9, 40, 0)

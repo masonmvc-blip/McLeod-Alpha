@@ -16,6 +16,8 @@ STOP_TELEMETRY_DIR = Path(os.getenv("STOP_TELEMETRY_DIR", "data/reports/stop_tel
 
 def record_stop_event(event_type: str, **fields: Any) -> None:
     """Best-effort immutable stop event; telemetry must never affect execution."""
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return
     try:
         timestamp = datetime.now(EASTERN_TZ)
         path = STOP_TELEMETRY_DIR / f"protective_stop_events_{timestamp.date().isoformat()}.jsonl"

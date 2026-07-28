@@ -920,6 +920,7 @@ class Position:
     option_low_timestamp: str = ""
     spy_price_at_option_high: float = 0.0
     spy_price_at_option_low: float = 0.0
+    option_trailing_high_bid: float = 0.0  # Highest reliable executable bid used by the synthetic trail
 
 
 current_position = None
@@ -2709,6 +2710,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_status="PLACED" if protective_stop_id else "FAILED",
         option_high_since_entry=float(fill_price),
         option_low_since_entry=float(fill_price),
+        option_trailing_high_bid=float(fill_price),
         option_high_timestamp=fill_timestamp,
         option_low_timestamp=fill_timestamp,
         spy_price_at_option_high=float(price),
@@ -3138,6 +3140,15 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         mark=option_mark,
         observed_at=datetime.now(EASTERN_TZ),
     )
+    quote_reliable_for_ratchet, _ = _stop_ratchet_quote_is_reliable(quote_metadata)
+    reliable_bid = float(option_bid or 0.0)
+    trailing_high_updated = False
+    if (
+        quote_reliable_for_ratchet
+        and reliable_bid > float(current_position.option_trailing_high_bid or 0.0)
+    ):
+        current_position.option_trailing_high_bid = reliable_bid
+        trailing_high_updated = True
     if _is_end_of_day_exit_due():
         record_option_management_cycle(
             current_position,
@@ -3186,6 +3197,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             "current_price": current_price,
             "option_mark": option_mark,
             "option_bid": option_bid,
+            "option_trailing_high_bid": current_position.option_trailing_high_bid,
             "protective_stop_active": protective_stop_active,
             "now": datetime.now(),
         },
@@ -3288,6 +3300,11 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             stop_improvement < STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS
             or seconds_since_last_submission < STOP_RATCHET_MIN_INTERVAL_SECONDS
         ):
+            deferral_reasons = []
+            if stop_improvement < STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS:
+                deferral_reasons.append("minimum_improvement")
+            if seconds_since_last_submission < STOP_RATCHET_MIN_INTERVAL_SECONDS:
+                deferral_reasons.append("minimum_interval")
             current_position.option_stop = previous_option_stop
             record_stop_event(
                 "stop_ratchet_deferred",
@@ -3295,9 +3312,30 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
                 option_symbol=current_position.option_symbol,
                 prior_stop=previous_option_stop,
                 candidate_stop=decision.stop_price,
+                trailing_high_bid=current_position.option_trailing_high_bid,
+                stop_improvement=stop_improvement,
+                minimum_improvement=STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS,
+                seconds_since_last_submission=seconds_since_last_submission,
+                minimum_interval_seconds=STOP_RATCHET_MIN_INTERVAL_SECONDS,
+                deferral_reasons=deferral_reasons,
                 quote_metadata=quote_metadata or {},
             )
             save_position(current_position)
+            return
+        if float(option_bid or option_mark or 0.0) <= float(decision.stop_price or 0.0):
+            record_stop_event(
+                "stop_ratchet_high_water_crossed",
+                trade_key=trade_key,
+                option_symbol=current_position.option_symbol,
+                prior_stop=previous_option_stop,
+                candidate_stop=decision.stop_price,
+                trailing_high_bid=current_position.option_trailing_high_bid,
+                bid=option_bid,
+                mark=option_mark,
+                quote_metadata=quote_metadata or {},
+            )
+            current_position.option_stop = previous_option_stop
+            close_trade(current_price, decision.reason, option_mark)
             return
         order_id, submitted_stop = _submit_protective_stop(
             current_position.option_symbol,
@@ -3331,7 +3369,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         close_trade(current_price, decision.reason, decision.metadata.get("exit_option_mark"))
         return
 
-    if decision.metadata.get("state_updates") or extrema_updated:
+    if decision.metadata.get("state_updates") or extrema_updated or trailing_high_updated:
         save_position(current_position)
 
 

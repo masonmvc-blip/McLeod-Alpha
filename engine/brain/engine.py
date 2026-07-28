@@ -346,7 +346,8 @@ class Brain:
                 metadata={"state_updates": state_updates},
             )
 
-        trailing_quote = option_bid or option_mark
+        trailing_high_bid = self._positive_float(market.get("option_trailing_high_bid"))
+        trailing_quote = max(option_bid or option_mark or 0.0, trailing_high_bid)
         if trailing_quote:
             profit_pct = ((trailing_quote - option_entry) / option_entry) * 100.0
             candidate_stop, stop_type = self._trailing_stop(option_entry, initial_stop, trailing_quote, profit_pct)

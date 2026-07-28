@@ -12,6 +12,7 @@ def _position():
         schwab_order_id="entry-1", schwab_fill_price=5.01,
         schwab_fill_timestamp="2026-07-27T10:00:01-04:00",
         option_high_since_entry=5.6, option_low_since_entry=4.7,
+        option_trailing_high_bid=5.55,
     )
 
 
@@ -28,6 +29,7 @@ def test_management_cycle_captures_executable_quote_cost_and_excursion_facts():
     assert event["estimated_exit_spread_cost_dollars"] == 20.0
     assert event["mfe_pct_live"] == 12.0
     assert event["mae_pct_live"] == -6.0
+    assert event["option_trailing_high_bid"] == 5.55
     assert event["decision_reason"] == "4% Stop"
 
 

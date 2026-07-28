@@ -87,6 +87,9 @@ def build_option_management_cycle(
         "option_stop": _positive_number(getattr(position, "option_stop", None)),
         "option_high_since_entry": high,
         "option_low_since_entry": low,
+        "option_trailing_high_bid": _positive_number(
+            getattr(position, "option_trailing_high_bid", None)
+        ),
         "mfe_pct_live": _percent((high - entry) if high and entry else None, entry),
         "mae_pct_live": _percent((low - entry) if low and entry else None, entry),
         "decision_action": str(action) if action is not None else None,
@@ -101,6 +104,8 @@ def build_option_management_cycle(
 
 def record_option_management_cycle(position: Any, **kwargs: Any) -> None:
     """Best-effort immutable write; telemetry must never affect execution."""
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return
     try:
         payload = build_option_management_cycle(position, **kwargs)
         timestamp = datetime.now(EASTERN_TZ)

@@ -18,6 +18,7 @@ class SimulatedPosition:
     option_entry: float = 5.0
     option_stop: float = 0.0
     option_initial_stop: float = 0.0
+    option_trailing_high_bid: float = 0.0
 
 
 def simulate_trade_management(
@@ -39,10 +40,18 @@ def simulate_trade_management(
             "current_price": current.entry_price,
             "option_mark": option_mark,
             "option_bid": option_bid if option_bid is not None else option_mark,
+            "option_trailing_high_bid": max(
+                float(current.option_trailing_high_bid or 0.0),
+                float(option_bid if option_bid is not None else option_mark),
+            ),
             "protective_stop_active": True,
             "now": timestamp,
         },
     )
     for field_name, value in decision.metadata.get("state_updates", {}).items():
         setattr(current, field_name, value)
+    current.option_trailing_high_bid = max(
+        float(current.option_trailing_high_bid or 0.0),
+        float(option_bid if option_bid is not None else option_mark),
+    )
     return current, decision
