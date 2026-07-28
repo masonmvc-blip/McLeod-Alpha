@@ -1,0 +1,26 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38989,
+    "title": "Trading Room Video Recording - March 20, 2025",
+    "publication_date": "2025-03-20",
+    "source_url": "https://daytradespy.com/38989/trading-room-video-recording-march-20-2025/",
+    "duration_seconds": null,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "authorized-access-gate-review.v1",
+    "transcript": {"availability": "PENDING_AUTHORIZED_ACCESS", "completeness_pct": 0, "path": "", "timestamps_preserved": false, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_ACCESS_UNAVAILABLE", "cue_count": 0, "first_timestamp": "UNKNOWN", "last_timestamp": "UNKNOWN", "raw_transcript_persisted": false, "coverage_note": "No authorized player, signed caption track, or local source transcript was available in the current session."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 0, "trade_details_captured_pct": 0, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "BLOCKED_AUTHORIZED_ACCESS", "tier": "E"},
+  "timeline": [{"timestamp": "UNKNOWN", "classification": "UNAVAILABLE_EVIDENCE", "claim": "No authorized player or caption track was available; all recording content is UNKNOWN."}],
+  "claims": [],
+  "reported_trades": [],
+  "ledger_reconciliation": {"source_reported_trades": 0, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": [], "unavailable_evidence": ["No authorized source content, broker executions, or ledger mapping was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "No source content is available for counterfactual or replay assessment."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Authorized player access", "Signed Vimeo caption track", "Duration and transcript", "Visual review", "Underlying bars", "Option execution and excursion data", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

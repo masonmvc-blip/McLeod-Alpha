@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39105,
+    "title": "Trading Room Video Recording - March 27, 2025",
+    "publication_date": "2025-03-27",
+    "source_url": "https://daytradespy.com/39105/trading-room-video-recording-march-27-2025/",
+    "duration_seconds": 5038,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 1800, "first_timestamp": "00:00:01", "last_timestamp": "01:23:30", "raw_transcript_persisted": false, "coverage_note": "The authenticated caption stream was reviewed through its final spoken cue; remaining seconds appear non-speech."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 65, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:12:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source stated an unsold 575-call position bought at 7.32."},
+    {"timestamp": "00:12:50", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source stated April 4 567 puts at 7.17."},
+    {"timestamp": "00:13:58", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported March 28 566 puts at 3.04, 3.22 target, and exit after 55 seconds; captioned exit price is unreliable."},
+    {"timestamp": "01:16:38", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported 14 576 calls at 4.12 as a repair, combined with nine original contracts at 5.11 average."},
+    {"timestamp": "01:19:21", "classification": "PRESENTER_CLAIM", "claim": "Source discussed a 5.20 offer and 573-573.5 underlying target area without reporting a sale fill."}
+  ],
+  "claims": [
+    {"id": "DTS-20250327-C01", "timestamp": "00:13:58", "label": "RETRACEMENT_PUT_GATE", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source linked the 566-put scalp to downside continuation through a stated retracement area.", "disconfirming_evidence_required": "Visual review, deterministic level labels, timestamped underlying bars, and broker fills."},
+    {"id": "DTS-20250327-C02", "timestamp": "01:16:38", "label": "RESISTANCE_BREAK_REPAIR", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source linked a 576-call repair to a stated resistance break and affordability check.", "disconfirming_evidence_required": "Chart review, contract-level position lineage, option marks, and broker fills."},
+    {"id": "DTS-20250327-C03", "timestamp": "01:16:38", "label": "REPORTED_CALL_REPAIR", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported 14 576 calls at 4.12, combined with nine original contracts at 5.11 average.", "disconfirming_evidence_required": "Broker executions, option marks, position lineage, commissions, and canonical ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250327-T01", "type": "CALL_POSITION", "setup": "575 calls, existing position", "entry_time": "UNKNOWN", "entry_premium": "7.32", "exit_time": "NOT_REPORTED", "exit_premium": "NOT_REPORTED", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250327-T02", "type": "PUT_POSITION", "setup": "April 4 567 puts", "entry_time": "UNKNOWN", "entry_premium": "7.17", "exit_time": "NOT_REPORTED", "exit_premium": "NOT_REPORTED", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250327-T03", "type": "PUT_SCALP", "setup": "March 28 566 puts; stated downside continuation", "entry_time": "UNKNOWN", "entry_premium": "3.04", "exit_time": "UNKNOWN", "exit_premium": "Source said out after 55 seconds; captioned value unreliable", "stop_or_invalidation": "3.22 stated target"},
+    {"source_trade_id": "DTS-20250327-T04", "type": "CALL_REPAIR", "setup": "14 576 calls after stated resistance break", "entry_time": "UNKNOWN", "entry_premium": "4.12", "exit_time": "NOT_REPORTED", "exit_premium": "5.20 proposed offer only", "stop_or_invalidation": "UNKNOWN"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["575 calls at 7.32, nine contracts at 6.64, and 576-call repair cannot be linked.", "A voice later denies personal entry, but captions lack speaker attribution.", "Captioned 566-put exit premium is unreliable."], "unavailable_evidence": ["No canonical ledger mapping, broker execution records, underlying bars, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "Cannot assess retracement or resistance-break conditions without timestamped underlying bars, option marks, broker executions, and baseline replay."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Visual review", "Speaker attribution", "Deterministic resistance/retracement labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option execution and excursion data", "575/6.64/576 position linkage", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

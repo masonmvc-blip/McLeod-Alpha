@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39026,
+    "title": "Trading Room Video Recording - March 24, 2025",
+    "publication_date": "2025-03-24",
+    "source_url": "https://daytradespy.com/39026/trading-room-video-recording-march-24-2025/",
+    "duration_seconds": 4476,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 1487, "first_timestamp": "00:00:00", "last_timestamp": "01:14:23", "raw_transcript_persisted": false, "coverage_note": "The authenticated caption stream covered approximately 99.7% of player duration; final uncued outro is unknown."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 75, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:06:42", "classification": "PRESENTER_CLAIM", "claim": "Source discussed conditional March 28 570 puts after one-minute retracement/bounce and five-minute resistance context."},
+    {"timestamp": "00:18:31", "classification": "PRESENTER_CLAIM", "claim": "Source required an OMG close and green candle before the 573-call entry."},
+    {"timestamp": "00:09:38", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported 12 570/571 calls from 5.11 to 5.52; strike conflict remains unresolved."},
+    {"timestamp": "00:09:41", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported 10 March 28 573 calls from 4.33 to 4.59."},
+    {"timestamp": "00:47:52", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported later March 28 573-call re-entry at 4.52 and only a stated 13-cent gain, without exact exit fill."}
+  ],
+  "claims": [
+    {"id": "DTS-20250324-C01", "timestamp": "00:18:31", "label": "OMG_CLOSE_GATE", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source required an OMG close and green candle before a 573-call entry.", "disconfirming_evidence_required": "Visual review, deterministic OMG labels, timestamped underlying bars, and independent executions."},
+    {"id": "DTS-20250324-C02", "timestamp": "00:47:52", "label": "SUPPORT_MA_MANAGEMENT", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source discussed support and a 50-MA bounce while managing later calls.", "disconfirming_evidence_required": "Chart review, deterministic moving-average labels, option marks, and broker fills."},
+    {"id": "DTS-20250324-C03", "timestamp": "00:09:41", "label": "REPORTED_OMG_CALL_SCALP", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported 10 March 28 573 calls from 4.33 to 4.59 in 13 minutes.", "disconfirming_evidence_required": "Broker executions, option marks, commissions, and canonical ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250324-T01", "type": "CALL_SCALP", "setup": "12 March 28 570/571 calls; source strike conflict", "entry_time": "UNKNOWN", "entry_premium": "5.11", "exit_time": "UNKNOWN", "exit_premium": "5.52", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250324-T02", "type": "CALL_SCALP", "setup": "10 March 28 573 calls; OMG-labelled", "entry_time": "UNKNOWN", "entry_premium": "4.33", "exit_time": "UNKNOWN", "exit_premium": "4.59", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250324-T03", "type": "CALL_SCALP", "setup": "March 28 572 calls", "entry_time": "UNKNOWN", "entry_premium": "4.78", "exit_time": "UNKNOWN", "exit_premium": "5.00", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250324-T04", "type": "CALL_REENTRY", "setup": "Later March 28 573 calls", "entry_time": "UNKNOWN", "entry_premium": "4.52", "exit_time": "UNKNOWN", "exit_premium": "13-cent gain stated; exact fill NOT_REPORTED", "stop_or_invalidation": "4.70 target then 4.65 sell order discussed; neither is a confirmed exit"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["First completed sequence is captioned as both 570 and 571 calls.", "A separate 4.34-to-4.60 remark lacks reliable identity and linkage.", "Later 573-call re-entry exact exit is not expressly stated."], "unavailable_evidence": ["No canonical ledger mapping, broker execution records, underlying bars, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "Cannot assess OMG, resistance, pullback, or moving-average conditions without timestamped underlying bars, option marks, broker executions, and baseline replay."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Visual review", "Speaker attribution", "Deterministic OMG/resistance/support/EMA labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option execution and excursion data", "Exact 570/571 strike identity", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

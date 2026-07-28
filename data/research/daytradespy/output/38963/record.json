@@ -1,0 +1,40 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38963,
+    "title": "Trading Room Video Recording - March 19, 2025",
+    "publication_date": "2025-03-19",
+    "source_url": "https://daytradespy.com/38963/trading-room-video-recording-march-19-2025/",
+    "duration_seconds": 4524,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 1464, "first_timestamp": "00:00:00", "last_timestamp": "01:15:23", "raw_transcript_persisted": false, "coverage_note": "The authenticated caption stream was reviewed through its final cue."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:06:02", "classification": "PRESENTER_CLAIM", "claim": "Source required first five-minute close outside a referenced range and one-minute directional pressure before seeking a target."},
+    {"timestamp": "00:08:37", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported 13 March 21 563 calls at 4.46 after a one-minute bounce."},
+    {"timestamp": "00:26:11", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported the 13 calls sold at 4.75 after 16 minutes."},
+    {"timestamp": "00:38:28", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source separately reported March 28 565-call claims at 6.03 and 6.73 with distinct target/exit statements."},
+    {"timestamp": "00:48:13", "classification": "PRESENTER_CLAIM", "claim": "Source described repeated resistance, a one-minute MACD crossover, and avoiding holds through Powell/FOMC repositioning."}
+  ],
+  "claims": [
+    {"id": "DTS-20250319-C01", "timestamp": "00:06:02", "label": "MULTITIMEFRAME_DIRECTION_GATE", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source required first-five-minute direction outside a referenced range plus one-minute directional pressure before seeking a target.", "disconfirming_evidence_required": "Visual review, deterministic range labels, timestamped underlying bars, and independent executions."},
+    {"id": "DTS-20250319-C02", "timestamp": "00:48:13", "label": "SCHEDULED_EVENT_AVOIDANCE", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source described not holding through Powell/FOMC repositioning.", "disconfirming_evidence_required": "Event-time replay, position records, option marks, and baseline controls."},
+    {"id": "DTS-20250319-C03", "timestamp": "00:26:11", "label": "REPORTED_CALL_SCALP", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported 13 March 21 563 calls from 4.46 to 4.75 after 16 minutes.", "disconfirming_evidence_required": "Broker executions, option marks, commissions, and canonical ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250319-T01", "type": "CALL_SCALP", "setup": "13 March 21 563 calls; one-minute bounce", "entry_time": "09:32 (source-stated market time)", "entry_premium": "4.46", "exit_time": "UNKNOWN", "exit_premium": "4.75", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250319-T02", "type": "CALL_ENTRY", "setup": "March 28 563 calls", "entry_time": "UNKNOWN", "entry_premium": "7.34", "exit_time": "NOT_REPORTED", "exit_premium": "7.78 target", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250319-T03", "type": "CALL_SCALP", "setup": "March 28 565 calls; later separate trade", "entry_time": "UNKNOWN", "entry_premium": "6.73", "exit_time": "UNKNOWN", "exit_premium": "7.02", "stop_or_invalidation": "7.11 stated target"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 3, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Captioned 13-contract dollar P/L is ambiguous.", "March 28 563/565 sequences lack reliable linkage.", "March 28 timing statements are inconsistent."], "unavailable_evidence": ["No canonical ledger mapping, broker execution records, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "Cannot assess multi-timeframe gate, resistance exit, or event-avoidance impact without timestamped underlying bars, option marks, broker executions, and baseline replay."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Visual review", "Speaker attribution", "Deterministic range/resistance labels", "Timestamped underlying bars", "Option execution and excursion data", "Exact March 28 position linkage", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

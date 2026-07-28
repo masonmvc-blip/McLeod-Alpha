@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39011,
+    "title": "Trading Room Video Recording - March 21, 2025",
+    "publication_date": "2025-03-21",
+    "source_url": "https://daytradespy.com/39011/trading-room-video-recording-march-21-2025/",
+    "duration_seconds": 5001,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT", "completeness_pct": 98, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 1810, "first_timestamp": "00:00:00", "last_timestamp": "01:21:15", "raw_transcript_persisted": false, "coverage_note": "The authenticated caption stream covered approximately 97.5% of player duration; the final 02:06 is uncued and unknown."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 98, "trade_details_captured_pct": 65, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:16:13", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source stated a 4.82 fill on 563 calls at source-stated 09:37."},
+    {"timestamp": "00:20:56", "classification": "PRESENTER_CLAIM", "claim": "Source labeled the session a no-OMG-trade day, distinct from concurrently discussed option positions."},
+    {"timestamp": "00:22:26", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source separately identified March 28 563 calls at 4.98 with a 5.25 target and 5.16 reported high."},
+    {"timestamp": "00:48:05", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Source reported March 28 559 puts at 6.26 with a 6.60 target."},
+    {"timestamp": "01:20:48", "classification": "PRESENTER_CLAIM", "claim": "Source intended to hold the puts through at least the end of day, potentially through Monday."}
+  ],
+  "claims": [
+    {"id": "DTS-20250321-C01", "timestamp": "00:20:56", "label": "NO_OMG_FILTER", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source called the session a no-OMG-trade day while discussing separate option positions.", "disconfirming_evidence_required": "Visual review, deterministic OMG labels, timestamped underlying bars, and independent executions."},
+    {"id": "DTS-20250321-C02", "timestamp": "00:46:12", "label": "HIGH_VOLATILITY_EXIT_POLICY", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "The source discussed replacing a 40% stop-loss with an end-of-day market-price exit in high volatility.", "disconfirming_evidence_required": "Position records, volatility labels, option marks, and baseline-controlled replay."},
+    {"id": "DTS-20250321-C03", "timestamp": "00:48:05", "label": "REPORTED_PUT_ENTRY", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The source reported March 28 559 puts at 6.26 with a 6.60 target.", "disconfirming_evidence_required": "Broker executions, option marks, commissions, and canonical ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250321-T01", "type": "CALL_POSITION", "setup": "563 calls", "entry_time": "09:37 (source-stated market time)", "entry_premium": "4.82", "exit_time": "NOT_REPORTED", "exit_premium": "5.16 reported high; position still held", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250321-T02", "type": "CALL_POSITION", "setup": "March 28 563 calls; source-labeled 2.40 trade", "entry_time": "UNKNOWN", "entry_premium": "4.98", "exit_time": "NOT_REPORTED", "exit_premium": "5.25 target; 5.16 reported high", "stop_or_invalidation": "End-of-day fallback stated"},
+    {"source_trade_id": "DTS-20250321-T03", "type": "PUT_POSITION", "setup": "March 28 559 puts after stated downside break", "entry_time": "UNKNOWN", "entry_premium": "6.26", "exit_time": "NOT_REPORTED", "exit_premium": "6.60 target", "stop_or_invalidation": "Held through at least end of day stated"},
+    {"source_trade_id": "DTS-20250321-T04", "type": "CALL_EXIT", "setup": "Prior-day 570 calls", "entry_time": "UNKNOWN", "entry_premium": "5.16 and 5.40 source-stated sequence", "exit_time": "UNKNOWN", "exit_premium": "Source stated position was exited", "stop_or_invalidation": "UNKNOWN"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["The 4.82 and 4.98 563-call positions are distinct source claims and must not be merged.", "A late caption renders 463 calls while earlier evidence identifies the 2.40 trade as 563 calls.", "The 570-call price roles are not explicit in captions."], "unavailable_evidence": ["No canonical ledger mapping, broker execution records, underlying bars, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "Cannot assess no-OMG filter, end-of-day exits, or downside-break impact without timestamped underlying bars, option marks, broker executions, and baseline replay."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Visual review", "Speaker attribution", "Deterministic OMG and downside-break labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option execution and excursion data", "Post-caption-tail outcomes", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

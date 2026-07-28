@@ -1,0 +1,41 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39133,
+    "title": "Trading Room Video Recording - March 28, 2025",
+    "publication_date": "2025-03-28",
+    "source_url": "https://daytradespy.com/39133/trading-room-video-recording-march-28-2025/",
+    "duration_seconds": 4285,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT", "completeness_pct": 99, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 1513, "first_timestamp": "00:00:00", "last_timestamp": "01:11:02", "raw_transcript_persisted": false, "coverage_note": "The authenticated caption stream covered approximately 99.5% of player duration; final uncued seconds are unknown."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 99, "trade_details_captured_pct": 60, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:09:43", "classification": "PRESENTER_CLAIM", "claim": "Speaker stated holding 23 calls at caption-rendered 5.11; instrument details are unavailable."},
+    {"timestamp": "00:23:22", "classification": "PARTICIPANT_REPORTED_TRADE", "claim": "Participant reported April 4 566 puts from 6.82 to 7.07."},
+    {"timestamp": "00:32:12", "classification": "PARTICIPANT_REPORTED_TRADE", "claim": "Participant reported a put sequence at 6.00 to 6.16, but 563, 562, and 564 strike references conflict."},
+    {"timestamp": "00:45:24", "classification": "PARTICIPANT_REPORTED_TRADE", "claim": "Named dialogue participant John reported April 4 563 puts from 6.51 to 6.79."},
+    {"timestamp": "00:53:31", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Speaker described a prior Wednesday 575-call loss from 7.10 to 5.90."}
+  ],
+  "claims": [
+    {"id": "DTS-20250328-C01", "timestamp": "00:14:24", "label": "PUT_CANDLE_GATE", "fact_classification": "PRESENTER_CLAIM", "status": "CONTRADICTORY_CAPTIONS", "claim": "The source gave incompatible red-candle and green-candle conditions for a proposed 563-put entry.", "disconfirming_evidence_required": "Visual review, speaker attribution, deterministic candle labels, timestamped underlying bars, and broker fills."},
+    {"id": "DTS-20250328-C02", "timestamp": "00:45:42", "label": "DOWNSIDE_MOMENTUM_SCALP", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_INSTRUMENTATION", "claim": "A named dialogue participant described no real setup, only downside momentum and support near 562.65 before a put scalp.", "disconfirming_evidence_required": "Visual review, deterministic support labels, timestamped underlying bars, and broker fills."},
+    {"id": "DTS-20250328-C03", "timestamp": "00:45:24", "label": "REPORTED_PUT_SCALP", "fact_classification": "PARTICIPANT_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "John reported April 4 563 puts from 6.51 to 6.79.", "disconfirming_evidence_required": "Broker executions, option marks, commissions, speaker attribution, and canonical ledger mapping."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250328-T01", "type": "PUT_SCALP", "setup": "April 4 566 puts; participant claim", "entry_time": "UNKNOWN", "entry_premium": "6.82", "exit_time": "UNKNOWN", "exit_premium": "7.07", "stop_or_invalidation": "Target 7.06 stated"},
+    {"source_trade_id": "DTS-20250328-T02", "type": "PUT_ORDER_SEQUENCE", "setup": "563/562/564 strike conflict", "entry_time": "09:53 (source-stated market time)", "entry_premium": "6.00 on captioned 563 puts", "exit_time": "UNKNOWN", "exit_premium": "6.16 stated sale", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250328-T03", "type": "PUT_SCALP", "setup": "April 4 563 puts; named dialogue participant John", "entry_time": "10:06 (source-stated market time)", "entry_premium": "6.51", "exit_time": "10:07 (source-stated market time)", "exit_premium": "6.79", "stop_or_invalidation": "UNKNOWN"},
+    {"source_trade_id": "DTS-20250328-T04", "type": "CALL_LOSS", "setup": "Historical 575 calls; prior Wednesday", "entry_time": "UNKNOWN", "entry_premium": "7.10", "exit_time": "UNKNOWN", "exit_premium": "5.90", "stop_or_invalidation": "Failure to rebound through stated SPY 574"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Proposed 563-put gate has incompatible candle-color conditions.", "563, 562, and 564 references do not establish a single position.", "6.51-to-6.79 claim conflicts with stated 8-cent and 4.3% outcome language."], "unavailable_evidence": ["No canonical ledger mapping, broker execution records, underlying bars, or option excursion data was available."]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "UNAVAILABLE_EVIDENCE", "detail": "Cannot assess support or downside-momentum claims without timestamped underlying bars, option marks, broker executions, speaker attribution, and baseline replay."}],
+  "hypothesis_references": [],
+  "instrumentation_gaps": ["Visual review", "Speaker attribution", "Deterministic candle/support labels", "Contract symbols and order identifiers", "Timestamped underlying bars", "Option execution and excursion data", "Exact 563/562/564 strike linkage", "Canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
