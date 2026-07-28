@@ -7382,11 +7382,6 @@ HTML_DASHBOARD = """
             <div class="logs-title">📋 Recent Logs <span id="logsLastUpdated" class="logs-meta">(log updated: loading...)</span></div>
             <pre id="logsContent">Loading logs...</pre>
         </div>
-
-        <section class="qualified-entry-blocks" id="qualifiedEntryBlocks" hidden aria-live="polite">
-            <h3>Qualified Entries Not Taken</h3>
-            <div id="qualifiedEntryBlocksList"></div>
-        </section>
     </div>
     
     <script>
@@ -8378,21 +8373,6 @@ HTML_DASHBOARD = """
                     putIndEl.className = 'status-value info';
                 } else {
                     putIndEl.className = 'status-value error';
-                }
-
-                const qualifiedBlocks = Array.isArray(status.qualified_entry_blocks)
-                    ? status.qualified_entry_blocks
-                    : [];
-                const qualifiedBlocksPanel = document.getElementById('qualifiedEntryBlocks');
-                const qualifiedBlocksList = document.getElementById('qualifiedEntryBlocksList');
-                if (qualifiedBlocksPanel && qualifiedBlocksList) {
-                    qualifiedBlocksPanel.hidden = qualifiedBlocks.length === 0;
-                    qualifiedBlocksList.innerHTML = qualifiedBlocks.map((block) => {
-                        const direction = escapeHtml(String(block.direction || 'UNKNOWN').toUpperCase());
-                        const score = escapeHtml(String(block.score || 0));
-                        const reason = escapeHtml(String(block.reason || 'no entry reason recorded').replaceAll('_', ' '));
-                        return `<div class="qualified-entry-block-row"><strong>${direction} ${score}/5:</strong> ${reason}</div>`;
-                    }).join('');
                 }
 
                 // Current trade P&L (unrealized)

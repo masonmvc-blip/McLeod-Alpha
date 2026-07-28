@@ -217,15 +217,13 @@ def test_entry_block_reason_is_shown_only_on_the_blocked_indicator_side():
     assert 'decision_audit.get("entry_block_reason")' in runtime_status_source
 
 
-def test_qualified_non_entries_are_rendered_in_the_bottom_block_panel():
+def test_qualified_non_entry_reasons_are_not_rendered_below_recent_logs():
     cockpit_source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
-    runtime_status_source = (cockpit.PROJECT_ROOT / "engine" / "runtime_status.py").read_text(encoding="utf-8")
 
-    assert 'id="qualifiedEntryBlocks"' in cockpit_source
-    assert 'Qualified Entries Not Taken' in cockpit_source
-    assert 'status.qualified_entry_blocks' in cockpit_source
-    assert '"qualified_entry_blocks": []' in runtime_status_source
-    assert 'qualified_blocks.append({"direction": side, "score": score, "reason": reason})' in runtime_status_source
+    assert 'id="qualifiedEntryBlocks"' not in cockpit_source
+    assert 'Qualified Entries Not Taken' not in cockpit_source
+    assert 'status.qualified_entry_blocks' not in cockpit_source
+    assert "lastEntryCandidateDirection === side && lastEntryBlockReason" in cockpit_source
 
 
 def test_option_label_includes_strike_for_calls_and_puts():
