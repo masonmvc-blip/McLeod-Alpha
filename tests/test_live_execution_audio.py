@@ -39,3 +39,11 @@ def test_native_execution_alert_never_raises_when_player_fails(monkeypatch, tmp_
     monkeypatch.setattr(live_engine.subprocess, "Popen", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("audio unavailable")))
 
     live_engine._play_execution_alert("entry")
+
+
+def test_broker_reconciled_exit_uses_the_native_exit_alert():
+    source = (live_engine.Path(__file__).resolve().parents[1] / "execution" / "live_engine.py").read_text(encoding="utf-8")
+    reconciled_exit_index = source.index('source="LIVE_RECONCILED"')
+    alert_index = source.index('_play_execution_alert("exit", option_pnl_dollars)', reconciled_exit_index)
+
+    assert alert_index > reconciled_exit_index

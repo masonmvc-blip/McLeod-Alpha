@@ -1421,6 +1421,7 @@ def _sync_position_with_broker(current_price, force: bool = False):
     # the lock that blocks future entries.
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
+    _play_execution_alert("exit", option_pnl_dollars)
     print("✓ Cleared stale local position after broker reconciliation")
     print("✓ Protective stop failure lock cleared after broker reconciliation")
 
