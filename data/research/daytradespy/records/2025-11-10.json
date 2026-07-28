@@ -1,0 +1,36 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42237, "title": "Trading Room Video Recording – November 10, 2025", "publication_date": "2025-11-10", "post_publication_date": "2025-11-10",
+    "source_url": "https://daytradespy.com/42237/trading-room-video-recording-november-10-2025/", "duration_seconds": 4547, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 488, "first_timestamp": "00:00", "last_timestamp": "01:14:47", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:15:47 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 92, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:13:24", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 14 678-call scalp completed 4.84 to 5.05."},
+    {"timestamp": "00:22:10", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal November 14 680-call OMG entered at 4.23 with 4.48 target."},
+    {"timestamp": "00:51:05", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Separate 680-call scalp completed 4.19 to 4.63."},
+    {"timestamp": "01:13:56", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal OMG and separate retained call exposure remained unresolved."}
+  ],
+  "claims": [
+    {"id": "DTS-20251110-P42237-C01", "timestamp": "01:13:56", "label": "FORMAL_CALL_OMG_UNRESOLVED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "Formal November 14 680 calls at 4.23 never confirmed the 4.48 target.", "forward_outcomes": {"1m": "MIXED", "3m": "ADVERSE", "5m": "ADVERSE", "10m": "MIXED", "15m": "MIXED", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker ledger showing terminal disposition."},
+    {"id": "DTS-20251110-P42237-C02", "timestamp": "00:51:05", "label": "TWO_CALL_SCALPS_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Two discretionary call scalps completed during the same opening-rally regime.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "FAVORABLE", "5m": "MIXED", "10m": "MIXED", "15m": "MIXED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable quote paths."},
+    {"id": "DTS-20251110-P42237-C03", "timestamp": "00:58:46", "label": "PUBLISHED_PICK_SEPARATE_LINEAGE", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Published 680-call pick modeled 3.64 to 3.85, separate from live room executions.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "FAVORABLE", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Original alert and broker ledger."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251110-P42237-T01", "type": "CALL_POSITION", "setup": "November 14 678 calls; opening scalp", "entry_time": "00:09:44", "entry_premium": 4.84, "exit_time": "00:13:24", "exit_premium": 5.05, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251110-P42237-T02", "type": "CALL_POSITION", "setup": "November 14 680 calls; discretionary scalp", "entry_time": "00:17:40", "entry_premium": 4.19, "exit_time": "00:51:05", "exit_premium": 4.63, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251110-P42237-T03", "type": "OMG", "setup": "November 14 680 calls; formal OMG", "entry_time": "00:22:10", "entry_premium": 4.23, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "4.48 target not confirmed"},
+    {"source_trade_id": "DTS-20251110-P42237-T04", "type": "PUBLISHED_PICK", "setup": "November 14 680 calls; modeled published pick", "entry_time": "00:09:31", "entry_premium": 3.64, "exit_time": "00:09:35", "exit_premium": 3.85, "stop_or_invalidation": "Separate published lineage"},
+    {"source_trade_id": "DTS-20251110-P42237-T05", "type": "CALL_POSITION", "setup": "November 14 680 calls; separately retained position", "entry_time": "PRIOR_TO_00:43:02", "entry_premium": 4.19, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Target reduced to 4.25; not confirmed"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 5, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Formal, discretionary, and published-pick lineages overlap in contract but not outcome.", "Two 4.19-position references have different terminal states and cannot be merged."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:09:44", "state": "OPENING_RALLY", "evidence": "Calls advanced on reopening optimism."}, {"timestamp": "00:43:02", "state": "RESISTANCE_BOUND_CONSOLIDATION", "evidence": "Repeated tests prevented the formal target from being confirmed."}],
+  "counterfactuals": [{"timestamp": "01:13:56", "type": "FORMAL_TERMINAL_STATE", "detail": "Do not infer a target fill after recording end."}, {"timestamp": "00:58:46", "type": "LINEAGE_SEPARATION", "detail": "Do not combine modeled published pick with live room fills."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251110-P42237-C01", "DTS-20251110-P42237-C02", "DTS-20251110-P42237-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

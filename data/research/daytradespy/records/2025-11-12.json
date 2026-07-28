@@ -1,0 +1,35 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42297, "title": "Trading Room Video Recording – November 12, 2025", "publication_date": "2025-11-12", "post_publication_date": "2025-11-12",
+    "source_url": "https://daytradespy.com/42297/trading-room-video-recording-november-12-2025/", "duration_seconds": 4620, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 536, "first_timestamp": "00:00", "last_timestamp": "01:16:29", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:17:00 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 91, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:24:18", "classification": "EXPLICIT_NO_TRADE", "claim": "Presenter explicitly declined to classify the downside crossing as a formal OMG."},
+    {"timestamp": "00:25:24", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 21 685-put scalp completed 6.00 to 6.26."},
+    {"timestamp": "00:32:39", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 21 685-call repair produced a 6.10 average cost."},
+    {"timestamp": "00:51:59", "classification": "PRESENTER_REPORTED_TRADE", "claim": "November 21 684-put scalp completed 5.78 to 6.07."},
+    {"timestamp": "01:13:20", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Repaired call position remained open."}
+  ],
+  "claims": [
+    {"id": "DTS-20251112-P42297-C01", "timestamp": "00:24:18", "label": "FORMAL_OMG_NO_TRADE", "fact_classification": "EXPLICIT_NO_TRADE", "status": "SOURCE_SUPPORTED", "claim": "No formal OMG was counted because the presenter explicitly disclaimed the later put entry as formal.", "forward_outcomes": {"1m": "NO_TRADE", "3m": "NO_TRADE", "5m": "NO_TRADE", "10m": "NO_TRADE", "15m": "NO_TRADE", "remainder_session": "NO_TRADE"}, "disconfirming_evidence_required": "Original formal alert showing an issued trade."},
+    {"id": "DTS-20251112-P42297-C02", "timestamp": "00:51:59", "label": "TWO_PUT_SCALPS_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Two discretionary November 21 put scalps completed during downside swings.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "FAVORABLE", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable quote paths."},
+    {"id": "DTS-20251112-P42297-C03", "timestamp": "01:13:20", "label": "REPAIRED_CALL_UNRESOLVED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "November 21 685 calls were repaired to a 6.10 average and remained open.", "forward_outcomes": {"1m": "ADVERSE", "3m": "ADVERSE", "5m": "ADVERSE", "10m": "MIXED", "15m": "MIXED", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker ledger showing terminal disposition."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251112-P42297-T01", "type": "CALL_POSITION", "setup": "November 21 685 calls; repaired position", "entry_time": "00:16:51", "entry_premium": 6.31, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Added at 5.89; reported average 6.10; terminal exit unavailable"},
+    {"source_trade_id": "DTS-20251112-P42297-T02", "type": "PUT_POSITION", "setup": "November 21 685 puts; discretionary downside trade", "entry_time": "00:23:08", "entry_premium": 6.00, "exit_time": "00:25:24", "exit_premium": 6.26, "stop_or_invalidation": "Completed; explicitly not formal OMG"},
+    {"source_trade_id": "DTS-20251112-P42297-T03", "type": "PUT_POSITION", "setup": "November 21 684 puts; discretionary downside scalp", "entry_time": "00:43:59", "entry_premium": 5.78, "exit_time": "00:51:59", "exit_premium": 6.07, "stop_or_invalidation": "Completed"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 3, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["No formal OMG despite a downside threshold crossing.", "Opposing puts completed while repaired calls remained open.", "Repair cost basis cannot be reconciled without quantities."], "unavailable_evidence": ["Broker ledger, quantities, and repaired size", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:13:18", "state": "VOTE_UNCERTAINTY_TWO_WAY_SWINGS", "evidence": "Threshold crossing reversed before formal confirmation."}, {"timestamp": "00:43:59", "state": "REPEATED_SUPPORT_TESTS", "evidence": "Put trades followed failed rebounds."}],
+  "counterfactuals": [{"timestamp": "00:24:18", "type": "FORMAL_SIGNAL_DISCIPLINE", "detail": "Do not score the discretionary put as formal OMG."}, {"timestamp": "01:13:20", "type": "REPAIR_ACCOUNTING", "detail": "Do not net repaired calls against independent put scalps without quantities."}],
+  "instrumentation_gaps": ["Broker ledger, quantities, and repaired size", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251112-P42297-C01", "DTS-20251112-P42297-C02", "DTS-20251112-P42297-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
