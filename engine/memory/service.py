@@ -268,6 +268,13 @@ class Memory:
             fact_sha256 = hashlib.sha256(
                 json.dumps(fact_payload, default=str, separators=(",", ":"), sort_keys=True).encode("utf-8")
             ).hexdigest()
+            existing_version = connection.execute(
+                "SELECT canonical_version FROM canonical_completed_trade_versions WHERE canonical_trade_id = ? AND payload_sha256 = ?",
+                (canonical_trade_id, fact_sha256),
+            ).fetchone()
+            if existing_version is not None:
+                payload["canonical_version"] = int(existing_version[0])
+                return payload
             payload["canonical_version"] = int(latest[0] or 0) + 1 if latest else 1
             serialized = json.dumps(payload, default=str, separators=(",", ":"), sort_keys=True)
             payload_sha256 = fact_sha256

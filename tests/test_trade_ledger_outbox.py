@@ -62,6 +62,24 @@ def test_broker_correction_creates_new_canonical_version(tmp_path):
         assert connection.execute("SELECT COUNT(*) FROM canonical_completed_trade_versions").fetchone()[0] == 2
 
 
+def test_revisiting_a_prior_payload_reuses_its_canonical_version(tmp_path):
+    memory = Memory(db_path=tmp_path / "ledger.db")
+    trade = {
+        "entry_time": "2026-07-23T10:00:00-04:00", "exit_time": "2026-07-23T10:05:00-04:00",
+        "direction": "CALL", "entry_price": 600, "exit_price": 601, "pnl": 10,
+        "exit_reason": "TARGET", "option_symbol": "SPY  260723C00600000", "option_entry": 5,
+        "option_exit": 5.1, "option_quantity": 1, "broker_entry_order_id": "entry-restore", "broker_exit_order_id": "exit-restore",
+    }
+
+    original = memory.upsert_completed_trade(trade, source="broker_reconciliation")
+    memory.upsert_completed_trade({**trade, "pnl": 9.75}, source="broker_reconciliation")
+    restored = memory.upsert_completed_trade(trade, source="broker_reconciliation")
+
+    assert restored["canonical_version"] == original["canonical_version"] == 1
+    with sqlite3.connect(memory.db_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM canonical_completed_trade_versions").fetchone()[0] == 2
+
+
 def test_reconciliation_metrics_detect_pending_and_unreconciled(tmp_path):
     memory = Memory(db_path=tmp_path / "data" / "ledger.db")
     broker_trade = {
