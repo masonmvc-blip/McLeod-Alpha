@@ -187,6 +187,18 @@ if [[ "${ENFORCE_CLEAN_GIT_ON_START:-1}" == "1" ]]; then
   fi
 fi
 
+for listener_pid in $(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null); do
+  kill "$listener_pid" 2>/dev/null || true
+done
+for _ in $(seq 1 20); do
+  if ! lsof -nP -iTCP:5001 -sTCP:LISTEN >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.25
+done
+for listener_pid in $(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null); do
+  kill -9 "$listener_pid" 2>/dev/null || true
+done
 pkill -f "cockpit.py" || true
 pkill -f "phase3_monitor.py" || true
 
