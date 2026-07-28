@@ -2853,7 +2853,9 @@ def _compute_candle_indicator_snapshot(now_et=None, history_path=None):
         candles["datetime"] = pd.to_datetime(candles["datetime"], utc=True)
         current_et = now_et or datetime.now(EASTERN_TZ)
         current_minute = current_et.astimezone(timezone.utc).replace(second=0, microsecond=0)
-        candles = candles[candles["datetime"] < current_minute]
+        # The monitor logs a live-window candle at the start of its stamped
+        # minute, so include it to keep the dashboard cards aligned with logs.
+        candles = candles[candles["datetime"] <= current_minute]
     except Exception:
         return None
 

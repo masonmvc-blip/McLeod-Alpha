@@ -25,11 +25,11 @@ def _write_candles(path):
         writer.writerows(rows)
 
 
-def test_indicator_snapshot_excludes_forming_minute(tmp_path):
+def test_indicator_snapshot_includes_monitor_published_current_minute(tmp_path):
     history_path = tmp_path / "spy_1min_history.csv"
     _write_candles(history_path)
 
-    during_current_minute = cockpit._compute_candle_indicator_snapshot(
+    during_published_minute = cockpit._compute_candle_indicator_snapshot(
         now_et=datetime(2026, 7, 20, 10, 16, 30, tzinfo=ET),
         history_path=history_path,
     )
@@ -38,7 +38,7 @@ def test_indicator_snapshot_excludes_forming_minute(tmp_path):
         history_path=history_path,
     )
 
-    assert during_current_minute["timestamp"].startswith("2026-07-20T10:15:00")
+    assert during_published_minute["timestamp"].startswith("2026-07-20T10:16:00")
     assert after_current_minute_closes["timestamp"].startswith("2026-07-20T10:16:00")
 
 
