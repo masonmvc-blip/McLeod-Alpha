@@ -496,7 +496,6 @@ def check_spy_option_exposure():
         
         # Skip terminal statuses - these never block trading
         if status in TERMINAL_STATUSES:
-            print(f"  [RECONCILIATION] Order {order_id}: status={status} (TERMINAL) → does NOT block")
             continue
         
         legs = order.get("orderLegCollection", [])

@@ -57,6 +57,21 @@ def test_replaced_order_does_not_block():
         print("  ✓ REPLACED order correctly does not block")
 
 
+def test_terminal_order_is_not_logged_during_exposure_preflight(capsys):
+    """Historical terminal orders must not flood the minute-boundary logs."""
+    with patch.object(le, 'get_schwab_positions') as mock_get:
+        mock_get.return_value = (
+            [],
+            [create_mock_order("terminal", "SPY   260724C00754000", "BUY", 3, "FILLED")],
+            200,
+            None,
+        )
+
+        assert le.check_spy_option_exposure() == (False, None)
+
+    assert "does NOT block" not in capsys.readouterr().out
+
+
 def test_canceled_order_does_not_block():
     """CANCELED orders should not block trading"""
     print("\n✓ Test: CANCELED orders do not block trading")
