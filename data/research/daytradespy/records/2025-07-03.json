@@ -1,0 +1,148 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40839,
+    "title": "Trading Room Video Recording - July 3, 2025",
+    "publication_date": "2025-07-03",
+    "source_url": "https://daytradespy.com/40839/trading-room-video-recording-july-3-2025/",
+    "duration_seconds": 4342,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER",
+      "cue_count": 1440,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:54",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:12:22 asset. Player volume was verified at 0 percent and playback was never started."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 100,
+    "trade_details_captured_pct": 86,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {"timestamp": "00:08:21", "classification": "PRESENTER_CLAIM", "claim": "The July challenge schedule was corrected to 8000 dollars capital and a 320-dollar objective."},
+    {"timestamp": "00:09:53", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Real July 11 625 calls entered at 3.52 and later sold at 3.70."},
+    {"timestamp": "00:14:37", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A qualifying upside close activated July 11 625 OMG calls at 3.81 with a 4.04 target."},
+    {"timestamp": "00:23:20", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A second real 625-call scalp sold at 3.90 after entry at 3.81."},
+    {"timestamp": "00:27:42", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Seventeen July 11 625 challenge calls entered at 4.54."},
+    {"timestamp": "00:30:02", "classification": "PRESENTER_REPORTED_TRADE", "claim": "OMG calls sold at 4.22 and challenge calls sold at 4.83; 483 dollars net was reported for the challenge."},
+    {"timestamp": "00:32:20", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Same-day 625 calls entered at 0.60, later added at 0.50 for a 0.55 average."},
+    {"timestamp": "00:52:07", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The same-day calls stopped at 0.68."},
+    {"timestamp": "01:08:35", "classification": "PRESENTER_REPORTED_TRADE", "claim": "The remainder of late July 11 624 calls exited at 5.33 after a partial 13-cent gain."},
+    {"timestamp": "01:11:46", "classification": "PRESENTER_CLAIM", "claim": "The published 625-call pick was reported to have worked."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250703-P40839-C01",
+      "timestamp": "00:08:21",
+      "label": "CHALLENGE_SCHEDULE_RECONCILED",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "SOURCE_RECONCILED",
+      "claim": "The source explicitly corrected July challenge capital to 8000 dollars and the daily objective to 320 dollars.",
+      "forward_outcomes": {"1m": "NOT_APPLICABLE", "3m": "NOT_APPLICABLE", "5m": "NOT_APPLICABLE", "10m": "NOT_APPLICABLE", "15m": "NOT_APPLICABLE", "remainder_session": "SOURCE_USED_8000_DOLLAR_BUDGET"},
+      "disconfirming_evidence_required": "Versioned challenge schedule and account ledger."
+    },
+    {
+      "id": "DTS-20250703-P40839-C02",
+      "timestamp": "00:14:37",
+      "label": "FORMAL_OMG_AFTER_UPSIDE_CLOSE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The formal OMG entered after a qualifying upside close and later reported an exit above its initial target.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN_POSITION", "3m": "SOURCE_REPORTED_FAVORABLE_MOVE", "5m": "SOURCE_REPORTED_FAVORABLE_MOVE", "10m": "SOURCE_REPORTED_TARGET", "15m": "SOURCE_REPORTED_EXIT", "remainder_session": "SOURCE_REPORTED_UPSIDE_EXTENSION"},
+      "disconfirming_evidence_required": "Exact boundary, synchronized bars, immutable signal and order events, executable quotes, MFE/MAE, slippage, and fees."
+    },
+    {
+      "id": "DTS-20250703-P40839-C03",
+      "timestamp": "00:27:42",
+      "label": "BOUNDED_CHALLENGE_EXIT",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The three-20 challenge used explicit capital, quantity, entry, target, and source-reported profitable exit.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE_MOVE", "3m": "SOURCE_REPORTED_EXIT", "5m": "SOURCE_REPORTED_EXIT", "10m": "SOURCE_REPORTED_EXIT", "15m": "SOURCE_REPORTED_EXIT", "remainder_session": "SOURCE_REPORTED_UPSIDE_EXTENSION"},
+      "disconfirming_evidence_required": "Broker or simulator events, executable quotes, account balance, complete commissions, and comparable challenge trades."
+    },
+    {
+      "id": "DTS-20250703-P40839-C04",
+      "timestamp": "00:38:41",
+      "label": "SAME_DAY_AVERAGING_DOWN_THEN_TRAILING_STOP",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A same-day call position added a lower-priced tranche, reduced average basis, then used a bid-linked trailing stop to exit profitably by source report.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN_POSITION", "3m": "SOURCE_REPORTED_PROTECTED_GAIN", "5m": "SOURCE_REPORTED_PROTECTED_GAIN", "10m": "SOURCE_REPORTED_EXIT", "15m": "SOURCE_REPORTED_EXIT", "remainder_session": "SOURCE_REPORTED_EXIT"},
+      "disconfirming_evidence_required": "Tranche quantities, bid path, stop event, fill slippage, maximum risk, MFE/MAE, and no-add comparator."
+    },
+    {
+      "id": "DTS-20250703-P40839-C05",
+      "timestamp": "00:16:17",
+      "label": "PARALLEL_UPSIDE_EXPOSURE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "Real, OMG, challenge, same-day, and multiple-presenter calls shared the upside thesis without an aggregate exposure ledger.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_UPTREND", "3m": "SOURCE_REPORTED_UPTREND", "5m": "SOURCE_REPORTED_UPTREND", "10m": "SOURCE_REPORTED_UPTREND", "15m": "SOURCE_REPORTED_UPTREND", "remainder_session": "SOURCE_REPORTED_NEW_HIGHS"},
+      "disconfirming_evidence_required": "All quantities, accounts, overlap intervals, net delta, portfolio risk, and broker orders."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250703-P40839-T01", "type": "CALL_POSITION", "setup": "July 11 625 calls; real scalp", "entry_time": "00:09:53", "entry_premium": 3.52, "exit_time": "00:11:53", "exit_premium": 3.7, "stop_or_invalidation": "No explicit stop audible"},
+    {"source_trade_id": "DTS-20250703-P40839-T02", "type": "CALL_POSITION", "setup": "July 11 625 calls; formal upside OMG", "entry_time": "00:14:37", "entry_premium": 3.81, "exit_time": "00:30:02", "exit_premium": 4.22, "stop_or_invalidation": "Initial target 4.04; source reported 10.8 percent, no explicit stop audible"},
+    {"source_trade_id": "DTS-20250703-P40839-T03", "type": "CALL_POSITION", "setup": "July 11 625 calls; second real scalp", "entry_time": "00:16:17", "entry_premium": 3.81, "exit_time": "00:23:20", "exit_premium": 3.9, "stop_or_invalidation": "No explicit stop audible"},
+    {"source_trade_id": "DTS-20250703-P40839-T04", "type": "CALL_POSITION", "setup": "17 July 11 625 calls; three-20 challenge", "entry_time": "00:27:42", "entry_premium": 4.54, "exit_time": "00:30:33", "exit_premium": 4.83, "stop_or_invalidation": "Target 4.75; 483 dollars net after commission reported; one recap misspoke 624 calls"},
+    {"source_trade_id": "DTS-20250703-P40839-T05", "type": "CALL_POSITION", "setup": "Same-day 625 calls; high-risk discretionary with add", "entry_time": "00:32:20", "entry_premium": 0.55, "exit_time": "00:52:07", "exit_premium": 0.68, "stop_or_invalidation": "Initial 0.60 and added 0.50 tranche produced 0.55 average; bid-linked trailing stop, quantities unavailable"},
+    {"source_trade_id": "DTS-20250703-P40839-T06", "type": "CALL_POSITION", "setup": "July 11 623 calls; John discretionary", "entry_time": "UNAVAILABLE_EVIDENCE", "entry_premium": null, "exit_time": "01:08:35", "exit_premium": null, "stop_or_invalidation": "Partial gain and final exit reported, exact premiums and quantity unavailable"},
+    {"source_trade_id": "DTS-20250703-P40839-T07", "type": "CALL_POSITION", "setup": "July 11 624 calls; late continuation", "entry_time": "00:57:12", "entry_premium": 5.13, "exit_time": "01:08:35", "exit_premium": 5.33, "stop_or_invalidation": "Part exited for source-reported 13-cent gain; remaining quantity exited 5.33"},
+    {"source_trade_id": "DTS-20250703-P40839-T08", "type": "CALL_POSITION", "setup": "Published 625-call pick", "entry_time": "UNAVAILABLE_EVIDENCE", "entry_premium": null, "exit_time": "01:11:46", "exit_premium": null, "stop_or_invalidation": "Target reported reached; entry, exit, expiration, and quantity unavailable"},
+    {"source_trade_id": "DTS-20250703-P40839-T09", "type": "UNSPECIFIED_POSITION", "setup": "Published signal with source-acknowledged digit error", "entry_time": "UNAVAILABLE_EVIDENCE", "entry_premium": null, "exit_time": "00:50:04", "exit_premium": null, "stop_or_invalidation": "Six percent reported; immutable contract and premiums unavailable"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 9,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The challenge was repeatedly 625 calls but once recapped as 624 calls.",
+      "The same-day call was first called off the record and then restored to the record.",
+      "Multiple call positions shared one thesis without aggregate exposure.",
+      "Published pick and signal evidence is under-specified and the signal contained a reported digit error."
+    ],
+    "unavailable_evidence": ["Full visual review, broker orders, exact real quantities, aggregate exposure, immutable signal log, synchronized bars, executable option paths, MFE/MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "PRE_HOLIDAY_GAP_UP_EVENT_SESSION", "evidence": "Employment data, the tax bill, tariffs, and PMI/ISM framed a shortened session."},
+    {"timestamp": "00:14:13", "state": "QUALIFIED_UPSIDE_ACCEPTANCE", "evidence": "Price closed above the upper OMG boundary and activated calls."},
+    {"timestamp": "00:29:33", "state": "NEW_HIGH_EXPANSION", "evidence": "Price surged through successive Fibonacci extensions and record highs."},
+    {"timestamp": "00:47:43", "state": "MOVING_AVERAGE_PULLBACK", "evidence": "Price tested short-term support before another push."},
+    {"timestamp": "01:06:22", "state": "HIGH_LEVEL_CONSOLIDATION_VOLUME_FADE", "evidence": "Momentum diverged and volume dried near resistance."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:14:37", "type": "FORMAL_VERSUS_DISCRETIONARY_ENTRY", "detail": "Separate close-confirmed OMG performance from pre-signal and late-continuation calls."},
+    {"timestamp": "00:16:17", "type": "AGGREGATE_EXPOSURE_CAP", "detail": "Cap combined risk across all simultaneous call positions."},
+    {"timestamp": "00:38:41", "type": "NO_ADD_COMPARATOR", "detail": "Compare the same-day averaging sequence with no-add management."},
+    {"timestamp": "00:40:14", "type": "EXECUTABLE_TRAILING_STOP_REPLAY", "detail": "Replay bid-linked stop triggers with spreads and slippage."},
+    {"timestamp": "01:11:46", "type": "IMMUTABLE_PROMOTIONAL_CONTRACT_FIELDS", "detail": "Exclude pick and signal outcomes until contemporaneous contract and fill fields exist."}
+  ],
+  "hypothesis_references": ["DTS-20250703-P40839-C01", "DTS-20250703-P40839-C02", "DTS-20250703-P40839-C03", "DTS-20250703-P40839-C04", "DTS-20250703-P40839-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator events", "Exact real and add-tranche quantities", "Aggregate exposure and net delta", "Immutable pick and signal records", "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
