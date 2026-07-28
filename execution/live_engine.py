@@ -780,8 +780,8 @@ def reconcile_startup():
 ORDER_SUBMISSION_TIMEOUT_SECONDS = 30  # Wait up to 30 seconds for fill
 ORDER_CHECK_INTERVAL_SECONDS = float(os.getenv("ORDER_CHECK_INTERVAL_SECONDS", "0.08"))  # Check fill status every 80ms
 ORDER_QUANTITY = MAX_OPEN_CONTRACTS      # Target the configured maximum per trade
-ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "1.25"))
-ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "1.0"))
+ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "0.35"))
+ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "0.35"))
 ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -2440,7 +2440,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         order_id,
         option_symbol,
         limit_price,
-        max_wait_seconds=max(1.0, float(ENTRY_LIMIT_MAX_WAIT_SECONDS or 4.0)),
+        max_wait_seconds=max(0.2, float(ENTRY_LIMIT_MAX_WAIT_SECONDS or 0.35)),
     )
     metrics["wait_fill_ms"] = _elapsed_ms(wait_start_ms)
 
@@ -2460,7 +2460,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
                     market_order_id,
                     option_symbol,
                     limit_price,
-                    max_wait_seconds=max(1.0, float(ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS or 4.0)),
+                    max_wait_seconds=max(0.2, float(ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS or 0.35)),
                 )
                 metrics["market_fallback_wait_ms"] = _elapsed_ms(fallback_wait_start_ms)
                 if filled:
