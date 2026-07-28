@@ -411,7 +411,7 @@ class Brain:
                 )
             return TradeDecision(
                 action=TradeAction.EXIT,
-                reason=self._stop_exit_reason(option_entry, use_price),
+                reason=self._active_stop_reason(position),
                 state_transition="EXIT_REQUESTED",
                 exit_price=use_price,
                 metadata={"state_updates": state_updates, "exit_option_mark": option_mark},

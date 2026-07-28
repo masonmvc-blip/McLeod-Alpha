@@ -78,6 +78,7 @@ RUNTIME_ALERT_FLAG_FILE = PROJECT_ROOT / "data" / "runtime_alert_flag.json"
 INTERNET_QUALITY_HISTORY_FILE = PROJECT_ROOT / "data" / "reports" / "internet_quality_history.jsonl"
 DAILY_TRADES_CHART_DIR = PROJECT_ROOT / "data" / "reports" / "daily_trades_charts"
 DAILY_TRADES_CHART_LOG = PROJECT_ROOT / "data" / "reports" / "daily_trades_charts.jsonl"
+STOP_TELEMETRY_DIR = PROJECT_ROOT / "data" / "reports" / "stop_telemetry"
 PARITY_BASELINE_FILE = PROJECT_ROOT / "data" / "parity_baseline.json"
 DAILY_TRADE_LEARNING_LATEST_FILE = PROJECT_ROOT / "reports" / "daily_trade_learning" / "latest_daily_trade_learning.json"
 GO_LIVE_SCRIPT = PROJECT_ROOT / "scripts" / "maintenance" / "go_live.sh"
@@ -3392,6 +3393,46 @@ def _parse_iso_datetime(value):
     return dt
 
 
+def _armed_stop_tier_from_telemetry(option_symbol, entry_time, exit_time):
+    """Return the highest live stop tier armed for this broker-reconciled trade."""
+    entry_dt = _parse_iso_datetime(entry_time)
+    exit_dt = _parse_iso_datetime(exit_time)
+    symbol = str(option_symbol or "").strip()
+    if entry_dt is None or exit_dt is None or not symbol or exit_dt < entry_dt:
+        return None
+
+    stop_tiers = {"1% Stop": 1, "2% Stop": 2, "3% Stop": 3, "4% Stop": 4}
+    highest_tier = None
+    current_day = entry_dt.astimezone(EASTERN_TZ).date()
+    end_day = exit_dt.astimezone(EASTERN_TZ).date()
+    while current_day <= end_day:
+        path = STOP_TELEMETRY_DIR / f"protective_stop_events_{current_day.isoformat()}.jsonl"
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        for line in lines:
+            try:
+                event = json.loads(line)
+                recorded_at = _parse_iso_datetime(event.get("recorded_at"))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            if (
+                event.get("event_type") != "stop_management_decision"
+                or event.get("action") != "UPDATE_STOP"
+                or str(event.get("option_symbol") or "").strip() != symbol
+                or recorded_at is None
+                or recorded_at < entry_dt
+                or recorded_at > exit_dt
+            ):
+                continue
+            tier = stop_tiers.get(str(event.get("reason") or ""))
+            if tier is not None and (highest_tier is None or tier > highest_tier):
+                highest_tier = tier
+        current_day += timedelta(days=1)
+    return f"{highest_tier}% Stop" if highest_tier is not None else None
+
+
 def _to_et_iso(value):
     dt = _parse_iso_datetime(value)
     if dt is None:
@@ -3782,7 +3823,9 @@ def _broker_transaction_trades_for_period(start_date: str, end_date: str):
                 "order_id": str(event.get("order_id") or ""),
                 "order_type": str(order_type_by_id.get(str(event.get("order_id") or ""), "")),
             }
-            exit_reason = classify_exit_reason(buy_event, sell_event)
+            exit_reason = _armed_stop_tier_from_telemetry(symbol, lot["entry_time"], event["time"])
+            if exit_reason is None:
+                exit_reason = classify_exit_reason(buy_event, sell_event)
 
             manual_label = "Mason" if _is_manual_exit_trade(sell_event, bot_order_ids) else ""
             entry_et = lot["entry_time"].astimezone(EASTERN_TZ)

@@ -56,6 +56,20 @@ def test_live_stop_reason_uses_active_broker_stop_tier():
     assert live_engine._stop_reason_for_active_stop(pos) == "4% Stop"
 
 
+def test_brain_stop_exit_preserves_active_broker_stop_tier():
+    pos = _live_position(entry=5.0)
+    pos.option_stop = 5.15
+    pos.active_stop_reason = "4% Stop"
+
+    decision = live_engine.LIVE_BRAIN.evaluate_exit(
+        pos,
+        {"option_bid": 5.10, "option_mark": 5.11, "protective_stop_active": False},
+        conditions=("stop",),
+    )
+
+    assert decision.reason == "4% Stop"
+
+
 def test_end_of_day_exit_boundary_is_345_pm_eastern():
     eastern = live_engine.EASTERN_TZ
 
