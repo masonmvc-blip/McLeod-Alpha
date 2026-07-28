@@ -124,6 +124,89 @@ def test_known_stop_replacement_skips_account_scan_and_cancels_only_after_submit
     client.cancel_order.assert_called_once_with("old-stop", "account-hash")
 
 
+def test_same_target_known_stop_is_coalesced_without_duplicate_place(monkeypatch):
+    client = Mock()
+    known = Mock()
+    known.raise_for_status.return_value = None
+    known.json.return_value = {
+        "status": "WORKING",
+        "orderType": "STOP",
+        "stopPrice": 5.25,
+        "orderLegCollection": [{
+            "instruction": "SELL_TO_CLOSE",
+            "instrument": {
+                "assetType": "OPTION",
+                "symbol": "SPY  260720C00600000",
+            },
+        }],
+    }
+    client.get_order.return_value = known
+    live_engine.set_schwab_client(client, "account-number", "account-hash")
+
+    order_id, stop_price = live_engine._submit_protective_stop(
+        "SPY  260720C00600000",
+        fill_price=5.00,
+        quantity=1,
+        stop_price_override=5.25,
+        existing_stop_order_id="working-stop",
+        existing_stop_price=5.25,
+    )
+
+    assert (order_id, stop_price) == ("working-stop", 5.25)
+    client.place_order.assert_not_called()
+    client.cancel_order.assert_not_called()
+
+
+def test_same_target_known_stop_is_preserved_during_broker_outage(monkeypatch):
+    client = Mock()
+    client.get_order.side_effect = RuntimeError("Schwab rate-limit cooldown active")
+    live_engine.set_schwab_client(client, "account-number", "account-hash")
+
+    order_id, stop_price = live_engine._submit_protective_stop(
+        "SPY  260720C00600000",
+        fill_price=5.00,
+        quantity=1,
+        stop_price_override=5.25,
+        existing_stop_order_id="last-confirmed-stop",
+        existing_stop_price=5.25,
+    )
+
+    assert (order_id, stop_price) == ("last-confirmed-stop", 5.25)
+    client.place_order.assert_not_called()
+
+
+def test_restore_reconciles_flat_position_before_stop_submission(monkeypatch):
+    pos = _live_position()
+    pos.opened = datetime(2026, 7, 17, 9, 59, 0)
+    pos.protective_stop_order_id = "filled-stop"
+    live_engine.current_position = pos
+
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_is_end_of_day_exit_due", lambda: False)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: False)
+
+    sync_calls = []
+
+    def reconcile_flat(_price, force=False):
+        sync_calls.append(force)
+        if force:
+            live_engine.current_position = None
+
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", reconcile_flat)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("flat account must not receive a replacement stop"),
+    )
+
+    live_engine._last_protective_stop_check_epoch = 0.0
+    live_engine._last_protective_stop_check_ok = False
+    live_engine.manage_trade(current_price=500.0, option_mark=5.20, option_bid=5.20)
+
+    assert sync_calls == [False, True]
+    assert live_engine.current_position is None
+
+
 def test_initial_protective_stop_skips_account_order_scan(monkeypatch):
     client = Mock()
     response = Mock()
@@ -153,7 +236,7 @@ def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
     live_engine.current_position = pos
 
     close_calls = []
-    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price, force=False: None)
     monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
     monkeypatch.setattr(live_engine, "close_trade", lambda *args, **kwargs: close_calls.append((args, kwargs)))
     monkeypatch.setattr(live_engine, "_is_end_of_day_exit_due", lambda: False)
@@ -318,7 +401,7 @@ def test_live_close_when_protective_restore_fails(monkeypatch):
     close_calls = {}
 
     monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
-    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price, force=False: None)
     monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: False)
     monkeypatch.setattr(live_engine, "_submit_protective_stop", lambda *_args, **_kwargs: (None, None))
     monkeypatch.setattr(live_engine, "_send_unprotected_position_alert", lambda *_args, **_kwargs: None)

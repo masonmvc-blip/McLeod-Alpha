@@ -1087,6 +1087,20 @@ def _has_active_protective_stop_order(option_symbol):
         "AWAITING_CONDITION",
     }
 
+    # Prefer the exact order already attached to the position. Schwab's
+    # account-order listing can lag immediately after an accepted replacement,
+    # which previously made a working stop appear missing and caused an
+    # identical replacement to be submitted.
+    known_order_id = ""
+    if current_position and current_position.option_symbol == option_symbol:
+        known_order_id = str(current_position.protective_stop_order_id or "")
+    if known_order_id:
+        known_stop = _known_protective_stop_snapshot(known_order_id, option_symbol)
+        if known_stop is None:
+            return None
+        if known_stop["active"]:
+            return True
+
     try:
         resp = _schwab_client.get_orders_for_account(_schwab_account_hash)
         resp.raise_for_status()
@@ -1115,6 +1129,54 @@ def _has_active_protective_stop_order(option_symbol):
             return True
 
     return False
+
+
+def _known_protective_stop_snapshot(order_id, option_symbol):
+    """Return exact broker state for a known stop, or None if unavailable."""
+    if not _schwab_client or not _schwab_account_hash or not order_id or not option_symbol:
+        return None
+
+    active_statuses = {
+        "PENDING_ACTIVATION",
+        "ACCEPTED",
+        "QUEUED",
+        "WORKING",
+        "PENDING_REPLACEMENT",
+        "PARTIALLY_FILLED",
+        "AWAITING_PARENT_ORDER",
+        "AWAITING_CONDITION",
+    }
+    try:
+        response = _schwab_client.get_order(str(order_id), _schwab_account_hash)
+        response.raise_for_status()
+        order = response.json() or {}
+    except Exception as exc:
+        print(f"WARNING: Could not verify known protective stop {order_id}: {exc}")
+        return None
+
+    is_protective_stop = (
+        str(order.get("orderType") or "").upper()
+        in {"STOP", "STOP_LIMIT", "TRAILING_STOP", "TRAILING_STOP_LIMIT"}
+    )
+    if is_protective_stop:
+        is_protective_stop = any(
+            leg.get("instrument", {}).get("assetType") == "OPTION"
+            and leg.get("instrument", {}).get("symbol") == option_symbol
+            and str(leg.get("instruction") or "").upper() == "SELL_TO_CLOSE"
+            for leg in order.get("orderLegCollection", []) or []
+        )
+
+    raw_stop = order.get("stopPrice") or order.get("price") or 0.0
+    try:
+        stop_price = float(raw_stop)
+    except (TypeError, ValueError):
+        stop_price = 0.0
+    status = str(order.get("status") or "").upper()
+    return {
+        "active": bool(is_protective_stop and status in active_statuses),
+        "status": status,
+        "stop_price": stop_price,
+    }
 
 
 def _send_unprotected_position_alert(option_symbol, quantity, stop_price):
@@ -1488,6 +1550,7 @@ def _submit_protective_stop(
     quantity,
     stop_price_override=None,
     existing_stop_order_id=None,
+    existing_stop_price=None,
     skip_existing_order_scan=False,
 ):
     """
@@ -1525,7 +1588,46 @@ def _submit_protective_stop(
         _protective_stop_failure_reason = "Invalid stop price"
         return None, None
 
-    existing_protective_stop = (str(existing_stop_order_id), 0.0) if existing_stop_order_id else None
+    existing_protective_stop = (
+        (str(existing_stop_order_id), float(existing_stop_price or 0.0))
+        if existing_stop_order_id
+        else None
+    )
+
+    if existing_protective_stop:
+        known_stop = _known_protective_stop_snapshot(existing_protective_stop[0], option_symbol)
+        known_price = float((known_stop or {}).get("stop_price") or existing_protective_stop[1] or 0.0)
+        if known_stop and known_stop["active"] and abs(known_price - float(stop_price)) < 0.005:
+            print(
+                f"✓ Known protective stop already active: "
+                f"{existing_protective_stop[0]} @ ${known_price:.2f}"
+            )
+            record_stop_event(
+                "protective_stop_restore_coalesced",
+                option_symbol=option_symbol,
+                quantity=quantity,
+                stop_price=known_price,
+                broker_order_id=existing_protective_stop[0],
+                verification="broker_confirmed",
+            )
+            return existing_protective_stop[0], known_price
+        if (
+            known_stop is None
+            and known_price > 0
+            and abs(known_price - float(stop_price)) < 0.005
+        ):
+            # During a broker outage or rate-limit cooldown, preserve the last
+            # confirmed same-price order rather than issuing a duplicate place
+            # call that cannot be verified safely.
+            record_stop_event(
+                "protective_stop_restore_coalesced",
+                option_symbol=option_symbol,
+                quantity=quantity,
+                stop_price=known_price,
+                broker_order_id=existing_protective_stop[0],
+                verification="last_confirmed_during_broker_outage",
+            )
+            return existing_protective_stop[0], known_price
 
     def _submit_stop_once(target_stop_price):
         """Submit one STOP protective order and return its broker order ID."""
@@ -3117,6 +3219,18 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
     )
 
     if decision.action is TradeAction.RESTORE_PROTECTIVE_STOP:
+        restore_symbol = current_position.option_symbol
+        # A broker stop fill can race the normal throttled reconciliation. Force
+        # one final position check so a flat account never receives another
+        # SELL_TO_CLOSE stop after its exit has already filled.
+        _sync_position_with_broker(current_price, force=True)
+        if not in_trade():
+            record_stop_event(
+                "protective_stop_restore_skipped_flat",
+                trade_key=trade_key,
+                option_symbol=restore_symbol,
+            )
+            return
         _send_unprotected_position_alert(current_position.option_symbol, decision.quantity, decision.stop_price)
         order_id, submitted_stop = _submit_protective_stop(
             current_position.option_symbol,
@@ -3124,6 +3238,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             int(decision.quantity or 0),
             stop_price_override=float(decision.stop_price or 0.0),
             existing_stop_order_id=current_position.protective_stop_order_id or None,
+            existing_stop_price=current_position.protective_stop_price or None,
         )
         if not order_id:
             _protective_stop_failed = True
@@ -3190,6 +3305,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             int(decision.quantity or 0),
             stop_price_override=float(decision.stop_price or 0.0),
             existing_stop_order_id=current_position.protective_stop_order_id or None,
+            existing_stop_price=current_position.protective_stop_price or None,
         )
         if not order_id:
             current_position.option_stop = previous_option_stop

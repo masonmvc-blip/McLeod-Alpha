@@ -76,11 +76,12 @@ def _resolve_target_date(con: sqlite3.Connection, date_arg: str | None) -> str:
     today = date.today().isoformat()
     row = con.execute(
         """
-        SELECT date(entry_time) AS trade_date
+        SELECT substr(entry_time, 1, 10) AS trade_date
         FROM trade_log
         WHERE entry_time IS NOT NULL
-          AND date(entry_time) IS NOT NULL
-          AND date(entry_time) <= ?
+          AND length(entry_time) >= 10
+          AND substr(entry_time, 1, 10) GLOB '????-??-??'
+          AND substr(entry_time, 1, 10) <= ?
         ORDER BY trade_date DESC
         LIMIT 1
         """,
@@ -105,7 +106,7 @@ def _load_day_rows(con: sqlite3.Connection, trading_date: str) -> list[sqlite3.R
             broker_entry_order_id,
             broker_exit_order_id
         FROM trade_log
-        WHERE date(entry_time) = ?
+        WHERE substr(entry_time, 1, 10) = ?
         ORDER BY entry_time, id
         """,
         (trading_date,),
