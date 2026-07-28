@@ -603,6 +603,7 @@ _STATUS_SNAPSHOT_CACHE = {
     "timestamp": 0.0,
     "payload": None,
 }
+_STATUS_SNAPSHOT_LOCK = threading.Lock()
 
 _CODE_SYNC_THREAD = None
 _CODE_SYNC_LOCK = threading.Lock()
@@ -4928,10 +4929,17 @@ def _get_cached_status_snapshot(force_refresh: bool = False):
     if not force_refresh and cached is not None and (now_ts - cached_ts) < cache_ttl:
         return cached
 
-    payload = parse_bot_status()
-    _STATUS_SNAPSHOT_CACHE["timestamp"] = now_ts
-    _STATUS_SNAPSHOT_CACHE["payload"] = payload
-    return payload
+    with _STATUS_SNAPSHOT_LOCK:
+        now_ts = time.time()
+        cached = _STATUS_SNAPSHOT_CACHE.get("payload")
+        cached_ts = float(_STATUS_SNAPSHOT_CACHE.get("timestamp") or 0.0)
+        if not force_refresh and cached is not None and (now_ts - cached_ts) < cache_ttl:
+            return cached
+
+        payload = parse_bot_status()
+        _STATUS_SNAPSHOT_CACHE["timestamp"] = now_ts
+        _STATUS_SNAPSHOT_CACHE["payload"] = payload
+        return payload
 
 
 def _code_sync_watcher_loop():
@@ -7328,6 +7336,7 @@ HTML_DASHBOARD = """
     <script>
         let statusRefreshInterval;
         let lastStatusSnapshot = null;
+        let statusRefreshInFlight = false;
         let logsRefreshInFlight = false;
         let tradesRefreshInFlight = false;
         let executionQualityRefreshInFlight = false;
@@ -7341,7 +7350,7 @@ HTML_DASHBOARD = """
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
         const INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS = 30000;
-        const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 500;
+        const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 1000;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
         const DASHBOARD_POLL_LEASE_MS = 5000;
@@ -7922,7 +7931,7 @@ HTML_DASHBOARD = """
         });
 
         async function refreshStatus(forceRefresh = false) {
-            if (!isDashboardVisible()) {
+            if (!isDashboardVisible() || statusRefreshInFlight) {
                 return;
             }
 
@@ -7930,6 +7939,7 @@ HTML_DASHBOARD = """
                 return;
             }
 
+            statusRefreshInFlight = true;
             try {
                 const res = await fetch(forceRefresh ? '/api/status?fresh=1' : '/api/status', { cache: 'no-store' });
                 const status = await res.json();
@@ -8448,6 +8458,8 @@ HTML_DASHBOARD = """
                 }
             } catch (err) {
                 console.error('Error refreshing status:', err);
+            } finally {
+                statusRefreshInFlight = false;
             }
         }
 
