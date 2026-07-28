@@ -422,6 +422,10 @@ def test_indicator_performance_renders_ema_as_an_acronym():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
     assert "word.replace(/^ema/i, 'EMA')" in source
+    assert "prev: 'Previous'" in source
+    assert "ema10: '10 EMA'" in source
+    assert "vwap: 'VWAP'" in source
+    assert "macd: 'MACD'" in source
 
 
 def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():

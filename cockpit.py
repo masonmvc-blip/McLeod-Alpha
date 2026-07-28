@@ -8931,9 +8931,19 @@ HTML_DASHBOARD = """
                 const formatIndicatorName = (value) => String(value || '')
                     .split('_')
                     .filter(Boolean)
-                    .map((word) => /^ema/i.test(word)
-                        ? word.replace(/^ema/i, 'EMA')
-                        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .map((word) => {
+                        const labelMap = {
+                            prev: 'Previous',
+                            ema10: '10 EMA',
+                            vwap: 'VWAP',
+                            macd: 'MACD',
+                        };
+                        const normalized = word.toLowerCase();
+                        return labelMap[normalized]
+                            || (/^ema/i.test(word)
+                                ? word.replace(/^ema/i, 'EMA')
+                                : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+                    })
                     .join(' ');
                 const todayIndicatorResult = (row) => {
                     const trades = Number(row.today_trades || 0);
