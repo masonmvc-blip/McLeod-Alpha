@@ -30,10 +30,17 @@ import time
 import json
 import sqlite3
 import threading
+import subprocess
 from pathlib import Path
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 ENTRY_CUTOFF_TIME = dt_time(15, 45)
+NATIVE_AUDIO_PLAYER = Path("/usr/bin/afplay")
+EXECUTION_AUDIO_PATHS = {
+    "entry": Path(__file__).resolve().parents[1] / "static" / "audio" / "trade_kaching.mp3",
+    "profit_exit": Path(__file__).resolve().parents[1] / "static" / "audio" / "trade_kaching.mp3",
+    "loss_exit": Path(__file__).resolve().parents[1] / "static" / "audio" / "trade_loss_trumpet.mp3",
+}
 
 # Global Schwab client and account configuration
 # Set by phase3_monitor.py after client creation
@@ -105,6 +112,24 @@ def _persist_broker_reconciliation_snapshot(spy_positions, spy_orders):
         temp_path.replace(BROKER_RECONCILIATION_SNAPSHOT_PATH)
     except OSError as exc:
         print(f"WARNING: Could not persist broker reconciliation snapshot: {exc}")
+
+
+def _play_execution_alert(event: str, pnl_dollars: float | None = None) -> None:
+    """Play a local macOS execution alert without delaying order handling."""
+    alert_kind = "entry" if event == "entry" else ("profit_exit" if float(pnl_dollars or 0.0) >= 0 else "loss_exit")
+    audio_path = EXECUTION_AUDIO_PATHS[alert_kind]
+    try:
+        if not NATIVE_AUDIO_PLAYER.is_file() or not audio_path.is_file():
+            return
+        subprocess.Popen(
+            [str(NATIVE_AUDIO_PLAYER), str(audio_path)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception as exc:
+        print(f"WARNING: Could not play local {alert_kind} alert: {exc}")
 
 
 def _record_broker_rate_limit(response=None):
@@ -2616,6 +2641,8 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     _entry_pending = False
     _pending_order_id = None
 
+    _play_execution_alert("entry")
+
     send_trade_entry_alert(
         mode="LIVE",
         direction=direction,
@@ -2890,6 +2917,7 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     # Clearing position resets alarm lock so new entries can resume while flat.
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
+    _play_execution_alert("exit", option_pnl_dollars)
     try:
         get_memory().save_setting(
             "post_exit_cooling",
