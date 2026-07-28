@@ -1016,9 +1016,9 @@ def _guard_exit_reason(reason, option_entry_price, option_exit_price):
 
 
 def _has_active_protective_stop_order(option_symbol):
-    """Return True if a working SELL_TO_CLOSE stop order exists for this option."""
+    """Return True, False, or None when broker verification is unavailable."""
     if not _schwab_client or not _schwab_account_hash or not option_symbol:
-        return False
+        return None
 
     active_statuses = {
         "PENDING_ACTIVATION",
@@ -1037,7 +1037,7 @@ def _has_active_protective_stop_order(option_symbol):
         orders = resp.json() if isinstance(resp.json(), list) else []
     except Exception as e:
         print(f"WARNING: Could not verify active protective stop: {e}")
-        return False
+        return None
 
     for order in orders:
         status = (order.get("status") or "").upper()
@@ -2998,12 +2998,22 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
     should_check_stop = (
         (now_epoch - float(_last_protective_stop_check_epoch or 0.0))
         >= max(0.25, float(PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS or 3.0))
-        or not bool(_last_protective_stop_check_ok)
     )
     if should_check_stop and current_position.option_symbol:
-        protective_stop_active = _has_active_protective_stop_order(current_position.option_symbol)
+        verified_stop = _has_active_protective_stop_order(current_position.option_symbol)
         _last_protective_stop_check_epoch = now_epoch
-        _last_protective_stop_check_ok = bool(protective_stop_active)
+        if verified_stop is None:
+            protective_stop_active = bool(current_position.protective_stop_order_id)
+            record_stop_event(
+                "protective_stop_verification_unavailable",
+                trade_key=trade_key,
+                option_symbol=current_position.option_symbol,
+                active_stop=current_position.protective_stop_price,
+                quote_metadata=quote_metadata or {},
+            )
+        else:
+            protective_stop_active = bool(verified_stop)
+            _last_protective_stop_check_ok = protective_stop_active
     else:
         protective_stop_active = bool(_last_protective_stop_check_ok)
 
