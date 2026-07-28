@@ -1,0 +1,110 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41038,
+    "title": "Trading Room Video Recording - July 24, 2025",
+    "publication_date": "2025-07-24",
+    "source_url": "https://daytradespy.com/41038/trading-room-video-recording-july-24-2025/",
+    "duration_seconds": 4460,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1522, "first_timestamp": "00:00:00", "last_timestamp": "01:14:08", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:14:20 asset. Player volume was verified at 0 percent, the Play control remained present, and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 78, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:09:30", "classification": "INCOMPLETE_TRADE_EVIDENCE", "claim": "An unnamed pick was reportedly entered and exited without instrument or premium details."},
+    {"timestamp": "00:21:49", "classification": "PRESENTER_REPORTED_TRADE", "claim": "August 1 634 calls entered at 5.48 and exited at 5.72 during PMI."},
+    {"timestamp": "00:28:22", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal August 1 635-call OMG entered at 5.37 with target 5.69."},
+    {"timestamp": "00:30:15", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Fifteen challenge 635 calls entered at 5.32 with target 5.55."},
+    {"timestamp": "00:44:37", "classification": "INCOMPLETE_TRADE_EVIDENCE", "claim": "A later 635-call entry filled without a narrated premium and remained unresolved."},
+    {"timestamp": "01:11:50", "classification": "STRATEGY_DRIFT", "claim": "Challenge calls would be held overnight if the target failed to fill."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250724-P41038-C01",
+      "timestamp": "00:21:49",
+      "label": "PRE_PMI_REAL_CALL_SCALP",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "SOURCE_REPORTED_ONLY",
+      "claim": "The real 634-call scalp entered at 5.48 immediately before PMI and exited at 5.72.",
+      "forward_outcomes": {"1m": "SCHEDULED_RELEASE_PENDING", "3m": "SOURCE_REPORTED_EXIT_5_72", "5m": "TRADE_CLOSED", "10m": "TRADE_CLOSED", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"},
+      "disconfirming_evidence_required": "Broker fills, executable quotes, release timestamp, and slippage."
+    },
+    {
+      "id": "DTS-20250724-P41038-C02",
+      "timestamp": "00:28:22",
+      "label": "CORRELATED_635_CALL_FAMILY",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "OMG, challenge, and discretionary positions reused August 1 635 calls.",
+      "forward_outcomes": {"1m": "CORRELATED_EXPOSURE", "3m": "CORRELATED_EXPOSURE", "5m": "SOURCE_REPORTED_ADVERSE", "10m": "SOURCE_REPORTED_MIXED", "15m": "SOURCE_REPORTED_ADVERSE", "remainder_session": "UNRESOLVED_CORRELATED_POSITIONS"},
+      "disconfirming_evidence_required": "Separate fills, quantities, rules, aggregate premium, and terminal exits."
+    },
+    {
+      "id": "DTS-20250724-P41038-C03",
+      "timestamp": "00:44:37",
+      "label": "MISSING_DISCRETIONARY_ENTRY",
+      "fact_classification": "INCOMPLETE_TRADE_EVIDENCE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The later 635-call position had a 5.49 target but no narrated entry premium.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_ENTRY", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_ADVERSE", "10m": "REPAIR_DISCUSSION", "15m": "UNRESOLVED_OPEN_POSITION", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Broker order with full contract, entry, quantity, and exit."
+    },
+    {
+      "id": "DTS-20250724-P41038-C04",
+      "timestamp": "00:51:37",
+      "label": "SCALP_TO_OVERNIGHT_CONVERSION",
+      "fact_classification": "STRATEGY_DRIFT",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "The challenge scalp was designated for an overnight hold after failing to reach target.",
+      "forward_outcomes": {"1m": "OVERNIGHT_PLAN", "3m": "OVERNIGHT_PLAN", "5m": "OVERNIGHT_PLAN", "10m": "OVERNIGHT_PLAN", "15m": "OVERNIGHT_PLAN", "remainder_session": "UNRESOLVED_OVERNIGHT_POSITION"},
+      "disconfirming_evidence_required": "Pre-entry overnight authorization, maximum loss, and next-session exit."
+    },
+    {
+      "id": "DTS-20250724-P41038-C05",
+      "timestamp": "01:11:43",
+      "label": "FORMAL_OMG_TERMINAL_EXIT_MISSING",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The formal OMG was to exit at target or EOD, but no terminal fill was available.",
+      "forward_outcomes": {"1m": "UNRESOLVED_OPEN_POSITION", "3m": "UNRESOLVED_OPEN_POSITION", "5m": "UNRESOLVED_OPEN_POSITION", "10m": "UNRESOLVED_OPEN_POSITION", "15m": "UNRESOLVED_OPEN_POSITION", "remainder_session": "TERMINAL_FILL_UNAVAILABLE"},
+      "disconfirming_evidence_required": "Simulator or broker EOD exit with time, price, and fees."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250724-P41038-T01", "type": "UNKNOWN_POSITION", "setup": "Unnamed published or personal pick", "entry_time": "00:09:30", "entry_premium": null, "exit_time": "00:09:51", "exit_premium": null, "stop_or_invalidation": "Instrument and premiums unavailable"},
+    {"source_trade_id": "DTS-20250724-P41038-T02", "type": "CALL_POSITION", "setup": "August 1 634 calls; real PMI scalp", "entry_time": "00:21:49", "entry_premium": 5.48, "exit_time": "00:23:40", "exit_premium": 5.72, "stop_or_invalidation": "Target 5.70"},
+    {"source_trade_id": "DTS-20250724-P41038-T03", "type": "CALL_POSITION", "setup": "August 1 635 calls; formal upside OMG", "entry_time": "00:28:22", "entry_premium": 5.37, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 5.69; EOD exit discussed; unresolved"},
+    {"source_trade_id": "DTS-20250724-P41038-T04", "type": "CALL_POSITION", "setup": "August 1 635 calls; challenge, 15 contracts", "entry_time": "00:30:15", "entry_premium": 5.32, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 5.55; overnight hold planned if unfilled"},
+    {"source_trade_id": "DTS-20250724-P41038-T05", "type": "CALL_POSITION", "setup": "August 1 635 calls; later discretionary scalp", "entry_time": "00:44:37", "entry_premium": null, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 5.49; unresolved"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": ["Formal OMG, challenge, and later discretionary trades share August 1 635 calls."],
+    "conflicts": ["A real call entered immediately before PMI.", "Later discretionary entry premium was absent.", "Challenge scalp became an overnight hold.", "Formal OMG terminal exit was unavailable."],
+    "unavailable_evidence": ["Full visual review, broker and simulator orders, unnamed-pick instrument, later-call entry, terminal fills, quantities except challenge, aggregate risk, synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "MIXED_FUTURES_NEAR_HIGHS", "evidence": "The room framed an extended rally with scheduled PMI and housing data."},
+    {"timestamp": "00:21:49", "state": "PRE_PMI_CALL_ENTRY", "evidence": "Real 634 calls entered seconds before the release."},
+    {"timestamp": "00:27:31", "state": "UPSIDE_OMG_BREAK", "evidence": "The upper boundary closed beyond resistance."},
+    {"timestamp": "00:30:15", "state": "OVERLAPPING_CALL_EXPOSURE", "evidence": "Challenge calls joined formal calls."},
+    {"timestamp": "00:50:35", "state": "CALL_REVERSAL_AND_REPAIR", "evidence": "Calls moved adverse and repair discussion began."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:21:49", "type": "EVENT_BLACKOUT", "detail": "Exclude entries immediately before scheduled data."},
+    {"timestamp": "00:28:22", "type": "DEDUPLICATE_CONTRACT_FAMILY", "detail": "Aggregate all August 1 635-call variants."},
+    {"timestamp": "00:44:37", "type": "ENTRY_EVIDENCE_REQUIRED", "detail": "Exclude missing-entry trades from expectancy."},
+    {"timestamp": "00:51:37", "type": "IMMUTABLE_HORIZON", "detail": "Require separate approval before overnight conversion."},
+    {"timestamp": "01:11:43", "type": "EOD_FILL_REQUIRED", "detail": "Require broker-verified terminal liquidation."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator events", "Unnamed-pick contract and fills", "Later-call entry", "Terminal OMG/challenge/call exits", "Aggregate risk", "Synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250724-P41038-C01", "DTS-20250724-P41038-C02", "DTS-20250724-P41038-C03", "DTS-20250724-P41038-C04", "DTS-20250724-P41038-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

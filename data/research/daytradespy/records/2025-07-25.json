@@ -1,0 +1,108 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41071,
+    "title": "Trading Room Video Recording - July 25, 2025",
+    "publication_date": "2025-07-25",
+    "source_url": "https://daytradespy.com/41071/trading-room-video-recording-july-25-2025/",
+    "duration_seconds": 4475,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1660, "first_timestamp": "00:00:00", "last_timestamp": "01:13:52", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:14:35 asset. Player volume was verified at 0 percent, the Play control remained present, and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 82, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:13:39", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Sixteen August 1 635 challenge calls entered at 4.95."},
+    {"timestamp": "00:27:51", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Real August 1 636 calls entered at 4.36."},
+    {"timestamp": "00:44:12", "classification": "SIGNAL_NO_TRADE", "claim": "The downside OMG failed confirmation and was removed from consideration."},
+    {"timestamp": "00:52:23", "classification": "PRESENTER_CLAIM", "claim": "Published August 1 635 puts were modeled at 4.25 with target 4.51 and remained unresolved."},
+    {"timestamp": "01:02:09", "classification": "TARGET_REVISION", "claim": "Challenge target moved from 5.20 to 5.15 and later returned to 5.20."},
+    {"timestamp": "01:12:21", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Real 636 calls exited at 4.46 while challenge calls remained open."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250725-P41071-C01",
+      "timestamp": "00:44:12",
+      "label": "FAILED_CONFIRMATION_NO_TRADE",
+      "fact_classification": "SIGNAL_NO_TRADE",
+      "status": "GOVERNANCE_PRESERVED",
+      "claim": "The downside OMG remained a no-trade after its one-minute confirmation failed.",
+      "forward_outcomes": {"1m": "NO_FORMAL_ENTRY", "3m": "NO_FORMAL_ENTRY", "5m": "NO_FORMAL_ENTRY", "10m": "NO_FORMAL_ENTRY", "15m": "NO_FORMAL_ENTRY", "remainder_session": "NO_FORMAL_TRADE"},
+      "disconfirming_evidence_required": "A contemporaneous formal order placed before the rejection."
+    },
+    {
+      "id": "DTS-20250725-P41071-C02",
+      "timestamp": "00:13:39",
+      "label": "PRE_SIGNAL_CORRELATED_CALLS",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Challenge and real calls entered before a formal OMG and shared one upside thesis.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_MIXED", "10m": "SOURCE_REPORTED_OPEN", "15m": "SOURCE_REPORTED_OPEN", "remainder_session": "ONE_CLOSED_ONE_UNRESOLVED"},
+      "disconfirming_evidence_required": "Independent signal rules, quantities, and aggregate directional risk."
+    },
+    {
+      "id": "DTS-20250725-P41071-C03",
+      "timestamp": "01:02:09",
+      "label": "MOVING_CHALLENGE_TARGET",
+      "fact_classification": "TARGET_REVISION",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "The challenge target changed from 5.20 to 5.15 and back to 5.20.",
+      "forward_outcomes": {"1m": "TARGET_5_15", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_OPEN", "10m": "TARGET_RETURNED_5_20", "15m": "UNRESOLVED_OPEN_POSITION", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Predeclared target-revision rule and complete executable option path."
+    },
+    {
+      "id": "DTS-20250725-P41071-C04",
+      "timestamp": "01:08:54",
+      "label": "OFFICIAL_EOD_VERSUS_WEEKEND_HOLD",
+      "fact_classification": "ACCOUNTING_CONFLICT",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Published-pick reporting required an EOD exit while personal advice favored a weekend hold and possible repair.",
+      "forward_outcomes": {"1m": "CONFLICTING_EXIT_RULES", "3m": "CONFLICTING_EXIT_RULES", "5m": "UNRESOLVED_PICK", "10m": "UNRESOLVED_PICK", "15m": "UNRESOLVED_PICK", "remainder_session": "TERMINAL_FILL_UNAVAILABLE"},
+      "disconfirming_evidence_required": "Published methodology and an EOD broker or simulator exit."
+    },
+    {
+      "id": "DTS-20250725-P41071-C05",
+      "timestamp": "01:06:49",
+      "label": "UNRECONCILED_SUCCESS_RATE_CLAIM",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The claimed near-90-percent pick success rate was not supported by a complete ledger in this source.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNRECONCILED_CUMULATIVE_CLAIM"},
+      "disconfirming_evidence_required": "All historical alerts, contract definitions, entries, exits, losses, and fees."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250725-P41071-T01", "type": "CALL_POSITION", "setup": "August 1 635 calls; challenge, 16 contracts", "entry_time": "00:13:39", "entry_premium": 4.95, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 5.20 to 5.15 to 5.20; unresolved"},
+    {"source_trade_id": "DTS-20250725-P41071-T02", "type": "CALL_POSITION", "setup": "August 1 636 calls; real trade", "entry_time": "00:27:51", "entry_premium": 4.36, "exit_time": "01:12:21", "exit_premium": 4.46, "stop_or_invalidation": "Reduced target 4.46"},
+    {"source_trade_id": "DTS-20250725-P41071-T03", "type": "PUT_POSITION", "setup": "August 1 635 puts; retrospectively modeled published pick", "entry_time": "SOURCE_MODELED_09_31", "entry_premium": 4.25, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 4.51; EOD accounting versus weekend hold; unresolved"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": ["The 635 and 636 calls share one upside signal family."],
+    "conflicts": ["Challenge target moved twice.", "Official EOD pick accounting conflicted with weekend-hold advice.", "Challenge and published pick lacked terminal fills.", "Near-90-percent success claim was unreconciled."],
+    "unavailable_evidence": ["Full visual review, broker and simulator orders, real-call quantity, terminal challenge and pick fills, weekend result, aggregate risk, historical pick ledger, synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "LOW_VOLATILITY_RANGE", "evidence": "Mixed futures and low option volatility framed the session."},
+    {"timestamp": "00:13:39", "state": "EARLY_CALL_POSITION", "evidence": "Challenge calls entered inside the range."},
+    {"timestamp": "00:42:41", "state": "DOWNSIDE_BOUNDARY_CLOSE", "evidence": "A downside close occurred."},
+    {"timestamp": "00:44:12", "state": "FAILED_DOWNSIDE_CONFIRMATION", "evidence": "The formal setup was removed."},
+    {"timestamp": "01:12:21", "state": "LATE_UPSIDE_BREAK_ATTEMPT", "evidence": "Real calls exited while challenge calls stayed open."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:44:12", "type": "IMMUTABLE_NO_TRADE_LOG", "detail": "Preserve failed confirmation as no-trade."},
+    {"timestamp": "00:13:39", "type": "VOLATILITY_ADMISSION_FILTER", "detail": "Test a minimum-volatility rule before entry."},
+    {"timestamp": "01:02:09", "type": "SCORE_ORIGINAL_AND_REVISED_TARGETS", "detail": "Track both target outcomes."},
+    {"timestamp": "01:08:54", "type": "OFFICIAL_EOD_ACCOUNTING", "detail": "Enforce the published EOD rule in reporting."},
+    {"timestamp": "00:27:51", "type": "AGGREGATE_CALL_RISK", "detail": "Combine overlapping call strikes."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator events", "Real-call quantity", "Terminal challenge and published-pick fills", "Weekend outcome", "Aggregate risk", "Historical pick ledger", "Synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250725-P41071-C01", "DTS-20250725-P41071-C02", "DTS-20250725-P41071-C03", "DTS-20250725-P41071-C04", "DTS-20250725-P41071-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
