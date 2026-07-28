@@ -1,0 +1,111 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40986,
+    "title": "Trading Room Video Recording - July 21, 2025",
+    "publication_date": "2025-07-21",
+    "source_url": "https://daytradespy.com/40986/trading-room-video-recording-july-21-2025/",
+    "duration_seconds": 4228,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1467, "first_timestamp": "00:00:00", "last_timestamp": "01:10:07", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:10:28 asset. Player volume was verified at 0 percent and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:12:48", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Carried July 25 630 calls with bases near 3.52-3.55 traded near 2.91-2.92."},
+    {"timestamp": "00:17:17", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal upside OMG bought July 25 630 calls at 2.95 and later exited at 3.24."},
+    {"timestamp": "00:29:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Combined averaged real-call inventory was reportedly sold at 3.40, without recoverable lot attribution."},
+    {"timestamp": "00:29:23", "classification": "PRESENTER_REPORTED_TRADE", "claim": "A new real 630-call scalp entered at 3.46 and exited at 3.60."},
+    {"timestamp": "00:40:22", "classification": "SOURCE_CONFLICT", "claim": "Twenty challenge calls were described as filling at both 3.95 and 3.94; they later exited at 4.10."},
+    {"timestamp": "01:04:58", "classification": "PRESENTER_CLAIM", "claim": "The source claimed about 290 dollars net after commission and cumulative challenge progress near 50,000 dollars."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250721-P40986-C01",
+      "timestamp": "00:17:17",
+      "label": "FORMAL_UPSIDE_OMG_COMPLETED",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "SOURCE_REPORTED_ONLY",
+      "claim": "The formal July 25 630-call OMG entered at 2.95 and exited at 3.24 versus a 3.13 target.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_FAVORABLE", "3m": "SOURCE_REPORTED_FAVORABLE", "5m": "SOURCE_REPORTED_TARGET_EXCEEDED", "10m": "SOURCE_REPORTED_EXIT_3_24", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"},
+      "disconfirming_evidence_required": "Broker or simulator fills and synchronized underlying and executable option data."
+    },
+    {
+      "id": "DTS-20250721-P40986-C02",
+      "timestamp": "00:29:29",
+      "label": "AVERAGED_INVENTORY_UNRECONCILED",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "Carried real calls were averaged down and combined inventory was reportedly sold at 3.40, but lot-level basis and quantity were absent.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_LOT_DATA", "3m": "SOURCE_REPORTED_EXIT", "5m": "SOURCE_REPORTED_EXIT", "10m": "TRADE_CLOSED_UNRECONCILED", "15m": "TRADE_CLOSED_UNRECONCILED", "remainder_session": "TRADE_CLOSED_UNRECONCILED"},
+      "disconfirming_evidence_required": "All entry lots, quantities, weighted basis, fees, and exit allocation."
+    },
+    {
+      "id": "DTS-20250721-P40986-C03",
+      "timestamp": "00:40:22",
+      "label": "CONFLICTING_CHALLENGE_ENTRY",
+      "fact_classification": "SOURCE_CONFLICT",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The challenge entry was narrated as both 3.95 and 3.94 before a 4.10 exit.",
+      "forward_outcomes": {"1m": "ENTRY_CONFLICT", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_OPEN", "10m": "SOURCE_REPORTED_OPEN", "15m": "SOURCE_REPORTED_OPEN", "remainder_session": "SOURCE_REPORTED_EXIT_4_10"},
+      "disconfirming_evidence_required": "Simulator order event establishing the exact fill price and commission."
+    },
+    {
+      "id": "DTS-20250721-P40986-C04",
+      "timestamp": "00:41:00",
+      "label": "CORRELATED_CALL_VARIANTS",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "Carried, real, challenge, OMG, and published-pick positions reused the July 25 630-call thesis.",
+      "forward_outcomes": {"1m": "CORRELATED_EXPOSURE", "3m": "CORRELATED_EXPOSURE", "5m": "CORRELATED_EXPOSURE", "10m": "CORRELATED_EXPOSURE", "15m": "CORRELATED_EXPOSURE", "remainder_session": "MIXED_CLOSED_AND_UNATTRIBUTED"},
+      "disconfirming_evidence_required": "Complete ledgers proving independent rules, quantities, and attribution."
+    },
+    {
+      "id": "DTS-20250721-P40986-C05",
+      "timestamp": "01:04:58",
+      "label": "CUMULATIVE_CHALLENGE_CLAIM",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The claimed progress from 5,000 dollars toward 50,000 dollars lacks an inception-to-date equity ledger.",
+      "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNRECONCILED_CUMULATIVE_CLAIM"},
+      "disconfirming_evidence_required": "Deposits, withdrawals, every fill, fees, and daily equity from challenge inception."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250721-P40986-T01", "type": "CALL_POSITION", "setup": "July 25 630 calls; carried challenge position, 20 contracts", "entry_time": "PRIOR_SESSION", "entry_premium": 3.55, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Disposition not separately attributable"},
+    {"source_trade_id": "DTS-20250721-P40986-T02", "type": "CALL_POSITION", "setup": "July 25 630 calls; carried and averaged real inventory", "entry_time": "PRIOR_SESSION_AND_UNAVAILABLE_AVERAGING", "entry_premium": 3.52, "exit_time": "AROUND_00_29_29", "exit_premium": 3.40, "stop_or_invalidation": "Combined exit reported; weighted basis unavailable"},
+    {"source_trade_id": "DTS-20250721-P40986-T03", "type": "CALL_POSITION", "setup": "July 25 630 calls; formal upside OMG", "entry_time": "00:17:17", "entry_premium": 2.95, "exit_time": "00:22:55", "exit_premium": 3.24, "stop_or_invalidation": "Target 3.13"},
+    {"source_trade_id": "DTS-20250721-P40986-T04", "type": "CALL_POSITION", "setup": "July 25 630 calls; real scalp", "entry_time": "00:29:23", "entry_premium": 3.46, "exit_time": "00:32:27", "exit_premium": 3.60, "stop_or_invalidation": "Target 3.60"},
+    {"source_trade_id": "DTS-20250721-P40986-T05", "type": "CALL_POSITION", "setup": "July 25 630 calls; challenge scalp, 20 contracts", "entry_time": "00:40:22", "entry_premium": null, "exit_time": "01:04:58", "exit_premium": 4.10, "stop_or_invalidation": "Entry conflict 3.94 versus 3.95; initial target 4.05"},
+    {"source_trade_id": "DTS-20250721-P40986-T06", "type": "CALL_POSITION", "setup": "July 25 630 calls; retrospectively modeled published pick", "entry_time": "SOURCE_MODELED_09_31", "entry_premium": 2.78, "exit_time": "SOURCE_MODELED_09_36", "exit_premium": 2.94, "stop_or_invalidation": "Target reportedly reached"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": ["The formal OMG and published pick share the same July 25 630-call thesis.", "Carried challenge and real inventory may overlap later combined-exit narration."],
+    "conflicts": ["Challenge entry was narrated as 3.94 and 3.95.", "Averaged real inventory lacks lot-level basis and quantity.", "The cumulative challenge claim lacks an equity ledger."],
+    "unavailable_evidence": ["Full visual review, broker and simulator orders, carried-lot quantities, averaging fills, exact 3.40 exit attribution, challenge equity, synchronized bars, executable option paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "ALL_TIME_HIGH_EARNINGS_WEEK", "evidence": "The room framed a strong market with limited scheduled morning data."},
+    {"timestamp": "00:12:48", "state": "CARRIED_CALL_DRAWDOWN", "evidence": "Calls based near 3.52-3.55 traded around 2.91-2.92."},
+    {"timestamp": "00:17:17", "state": "UPSIDE_OMG_TRIGGER", "evidence": "The revised upper boundary supported a formal call entry."},
+    {"timestamp": "00:22:55", "state": "UPSIDE_TARGET_EXCEEDED", "evidence": "The formal position reportedly exited at 3.24."},
+    {"timestamp": "00:40:22", "state": "RENEWED_CALL_SCALP", "evidence": "A later challenge call position entered near 3.94-3.95."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:17:17", "type": "FREEZE_BOUNDARIES", "detail": "Freeze OMG boundaries before the first eligible bar and retain revisions."},
+    {"timestamp": "00:29:29", "type": "AVERAGING_LEDGER_REQUIRED", "detail": "Reject averaging without lot-level basis, quantity, and maximum loss."},
+    {"timestamp": "00:40:22", "type": "FILL_RECONCILIATION", "detail": "Resolve narrated fill conflicts from order records."},
+    {"timestamp": "00:41:00", "type": "DEDUPLICATE_SIGNAL_FAMILY", "detail": "Aggregate all July 25 630-call variants."},
+    {"timestamp": "01:04:58", "type": "RECONCILE_CHALLENGE_EQUITY", "detail": "Exclude cumulative claims until inception-to-date equity reconciles."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator order events", "Carried-lot quantities and averaging fills", "Exact combined-exit attribution", "Challenge inception-to-date equity", "Synchronized bars, executable option paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250721-P40986-C01", "DTS-20250721-P40986-C02", "DTS-20250721-P40986-C03", "DTS-20250721-P40986-C04", "DTS-20250721-P40986-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

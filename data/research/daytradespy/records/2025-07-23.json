@@ -1,0 +1,111 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41024,
+    "title": "Trading Room Video Recording - July 23, 2025",
+    "publication_date": "2025-07-23",
+    "source_url": "https://daytradespy.com/41024/trading-room-video-recording-july-23-2025/",
+    "duration_seconds": 4680,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1497, "first_timestamp": "00:00:00", "last_timestamp": "01:17:46", "raw_transcript_persisted": false, "coverage_note": "The English auto-generated VTT reaches the terminal available cue of the 01:18:00 asset. Player volume was verified at 0 percent and playback was never started."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 80, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:08:55", "classification": "PRESENTER_CLAIM", "claim": "Overnight call holders were advised to take profits."},
+    {"timestamp": "00:24:43", "classification": "PRESENTER_REPORTED_TRADE", "claim": "August 1 631 puts entered at 5.37 and exited at 5.69."},
+    {"timestamp": "00:29:31", "classification": "OPERATIONAL_RISK", "claim": "A second put lot entered at 5.39; the platform later exited both lots together at 5.69."},
+    {"timestamp": "00:45:00", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Next-week 630 calls entered at 6.05 and exited at 6.17; challenge 632 calls entered at 4.90."},
+    {"timestamp": "01:03:57", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Another likely 630-call position entered at 6.23 and remained unresolved."},
+    {"timestamp": "01:17:00", "classification": "STRATEGY_DRIFT", "claim": "The 4.90 challenge calls changed from an end-of-day exit plan to an overnight earnings hold."}
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250723-P41024-C01",
+      "timestamp": "00:24:43",
+      "label": "FORMAL_DOWNSIDE_OMG_COMPLETED",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "SOURCE_REPORTED_ONLY",
+      "claim": "The formal August 1 631-put position entered at 5.37 and exited at 5.69.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN", "3m": "SOURCE_REPORTED_FAVORABLE", "5m": "SOURCE_REPORTED_FAVORABLE", "10m": "SOURCE_REPORTED_EXIT_5_69", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"},
+      "disconfirming_evidence_required": "Broker or simulator fills and synchronized underlying and executable option data."
+    },
+    {
+      "id": "DTS-20250723-P41024-C02",
+      "timestamp": "00:29:31",
+      "label": "UNINTENDED_EXIT_ALL",
+      "fact_classification": "OPERATIONAL_RISK",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "A delayed duplicate put fill was followed by an unintended all-position exit at 5.69.",
+      "forward_outcomes": {"1m": "DUPLICATE_LOT_OPEN", "3m": "DUPLICATE_LOT_OPEN", "5m": "ALL_LOTS_EXITED", "10m": "ALL_LOTS_EXITED", "15m": "ALL_LOTS_EXITED", "remainder_session": "POSITIONS_CLOSED"},
+      "disconfirming_evidence_required": "Simulator audit log showing intentional lot-specific exit behavior."
+    },
+    {
+      "id": "DTS-20250723-P41024-C03",
+      "timestamp": "00:45:00",
+      "label": "PUT_TO_CALL_REVERSAL_EXPOSURE",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "After profitable puts, multiple call positions were opened without an aggregate exposure ledger.",
+      "forward_outcomes": {"1m": "MULTIPLE_CALL_EXPOSURE", "3m": "ONE_CALL_SCALP_CLOSED", "5m": "CHALLENGE_CALL_OPEN", "10m": "CHALLENGE_CALL_OPEN", "15m": "CHALLENGE_CALL_OPEN", "remainder_session": "UNRESOLVED_CALL_EXPOSURE"},
+      "disconfirming_evidence_required": "Aggregate quantities, premium-at-risk, Greeks, stops, and all terminal fills."
+    },
+    {
+      "id": "DTS-20250723-P41024-C04",
+      "timestamp": "01:03:57",
+      "label": "INCOMPLETE_LATER_CALL",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_RECONCILIATION",
+      "claim": "The later 6.23 call entry lacked a fully evidenced contract and terminal exit.",
+      "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_OPEN", "10m": "SOURCE_REPORTED_OPEN", "15m": "UNRESOLVED_OPEN_POSITION", "remainder_session": "UNRESOLVED_OPEN_POSITION"},
+      "disconfirming_evidence_required": "Full option symbol, quantity, broker entry, and terminal exit."
+    },
+    {
+      "id": "DTS-20250723-P41024-C05",
+      "timestamp": "01:17:00",
+      "label": "SCALP_CONVERTED_TO_EARNINGS_HOLD",
+      "fact_classification": "STRATEGY_DRIFT",
+      "status": "NEEDS_GOVERNANCE",
+      "claim": "The challenge 632-call scalp changed from an end-of-day exit to an overnight Alphabet-earnings hold after entry.",
+      "forward_outcomes": {"1m": "OVERNIGHT_PLAN", "3m": "OVERNIGHT_PLAN", "5m": "OVERNIGHT_PLAN", "10m": "OVERNIGHT_PLAN", "15m": "OVERNIGHT_PLAN", "remainder_session": "UNRESOLVED_OVERNIGHT_POSITION"},
+      "disconfirming_evidence_required": "A pre-entry overnight-risk plan, maximum loss, quantity, and next-session exit."
+    }
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250723-P41024-T01", "type": "PUT_POSITION", "setup": "August 1 631 puts; formal downside OMG lot 1", "entry_time": "00:24:43", "entry_premium": 5.37, "exit_time": "00:35:06", "exit_premium": 5.69, "stop_or_invalidation": "Target 5.69"},
+    {"source_trade_id": "DTS-20250723-P41024-T02", "type": "PUT_POSITION", "setup": "August 1 631 puts; duplicate formal lot 2", "entry_time": "00:29:31", "entry_premium": 5.39, "exit_time": "00:35:06", "exit_premium": 5.69, "stop_or_invalidation": "Reportedly included in unintended all-position exit"},
+    {"source_trade_id": "DTS-20250723-P41024-T03", "type": "CALL_POSITION", "setup": "Next-week 630 calls; discretionary scalp", "entry_time": "AROUND_00_45_00", "entry_premium": 6.05, "exit_time": "00:48:11", "exit_premium": 6.17, "stop_or_invalidation": "Target 6.17"},
+    {"source_trade_id": "DTS-20250723-P41024-T04", "type": "CALL_POSITION", "setup": "August 1 632 calls; challenge, 15 contracts", "entry_time": "AROUND_00_45_00", "entry_premium": 4.90, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target moved 5.15 to 5.24 to 5.15; converted to overnight hold"},
+    {"source_trade_id": "DTS-20250723-P41024-T05", "type": "CALL_POSITION", "setup": "Likely next-week 630 calls; later discretionary entry", "entry_time": "01:03:57", "entry_premium": 6.23, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Target 6.37; exact contract and terminal exit unavailable"},
+    {"source_trade_id": "DTS-20250723-P41024-T06", "type": "CALL_POSITION", "setup": "July 25 631 calls; retrospectively modeled non-official signal", "entry_time": "SOURCE_MODELED_10_11", "entry_premium": 2.25, "exit_time": "SOURCE_MODELED_10_29", "exit_premium": 2.36, "stop_or_invalidation": "Target reportedly reached; source-reported high 2.42"}
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": ["The two 631-put entries were separate lots closed by one all-position exit.", "The 6.05 and 6.23 call entries may share a contract family, but the later contract is incomplete."],
+    "conflicts": ["The downside boundary moved during discussion.", "Simulator behavior delayed entry and exited all put lots.", "The 632-call target changed twice.", "An end-of-day exit plan became an overnight earnings hold.", "Early profit-taking advice conflicted with later overnight-hold advice."],
+    "unavailable_evidence": ["Full visual review, broker and simulator orders, quantities beyond challenge calls, exact 6.23 contract, terminal call exits, overnight outcome, aggregate risk, synchronized bars, executable option paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]
+  },
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "ALL_TIME_HIGH_PRE_EVENT", "evidence": "SPY approached 631.91 before housing data and major earnings."},
+    {"timestamp": "00:24:43", "state": "DOWNSIDE_OMG_TRIGGER", "evidence": "August 1 631 puts entered."},
+    {"timestamp": "00:35:06", "state": "PUT_TARGET_AND_EXIT_ALL", "evidence": "Both put lots reportedly exited at 5.69."},
+    {"timestamp": "00:45:00", "state": "REVERSAL_TO_CALLS", "evidence": "Discretionary and challenge call positions entered."},
+    {"timestamp": "01:17:00", "state": "EARNINGS_CARRY_DECISION", "evidence": "The unresolved 632 calls were designated for overnight hold."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:20:00", "type": "FREEZE_BOUNDARIES", "detail": "Freeze upper and lower OMG lines before eligibility."},
+    {"timestamp": "00:29:31", "type": "LOT_SPECIFIC_EXIT_CONTROL", "detail": "Require deliberate lot selection and reject unintended exit-all actions."},
+    {"timestamp": "00:45:00", "type": "AGGREGATE_REVERSAL_RISK", "detail": "Measure put-to-call reversals under one premium-risk ledger."},
+    {"timestamp": "01:03:57", "type": "FULL_CONTRACT_AND_TERMINAL_STATUS", "detail": "Reject incomplete option symbols and unresolved entries from expectancy."},
+    {"timestamp": "01:17:00", "type": "IMMUTABLE_TRADE_HORIZON", "detail": "Require separate approval before converting a day trade to an overnight earnings hold."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator order events", "Quantities beyond challenge calls", "Exact later-call contract and terminal exits", "Overnight outcome", "Aggregate Greeks and premium risk", "Synchronized bars, executable option paths, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250723-P41024-C01", "DTS-20250723-P41024-C02", "DTS-20250723-P41024-C03", "DTS-20250723-P41024-C04", "DTS-20250723-P41024-C05"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 5, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
