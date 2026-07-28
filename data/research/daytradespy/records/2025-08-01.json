@@ -1,0 +1,48 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41141,
+    "title": "Trading Room Video Recording - August 1, 2025",
+    "publication_date": "2025-08-01",
+    "source_url": "https://daytradespy.com/41141/trading-room-video-recording-august-1-2025/",
+    "duration_seconds": 4416,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1557, "first_timestamp": "00:00:00", "last_timestamp": "01:13:12", "raw_transcript_persisted": false, "coverage_note": "Complete VTT for the 01:13:36 asset. Player remained paused, volume was set to minimum, and audio was never played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 84, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:10:04", "classification": "CARRIED_POSITION", "claim": "Overnight August 8 632 puts averaged 4.78."},
+    {"timestamp": "00:14:36", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal and challenge 624 puts entered at 5.40 and exited at 5.72."},
+    {"timestamp": "00:16:34", "classification": "PARTIAL_EXIT", "claim": "Part of the overnight puts sold at 9.78; remaining size was not reconciled."},
+    {"timestamp": "00:21:42", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Fourteen 623 puts entered at 5.99 and exited at 6.66."},
+    {"timestamp": "00:29:38", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Thirteen 621 puts entered at 6.19 and exited at 6.36."},
+    {"timestamp": "01:06:03", "classification": "UNRESOLVED_TRADE", "claim": "Late 623 and 636 calls remained unresolved."}
+  ],
+  "claims": [
+    {"id": "DTS-20250801-P41141-C01", "timestamp": "00:14:36", "label": "DUPLICATED_FORMAL_AND_CHALLENGE_EXECUTION", "fact_classification": "ACCOUNTING_CONFLICT", "status": "NEEDS_RECONCILIATION", "claim": "The same 624-put execution was counted in formal and challenge ledgers.", "forward_outcomes": {"1m": "SAME_EXECUTION", "3m": "SAME_EXECUTION", "5m": "TARGET_REACHED", "10m": "TARGET_REACHED", "15m": "TARGET_REACHED", "remainder_session": "DUPLICATE_LEDGER_RISK"}, "disconfirming_evidence_required": "Separate broker orders, quantities, and fills."},
+    {"id": "DTS-20250801-P41141-C02", "timestamp": "00:16:34", "label": "PARTIAL_EXIT_WITHOUT_REMAINING_QUANTITY", "fact_classification": "PARTIAL_EXIT", "status": "NEEDS_RECONCILIATION", "claim": "A high-gain overnight-put partial exit lacked before/after quantities.", "forward_outcomes": {"1m": "PARTIAL_EXIT", "3m": "PARTIAL_EXIT", "5m": "REMAINDER_UNKNOWN", "10m": "REMAINDER_UNKNOWN", "15m": "REMAINDER_UNKNOWN", "remainder_session": "UNRESOLVED_REMAINDER"}, "disconfirming_evidence_required": "Position and order ledger."},
+    {"id": "DTS-20250801-P41141-C03", "timestamp": "01:06:03", "label": "LATE_REVERSAL_CALLS_UNRESOLVED", "fact_classification": "UNRESOLVED_TRADE", "status": "NEEDS_GOVERNANCE", "claim": "Two reversal calls entered after the decline and lacked terminal fills.", "forward_outcomes": {"1m": "SOURCE_REPORTED_MIXED", "3m": "SOURCE_REPORTED_MIXED", "5m": "SOURCE_REPORTED_OPEN", "10m": "SOURCE_REPORTED_OPEN", "15m": "SOURCE_REPORTED_OPEN", "remainder_session": "UNRESOLVED_OPEN_POSITIONS"}, "disconfirming_evidence_required": "Terminal broker fills and aggregate risk."},
+    {"id": "DTS-20250801-P41141-C04", "timestamp": "01:10:41", "label": "WEEKEND_HOLD_WITHOUT_CONTRACT_DETAIL", "fact_classification": "PRESENTER_CLAIM", "status": "NEEDS_GOVERNANCE", "claim": "The published call pick was recommended for a weekend hold without contract-level evidence in this source.", "forward_outcomes": {"1m": "UNAVAILABLE_EVIDENCE", "3m": "UNAVAILABLE_EVIDENCE", "5m": "UNAVAILABLE_EVIDENCE", "10m": "UNAVAILABLE_EVIDENCE", "15m": "UNAVAILABLE_EVIDENCE", "remainder_session": "UNRESOLVED_WEEKEND_HOLD"}, "disconfirming_evidence_required": "Alert, contract, entry, quantity, and terminal fill."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250801-P41141-T01", "type": "PUT_POSITION", "setup": "August 8 632 puts; overnight inventory", "entry_time": "PRIOR_SESSION", "entry_premium": 4.78, "exit_time": "00:16:34", "exit_premium": 9.78, "stop_or_invalidation": "Partial only; remainder unresolved"},
+    {"source_trade_id": "DTS-20250801-P41141-T02", "type": "PUT_POSITION", "setup": "August 8 624 puts; formal OMG", "entry_time": "00:14:36", "entry_premium": 5.40, "exit_time": "00:16:10", "exit_premium": 5.72, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250801-P41141-T03", "type": "PUT_POSITION", "setup": "August 8 624 puts; challenge, 14 contracts", "entry_time": "00:14:36", "entry_premium": 5.40, "exit_time": "00:16:10", "exit_premium": 5.72, "stop_or_invalidation": "Same execution family as formal OMG"},
+    {"source_trade_id": "DTS-20250801-P41141-T04", "type": "PUT_POSITION", "setup": "August 8 623 puts; challenge, 14 contracts", "entry_time": "00:21:42", "entry_premium": 5.99, "exit_time": "00:26:03", "exit_premium": 6.66, "stop_or_invalidation": "Ten-cent trailing stop reported"},
+    {"source_trade_id": "DTS-20250801-P41141-T05", "type": "PUT_POSITION", "setup": "August 8 621 puts; challenge, 13 contracts", "entry_time": "00:29:38", "entry_premium": 6.19, "exit_time": "00:33:27", "exit_premium": 6.36, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20250801-P41141-T06", "type": "CALL_POSITION", "setup": "August 8 623 calls; discretionary", "entry_time": "00:59:57", "entry_premium": 6.51, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Option target near 6.82; unresolved"},
+    {"source_trade_id": "DTS-20250801-P41141-T07", "type": "CALL_POSITION", "setup": "August 8 636 calls; discretionary", "entry_time": "01:06:03", "entry_premium": 1.12, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Unresolved"},
+    {"source_trade_id": "DTS-20250801-P41141-T08", "type": "CALL_POSITION", "setup": "Published call pick; contract unavailable", "entry_time": null, "entry_premium": null, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Weekend hold recommended"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 8, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": ["Formal and challenge 624 puts may be one execution."], "conflicts": ["Duplicate ledger counting.", "Partial overnight exit lacks remaining quantity.", "Late calls remained open.", "Published pick lacks contract details."], "unavailable_evidence": ["Full visual review, broker and simulator orders, position quantities, terminal call fills, published-pick contract, aggregate risk, synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"]},
+  "market_state_timeline": [{"timestamp": "00:00:00", "state": "JOBS_TARIFF_SELLOFF", "evidence": "Weak jobs, tariffs, and guidance drove downside."}, {"timestamp": "00:14:36", "state": "FORMAL_DOWNSIDE_OMG", "evidence": "624 puts entered."}, {"timestamp": "00:40:10", "state": "SELLING_EXTENSION", "evidence": "SPY moved below 620."}, {"timestamp": "00:59:57", "state": "REVERSAL_ATTEMPT", "evidence": "Calls entered on a transition attempt."}],
+  "counterfactuals": [{"timestamp": "00:14:36", "type": "DEDUPLICATE_EXECUTIONS", "detail": "Count identical formal/challenge fills once."}, {"timestamp": "00:16:34", "type": "QUANTITY_WEIGHTED_PARTIALS", "detail": "Require before/after quantities."}, {"timestamp": "00:24:36", "type": "FIXED_VERSUS_TRAILING_EXIT", "detail": "Compare executable stop logic."}, {"timestamp": "00:59:57", "type": "TREND_TRANSITION_FILTER", "detail": "Require confirmed transition before reversal calls."}, {"timestamp": "01:10:41", "type": "CONTRACT_LEVEL_WEEKEND_RISK", "detail": "Reject unspecified weekend holds."}],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator orders", "Position quantities", "Terminal reversal-call fills", "Published-pick contract", "Aggregate risk", "Synchronized bars, executable paths, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250801-P41141-C01", "DTS-20250801-P41141-C02", "DTS-20250801-P41141-C03", "DTS-20250801-P41141-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 4, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
