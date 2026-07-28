@@ -107,7 +107,12 @@ def test_legacy_backfill_does_not_overwrite_broker_cash_trade(tmp_path):
     memory = Memory(db_path=tmp_path / "memory.sqlite")
     broker_cash_trade = {**_broker_trade(), "pnl": 18.67, "pnl_source": "broker_cash"}
 
-    assert memory.reconcile_broker_trades([broker_cash_trade]) == 1
+    memory.record_trade(
+        **{key: value for key, value in broker_cash_trade.items() if key != "pnl_source"},
+    )
+    memory.load_completed_trades_for_date("2026-07-20")
+
+    assert memory.reconcile_broker_trades([broker_cash_trade]) == 0
 
     loaded = memory.load_completed_trades_for_date("2026-07-20")
 

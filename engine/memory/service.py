@@ -408,7 +408,13 @@ class Memory:
             canonical_trade_id = self._canonical_trade_id(row)
             with sqlite3.connect(self.db_path) as connection:
                 existing = connection.execute(
-                    "SELECT payload FROM canonical_completed_trades WHERE canonical_trade_id = ?",
+                    """
+                    SELECT payload
+                    FROM canonical_completed_trade_versions
+                    WHERE canonical_trade_id = ?
+                    ORDER BY canonical_version DESC
+                    LIMIT 1
+                    """,
                     (canonical_trade_id,),
                 ).fetchone()
             if existing is not None:
