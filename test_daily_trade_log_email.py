@@ -66,6 +66,8 @@ def test_placeholder_symbol_filtering():
 
 def test_process_pending_verification_marks_done(monkeypatch, tmp_path):
     monkeypatch.setattr(trade_email, "DELIVERY_LOG_PATH", tmp_path / "delivery.log")
+    saved = []
+    monkeypatch.setattr(trade_email, "_save_state", lambda state: saved.append(dict(state)))
 
     csv_file = tmp_path / "a.csv"
     json_file = tmp_path / "a.json"
@@ -84,3 +86,4 @@ def test_process_pending_verification_marks_done(monkeypatch, tmp_path):
 
     trade_email._process_pending_verification(state, now)
     assert state.get("verification_done") is True
+    assert saved and saved[-1]["verification_done"] is True
