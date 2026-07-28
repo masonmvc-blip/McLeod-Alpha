@@ -349,6 +349,37 @@ def test_entry_window_closes_at_345_pm_eastern() -> None:
     assert module._is_entry_window_now(datetime(2026, 7, 20, 15, 45, 0, tzinfo=eastern)) is False
 
 
+def test_post_cutoff_candle_publishes_scores_without_order_evaluation(monkeypatch) -> None:
+    module = importlib.import_module("phase3_monitor")
+    last = pd.Series({"close": 600.0}, name=pd.Timestamp("2026-07-20T19:46:00Z"))
+    decision = {
+        "regime": "BULL_TREND",
+        "call_score": 5,
+        "put_score": 1,
+        "call_reasons": ["bull_ema_stack"],
+        "put_reasons": ["volume_weakening_bearish_move"],
+        "volume": {"trend": "increasing"},
+        "direction": "CALL",
+    }
+    published = []
+
+    monkeypatch.setattr(module, "in_trade", lambda: False, raising=False)
+    monkeypatch.setattr(module, "_is_entry_window_now", lambda: False)
+    monkeypatch.setattr(module.LIVE_BRAIN, "evaluate_entry", lambda *_: decision)
+    monkeypatch.setattr(module, "log_signal", lambda *_: None)
+    monkeypatch.setattr(module, "_publish_indicator_scores", lambda *args: published.append(args))
+    monkeypatch.setattr(module, "_refresh_option_chain_cache", lambda *_: (_ for _ in ()).throw(AssertionError("must not fetch chain")))
+
+    result = module.maybe_enter_trade(last, last, "BULL_TREND", pd.DataFrame([last]))
+
+    assert result["decision_reason"] == "post_market_learning_only"
+    assert result["entry_block_reason"] == "No new entries at or after 3:45 PM ET"
+    assert result["attempted"] is False
+    assert result["call_score"] == 5
+    assert result["put_score"] == 1
+    assert len(published) == 1
+
+
 def test_open_option_quote_uses_held_contract_direct_quote(monkeypatch) -> None:
     module = importlib.import_module("phase3_monitor")
 
