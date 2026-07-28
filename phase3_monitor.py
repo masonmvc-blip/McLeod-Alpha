@@ -7,6 +7,7 @@ from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_e
 from reports.morning_readiness import maybe_generate_morning_readiness
 from reports.scheduler_health import maybe_generate_scheduler_health_dashboard
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
+from engine.brain.candidate_controls import candidate_entry_block_reason, load_candidate_controls
 from engine.memory import get_memory
 from spy_bot_reviewer import SpyBotReviewer
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
@@ -92,6 +93,15 @@ def _append_decision_audit_event(payload):
         get_memory().record_decision(payload, DECISION_AUDIT_PATH, source="monitor")
     except Exception as exc:
         print(f"Decision audit write error: {exc}")
+
+
+def _candidate_control_block_reason(feature_payload, option):
+    """Evaluate opt-in research controls after selecting an executable contract."""
+    try:
+        features = json.loads(feature_payload) if isinstance(feature_payload, str) else feature_payload
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return candidate_entry_block_reason(features or {}, option, load_candidate_controls())
 
 def _log_shadow_opportunities(
     *,
@@ -1379,6 +1389,29 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload = _build_entry_feature_payload(
             completed_candles, "CALL", regime, call_score, put_score, call_reasons, put_reasons
         )
+        candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
+        if candidate_block_reason:
+            print(f"ENTRY BLOCKED: {candidate_block_reason}")
+            _log_shadow_opportunities(
+                last=last, prev=prev, completed_candles=completed_candles, regime=regime,
+                call_score=call_score, call_reasons=call_reasons, put_score=put_score,
+                put_reasons=put_reasons, entered_call=False, entered_put=False,
+                feature_payload=feature_payload, selected_option_call=option,
+                blocked_entry={"direction": "CALL", "reason": candidate_block_reason},
+            )
+            return {
+                "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+                "decision_reason": "candidate_entry_control", "entry_block_reason": candidate_block_reason,
+                "regime": regime, "call_score": call_score, "put_score": put_score,
+                "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
+                "signal_threshold": min_score_threshold, "candidate_direction": "CALL", "candidate_entry": entry,
+                "candidate_stop": stop, "candidate_target": target, "candidate_quantity": quantity,
+                "candidate_option_symbol": option.get("symbol"), "chain_fetch_ms": chain_fetch_ms,
+                "option_select_ms": option_select_ms, "open_trade_ms": None, "precheck_ms": None,
+                "quote_compute_ms": None, "submit_order_ms": None, "wait_fill_ms": None,
+                "market_fallback_submit_ms": None, "market_fallback_wait_ms": None,
+                "protective_stop_ms": None, "persist_ms": None, "filled_via": None,
+            }
 
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("CALL", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
@@ -1461,6 +1494,29 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload = _build_entry_feature_payload(
             completed_candles, "PUT", regime, call_score, put_score, call_reasons, put_reasons
         )
+        candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
+        if candidate_block_reason:
+            print(f"ENTRY BLOCKED: {candidate_block_reason}")
+            _log_shadow_opportunities(
+                last=last, prev=prev, completed_candles=completed_candles, regime=regime,
+                call_score=call_score, call_reasons=call_reasons, put_score=put_score,
+                put_reasons=put_reasons, entered_call=False, entered_put=False,
+                feature_payload=feature_payload, selected_option_put=option,
+                blocked_entry={"direction": "PUT", "reason": candidate_block_reason},
+            )
+            return {
+                "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
+                "decision_reason": "candidate_entry_control", "entry_block_reason": candidate_block_reason,
+                "regime": regime, "call_score": call_score, "put_score": put_score,
+                "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
+                "signal_threshold": min_score_threshold, "candidate_direction": "PUT", "candidate_entry": entry,
+                "candidate_stop": stop, "candidate_target": target, "candidate_quantity": quantity,
+                "candidate_option_symbol": option.get("symbol"), "chain_fetch_ms": chain_fetch_ms,
+                "option_select_ms": option_select_ms, "open_trade_ms": None, "precheck_ms": None,
+                "quote_compute_ms": None, "submit_order_ms": None, "wait_fill_ms": None,
+                "market_fallback_submit_ms": None, "market_fallback_wait_ms": None,
+                "protective_stop_ms": None, "persist_ms": None, "filled_via": None,
+            }
 
         open_start_ms = _perf_ms_now()
         opened = bool(open_trade("PUT", entry, stop, target, quantity, trade_plan["reason"], option, feature_payload))
