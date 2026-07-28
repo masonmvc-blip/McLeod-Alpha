@@ -34,6 +34,7 @@ start_cockpit_waitress() {
 
 start_cockpit() {
   if is_port_open; then
+    lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null | head -n 1 > "$CC_PID_FILE"
     echo "Cockpit already listening on 127.0.0.1:5001"
     return 0
   fi
@@ -43,6 +44,8 @@ start_cockpit() {
 
   for _ in {1..30}; do
     if is_port_open; then
+      cc_pid="$(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null | head -n 1)"
+      echo "$cc_pid" > "$CC_PID_FILE"
       echo "Cockpit started (PID $cc_pid)"
       return 0
     fi
