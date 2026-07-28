@@ -405,6 +405,19 @@ class Memory:
                 (start_date, end_date),
             ).fetchall()]
         for row in rows:
+            canonical_trade_id = self._canonical_trade_id(row)
+            with sqlite3.connect(self.db_path) as connection:
+                existing = connection.execute(
+                    "SELECT payload FROM canonical_completed_trades WHERE canonical_trade_id = ?",
+                    (canonical_trade_id,),
+                ).fetchone()
+            if existing is not None:
+                try:
+                    existing_payload = json.loads(existing[0])
+                    if str(existing_payload.get("pnl_source") or "").lower() == "broker_cash":
+                        continue
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    pass
             self.upsert_completed_trade(row, source="legacy_trade_log_backfill")
 
     def reconcile_broker_trades(self, broker_rows, source="broker_reconciliation"):

@@ -103,6 +103,19 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
     assert json.loads(events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
+def test_legacy_backfill_does_not_overwrite_broker_cash_trade(tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    broker_cash_trade = {**_broker_trade(), "pnl": 18.67, "pnl_source": "broker_cash"}
+
+    assert memory.reconcile_broker_trades([broker_cash_trade]) == 1
+
+    loaded = memory.load_completed_trades_for_date("2026-07-20")
+
+    assert len(loaded) == 1
+    assert loaded[0]["pnl"] == 18.67
+    assert loaded[0]["pnl_source"] == "broker_cash"
+
+
 def test_reconciliation_health_requires_count_and_pnl_parity(tmp_path):
     memory = Memory(db_path=tmp_path / "memory.sqlite")
     trade = _broker_trade()
