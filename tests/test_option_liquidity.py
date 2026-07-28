@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from execution.option_selector import MIN_OPTION_DAILY_VOLUME, get_nearest_expiration, select_option_from_chain
 from engine.brain import Brain
-from engine.brain.engine import OPTION_MIN_OPEN_INTEREST
+from engine.brain.engine import OPTION_MIN_DAILY_VOLUME, OPTION_MIN_OPEN_INTEREST
 
 
 def _chain_with_contracts(*contracts):
@@ -26,6 +26,11 @@ def _contract(symbol, volume):
         "totalVolume": volume,
         "openInterest": 1_000,
     }
+
+
+def test_daily_volume_minimum_is_400_contracts_across_entry_policy():
+    assert MIN_OPTION_DAILY_VOLUME == 400
+    assert OPTION_MIN_DAILY_VOLUME == 400
 
 
 def test_selector_rejects_options_below_daily_volume_minimum():

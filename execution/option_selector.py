@@ -2,7 +2,7 @@ from engine.brain import Brain
 from engine.brain.engine import OPTION_MIN_OPEN_INTEREST
 
 
-MIN_OPTION_DAILY_VOLUME = 500
+MIN_OPTION_DAILY_VOLUME = 400
 OPTION_SELECTION_BRAIN = Brain()
 
 
