@@ -979,6 +979,10 @@ class Memory:
         if not self.position_path.exists():
             return None
         payload = json.loads(self.position_path.read_text(encoding="utf-8"))
+        option_symbol = str(payload.get("option_symbol") or "").upper()
+        if "TEST" in option_symbol:
+            self.clear_position()
+            return None
         payload["opened"] = datetime.fromisoformat(payload["opened"])
         position = position_type(**{key: payload[key] for key in self._position_constructor_fields()})
         for key, default in self._position_extra_fields().items():
