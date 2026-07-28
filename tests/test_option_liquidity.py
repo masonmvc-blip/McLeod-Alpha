@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from execution.option_selector import MIN_OPTION_DAILY_VOLUME, get_nearest_expiration, select_option_from_chain
 from engine.brain import Brain
+from engine.brain.engine import OPTION_MIN_OPEN_INTEREST
 
 
 def _chain_with_contracts(*contracts):
@@ -28,7 +29,9 @@ def _contract(symbol, volume):
 
 
 def test_selector_rejects_options_below_daily_volume_minimum():
-    chain = _chain_with_contracts(_contract("SPY_LOW", MIN_OPTION_DAILY_VOLUME - 1))
+    contract = _contract("SPY_LOW", MIN_OPTION_DAILY_VOLUME - 1)
+    contract["openInterest"] = OPTION_MIN_OPEN_INTEREST - 1
+    chain = _chain_with_contracts(contract)
 
     assert select_option_from_chain(chain, "CALL", 750.0) is None
 
@@ -40,6 +43,29 @@ def test_selector_accepts_option_at_daily_volume_minimum():
 
     assert selected["symbol"] == "SPY_MIN"
     assert selected["volume"] == MIN_OPTION_DAILY_VOLUME
+
+
+def test_selector_uses_open_interest_when_daily_volume_is_not_yet_available():
+    contract = _contract("SPY_OPENING_SESSION", 0)
+    contract["openInterest"] = OPTION_MIN_OPEN_INTEREST
+    chain = _chain_with_contracts(contract)
+
+    selected = select_option_from_chain(chain, "CALL", 750.0)
+
+    assert selected["symbol"] == "SPY_OPENING_SESSION"
+    assert selected["volume"] == 0
+    assert selected["open_interest"] == OPTION_MIN_OPEN_INTEREST
+
+
+def test_selector_prefers_daily_volume_over_open_interest_fallback():
+    opening_contract = _contract("SPY_OPEN_INTEREST", 0)
+    opening_contract["openInterest"] = OPTION_MIN_OPEN_INTEREST + 10_000
+    volume_contract = _contract("SPY_DAILY_VOLUME", MIN_OPTION_DAILY_VOLUME)
+    chain = _chain_with_contracts(opening_contract, volume_contract)
+
+    selected = select_option_from_chain(chain, "CALL", 750.0)
+
+    assert selected["symbol"] == "SPY_DAILY_VOLUME"
 
 
 def test_brain_owns_option_ranking_policy():

@@ -14,6 +14,7 @@ from . import risk
 
 OPTION_MIN_DAYS_TO_EXPIRY = 7
 OPTION_MIN_DAILY_VOLUME = 500
+OPTION_MIN_OPEN_INTEREST = 500
 OPTION_MAX_ABSOLUTE_SPREAD = 0.05
 OPTION_MAX_SPREAD_PCT = 8.0
 ALLOWED_EXIT_REASONS = {
@@ -143,8 +144,10 @@ class Brain:
             if expiration_date.weekday() == 4 and (expiration_date - reference_date).days >= OPTION_MIN_DAYS_TO_EXPIRY:
                 eligible_expirations.append((expiration_date, expiration_key))
 
+        open_interest_candidates_by_expiration = []
         for _, expiration_key in sorted(eligible_expirations):
-            candidates = []
+            volume_candidates = []
+            open_interest_candidates = []
             for strike, contracts in (expirations.get(expiration_key) or {}).items():
                 for contract in contracts or []:
                     try:
@@ -162,9 +165,7 @@ class Brain:
                     spread_pct = (spread / mark) * 100.0
                     if spread > OPTION_MAX_ABSOLUTE_SPREAD or spread_pct > OPTION_MAX_SPREAD_PCT:
                         continue
-                    if volume < OPTION_MIN_DAILY_VOLUME:
-                        continue
-                    candidates.append({
+                    candidate = {
                         **contract,
                         "direction": normalized_direction,
                         "expiration": expiration_key,
@@ -177,14 +178,28 @@ class Brain:
                         "spread": spread,
                         "spread_pct": spread_pct,
                         "_strike_distance": abs(strike_price - float(underlying_price)),
-                    })
-            if candidates:
+                    }
+                    if volume >= OPTION_MIN_DAILY_VOLUME:
+                        volume_candidates.append(candidate)
+                    elif open_interest >= OPTION_MIN_OPEN_INTEREST:
+                        open_interest_candidates.append(candidate)
+            if volume_candidates:
                 selected = max(
-                    candidates,
+                    volume_candidates,
                     key=lambda option: (option["volume"], option["open_interest"], -option["_strike_distance"]),
                 )
                 selected.pop("_strike_distance", None)
                 return selected
+            if open_interest_candidates:
+                open_interest_candidates_by_expiration.append(open_interest_candidates)
+
+        if open_interest_candidates_by_expiration:
+            selected = max(
+                open_interest_candidates_by_expiration[0],
+                key=lambda option: (option["open_interest"], option["volume"], -option["_strike_distance"]),
+            )
+            selected.pop("_strike_distance", None)
+            return selected
         return None
 
     def evaluate_entry_runtime_guard(

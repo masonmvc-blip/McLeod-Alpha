@@ -1,4 +1,5 @@
 from engine.brain import Brain
+from engine.brain.engine import OPTION_MIN_OPEN_INTEREST
 
 
 MIN_OPTION_DAILY_VOLUME = 500
@@ -21,8 +22,9 @@ def select_option_from_chain(data, direction, spy_price):
     selected = OPTION_SELECTION_BRAIN.select_option_contract(data, direction, spy_price)
     if selected is None:
         print(
-            "REJECTED: no option passed bid-ask and daily-volume liquidity filters "
-            f"(minimum volume: {MIN_OPTION_DAILY_VOLUME})"
+            "REJECTED: no option passed executable bid-ask/spread liquidity filters "
+            f"(minimum volume: {MIN_OPTION_DAILY_VOLUME}; "
+            f"open-interest fallback: {OPTION_MIN_OPEN_INTEREST})"
         )
         return None
 
