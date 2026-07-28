@@ -71,6 +71,12 @@ def register_record(record_path: Path, registry_path: Path) -> None:
     validate_record(record)
     registry = load_json(registry_path)
     post_id = int(record["recording"]["post_id"])
+    report_date = str(record["recording"].get("publication_date", "")).strip()
+    report_path = (
+        f"docs/research/{report_date}_daytradespy_trading_room_research.md"
+        if report_date
+        else None
+    )
     record["evidence_quality"]["tier"] = evidence_tier(record)
     for item in registry["recordings"]:
         if int(item["post_id"]) == post_id:
@@ -85,6 +91,7 @@ def register_record(record_path: Path, registry_path: Path) -> None:
                     "machine_record_path": str(record_path),
                     "output_bundle_path": f"data/research/daytradespy/output/{post_id}",
                     "transcript": record["recording"]["transcript"],
+                    "report_path": report_path or item.get("report_path"),
                 }
             )
             break

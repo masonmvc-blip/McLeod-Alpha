@@ -1,6 +1,6 @@
 {
   "analysis_protocol_version": "2026-07-22.1",
-  "generated_at": "2026-07-28T15:46:04.020353+00:00",
+  "generated_at": "2026-07-28T16:04:20.250250+00:00",
   "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
   "recording_count": 799,
   "recordings": [
@@ -12489,14 +12489,14 @@
     {
       "analysis_protocol_version": "2026-07-22.1",
       "analysis_status": "coverage_incomplete",
-      "duration_seconds": null,
+      "duration_seconds": 4840,
       "evidence_quality": {
         "ledger_reconciliation_pct": 0,
         "option_excursion_data_pct": 0,
-        "overall_grade": "SOURCE_CONTENT_INCOMPLETE",
-        "tier": "E",
-        "trade_details_captured_pct": 0,
-        "transcript_completeness_pct": 0,
+        "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+        "tier": "C",
+        "trade_details_captured_pct": 80,
+        "transcript_completeness_pct": 99,
         "underlying_market_data_pct": 0
       },
       "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
@@ -12504,17 +12504,17 @@
       "output_bundle_path": "data/research/daytradespy/output/40138",
       "post_id": 40138,
       "recording_date": "2025-05-09T12:50:03",
-      "report_path": "docs/research/2025-05-09_daytradespy_trading_room_research.md",
+      "report_path": "docs/research/2025-05-08_daytradespy_trading_room_research.md",
       "reprocess_required": true,
       "reviewed_at": "2026-07-28T00:00:00+00:00",
       "source_url": "https://daytradespy.com/40138/trading-room-video-recording-may-8-2025/",
       "title": "Trading Room Video Recording \u2013 May 8, 2025",
       "transcript": {
-        "availability": "UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS",
-        "completeness_pct": 0,
+        "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+        "completeness_pct": 99,
         "path": "",
         "speaker_attribution_available": false,
-        "timestamps_preserved": false
+        "timestamps_preserved": true
       }
     },
     {

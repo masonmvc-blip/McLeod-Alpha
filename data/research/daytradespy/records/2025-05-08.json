@@ -1,5 +1,330 @@
 {
   "schema_version": "daytradespy-record.v2",
-  "recording": {"analysis_protocol_version":"2026-07-22.1","post_id":40138,"title":"Trading Room Video Recording - May 8, 2025","publication_date":"2025-05-08","source_url":"https://daytradespy.com/40138/trading-room-video-recording-may-8-2025/","duration_seconds":null,"reviewed_at":"2026-07-28T00:00:00+00:00","reviewer_version":"recording-first-source-access-review.v1","transcript":{"availability":"UNAVAILABLE_EVIDENCE_VIMEO_INCOMPLETE_CAPTIONS","completeness_pct":0,"path":"","timestamps_preserved":false,"speaker_attribution_available":false},"transcript_probe":{"source":"AUTHORIZED_DAYTRADESPY_MEMBER_AND_VIMEO_SESSION","cue_count":4,"first_timestamp":"PARTIAL","last_timestamp":"PARTIAL","raw_transcript_persisted":false,"coverage_note":"Vimeo asset 1082941916 was authorized and playable, but its transcript panel exposed only initial cues and did not hydrate further after transcript navigation attempts."},"visual_review":{"status":"UNAVAILABLE_EVIDENCE","coverage_pct":0,"chart_references":[]}},
-  "evidence_quality":{"transcript_completeness_pct":0,"trade_details_captured_pct":0,"ledger_reconciliation_pct":0,"underlying_market_data_pct":0,"option_excursion_data_pct":0,"overall_grade":"SOURCE_CONTENT_INCOMPLETE","tier":"E"},"timeline":[],"claims":[],"reported_trades":[],
-  "ledger_reconciliation":{"source_reported_trades":0,"mcleod_alpha_trades":"UNAVAILABLE_EVIDENCE","confirmed_matches":[],"possible_matches":[],"conflicts":[],"unavailable_evidence":["Authorized Vimeo asset 1082941916 exposes only incomplete captions.","No verified chart, order, trade, fill, or outcome evidence was captured."]},"market_state_timeline":[],"counterfactuals":[{"timestamp":"UNKNOWN","type":"UNAVAILABLE_EVIDENCE","detail":"Incomplete captions prevent replay, counterfactual, or outcome analysis."}],"hypothesis_references":[],"expected_value_tracking":{"confidence":"NONE","evidence_count":0,"current_lifecycle_stage":"SOURCE_CONTENT_GAP","replay_improvement":"UNAVAILABLE_EVIDENCE"},"instrumentation_gaps":["Complete Vimeo transcript captions","Visual chart and order review","Speaker attribution","Contract symbols and order identifiers","Timestamped underlying bars","Option bid/ask/mark and excursion data","Broker fills, fees, and canonical ledger mapping"],"final_governance_decision":"RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"}
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 40138,
+    "title": "Trading Room Video Recording - May 8, 2025",
+    "publication_date": "2025-05-08",
+    "source_url": "https://daytradespy.com/40138/trading-room-video-recording-may-8-2025/",
+    "duration_seconds": 4840,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "timestamps_preserved": true,
+      "speaker_attribution_available": false
+    },
+    "transcript_probe": {
+      "source": "AUTHORIZED_BROWSER_RUNTIME_SIGNED_CAPTION_TRACK",
+      "cue_count": 1622,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:20:15",
+      "raw_transcript_persisted": false,
+      "coverage_note": "The complete authorized Vimeo caption track reaches 01:20:15 of the 01:20:40 asset. The raw caption file was used temporarily and was not committed."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "transcript_completeness_pct": 99,
+    "trade_details_captured_pct": 80,
+    "ledger_reconciliation_pct": 0,
+    "underlying_market_data_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C"
+  },
+  "timeline": [
+    {
+      "timestamp": "00:05:24",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The presenters selected approximately 566.39 as the upside OMG boundary and 564.50 as the downside boundary after moving the upside trigger beyond nearby right-shoulder resistance."
+    },
+    {
+      "timestamp": "00:13:26",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source described a double-bottom support response while acknowledging that all referenced moving averages remained above price and were falling."
+    },
+    {
+      "timestamp": "00:18:26",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "For the downside OMG, the source prescribed a close below the boundary followed by a bounce and rollover rather than first-penetration entry."
+    },
+    {
+      "timestamp": "00:20:16",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported ten 566 calls at 6.66 at a stated 9:41 a.m. while describing the entry as aggressive."
+    },
+    {
+      "timestamp": "00:21:17",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported entering the downside OMG puts at 6.52 at a stated 9:43 a.m.; surrounding context indicates May 16 564 puts, but the strike cue is garbled."
+    },
+    {
+      "timestamp": "00:22:07",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source set the OMG premium target at 6.91, linked to approximately SPY 563.80-563.85."
+    },
+    {
+      "timestamp": "00:27:16",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported a 6.91 OMG fill and characterized it as a five-minute trade."
+    },
+    {
+      "timestamp": "00:27:35",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The source waited for the calls to recover through the EMAs while simultaneously identifying further downside room toward clustered support."
+    },
+    {
+      "timestamp": "00:54:47",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "Asked whether to exit the calls, the source chose to hold, stated a 7.12 cost and 7.50 sell order, and described the selloff as temporary without giving a stop."
+    },
+    {
+      "timestamp": "01:01:00",
+      "classification": "PRESENTER_CLAIM",
+      "claim": "The first one-minute 50-MA break was rejected on the highest one-minute volume since the open; price later held the 10/20 MAs and challenged a descending trend line."
+    },
+    {
+      "timestamp": "01:06:18",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "A presenter reported May 16 564 calls at 7.51 with a 7.84 target linked to SPY just below 565."
+    },
+    {
+      "timestamp": "01:08:34",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The original ten 566 calls at 6.66 were restated with a 7.00 sell order and an underlying target around SPY 565.60."
+    },
+    {
+      "timestamp": "01:11:31",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source reported the 564-call target filled at 7.84; shortly afterward it said the other target also filled, though caption-only position pairing is partly ambiguous."
+    },
+    {
+      "timestamp": "01:18:21",
+      "classification": "PRESENTER_REPORTED_TRADE",
+      "claim": "The source said the OMG worked and reported the pick-of-the-day 566 calls were down about one dollar near recording end, with no resolved outcome."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250508-C01",
+      "timestamp": "00:18:26",
+      "label": "OMG_CLOSE_BOUNCE_ROLLOVER_ENTRY",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source used a close below the OMG boundary, a bounce, and a renewed rollover as the downside entry sequence.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "SOURCE_REPORTED_TARGET_FILL",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic OMG labels, synchronized SPY bars, executable option marks, fills, costs, and first-touch and first-close baseline replays."
+    },
+    {
+      "id": "DTS-20250508-C02",
+      "timestamp": "00:05:24",
+      "label": "STRUCTURAL_ROOM_TRIGGER_FILTER",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The presenters moved the upside trigger beyond nearby right-shoulder resistance because the initial level left insufficient room.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic resistance and room-to-target labels with timestamped bars, option marks, costs, and out-of-sample replay."
+    },
+    {
+      "id": "DTS-20250508-C03",
+      "timestamp": "00:20:16",
+      "label": "PRE_EVENT_AGGRESSIVE_CALL_BELOW_FALLING_MAS",
+      "fact_classification": "PRESENTER_REPORTED_TRADE",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source entered bullish calls before the scheduled event while price remained below falling moving averages and later held through adverse movement without a stated invalidation.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "SOURCE_DESCRIBED_ADVERSE_MOVEMENT",
+        "15m": "SOURCE_DESCRIBED_ADVERSE_MOVEMENT",
+        "remainder_session": "SOURCE_REPORTED_TARGET_FILL"
+      },
+      "disconfirming_evidence_required": "Synchronized bars, exact event timestamp, option bid/ask path, fill, MFE/MAE, time-underwater, and a post-event-confirmation baseline."
+    },
+    {
+      "id": "DTS-20250508-C04",
+      "timestamp": "01:01:00",
+      "label": "FAILED_MA_BREAK_THEN_ACCEPTED_RECOVERY",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "A failed 50-MA break was followed by a 10/20-MA hold, trend-line break, retest, and renewed upside move before the later 564-call trade.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "SOURCE_REPORTED_FAVORABLE_MOVE",
+        "10m": "SOURCE_REPORTED_TARGET_FILL",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Deterministic MA and trend-line labels, synchronized bars, executable option marks, fills, MFE/MAE, and first-break and no-retest baselines."
+    },
+    {
+      "id": "DTS-20250508-C05",
+      "timestamp": "00:23:44",
+      "label": "SIMULTANEOUS_OPPOSING_OPTION_LEGS",
+      "fact_classification": "PRESENTER_CLAIM",
+      "status": "NEEDS_INSTRUMENTATION",
+      "claim": "The source carried opposing call and put positions without reporting aggregate delta, combined maximum loss, or leg-specific invalidations.",
+      "forward_outcomes": {
+        "1m": "UNAVAILABLE_EVIDENCE",
+        "3m": "UNAVAILABLE_EVIDENCE",
+        "5m": "UNAVAILABLE_EVIDENCE",
+        "10m": "UNAVAILABLE_EVIDENCE",
+        "15m": "UNAVAILABLE_EVIDENCE",
+        "remainder_session": "UNAVAILABLE_EVIDENCE"
+      },
+      "disconfirming_evidence_required": "Contract-level fills, synchronized Greeks, combined P&L, per-leg MFE/MAE, fees, and explicit portfolio risk limits."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250508-T01",
+      "type": "CALL_POSITION",
+      "setup": "Aggressive support-undercut/event-recovery entry; ten 566 calls",
+      "entry_time": "00:20:16; source-stated market time 09:41",
+      "entry_premium": 6.66,
+      "exit_time": "Approximately 01:12:36 source statement; pairing partly ambiguous",
+      "exit_premium": 7.0,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250508-T02",
+      "type": "PUT_POSITION",
+      "setup": "Downside OMG close-bounce-rollover; surrounding context indicates May 16 564 puts but strike cue is garbled",
+      "entry_time": "00:21:17; source-stated market time 09:43",
+      "entry_premium": 6.52,
+      "exit_time": "00:27:16 source-reported fill",
+      "exit_premium": 6.91,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250508-T03",
+      "type": "CALL_POSITION",
+      "setup": "565 calls disclosed near the one-minute 50-MA test",
+      "entry_time": "Source described entry around 10:00",
+      "entry_premium": 7.12,
+      "exit_time": "NOT_CLEARLY_REPORTED",
+      "exit_premium": "7.50 SELL_ORDER_ONLY",
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250508-T04",
+      "type": "CALL_POSITION",
+      "setup": "May 16 564 calls after later MA recovery and trend-line break",
+      "entry_time": "01:05:21 source statement",
+      "entry_premium": 7.51,
+      "exit_time": "01:11:31 source-reported fill",
+      "exit_premium": 7.84,
+      "stop_or_invalidation": "NOT_REPORTED"
+    },
+    {
+      "source_trade_id": "DTS-20250508-T05",
+      "type": "CALL_POSITION",
+      "setup": "Pick-of-the-day 566 calls",
+      "entry_time": "UNKNOWN",
+      "entry_premium": "UNKNOWN",
+      "exit_time": "UNRESOLVED_AT_RECORDING_END",
+      "exit_premium": "UNKNOWN; SOURCE SAID POSITION WAS DOWN ABOUT 1.00",
+      "stop_or_invalidation": "Sell at end of day if profit target is not reached"
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "The downside OMG strike cue is garbled; surrounding discussion indicates May 16 564 puts.",
+      "Caption-only speaker attribution does not conclusively pair every 565/566-call statement with one position.",
+      "The source reported two later target fills, but one call exit time and position pairing remain partly ambiguous.",
+      "The pick-of-the-day call outcome was unresolved when the recording ended.",
+      "Queued calls discussed after 01:13:38 were not counted as fills."
+    ],
+    "unavailable_evidence": [
+      "No canonical ledger mapping, broker fills, contract symbols, fees, underlying bars, option bid/ask/mark data, or option excursion series was available."
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "00:05:24",
+      "market_direction": "SOURCE_BULLISH_BIAS_WITH_EARLY_DOWNSIDE",
+      "trend_strength": "PRICE_BELOW_FALLING_MOVING_AVERAGES_EARLY",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UPSIDE_TRIGGER_MOVED_BEYOND_566_39_RESISTANCE"
+    },
+    {
+      "timestamp": "00:28:03",
+      "market_direction": "SOURCE_DESCRIBED_DOWNSIDE_CONTINUATION",
+      "trend_strength": "SOURCE_DESCRIBED_OPEN_SPACE_TO_CLUSTERED_SUPPORT",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "SOURCE_LEVELS_563_50_AND_563_05"
+    },
+    {
+      "timestamp": "01:01:00",
+      "market_direction": "FAILED_BREAK_THEN_UPSIDE_RECOVERY",
+      "trend_strength": "SOURCE_DESCRIBED_MA_HOLD_AND_TRENDLINE_BREAK",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "SOURCE_LINKED_TARGET_TO_SPY_BELOW_565"
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "00:20:16",
+      "type": "DELAY_ENTRY",
+      "detail": "Compare the aggressive pre-event call below falling moving averages with entry only after the later MA recovery, descending-trend-line break, and successful retest."
+    },
+    {
+      "timestamp": "00:18:26",
+      "type": "ENTRY_SEQUENCE",
+      "detail": "Compare the source's OMG close-bounce-rollover entry with first-touch and first-close alternatives net of spread and fees."
+    },
+    {
+      "timestamp": "00:23:44",
+      "type": "PORTFOLIO_RISK",
+      "detail": "Compare simultaneous opposing legs with a single-thesis position under equal maximum risk and explicit leg invalidations."
+    }
+  ],
+  "hypothesis_references": [],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "OBSERVATION_ONLY",
+    "replay_improvement": "UNAVAILABLE_EVIDENCE"
+  },
+  "instrumentation_gaps": [
+    "Full visual chart and order review",
+    "Reliable speaker attribution",
+    "Exact OCC contract symbols and order identifiers",
+    "Timestamped SPY bars and scheduled-event timestamp",
+    "Executable option bid/ask/mark and excursion paths",
+    "Broker fills, fees, and canonical ledger mapping",
+    "Per-trade and combined-position MFE, MAE, delta, time-underwater, and risk budget",
+    "Deterministic OMG, support-reclaim, moving-average recovery, trend-line break, retest, and room-to-target labels"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
