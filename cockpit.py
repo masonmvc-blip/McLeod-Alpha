@@ -6345,6 +6345,7 @@ HTML_DASHBOARD = """
             font-weight: 800;
             letter-spacing: 0.04em;
             padding: 0 0 4px;
+            text-align: center;
             text-transform: uppercase;
         }
 
@@ -6362,12 +6363,14 @@ HTML_DASHBOARD = """
             font-size: 12px;
             font-weight: 400;
             overflow-wrap: anywhere;
+            text-align: center;
         }
 
         .indicator-performance-stats {
             color: #4f5d70;
             font-size: 11px;
             line-height: 1.4;
+            text-align: center;
         }
 
         .indicator-performance-stats strong { color: #273142; }
@@ -7525,7 +7528,7 @@ HTML_DASHBOARD = """
                     <span>Indicator</span>
                     <span>Today's Trades</span>
                     <span>W / L (Win %)</span>
-                    <span>Avg P&amp;L</span>
+                    <span>Average P&amp;L</span>
                     <span>Guidance</span>
                 </div>
                 <div style="text-align: center; color: #999; padding: 12px;">Loading indicator performance...</div>
@@ -8486,7 +8489,7 @@ HTML_DASHBOARD = """
                     ? 'Bull Candles'
                     : candleTrend === 'BEAR_TREND'
                         ? 'Bear Candles'
-                        : 'Netural';
+                        : 'Neutral';
                 let candleTrendToneClass = 'trend-tone-neutral';
                 if (candleTrend === 'BEAR_TREND') {
                     candleTrendToneClass = 'trend-tone-bearish';
@@ -8916,7 +8919,7 @@ HTML_DASHBOARD = """
                     <span>Indicator</span>
                     <span>Today's Trades</span>
                     <span>W / L (Win %)</span>
-                    <span>Avg P&amp;L</span>
+                    <span>Average P&amp;L</span>
                     <span>Guidance</span>
                 </div>`;
                 const escapeText = (value) => String(value || '')
