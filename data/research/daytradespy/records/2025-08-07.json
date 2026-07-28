@@ -1,0 +1,45 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41208,
+    "title": "Trading Room Video Recording – August 7, 2025",
+    "publication_date": "2025-08-07",
+    "source_url": "https://daytradespy.com/41208/trading-room-video-recording-august-7-2025/",
+    "duration_seconds": 4298,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_MUTED_BROWSER_PLAYER", "cue_count": 1327, "first_timestamp": "00:00:00", "last_timestamp": "01:11:21", "raw_transcript_persisted": false, "coverage_note": "Complete VTT for the 01:11:38 asset. Player remained paused, volume was set to minimum, and audio was never played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 83, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:13:05", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Challenge bought 16 August 15 637 calls at 5.06 and personal 640 calls at 3.47."},
+    {"timestamp": "00:24:31", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Discretionary August 15 636 puts were purchased around 4.74."},
+    {"timestamp": "00:30:45", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal August 15 635-put OMG entered 4.26 with target 4.47."},
+    {"timestamp": "00:46:55", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Discretionary put was taken out without a stated premium."},
+    {"timestamp": "00:47:10", "classification": "PRESENTER_REPORTED_TRADE", "claim": "OMG printed 4.55 and was reported complete for 6.8% at 10:08."},
+    {"timestamp": "01:09:34", "classification": "UNRESOLVED_TRADE", "claim": "Challenge calls remained open and an overnight hold was contemplated."}
+  ],
+  "claims": [
+    {"id": "DTS-20250807-P41208-C01", "timestamp": "00:47:10", "label": "PREPLACED_LIMIT_CAPTURE", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_REPORTED_COMPLETE", "claim": "The formal 635-put OMG was reported filled at 4.55 after entering at 4.26.", "forward_outcomes": {"1m": "TARGET_APPROACH", "3m": "TARGET_APPROACH", "5m": "TARGET_FILLED", "10m": "TRADE_CLOSED", "15m": "TRADE_CLOSED", "remainder_session": "TRADE_CLOSED"}, "disconfirming_evidence_required": "Broker history contradicting the reported fill."},
+    {"id": "DTS-20250807-P41208-C02", "timestamp": "00:46:55", "label": "DISCRETIONARY_EXIT_UNKNOWN", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "A separate 636-put position was taken out without a stated exit premium.", "forward_outcomes": {"1m": "SOURCE_REPORTED_CLOSED", "3m": "SOURCE_REPORTED_CLOSED", "5m": "SOURCE_REPORTED_CLOSED", "10m": "SOURCE_REPORTED_CLOSED", "15m": "SOURCE_REPORTED_CLOSED", "remainder_session": "EXIT_PREMIUM_UNKNOWN"}, "disconfirming_evidence_required": "Contract-level broker fill."},
+    {"id": "DTS-20250807-P41208-C03", "timestamp": "01:09:34", "label": "CALLS_UNRESOLVED", "fact_classification": "UNRESOLVED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "Challenge calls remained open and were defended by time to expiration.", "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_OPEN", "10m": "SOURCE_REPORTED_OPEN", "15m": "SOURCE_REPORTED_OPEN", "remainder_session": "OVERNIGHT_HOLD_CONTEMPLATED"}, "disconfirming_evidence_required": "Terminal challenge fill."},
+    {"id": "DTS-20250807-P41208-C04", "timestamp": "00:35:38", "label": "OPPOSING_POSITION_OVERLAP", "fact_classification": "ACCOUNTING_CONFLICT", "status": "NEEDS_GOVERNANCE", "claim": "Upside calls and downside puts overlapped without aggregate exposure accounting.", "forward_outcomes": {"1m": "OPPOSING_POSITIONS", "3m": "OPPOSING_POSITIONS", "5m": "OPPOSING_POSITIONS", "10m": "OPPOSING_POSITIONS", "15m": "OPPOSING_POSITIONS", "remainder_session": "AGGREGATE_RISK_UNKNOWN"}, "disconfirming_evidence_required": "Portfolio-level Greeks and tagged ledger."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250807-P41208-T01", "type": "CALL_POSITION", "setup": "August 15 637 calls; challenge, 16 contracts", "entry_time": "00:13:45", "entry_premium": 5.06, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Unresolved; overnight hold contemplated"},
+    {"source_trade_id": "DTS-20250807-P41208-T02", "type": "CALL_POSITION", "setup": "August 15 640 calls; personal scalp", "entry_time": "00:14:01", "entry_premium": 3.47, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "No attributable exit stated"},
+    {"source_trade_id": "DTS-20250807-P41208-T03", "type": "PUT_POSITION", "setup": "August 15 636 puts; discretionary", "entry_time": "00:25:28", "entry_premium": 4.74, "exit_time": "00:46:55", "exit_premium": null, "stop_or_invalidation": "Taken out; exit premium unavailable"},
+    {"source_trade_id": "DTS-20250807-P41208-T04", "type": "PUT_POSITION", "setup": "August 15 635 puts; formal downside OMG", "entry_time": "00:30:45", "entry_premium": 4.26, "exit_time": "00:47:10", "exit_premium": 4.55, "stop_or_invalidation": "Target 4.47; reported 6.8%"},
+    {"source_trade_id": "DTS-20250807-P41208-T05", "type": "PUT_POSITION", "setup": "Prior-day August 15 628 puts; residual position", "entry_time": "PRIOR_SOURCE", "entry_premium": null, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Partial prior exit discussed; remainder retained"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 5, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": ["A reported 20-cent call gain was not attributable enough to close the presenter's 640-call trade."], "conflicts": ["Calls overlapped formal downside OMG.", "Discretionary and formal puts overlapped.", "Residual prior-day puts lacked complete size and fill data.", "Challenge calls lacked terminal fills."], "unavailable_evidence": ["Full visual review", "Broker and simulator orders", "Exact residual position size", "Discretionary put exit", "640-call exit", "Challenge terminal fill", "Aggregate Greeks", "Synchronized bars, MFE, MAE, spreads, slippage, and complete fees"]},
+  "market_state_timeline": [{"timestamp": "00:00:00", "state": "GAP_HIGHER_ON_POLICY_RELIEF", "evidence": "Chip exemptions, Apple investment, diplomacy, and rate-cut expectations."}, {"timestamp": "00:13:05", "state": "EARLY_UPSIDE_TEST", "evidence": "Calls entered as SPY tested premarket resistance."}, {"timestamp": "00:30:45", "state": "DOWNSIDE_CONFIRMATION", "evidence": "OMG put entry followed a confirmed close."}, {"timestamp": "00:47:10", "state": "DOWNSIDE_EXTENSION", "evidence": "Brief measured-move extension filled the OMG target."}, {"timestamp": "01:04:18", "state": "NEAR_TERM_BEARISH", "evidence": "SPY gave up most of the opening gap."}],
+  "counterfactuals": [{"timestamp": "00:47:10", "type": "TARGET_ORDER_PLACEMENT", "detail": "Compare preplaced limit with reactive manual exit."}, {"timestamp": "00:35:38", "type": "AGGREGATE_EXPOSURE_LIMIT", "detail": "Constrain simultaneous opposing positions."}, {"timestamp": "00:46:55", "type": "TERMINAL_FILL_REQUIRED", "detail": "Require exit premium for discretionary trade."}, {"timestamp": "01:09:34", "type": "EXPLICIT_CALL_INVALIDATION", "detail": "Compare defined invalidation with time-based defense."}],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator orders", "Exact residual position size", "Discretionary put exit", "640-call exit", "Challenge terminal fill", "Aggregate Greeks", "Synchronized bars, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250807-P41208-C01", "DTS-20250807-P41208-C02", "DTS-20250807-P41208-C03", "DTS-20250807-P41208-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 4, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
