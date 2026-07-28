@@ -1,0 +1,57 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 41358,
+    "title": "Trading Room Video Recording – August 21, 2025",
+    "publication_date": "2025-08-21",
+    "source_url": "https://daytradespy.com/41358/trading-room-video-recording-august-21-2025/",
+    "duration_seconds": 4632,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_VTT_FROM_PAUSED_BROWSER_PLAYER", "cue_count": 1434, "first_timestamp": "00:00:00", "last_timestamp": "01:16:53", "raw_transcript_persisted": false, "coverage_note": "Complete VTT for the 01:17:12 asset. Player remained paused at 00:00 and audio was never played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 90, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:14:56", "classification": "PRESENTER_REPORTED_TRADE", "claim": "August 29 636 puts entered 5.36."},
+    {"timestamp": "00:25:13", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Opening puts exited 5.84 during the data move."},
+    {"timestamp": "00:43:13", "classification": "SIGNAL_NO_TRADE", "claim": "Downside OMG was cancelled after one-minute confirmation failed."},
+    {"timestamp": "00:46:06", "classification": "PRESENTER_REPORTED_TRADE", "claim": "August 29 636 calls entered 6.59."},
+    {"timestamp": "00:56:51", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Reversal calls hit the 6.90 target."},
+    {"timestamp": "01:08:28", "classification": "PRESENTER_REPORTED_TRADE", "claim": "August 29 637 calls entered 6.35."},
+    {"timestamp": "01:16:53", "classification": "UNRESOLVED_TRADE", "claim": "Late 637 calls remained open at the terminal cue."}
+  ],
+  "claims": [
+    {"id": "DTS-20250821-P41358-C01", "timestamp": "00:25:13", "label": "EVENT_TARGET_REPLACED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_REPORTED_COMPLETE", "claim": "The initial 5.68 put target was replaced during the PMI move and the position exited 5.84.", "forward_outcomes": {"1m": "SOURCE_REPORTED_CLOSED", "3m": "SOURCE_REPORTED_CLOSED", "5m": "SOURCE_REPORTED_CLOSED", "10m": "SOURCE_REPORTED_CLOSED", "15m": "SOURCE_REPORTED_CLOSED", "remainder_session": "TRADE_CLOSED"}, "disconfirming_evidence_required": "Broker fill and event-time order history."},
+    {"id": "DTS-20250821-P41358-C02", "timestamp": "00:43:13", "label": "OMG_CONFIRMATION_CANCEL", "fact_classification": "SIGNAL_NO_TRADE", "status": "GOVERNANCE_PRESERVED", "claim": "The five-minute downside close did not receive one-minute confirmation and became a head fake.", "forward_outcomes": {"1m": "NO_ENTRY", "3m": "NO_ENTRY", "5m": "NO_ENTRY", "10m": "NO_ENTRY", "15m": "NO_ENTRY", "remainder_session": "NO_TRADE"}, "disconfirming_evidence_required": "Contemporaneous downside fill."},
+    {"id": "DTS-20250821-P41358-C03", "timestamp": "01:04:31", "label": "VOLUME_FILTER_DELAY", "fact_classification": "PROCESS_OBSERVATION", "status": "SOURCE_DERIVED", "claim": "Weak upside volume and subsequent selling volume delayed a new call entry.", "forward_outcomes": {"1m": "ENTRY_WITHHELD", "3m": "ENTRY_WITHHELD", "5m": "LATER_ENTRY", "10m": "POSITION_OPEN", "15m": "POSITION_OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Synchronized volume bars and executable option path."},
+    {"id": "DTS-20250821-P41358-C04", "timestamp": "01:16:53", "label": "LATE_CALL_UNRESOLVED", "fact_classification": "UNRESOLVED_TRADE", "status": "NEEDS_RECONCILIATION", "claim": "The late 637 calls had no terminal exit after the presenter admitted impatience.", "forward_outcomes": {"1m": "SOURCE_REPORTED_OPEN", "3m": "SOURCE_REPORTED_OPEN", "5m": "SOURCE_REPORTED_OPEN", "10m": "SOURCE_REPORTED_OPEN", "15m": "SOURCE_REPORTED_OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Terminal 637-call fill."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20250821-P41358-T01", "type": "PUT_POSITION", "setup": "August 29 636 puts; opening/pick trade", "entry_time": "00:14:56", "entry_premium": 5.36, "exit_time": "00:25:13", "exit_premium": 5.84, "stop_or_invalidation": "Initial 5.68 target superseded during data move; completed"},
+    {"source_trade_id": "DTS-20250821-P41358-T02", "type": "NO_TRADE", "setup": "Formal downside OMG", "entry_time": null, "entry_premium": null, "exit_time": "00:43:13", "exit_premium": null, "stop_or_invalidation": "One-minute confirmation failed"},
+    {"source_trade_id": "DTS-20250821-P41358-T03", "type": "CALL_POSITION", "setup": "August 29 636 calls; reversal", "entry_time": "00:46:06", "entry_premium": 6.59, "exit_time": "00:56:51", "exit_premium": 6.90, "stop_or_invalidation": "Completed target fill"},
+    {"source_trade_id": "DTS-20250821-P41358-T04", "type": "CALL_POSITION", "setup": "August 29 637 calls; late discretionary entry", "entry_time": "01:08:28", "entry_premium": 6.35, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Initial target 6.55; longer SPY target about 639.25; unresolved"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Opening put target changed during the event.", "Downside OMG was a no-trade.", "Late 637 calls lacked a terminal fill."], "unavailable_evidence": ["Full visual review", "Broker and simulator orders", "Executable option paths", "Terminal 637-call fill", "Aggregate exposure", "Synchronized bars, Greeks, MFE, MAE, spreads, slippage, and complete fees"]},
+  "market_state_timeline": [
+    {"timestamp": "00:00:00", "state": "EVENT_WAIT_OPENING_WEAKNESS", "evidence": "PMI and existing-home-sales releases were pending."},
+    {"timestamp": "00:25:13", "state": "DATA_DRIVEN_DOWNSIDE", "evidence": "Opening puts exited during the move."},
+    {"timestamp": "00:43:13", "state": "FAILED_DOWNSIDE_BREAK", "evidence": "One-minute confirmation rejected OMG."},
+    {"timestamp": "00:46:06", "state": "UPSIDE_REVERSAL", "evidence": "636 calls entered."},
+    {"timestamp": "01:08:28", "state": "LATE_UPSIDE_CONTINUATION_ATTEMPT", "evidence": "637 calls entered before a pullback."}
+  ],
+  "counterfactuals": [
+    {"timestamp": "00:25:13", "type": "PRECOMMITTED_EVENT_EXIT", "detail": "Compare governed event target replacement with the initial 5.68 objective."},
+    {"timestamp": "00:43:13", "type": "LOWER_TIMEFRAME_CONFIRMATION", "detail": "Compare immediate five-minute OMG entry with the cancelled trade."},
+    {"timestamp": "01:04:31", "type": "MINIMUM_VOLUME_GATE", "detail": "Test volume threshold before late call entry."},
+    {"timestamp": "01:08:28", "type": "TRADE_COUNT_PRESSURE_GATE", "detail": "Block entries motivated by wanting another trade."},
+    {"timestamp": "01:16:53", "type": "TERMINAL_STATUS_REQUIRED", "detail": "Require closure or explicit carry state."}
+  ],
+  "instrumentation_gaps": ["Full visual review", "Broker and simulator orders", "Executable option paths", "Terminal 637-call fill", "Aggregate exposure", "Synchronized bars, Greeks, MFE, MAE, spreads, slippage, and complete fees"],
+  "hypothesis_references": ["DTS-20250821-P41358-C01", "DTS-20250821-P41358-C02", "DTS-20250821-P41358-C03", "DTS-20250821-P41358-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 4, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
