@@ -5327,6 +5327,30 @@ def api_today_trades():
                     (trading_date,),
                 )
                 diag_rows = [dict(row) for row in cur.fetchall()]
+                feature_vector_rows = []
+                try:
+                    cur.execute(
+                        """
+                        SELECT recorded_at, payload
+                        FROM feature_vectors
+                        WHERE recorded_at >= ?
+                          AND recorded_at < ?
+                        ORDER BY recorded_at ASC
+                        """,
+                        (f"{trading_date}T00:00:00+00:00", f"{trading_date}T23:59:59+00:00"),
+                    )
+                    for feature_row in cur.fetchall():
+                        try:
+                            feature_payload = json.loads(feature_row["payload"])
+                        except (TypeError, json.JSONDecodeError):
+                            continue
+                        if isinstance(feature_payload, dict):
+                            feature_vector_rows.append((
+                                _parse_iso_datetime(feature_row["recorded_at"]),
+                                feature_payload,
+                            ))
+                except Exception:
+                    feature_vector_rows = []
 
                 diag_lookup = {}
                 diag_by_order_ids = {}
@@ -5384,6 +5408,28 @@ def api_today_trades():
                     if local_exit_reason.startswith("MANUAL_EXIT"):
                         trade["exit_reason"] = local_exit_reason
                         trade["manual_label"] = "Mason"
+
+                # Broker reconciliation can use a replacement entry order ID.
+                # Recover the exact entry diagnostics from the immutable feature
+                # vector recorded with the same direction and entry timestamp.
+                for trade in trades:
+                    if trade.get("feature_payload") or trade.get("entry_diagnostic_snapshot"):
+                        continue
+                    entry_time = _parse_iso_datetime(trade.get("entry_time"))
+                    direction = str(trade.get("direction") or "").upper()
+                    if entry_time is None or direction not in {"CALL", "PUT"}:
+                        continue
+                    candidates = [
+                        (abs((feature_time - entry_time).total_seconds()), feature_payload)
+                        for feature_time, feature_payload in feature_vector_rows
+                        if feature_time is not None
+                        and str(feature_payload.get("direction") or "").upper() == direction
+                        and abs((feature_time - entry_time).total_seconds()) <= 90
+                    ]
+                    if candidates:
+                        _, feature_payload = min(candidates, key=lambda candidate: candidate[0])
+                        trade["feature_payload"] = feature_payload
+                        trade["momentum_phase"] = feature_payload.get("momentum_phase")
             except Exception:
                 pass
 
@@ -5695,6 +5741,11 @@ def api_today_trades():
             trade.pop('entry_diagnostic_snapshot', None)
             trade.pop('exit_diagnostic_snapshot', None)
             trade.pop('pnl_source', None)
+
+        trades.sort(
+            key=lambda trade: _parse_iso_datetime(trade.get('entry_time')) or datetime.min.replace(tzinfo=EASTERN_TZ),
+            reverse=True,
+        )
 
         # Calculate summary from net cash P&L values.
         total_pnl = sum(float(t.get('pnl', 0) or 0) for t in trades)
