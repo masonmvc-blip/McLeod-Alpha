@@ -1,4 +1,9 @@
-from execution.option_selector import select_option_from_chain, find_option_mark, find_option_bid
+from execution.option_selector import (
+    find_option_bid,
+    find_option_mark,
+    option_selection_block_reason,
+    select_option_from_chain,
+)
 from execution.equity_stream import SchwabEquityQuoteStream
 from execution.daily_trade_log_email import maybe_send_daily_trade_log_email
 from execution.opportunity_logger import log_evaluated_setups
@@ -1480,6 +1485,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         select_start_ms = _perf_ms_now()
         option = select_option_from_chain(chain, "CALL", entry)
         option_select_ms = _elapsed_ms(select_start_ms)
+        option_block_reason = option_selection_block_reason(chain, "CALL") if option is None else None
         feature_payload = _build_entry_feature_payload(
             completed_candles, "CALL", regime, call_score, put_score, call_reasons, put_reasons
         )
@@ -1488,7 +1494,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data.update(observation)
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
-        candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
+        candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
             _log_shadow_opportunities(
@@ -1505,7 +1511,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
                 "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
                 "signal_threshold": min_score_threshold, "candidate_direction": "CALL", "candidate_entry": entry,
                 "candidate_stop": stop, "candidate_target": target, "candidate_quantity": quantity,
-                "candidate_option_symbol": option.get("symbol"), "chain_fetch_ms": chain_fetch_ms,
+                "candidate_option_symbol": option.get("symbol") if isinstance(option, dict) else None, "chain_fetch_ms": chain_fetch_ms,
                 "option_select_ms": option_select_ms, "open_trade_ms": None, "precheck_ms": None,
                 "quote_compute_ms": None, "submit_order_ms": None, "wait_fill_ms": None,
                 "market_fallback_submit_ms": None, "market_fallback_wait_ms": None,
@@ -1590,6 +1596,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         select_start_ms = _perf_ms_now()
         option = select_option_from_chain(chain, "PUT", entry)
         option_select_ms = _elapsed_ms(select_start_ms)
+        option_block_reason = option_selection_block_reason(chain, "PUT") if option is None else None
         feature_payload = _build_entry_feature_payload(
             completed_candles, "PUT", regime, call_score, put_score, call_reasons, put_reasons
         )
@@ -1598,7 +1605,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data.update(observation)
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
-        candidate_block_reason = _candidate_control_block_reason(feature_payload, option)
+        candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
             _log_shadow_opportunities(
@@ -1615,7 +1622,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
                 "call_reasons": call_reasons, "put_reasons": put_reasons, "volume_trend": vol.get("trend"),
                 "signal_threshold": min_score_threshold, "candidate_direction": "PUT", "candidate_entry": entry,
                 "candidate_stop": stop, "candidate_target": target, "candidate_quantity": quantity,
-                "candidate_option_symbol": option.get("symbol"), "chain_fetch_ms": chain_fetch_ms,
+                "candidate_option_symbol": option.get("symbol") if isinstance(option, dict) else None, "chain_fetch_ms": chain_fetch_ms,
                 "option_select_ms": option_select_ms, "open_trade_ms": None, "precheck_ms": None,
                 "quote_compute_ms": None, "submit_order_ms": None, "wait_fill_ms": None,
                 "market_fallback_submit_ms": None, "market_fallback_wait_ms": None,

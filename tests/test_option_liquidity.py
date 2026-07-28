@@ -1,6 +1,11 @@
 from datetime import date, timedelta
 
-from execution.option_selector import MIN_OPTION_DAILY_VOLUME, get_nearest_expiration, select_option_from_chain
+from execution.option_selector import (
+    MIN_OPTION_DAILY_VOLUME,
+    get_nearest_expiration,
+    option_selection_block_reason,
+    select_option_from_chain,
+)
 from engine.brain import Brain
 from engine.brain.engine import OPTION_MIN_DAILY_VOLUME, OPTION_MIN_OPEN_INTEREST
 
@@ -39,6 +44,15 @@ def test_selector_rejects_options_below_daily_volume_minimum():
     chain = _chain_with_contracts(contract)
 
     assert select_option_from_chain(chain, "CALL", 750.0) is None
+    assert option_selection_block_reason(chain, "CALL") == "Too Few Contracts"
+
+
+def test_option_selection_block_reason_preserves_non_volume_rejections():
+    contract = _contract("SPY_WIDE_SPREAD", MIN_OPTION_DAILY_VOLUME - 1)
+    contract["ask"] = 5.50
+    contract["openInterest"] = OPTION_MIN_OPEN_INTEREST - 1
+
+    assert option_selection_block_reason(_chain_with_contracts(contract), "CALL") is None
 
 
 def test_selector_accepts_option_at_daily_volume_minimum():
