@@ -1,0 +1,37 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 41953,
+    "title": "Trading Room Video Recording – October 21, 2025",
+    "publication_date": "2025-10-21",
+    "source_url": "https://daytradespy.com/41953/trading-room-video-recording-october-20-2025-2/",
+    "duration_seconds": 4429, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 482, "first_timestamp": "00:00", "last_timestamp": "01:13:04", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:13:49 asset. Player remained muted and paused at 00:00; no audio played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 86, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:08:46", "classification": "PRESENTER_REPORTED_TRADE", "claim": "October 24 672 calls entered at 3.73."},
+    {"timestamp": "00:47:34", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal October 24 670-put OMG entered at 3.46."},
+    {"timestamp": "01:10:15", "classification": "TERMINAL_OPEN_POSITION", "claim": "Both the 672 calls and formal put OMG remained open."}
+  ],
+  "claims": [
+    {"id": "DTS-20251021-P41953-C01", "timestamp": "01:10:15", "label": "CALLS_TERMINAL_OPEN", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "October 24 672 calls at 3.73 remained open.", "forward_outcomes": {"1m": "OPEN", "3m": "OPEN", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker exit."},
+    {"id": "DTS-20251021-P41953-C02", "timestamp": "01:10:04", "label": "OMG_TERMINAL_OPEN", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "UNRESOLVED", "claim": "Formal 670-put OMG at 3.46 remained open below its 3.67 target.", "forward_outcomes": {"1m": "OPEN", "3m": "OPEN", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or broker exit."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251021-P41953-T01", "type": "CALL_POSITION", "setup": "October 24 672 calls; directional position", "entry_time": "00:08:46", "entry_premium": 3.73, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "Initial 4.00 target; held"},
+    {"source_trade_id": "DTS-20251021-P41953-T02", "type": "MODELED_PICK", "setup": "Published pick; contract and modeled prices not restated", "entry_time": "EARLY_SESSION", "entry_premium": null, "exit_time": "00:23:51", "exit_premium": null, "stop_or_invalidation": "Reported 6% threshold reached"},
+    {"source_trade_id": "DTS-20251021-P41953-T03", "type": "OMG", "setup": "October 24 670 puts; formal OMG", "entry_time": "00:47:34", "entry_premium": 3.46, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "3.67 target not reported filled"},
+    {"source_trade_id": "DTS-20251021-P41953-T04", "type": "CALL_POSITION", "setup": "October 24 671 calls; rebound scalp", "entry_time": "00:56:02", "entry_premium": null, "exit_time": "00:58:42", "exit_premium": 4.26, "stop_or_invalidation": "4.25 target; entry not restated"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Directional calls and puts remained simultaneously open."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:08:46", "state": "EARLY_UPSIDE_THESIS", "evidence": "672 calls entered."}, {"timestamp": "00:47:34", "state": "RANGE_BREAKDOWN_ATTEMPT", "evidence": "Put OMG entered."}],
+  "counterfactuals": [{"timestamp": "01:10:15", "type": "TERMINAL_FLATTENING", "detail": "Compare closing both directional positions with carry."}, {"timestamp": "00:56:02", "type": "NET_EXPOSURE_ACCOUNTING", "detail": "Reconcile simultaneous calls and puts by quantities."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251021-P41953-C01", "DTS-20251021-P41953-C02"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

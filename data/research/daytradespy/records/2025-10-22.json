@@ -1,0 +1,37 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 41966,
+    "title": "Trading Room Video Recording – October 22, 2025",
+    "publication_date": "2025-10-22",
+    "source_url": "https://daytradespy.com/41966/trading-room-video-recording-october-22-2025/",
+    "duration_seconds": 5155, "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 528, "first_timestamp": "00:00", "last_timestamp": "01:25:19", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:25:55 asset. Player remained muted and paused at 00:00; no audio played."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 92, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:13:18", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal October 31 671-put OMG entered at 6.47."},
+    {"timestamp": "01:07:07", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal OMG filled at 6.99."},
+    {"timestamp": "01:09:01", "classification": "MODELED_TRADE", "claim": "Published call pick remained below its 6.84 target."}
+  ],
+  "claims": [
+    {"id": "DTS-20251022-P41966-C01", "timestamp": "01:07:07", "label": "LONG_PATH_OMG_TARGET", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal 671-put OMG completed 6.47 to 6.99 after nearly an hour.", "forward_outcomes": {"1m": "ADVERSE", "3m": "ADVERSE", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "TARGET_REACHED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251022-P41966-C02", "timestamp": "01:09:33", "label": "PICK_TARGET_NOT_FILLED", "fact_classification": "MODELED_TRADE", "status": "UNRESOLVED", "claim": "October 31 672-call pick at 6.46 did not reach its 6.84 model target; stated high was 6.73.", "forward_outcomes": {"1m": "OPEN", "3m": "OPEN", "5m": "OPEN", "10m": "OPEN", "15m": "OPEN", "remainder_session": "UNRESOLVED"}, "disconfirming_evidence_required": "Later source or executable option path reaching 6.84."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251022-P41966-T01", "type": "OMG", "setup": "October 31 671 puts; formal OMG", "entry_time": "00:13:18", "entry_premium": 6.47, "exit_time": "01:07:07", "exit_premium": 6.99, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251022-P41966-T02", "type": "PUT_POSITION", "setup": "October 31 671 puts; tactical scalp", "entry_time": "00:51:08", "entry_premium": null, "exit_time": "00:52:50", "exit_premium": 6.26, "stop_or_invalidation": "Reported 0.24 gain; exact entry not clearly restated"},
+    {"source_trade_id": "DTS-20251022-P41966-T03", "type": "PUT_POSITION", "setup": "October 31 671 puts; second tactical scalp", "entry_time": "00:59:26", "entry_premium": 6.12, "exit_time": "01:01:31", "exit_premium": 6.30, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251022-P41966-T04", "type": "MODELED_PICK", "setup": "October 31 672 calls; published pick", "entry_time": "09:32_MARKET_TIME", "entry_premium": 6.46, "exit_time": "RECORDING_END", "exit_premium": null, "stop_or_invalidation": "6.84 target not reached; stated high 6.73"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Tactical put quantities unavailable.", "Published pick target was not filled."], "unavailable_evidence": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:13:18", "state": "SHARP_OPENING_DROP", "evidence": "Put OMG entered after downside close."}, {"timestamp": "01:07:07", "state": "LATE_DOWNSIDE_EXTENSION", "evidence": "Formal OMG finally filled."}],
+  "counterfactuals": [{"timestamp": "01:07:07", "type": "PATH_AWARE_RETURN", "detail": "Measure adverse and elapsed-time exposure, not terminal return alone."}, {"timestamp": "01:09:33", "type": "NO_NEAR_TARGET_WIN_COUNT", "detail": "Do not count a 6.73 high as a 6.84 fill."}],
+  "instrumentation_gaps": ["Broker ledger and quantities", "Executable paths, Greeks, MFE, MAE, spreads, slippage, and fees", "Full chart review"],
+  "hypothesis_references": ["DTS-20251022-P41966-C01", "DTS-20251022-P41966-C02"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 2, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
