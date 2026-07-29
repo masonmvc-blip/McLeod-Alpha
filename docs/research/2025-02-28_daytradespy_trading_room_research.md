@@ -1,42 +1,32 @@
-# McLeod Alpha Research Report: February 28, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-02-28 Trading Room — Post 38739
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses authorized Vimeo transcript cues from the DayTradeSPY recording, whose player duration is `1:19:17`. The transcript was searched for setup, order, target, and exit terms, with directly reviewed cues spanning the opening disclaimer through at least `1:04:22`. It remains a source-limited record: no independent visual review, option quote history, broker executions, or canonical ledger reconciliation is available.
+The downside opening signal reversed immediately, and the presenters
+explicitly recorded no formal OMG entry. Separately, six March 7 `585` calls
+completed `7.54` to `7.89` in four minutes for a claimed `$204` net, and a
+co-presenter completed March 7 `587` calls from `6.91` to `7.32`. The
+published March 7 `590`-call pick was modeled `4.47` to `4.73` and reached
+its target on the next candle.
 
-## Source-Reported Market Context
+## Source and Context
 
-- Around `10:11–11:01`, the presenter described continued downside, a possible fill of the prior Thursday close near `585.12`, a prior-day low near `584.65`, and PCE reported as expected at `0.3`.
-- The same segment framed the market as volatile despite the macro result. These are presenter-reported observations rather than independently reconstructed market data.
+- Post `38739`; Vimeo `1061327592`, title `TR Feb 28`, `01:19:17`.
+- Complete caption track: 1,644 cues, `00:00:00.025-01:18:46.175`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported `585` Call Plan
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 18:44-23:18 | Six Mar. 7 `585` calls `7.54` to `7.89`; claimed `$204` net. | completed trade |
+| 53:03-1:04:50 | Co-presenter Mar. 7 `587` calls `6.91` to `7.32`. | completed trade |
+| 1:14:45-1:15:12 | Downside close immediately reversed; no OMG entry called. | explicit no-trade |
+| 1:15:15-1:15:30 | Published Mar. 7 `590` calls modeled `4.47` to `4.73`. | modeled pick |
 
-- At `16:38–17:34`, the presenter said they would wait for a pullback and renewed green/volume before looking at March 7 `585` calls, citing their delta.
-- The source described a `$5,000` allocation for the `$200` trade, an indicative option price near `7.61`, and a six-contract quantity. This is an order-selection plan, not independently verified execution evidence.
-- By `20:21–20:35`, the presenter said they had six contracts and described an intended exit at `7.72`, calculated as `7.54 + 0.18`. The speaker also stated they might raise the target if the move accelerated. No explicit sale or fill confirmation appears in the reviewed transcript search.
+The no-trade is analytically important: the setup condition alone did not
+become an admitted trade after the immediate reversal. The two discretionary
+call trades must remain separate from the formal OMG decision. No independent
+ledger, executable option path, Greeks, MFE/MAE, fees, or visual review
+exists.
 
-## Conditional Downside Idea
-
-- At `20:58`, the presenter said `585` puts were queued only if price broke down from a small triangle/range.
-- Around `21:08`, the stated underlying target area was approximately `585.90`, requiring a claimed `0.91` move. This is a conditional setup, not evidence of a put entry.
-
-## Later Unlinked Position Statement
-
-- At `1:03:50`, the presenter reported buying at `6.91` and a contemporaneous `7.14` mark while allowing the position to continue working. The nearby accessible cues do not identify the contract, quantity, or final exit, so this statement must not be merged with the earlier six-contract March 7 `585` call plan.
-
-## Reusable Research Observations
-
-1. Test `PULLBACK_GREEN_VOLUME_CALL_ENTRY` with independently reconstructed minute bars, volume rules, option delta, and a deterministic entry trigger.
-2. Test `FIXED_TARGET_VS_TARGET_EXTENSION` using the stated `7.72` exit objective and a separately precommitted extension rule; discretionary target changes change the realized distribution.
-3. Test `TRIANGLE_BREAKDOWN_PUT_CONTINGENCY` only with formal range boundaries, confirmed breakdown criteria, and historical option executable prices.
-4. Preserve contract identity across all management statements; do not attribute the later `6.91`/`7.14` observation to the earlier call plan without a contract-level link.
-
-## Evidence Limitations
-
-- The review is transcript-led and does not independently establish the complete cue boundary, visual chart context, or final session outcome.
-- All quoted levels, allocation, quantities, option prices, targets, and management are presenter-reported without independent market or execution verification.
-- A target order or current option mark is not a realized exit or P&L.
-
-## Decision
-
-No live trading behavior changes are authorized. This source supports research-only validation of pullback-and-volume confirmation, target-extension discipline, conditional range-break entries, and contract-level event linkage.
+`RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.

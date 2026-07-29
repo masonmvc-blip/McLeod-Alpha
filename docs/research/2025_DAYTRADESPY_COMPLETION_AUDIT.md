@@ -15,12 +15,12 @@ Audit date: 2026-07-28.
   post-level resolution.
 - `docs/research` contains 227 canonical dated 2025 daily-report filenames, plus three
   post-qualified June 27, October 7, and October 14 lineage-resolution reports.
-- `data/research/daytradespy/records` contains 188 tracked machine records, including
+- `data/research/daytradespy/records` contains 191 tracked machine records, including
   post-qualified filenames required to avoid silent duplicate-date
   overwrite.
-- The registry contains 226 post-level reviews with evidence metadata: 218 Tier C
-  transcript-based reviews and 8 Tier E access/content/duplicate gaps. Another 4
-  archive posts remain pending.
+- The registry contains 229 post-level reviews with evidence metadata: 221 Tier C
+  transcript-based reviews and 8 Tier E access/content/duplicate gaps. One
+  archive post remains pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
 - Reports dated May 6, May 7, and June 12 are evidence-gap placeholders, not substantive
@@ -29,7 +29,7 @@ Audit date: 2026-07-28.
   June 30, July 1, July 3, July 7-10, July 14-16, July 18, July 21-25,
   July 28-31, August 1, 4-7, August 11-13, August 15, August 18-22, and
   August 26-29, September 2-30, October 1-31, November 3-28, December 1-31,
-  and February 10-26 were
+  and February 10-March 3 were
   upgraded from
   apparent caption gaps or pending status to substantive Tier C reports after
   their complete authorized Vimeo transcripts were recovered from the player.
@@ -105,10 +105,10 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording/publication date: February 27, 2025
-- Post ID: `38724`
+- Recording/publication date: March 17, 2025
+- Post ID: `38923`
 - Source:
-  `https://daytradespy.com/38724/trading-room-video-recording-february-27-2025/`
+  `https://daytradespy.com/38923/trading-room-video-recording-march-17-2025/`
 - Current status: registry pending
 - Required first step: resolve the immutable player asset and recover the
   complete authorized transcript, if available, with playback muted.

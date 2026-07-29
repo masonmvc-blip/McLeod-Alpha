@@ -1,38 +1,34 @@
-# McLeod Alpha Research Report: March 3, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-03-03 Trading Room — Post 38753
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses authorized Vimeo transcript cues from the DayTradeSPY recording, whose player duration is `1:11:05`. The accessible transcript was reviewed from the opening through directly searched setup, fill, and exit-related passages. It is source-limited: no independent visual review, option quote history, broker executions, or canonical ledger reconciliation is available.
+The formal March 7 `596`-put OMG completed `5.56` to `5.89` in about two
+minutes. A separate eleven-contract March 7 `598`-call `$240` trade was
+entered near `4.88`, failed to reach its `5.11` limit during the recording,
+and was explicitly carried overnight. A presenter completed March 7 `593`
+calls from `5.95` to `6.50`; the co-presenter completed March 7 `594` calls
+from `5.49` to `5.86`. The published March 7 `598`-call pick was modeled
+`4.67` to `4.94`.
 
-## Source-Reported Trading Plan
+## Source and Context
 
-- At `07:19–07:59`, the presenter said the plan was to consider Friday calls, described six as the intended contract count, and stated that the program allocation had increased from `$5,000` to `$6,000` for the next two months.
-- The presenter stated a `$240` objective for the `$6,000` allocation and a claimed cumulative program figure. These are source-reported plan and performance statements, not independently verified results.
+- Post `38753`; Vimeo `1062071385`, title `TR Mar 3`, `01:11:05`.
+- Complete caption track: 1,552 cues, `00:00:00.000-01:10:52.565`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported March 7 `593` Call Entry
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 13:09-1:09:20 | Eleven Mar. 7 `598` calls near `4.88`; `5.11` target not reached; held overnight. | open carry |
+| 18:09-21:11 | Mar. 7 `596`-put OMG `5.56` to `5.89`. | completed OMG |
+| 48:17-1:00:39 | Presenter Mar. 7 `593` calls `5.95` to `6.50`. | completed trade |
+| 58:42-1:04:55 | Co-presenter Mar. 7 `594` calls `5.49` to `5.86`. | completed trade |
+| 1:07:23-1:07:50 | Published Mar. 7 `598` calls modeled `4.67` to `4.94`. | modeled pick |
+| 1:08:09-end | Small separate `594`-call position explicitly excluded from the trading-room tally; no terminal result. | untracked personal position |
 
-- At `48:08`, the presenter said they were personally buying `593` calls because of what they saw on the one-minute chart.
-- At `48:21–48:41`, the source reports a fill for five March 7 `593` calls at `10.10`. The adjacent cue contains an ambiguous `5.95` phrase, so it is preserved as transcript ambiguity and is not used as a second price, quantity, or realized result.
-- The stated rationale continued through `49:19`: the presenter described a push through resistance near `592.85`, then `593`, after observing buyers and fewer sellers. These are presenter-reported technical readings.
+The source demonstrates why session-level profit claims cannot substitute for
+position lifecycle accounting: profitable realized trades coexist with open
+overnight risk and an untracked personal position. No independent ledger,
+executable paths, Greeks, MFE/MAE, fees, or visual review exists.
 
-## Separate Claims and Outcomes
-
-- At `46:13`, the presenter congratulated another participant for a stated `6%` OMG trade result. It is not evidence of the presenter’s later `593` call outcome and must remain a separate participant-reported claim.
-- Searches for explicit sale/exit language did not yield a stated sale for the presenter’s `593` calls in the reviewed transcript passages. No realized P&L or final exit is established.
-
-## Reusable Research Observations
-
-1. Test `ONE_MINUTE_BUYER_IMBALANCE_RESISTANCE_BREAK` with independently reconstructed one-minute bars, explicit buyer/seller proxies, and close-through-resistance rules.
-2. Test `FRIDAY_CALL_ALLOCATION_TARGET` only after defining position sizing, option selection, executable fill assumptions, commissions, and the target/stop process.
-3. Treat a claimed fill, a stated `10.10` entry, and a participant-reported `6%` result as separate entities until contract-level broker evidence links them.
-4. Preserve ambiguous transcript terms as unresolved rather than forcing them into a trade-price field.
-
-## Evidence Limitations
-
-- Transcript-led review does not independently establish the full cue boundary, chart visuals, option quote path, or session-ending outcome.
-- All contract, price, quantity, level, allocation, and performance statements are presenter- or participant-reported without independent execution or market-data confirmation.
-- No live trading behavior change is authorized by this source.
-
-## Decision
-
-Research only. The source supports later validation of one-minute resistance-break entries and option-execution quality, but it does not establish a deployable strategy rule or a verified March 3 trade outcome.
+`RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.
