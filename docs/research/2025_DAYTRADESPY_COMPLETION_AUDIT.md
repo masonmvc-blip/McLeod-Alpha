@@ -13,13 +13,13 @@ Audit date: 2026-07-28.
 - The 2025 archive registry contains 230 posts representing 208 publication
   dates; 21 dates contain duplicate, delayed, or reposted entries that require
   post-level resolution.
-- `docs/research` contains 217 canonical dated 2025 daily-report filenames, plus three
+- `docs/research` contains 220 canonical dated 2025 daily-report filenames, plus three
   post-qualified June 27, October 7, and October 14 lineage-resolution reports.
-- `data/research/daytradespy/records` contains 167 tracked machine records, including
+- `data/research/daytradespy/records` contains 170 tracked machine records, including
   post-qualified filenames required to avoid silent duplicate-date
   overwrite.
-- The registry contains 205 post-level reviews with evidence metadata: 197 Tier C
-  transcript-based reviews and 8 Tier E access/content/duplicate gaps. Another 25
+- The registry contains 208 post-level reviews with evidence metadata: 200 Tier C
+  transcript-based reviews and 8 Tier E access/content/duplicate gaps. Another 22
   archive posts remain pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
@@ -28,7 +28,7 @@ Audit date: 2026-07-28.
 - May 8, May 9, May 12-23, May 27-30, June 2, 3, 5, 9-11, 16-18, 23-27,
   June 30, July 1, July 3, July 7-10, July 14-16, July 18, July 21-25,
   July 28-31, August 1, 4-7, August 11-13, August 15, August 18-22, and
-  August 26-29, September 2-30, October 1-31, November 3-28, and December 1-15 were
+  August 26-29, September 2-30, October 1-31, November 3-28, and December 1-18 were
   upgraded from
   apparent caption gaps or pending status to substantive Tier C reports after
   their complete authorized Vimeo transcripts were recovered from the player.
@@ -63,7 +63,7 @@ Audit date: 2026-07-28.
    private-video denial; June 12 retains Tier E because its player reports that
    the video does not exist. Do not fabricate reviews.
 3. Continue missing substantive post-level reports chronologically from the
-   December 16 recording, published December 17 as post `42767`, through year-end.
+   December 19 recording, post `42799`, through year-end.
 4. Resolve duplicate/reposted posts by post ID so one dated filename does not
    silently represent two different assets.
 5. Backfill machine records and improve weaker January-March reports only after
@@ -104,10 +104,10 @@ for that batch. Do not alter live trading behavior.
 
 ## Current Next Recording
 
-- Recording/publication date: December 16 / December 17, 2025
-- Post ID: `42767`
+- Recording/publication date: December 19, 2025
+- Post ID: `42799`
 - Source:
-  `https://daytradespy.com/42767/trading-room-video-recording-december-16-2025/`
+  `https://daytradespy.com/42799/trading-room-video-recording-december-19-2025/`
 - Current status: registry pending
 - Required first step: resolve the immutable player asset and recover the
   complete authorized transcript, if available, with playback muted.
