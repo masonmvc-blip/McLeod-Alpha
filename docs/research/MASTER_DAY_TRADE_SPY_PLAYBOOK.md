@@ -2,7 +2,16 @@
 
 ## Evidence Boundary
 
-This playbook is a research synthesis, not a live-trading instruction set. It weights detailed recording-derived reports most heavily: February 2025 transcript reports and July 2026 recording reports. Most March-June 2026 daily notes and weekly syntheses repeat the same source-side themes without broker fills, executable quote paths, MFE/MAE, or chart reconstruction; they broaden a hypothesis but do not prove it. The July 21, 2026 report adds a reconciled McLeod Alpha ledger fact set, but still lacks intratrade option excursions.
+This playbook is a research synthesis, not a live-trading instruction set. The
+2025 archive is now post-level complete: 230/230 posts have reports and
+validated v2 records, representing 221 Tier C source reviews and nine Tier E
+access/content/duplicate resolutions. It also considers 81 dated 2026 daily
+reports through July 21. Most source reports lack broker fills, executable quote
+paths, MFE/MAE, or chart reconstruction; recurrence broadens a hypothesis but
+does not prove it. The July 21, 2026 report adds a reconciled McLeod Alpha
+ledger fact set, but still lacks intratrade option excursions. See
+`docs/research/2025_DAYTRADESPY_CROSS_YEAR_SYNTHESIS.md` for the completed
+corpus audit and prioritized validation plan.
 
 Evidence labels used below:
 

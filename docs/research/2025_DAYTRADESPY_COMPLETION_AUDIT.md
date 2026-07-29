@@ -116,8 +116,9 @@ All 230 archive posts are resolved at the post level. The 221 substantive
 Tier C reviews represent the available distinct recording evidence; the nine
 Tier E reviews preserve inaccessible, missing, or exact-duplicate posts
 without fabricating or double-counting evidence. All 230 registry-linked
-machine records exist and pass the active v2 validator. Cross-year synthesis
-is the remaining completion gate.
+machine records exist and pass the active v2 validator. The actionable
+cross-year synthesis is complete at
+`docs/research/2025_DAYTRADESPY_CROSS_YEAR_SYNTHESIS.md`.
 
 ## Governance
 
