@@ -1,0 +1,35 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42548, "title": "Trading Room Video Recording – December 3, 2025", "publication_date": "2025-12-03", "post_publication_date": "2025-12-03", "source_url": "https://daytradespy.com/42548/trading-room-video-recording-december-3-2025/", "duration_seconds": 4674, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 501, "first_timestamp": "00:01", "last_timestamp": "01:17:35", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:17:54 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 86, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:22:00", "classification": "PRESENTER_REPORTED_TRADE", "claim": "First December 5 680-call scalp was reported sold at 4.25 after a 4.07 entry."},
+    {"timestamp": "00:40:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Second December 5 680-call scalp completed 4.01 to 4.30."},
+    {"timestamp": "00:50:19", "classification": "UNFILLED_ORDER", "claim": "Formal 681-call OMG simulator order was explicitly reported not filled."},
+    {"timestamp": "01:11:09", "classification": "PRESENTER_REPORTED_TRADE", "claim": "December 5 682-call trade completed 3.02 to 3.20."}
+  ],
+  "claims": [
+    {"id": "DTS-20251203-P42548-C01", "timestamp": "00:40:29", "label": "REPEATED_680_CALL_SCALPS_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Two December 5 680-call scalps were reported complete at 4.07 to 4.25 and 4.01 to 4.30.", "forward_outcomes": {"1m": "MIXED", "3m": "FAVORABLE", "5m": "FAVORABLE", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251203-P42548-C02", "timestamp": "00:50:19", "label": "FORMAL_OMG_NOT_FILLED", "fact_classification": "UNFILLED_ORDER", "status": "SOURCE_SUPPORTED", "claim": "The presenter explicitly said the formal simulator OMG order did not fill, despite attendee fills and a favorable move.", "forward_outcomes": {"1m": "FAVORABLE_UNEXECUTED", "3m": "FAVORABLE_UNEXECUTED", "5m": "FAVORABLE_UNEXECUTED", "10m": "FAVORABLE_UNEXECUTED", "15m": "FAVORABLE_UNEXECUTED", "remainder_session": "UNEXECUTED"}, "disconfirming_evidence_required": "Simulator order log."},
+    {"id": "DTS-20251203-P42548-C03", "timestamp": "01:11:09", "label": "682_CALL_SCALP_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "December 5 682 calls were reported bought at 3.02 and sold at 3.20.", "forward_outcomes": {"1m": "ADVERSE", "3m": "MIXED", "5m": "MIXED", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger."},
+    {"id": "DTS-20251203-P42548-C04", "timestamp": "00:22:53", "label": "CONTRACT_LINEAGE_CONFLICT", "fact_classification": "SOURCE_CONFLICT", "status": "SOURCE_SUPPORTED", "claim": "OMG narration alternated between December 12 681 calls and December 5 680 calls; contract identity cannot be reconciled from transcript alone.", "forward_outcomes": {"1m": "UNAVAILABLE", "3m": "UNAVAILABLE", "5m": "UNAVAILABLE", "10m": "UNAVAILABLE", "15m": "UNAVAILABLE", "remainder_session": "UNAVAILABLE"}, "disconfirming_evidence_required": "Order ticket or chart review."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251203-P42548-T01", "type": "CALL_SCALP", "setup": "December 5 680 calls; recovery scalp", "entry_time": "00:09:39", "entry_premium": 4.07, "exit_time": "00:22:00", "exit_premium": 4.25, "stop_or_invalidation": "Completed; OMG contract narration conflicted"},
+    {"source_trade_id": "DTS-20251203-P42548-T02", "type": "CALL_SCALP", "setup": "December 5 680 calls; re-entry", "entry_time": "00:22:42", "entry_premium": 4.01, "exit_time": "00:40:29", "exit_premium": 4.30, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251203-P42548-T03", "type": "CALL_POSITION", "setup": "December 5 682 calls; pullback recovery", "entry_time": "00:44:39", "entry_premium": 3.02, "exit_time": "01:11:09", "exit_premium": 3.20, "stop_or_invalidation": "Target reduced from 3.25"},
+    {"source_trade_id": "DTS-20251203-P42548-T04", "type": "SIMULATOR_SCALP", "setup": "December 12 681 calls; later simulator trade", "entry_time": "00:54:58", "entry_premium": 7.00, "exit_time": "00:56:37", "exit_premium": 7.23, "stop_or_invalidation": "Approximate entry phrasing"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 4, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Formal OMG contract identity alternates between 681/680 and Dec. 12/Dec. 5.", "Formal simulator OMG order did not fill."], "unavailable_evidence": ["Broker and simulator ledgers, quantities, exact speaker attribution", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:09:39", "state": "FAST_RECOVERY_AFTER_PREMARKET_DROP", "evidence": "Calls were repeatedly used to scalp a rebound."}, {"timestamp": "00:50:19", "state": "RECOVERY_CONTINUED_WITH_EXECUTION_GAP", "evidence": "Formal simulator order missed the favorable move."}],
+  "counterfactuals": [{"timestamp": "00:50:19", "type": "EXECUTION_REALISM", "detail": "Do not score favorable unfilled signals as presenter trades."}, {"timestamp": "00:22:53", "type": "CONTRACT_LOCK", "detail": "Require immutable strike and expiration before lifecycle attribution."}],
+  "instrumentation_gaps": ["Broker and simulator ledgers, quantities, exact speaker attribution", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"],
+  "hypothesis_references": ["DTS-20251203-P42548-C01", "DTS-20251203-P42548-C02", "DTS-20251203-P42548-C03", "DTS-20251203-P42548-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 4, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

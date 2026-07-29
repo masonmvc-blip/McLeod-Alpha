@@ -1,0 +1,35 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42560, "title": "Trading Room Video Recording – December 4, 2025", "publication_date": "2025-12-04", "post_publication_date": "2025-12-04", "source_url": "https://daytradespy.com/42560/trading-room-video-recording-december-4-2025/", "duration_seconds": 5187, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 538, "first_timestamp": "00:02", "last_timestamp": "01:25:26", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 01:26:27 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 84, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:12:17", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal December 12 683-put OMG entered at 4.99."},
+    {"timestamp": "00:28:30", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal put OMG reached the 5.29 target."},
+    {"timestamp": "01:01:33", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Separate December 12 call scalp reached its 6.61 target."},
+    {"timestamp": "01:11:00", "classification": "POSITION_REPAIR", "claim": "Existing 685-call position doubled at 5.39 to a stated 5.71 average."},
+    {"timestamp": "01:25:26", "classification": "UNRESOLVED_POSITION", "claim": "Averaged 685 calls remained open beyond recording end with a 5.85 target."}
+  ],
+  "claims": [
+    {"id": "DTS-20251204-P42560-C01", "timestamp": "00:28:30", "label": "FORMAL_PUT_OMG_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal December 12 683 puts were reported entered at 4.99 and exited at the 5.29 target after about 16 minutes.", "forward_outcomes": {"1m": "MIXED", "3m": "FAVORABLE", "5m": "FAVORABLE", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251204-P42560-C02", "timestamp": "01:01:33", "label": "OPPOSING_CALL_SCALP_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "A separate December 12 call scalp was reported complete from 6.44 to 6.61; the transcript alternates between a plausible 683 strike and one 663 rendering.", "forward_outcomes": {"1m": "ADVERSE", "3m": "ADVERSE", "5m": "MIXED", "10m": "FAVORABLE", "15m": "FAVORABLE", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Order ticket confirming strike."},
+    {"id": "DTS-20251204-P42560-C03", "timestamp": "01:25:26", "label": "AVERAGED_685_CALL_UNRESOLVED", "fact_classification": "POSITION_REPAIR", "status": "SOURCE_SUPPORTED", "claim": "A 685-call position with conflicting initial-fill narration was doubled at 5.39 to a stated 5.71 average and remained open at recording end.", "forward_outcomes": {"1m": "MIXED", "3m": "MIXED", "5m": "MIXED", "10m": "MIXED", "15m": "MIXED", "remainder_session": "OPEN"}, "disconfirming_evidence_required": "Quantity-weighted broker ledger and post-recording exit."},
+    {"id": "DTS-20251204-P42560-C04", "timestamp": "00:10:43", "label": "INITIAL_CALL_FILL_CONFLICT", "fact_classification": "SOURCE_CONFLICT", "status": "SOURCE_SUPPORTED", "claim": "The source gives 6.02, 6.05, and 6.20 as the initial 685-call basis and alternates between 9:33 and 9:39.", "forward_outcomes": {"1m": "UNAVAILABLE", "3m": "UNAVAILABLE", "5m": "UNAVAILABLE", "10m": "UNAVAILABLE", "15m": "UNAVAILABLE", "remainder_session": "UNAVAILABLE"}, "disconfirming_evidence_required": "Broker order history."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251204-P42560-T01", "type": "OMG", "setup": "December 12 683 puts; downside OMG", "entry_time": "00:12:17", "entry_premium": 4.99, "exit_time": "00:28:30", "exit_premium": 5.29, "stop_or_invalidation": "Completed at target"},
+    {"source_trade_id": "DTS-20251204-P42560-T02", "type": "CALL_SCALP", "setup": "December 12 calls; transcript likely 683 strike but contains 663 rendering", "entry_time": "00:46:19", "entry_premium": 6.44, "exit_time": "01:01:33", "exit_premium": 6.61, "stop_or_invalidation": "Completed; strike requires ledger confirmation"},
+    {"source_trade_id": "DTS-20251204-P42560-T03", "type": "CALL_POSITION", "setup": "December 12 685 calls; averaged repair", "entry_time": "01:11:00", "entry_premium": 5.71, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Average basis after doubling at 5.39; open at end, target 5.85"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 3, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Put OMG overlapped opposing call exposure.", "Initial 685-call fill/time and separate call strike conflict in transcript.", "Averaged call remained unresolved."], "unavailable_evidence": ["Unified broker ledger, quantities, exact speaker attribution, post-recording exit", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:12:17", "state": "EARLY_DOWNSIDE_BREAK", "evidence": "Formal put OMG triggered and completed."}, {"timestamp": "01:11:00", "state": "REVERSAL_ATTEMPT_WITH_CALL_REPAIR", "evidence": "Calls were doubled after prolonged adverse movement."}],
+  "counterfactuals": [{"timestamp": "01:25:26", "type": "TERMINAL_STATE", "detail": "Do not treat average-basis recovery as completion without an exit."}, {"timestamp": "01:11:00", "type": "CAPITAL_AT_RISK", "detail": "Replay doubled repairs separately from initial call entries."}],
+  "instrumentation_gaps": ["Unified broker ledger, quantities, exact speaker attribution, post-recording exit", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"],
+  "hypothesis_references": ["DTS-20251204-P42560-C01", "DTS-20251204-P42560-C02", "DTS-20251204-P42560-C03", "DTS-20251204-P42560-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
