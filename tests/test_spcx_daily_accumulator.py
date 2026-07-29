@@ -8,9 +8,10 @@ from engine.data_sources import sec_source
 from scripts import spcx_daily_accumulator as accumulator
 
 
-def test_capped_limit_price_never_exceeds_policy():
-    assert accumulator.capped_limit_price(Decimal("100.00")) == Decimal("100.30")
-    assert accumulator.capped_limit_price(Decimal("123.45")) == Decimal("123.82")
+def test_capped_limit_price_never_exceeds_live_ask():
+    assert accumulator.capped_limit_price(Decimal("100.00")) == Decimal("100.00")
+    assert accumulator.capped_limit_price(Decimal("123.45")) == Decimal("123.45")
+    assert accumulator.capped_limit_price(Decimal("123.456")) == Decimal("123.45")
 
 
 def test_parse_quote_requires_spacex_identity():

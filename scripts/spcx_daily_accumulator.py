@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 SYMBOL = "SPCX"
 EXPECTED_CUSIP = "84615Q103"
 QUANTITY = 1
-CAP_MULTIPLIER = Decimal("1.003")
+CAP_MULTIPLIER = Decimal("1.000")
 CANCEL_AFTER_SECONDS = 120
 LIVE_ACK_VALUE = "SPCX_ONE_SHARE_DAILY_LIVE"
 
@@ -105,7 +105,7 @@ def opening_window_is_valid(now: datetime) -> bool:
 def capped_limit_price(ask: Decimal) -> Decimal:
     if ask <= 0:
         raise ValueError("ask must be positive")
-    # Round down so the executable limit never exceeds the stated 0.30% cap.
+    # Round down so the executable limit never exceeds the live ask.
     return (ask * CAP_MULTIPLIER).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
 
 
@@ -383,7 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         quantity=QUANTITY,
         ask=str(quote.ask),
         limit_price=str(limit_price),
-        cap_percent="0.30",
+        cap_percent="0.00",
         cancel_after_seconds=CANCEL_AFTER_SECONDS,
         account_suffix=account_suffix,
     )
