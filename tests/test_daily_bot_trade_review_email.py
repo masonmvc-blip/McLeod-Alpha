@@ -1,7 +1,12 @@
 from pathlib import Path
 
 from scripts import send_daily_bot_trade_review as review_email
-from scripts.send_daily_bot_trade_review import markdown_to_email_html
+from scripts.send_daily_bot_trade_review import (
+    _email_markdown,
+    _reconciliation_is_sendable,
+    _subject,
+    markdown_to_email_html,
+)
 
 
 def test_markdown_to_email_html_renders_review_sections():
@@ -37,6 +42,67 @@ def test_markdown_to_email_html_renders_tables_as_styled_html():
     assert "<th" in rendered
     assert "INITIATION" in rendered
     assert "| ---" not in rendered
+
+
+def test_email_body_removes_generator_metadata_and_core_performance():
+    cleaned = _email_markdown(
+        "# Daily Trade Learning Report\n\n"
+        "Date: 2026-07-29\n"
+        "Generated: 2026-07-29T16:50:09\n\n"
+        "## Core Performance\n\n"
+        "| Slice | Trades |\n"
+        "| --- | ---: |\n"
+        "| Overall | 6 |\n\n"
+        "## Exit Reason Breakdown\n\n"
+        "| Exit | P&L |\n"
+    )
+
+    assert "Daily Trade Learning Report" not in cleaned
+    assert "Date:" not in cleaned
+    assert "Generated:" not in cleaned
+    assert "Core Performance" not in cleaned
+    assert "| Overall | 6 |" not in cleaned
+    assert "## Exit Reason Breakdown" in cleaned
+
+
+def test_subject_uses_reconciled_broker_result(monkeypatch):
+    monkeypatch.setattr(
+        review_email,
+        "_reconciliation",
+        lambda _: {
+            "complete": True,
+            "count_reconciled": True,
+            "pnl_reconciled": True,
+            "broker_trades_today": 6,
+            "canonical_completed_trades": 6,
+            "broker_pnl_dollars": 664.25,
+            "canonical_pnl_dollars": 664.25,
+            "pending_outbox_entries": 0,
+        },
+    )
+    assert _subject("2026-07-29") == "You Made Today $664.25 Over 6 Trades"
+
+
+def test_reconciliation_gate_requires_exact_parity_and_empty_outbox():
+    complete = {
+        "complete": True,
+        "count_reconciled": True,
+        "pnl_reconciled": True,
+        "broker_trades_today": 6,
+        "canonical_completed_trades": 6,
+        "broker_pnl_dollars": 664.25,
+        "canonical_pnl_dollars": 664.25,
+        "pending_outbox_entries": 0,
+    }
+    assert _reconciliation_is_sendable(complete) is True
+    assert _reconciliation_is_sendable({
+        **complete,
+        "pending_outbox_entries": 1,
+    }) is False
+    assert _reconciliation_is_sendable({
+        **complete,
+        "canonical_completed_trades": 7,
+    }) is False
 
 
 def test_review_email_script_uses_repo_data_paths():
@@ -83,6 +149,7 @@ def test_smtp_uses_working_email_credentials(monkeypatch):
 
         def send_message(self, message):
             captured["recipient"] = message["To"]
+            captured["sender"] = message["From"]
             captured["attachments"] = list(message.iter_attachments())
 
     for key in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM"):
@@ -102,4 +169,5 @@ def test_smtp_uses_working_email_credentials(monkeypatch):
     assert captured["username"] == "sender@gmail.com"
     assert captured["password"] == "abcdefghijklmnop"
     assert captured["recipient"] == "recipient@example.com"
+    assert captured["sender"] == "McLeod Alpha Daily Review <sender@gmail.com>"
     assert captured["attachments"] == []

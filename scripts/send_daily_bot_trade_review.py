@@ -12,6 +12,7 @@ import re
 import smtplib
 from datetime import datetime
 from email.message import EmailMessage
+from email.utils import formataddr, parseaddr
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -24,6 +25,7 @@ ATTRIBUTION_DIR = ROOT / "reports" / "daily_loss_attribution"
 STATE_PATH = ROOT / "data" / "daily_bot_trade_review_email_state.json"
 DELIVERY_LOG_PATH = LEARNING_DIR / "daily_bot_trade_review_email.log"
 EASTERN_TZ = ZoneInfo("America/New_York")
+SENDER_DISPLAY_NAME = "McLeod Alpha Daily Review"
 
 
 def _load_dotenv() -> None:
@@ -142,17 +144,17 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>McLeod Alpha Daily Bot Trade Review — {html.escape(trading_date)}</title>
+  <title>McLeod Alpha Daily Bot Trade Review</title>
 </head>
 <body style="margin:0;background:#f3f6fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
-  <div style="display:none;max-height:0;overflow:hidden;">Broker-reconciled McLeod Alpha bot trade review for {html.escape(trading_date)}</div>
+  <div style="display:none;max-height:0;overflow:hidden;">Broker-reconciled McLeod Alpha bot trade review</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb;">
     <tr><td align="center" style="padding:28px 12px;">
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(31,49,82,.10);">
         <tr><td style="padding:28px 34px;background:linear-gradient(135deg,#15284c,#365b9d);color:#ffffff;">
           <div style="font-size:12px;letter-spacing:1.7px;text-transform:uppercase;opacity:.78;">McLeod Alpha</div>
           <div style="font-size:28px;font-weight:750;margin-top:7px;">Daily Bot Trade Review</div>
-          <div style="font-size:15px;margin-top:7px;opacity:.86;">{html.escape(trading_date)} · Broker-reconciled learning</div>
+          <div style="font-size:15px;margin-top:7px;opacity:.86;">Broker-Reconciled Learning</div>
         </td></tr>
         <tr><td class="review" style="padding:30px 34px;line-height:1.58;">
           <style>
@@ -185,36 +187,81 @@ def _review_paths(trading_date: str) -> tuple[Path, Path]:
     return md_path, html_path
 
 
-def _subject(trading_date: str) -> str:
+def _reconciliation(trading_date: str) -> dict[str, Any]:
     attribution = _load_json(
         ATTRIBUTION_DIR / f"daily_loss_attribution_{trading_date}.json"
     )
-    reconciliation = attribution.get("reconciliation", {})
-    if reconciliation.get("complete") is True:
-        trades = int(reconciliation.get("broker_trades_today") or 0)
-        pnl = float(reconciliation.get("broker_pnl_dollars") or 0.0)
-        return (
-            f"McLeod Alpha Daily Bot Review — {trading_date} | "
-            f"{trades} trades | ${pnl:,.2f}"
-        )
-    if reconciliation:
-        return f"McLeod Alpha Daily Bot Review — {trading_date} | DATA GAP"
+    value = attribution.get("reconciliation", {})
+    return value if isinstance(value, dict) else {}
 
-    learning = _load_json(REPORT_DIR / f"daily_trade_learning_{trading_date}.json")
-    overall = learning.get("summary", {}).get("broker_backed", {})
-    trades = int(overall.get("trades") or 0)
-    pnl = float(overall.get("pnl") or 0.0)
-    return f"McLeod Alpha Daily Bot Review — {trading_date} | {trades} trades | ${pnl:,.2f}"
+
+def _reconciliation_is_sendable(reconciliation: dict[str, Any]) -> bool:
+    """Require exact broker/canonical parity and an empty pending outbox."""
+    try:
+        broker_count = int(reconciliation.get("broker_trades_today"))
+        canonical_count = int(reconciliation.get("canonical_completed_trades"))
+        broker_pnl = float(reconciliation.get("broker_pnl_dollars"))
+        canonical_pnl = float(reconciliation.get("canonical_pnl_dollars"))
+        pending = int(reconciliation.get("pending_outbox_entries"))
+    except (TypeError, ValueError):
+        return False
+    return all((
+        reconciliation.get("complete") is True,
+        reconciliation.get("count_reconciled") is True,
+        reconciliation.get("pnl_reconciled") is True,
+        broker_count == canonical_count,
+        abs(broker_pnl - canonical_pnl) < 0.005,
+        pending == 0,
+    ))
+
+
+def _subject(trading_date: str) -> str:
+    reconciliation = _reconciliation(trading_date)
+    if not _reconciliation_is_sendable(reconciliation):
+        raise RuntimeError(
+            "Daily review email withheld: broker/canonical trade logs are not exactly reconciled"
+        )
+    trades = int(reconciliation["broker_trades_today"])
+    pnl = float(reconciliation["broker_pnl_dollars"])
+    if pnl > 0:
+        subject = f"You Made Today ${abs(pnl):,.2f} Over {trades} Trades"
+    elif pnl < 0:
+        subject = f"You Lost Today ${abs(pnl):,.2f} Over {trades} Trades"
+    else:
+        subject = f"You Broke Even Today Over {trades} Trades"
+    return subject.title()
 
 
 def _reconciliation_label(trading_date: str) -> str:
-    attribution = _load_json(ATTRIBUTION_DIR / f"daily_loss_attribution_{trading_date}.json")
-    reconciliation = attribution.get("reconciliation", {})
-    if reconciliation.get("complete") is True:
+    reconciliation = _reconciliation(trading_date)
+    if _reconciliation_is_sendable(reconciliation):
         return "complete"
     if reconciliation:
         return "incomplete"
     return "unknown"
+
+
+def _email_markdown(markdown: str) -> str:
+    """Remove generator metadata and the redundant core performance table."""
+    lines = markdown.splitlines()
+    cleaned: list[str] = []
+    skipping_core_performance = False
+    for raw in lines:
+        line = raw.strip()
+        if line == "## Core Performance":
+            skipping_core_performance = True
+            continue
+        if skipping_core_performance:
+            if line.startswith("## "):
+                skipping_core_performance = False
+            else:
+                continue
+        if line == "# Daily Trade Learning Report":
+            continue
+        if re.match(r"^(Date|Generated):\s*", line, flags=re.IGNORECASE):
+            continue
+        cleaned.append(raw)
+    return "\n".join(cleaned).strip() + "\n"
 
 
 def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
@@ -385,7 +432,8 @@ def _send_smtp(
 
     message = EmailMessage()
     message["Subject"] = subject
-    message["From"] = sender
+    sender_address = parseaddr(sender)[1] or sender
+    message["From"] = formataddr((SENDER_DISPLAY_NAME, sender_address))
     message["To"] = recipient
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
@@ -420,13 +468,21 @@ def send_review(
         trading_date,
     )
     md_path.write_text(markdown, encoding="utf-8")
-    html_body = markdown_to_email_html(markdown, trading_date)
+    email_markdown = _email_markdown(markdown)
+    html_body = markdown_to_email_html(email_markdown, trading_date)
     html_path.write_text(html_body, encoding="utf-8")
     if dry_run:
         return html_path
 
+    reconciliation_data = _reconciliation(trading_date)
+    if not _reconciliation_is_sendable(reconciliation_data):
+        raise RuntimeError(
+            "Daily review email withheld: exact broker trade-count/P&L parity "
+            "and zero pending outbox entries are required"
+        )
+
     state = _load_json(STATE_PATH)
-    digest = hashlib.sha256(markdown.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(email_markdown.encode("utf-8")).hexdigest()
     if (
         not force
         and state.get("last_sent_date") == trading_date
@@ -448,9 +504,9 @@ def send_review(
     subject = _subject(trading_date)
     reconciliation = _reconciliation_label(trading_date)
     text_body = (
-        f"McLeod Alpha Daily Bot Trade Review — {trading_date}\n"
-        f"Canonical broker reconciliation: {reconciliation}\n\n"
-        f"{markdown}\n"
+        "McLeod Alpha Daily Bot Trade Review\n"
+        "Canonical broker reconciliation: complete\n\n"
+        f"{email_markdown}\n"
     )
     _send_smtp(
         recipient=to_email,
