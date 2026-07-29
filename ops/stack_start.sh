@@ -8,6 +8,7 @@ WATCHDOG_LOG="$PROJECT_DIR/logs/runtime_watchdog.log"
 CC_PID_FILE="$PROJECT_DIR/.cockpit_pid"
 WATCHDOG_PID_FILE="$PROJECT_DIR/.runtime_watchdog.pid"
 MANUAL_STOP_MARKER="$PROJECT_DIR/data/bot_manual_stop_marker.json"
+WATCHDOG_FOREGROUND="${MCLEOD_WATCHDOG_FOREGROUND:-0}"
 
 if [[ -x "/opt/homebrew/opt/python@3.11/bin/python3.11" ]]; then
   PYTHON_BIN="/opt/homebrew/opt/python@3.11/bin/python3.11"
@@ -98,6 +99,17 @@ PY
 }
 
 start_watchdog() {
+  if [[ "$WATCHDOG_FOREGROUND" == "1" ]]; then
+    if [[ -f "$WATCHDOG_PID_FILE" ]]; then
+      old_pid="$(cat "$WATCHDOG_PID_FILE" 2>/dev/null || true)"
+      if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
+        kill "$old_pid" 2>/dev/null || true
+      fi
+    fi
+    echo "Runtime watchdog will run as the foreground supervisor"
+    return 0
+  fi
+
   if [[ -f "$WATCHDOG_PID_FILE" ]]; then
     old_pid="$(cat "$WATCHDOG_PID_FILE" 2>/dev/null || true)"
     if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
@@ -121,3 +133,7 @@ start_watchdog
 echo ""
 echo "Stack status:"
 "$SCRIPT_DIR/stack_status.sh"
+
+if [[ "$WATCHDOG_FOREGROUND" == "1" ]]; then
+  exec "$SCRIPT_DIR/runtime_watchdog.sh"
+fi
