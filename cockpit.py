@@ -8465,6 +8465,19 @@ HTML_DASHBOARD = """
                     || tradeEntryReasonRaw.includes('market closed')
                     || tradeEntryReasonRaw.includes('outside regular market hours')
                     || tradeEntryReasonRaw.includes('marked closed');
+                const marketClosedActionButton = document.getElementById('tradeActionBtn')
+                    || document.getElementById('entryPauseBtn');
+                if (marketClosedActionButton && !status.has_open_position) {
+                    marketClosedActionButton.classList.toggle('market-closed', marketClosed);
+                    marketClosedActionButton.style.background = marketClosed ? '#007bff' : '';
+                    marketClosedActionButton.style.color = marketClosed ? '#fff' : '';
+                    marketClosedActionButton.style.opacity = marketClosed ? '1' : '';
+                    if (marketClosed) {
+                        marketClosedActionButton.disabled = true;
+                        marketClosedActionButton.dataset.action = 'market-closed';
+                        marketClosedActionButton.innerHTML = 'MARKET CLOSED';
+                    }
+                }
                 const candleDataStale =
                     tradeEntryReasonRaw.includes('stale candle')
                     || (tradeEntryReasonCodeRaw === 'STARTUP_GUARD' && tradeEntryReasonRaw.includes('candle'));
@@ -9379,11 +9392,7 @@ HTML_DASHBOARD = """
                     const pnlPct = (trade.pnl_pct === null || trade.pnl_pct === undefined) ? null : Number(trade.pnl_pct);
                     let pnlPctText = '';
                     if (pnlPct !== null && !Number.isNaN(pnlPct)) {
-                        if (pnlPct < 0) {
-                            pnlPctText = ` (${formatNumber(Math.abs(pnlPct), 1)}%)`;
-                        } else {
-                            pnlPctText = ` - ${formatNumber(pnlPct, 1)}%`;
-                        }
+                        pnlPctText = ` - ${formatNumber(Math.abs(pnlPct), 1)}%`;
                     }
                     html += `<td data-label="P&L"><span class="trade-pnl ${pnlClass}">${formatMoney(pnl)}${pnlPctText}</span></td>`;
                     const rawReason = String(trade.exit_reason || '').toUpperCase();

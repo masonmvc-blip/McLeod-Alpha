@@ -490,6 +490,21 @@ def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():
     assert "Netural" not in source
 
 
+def test_todays_trades_negative_percent_uses_unsigned_value_after_dash():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "pnlPctText = ` - ${formatNumber(Math.abs(pnlPct), 1)}%`;" in source
+    assert "pnlPctText = ` (${formatNumber(Math.abs(pnlPct), 1)}%)`;" not in source
+
+
+def test_trade_action_button_has_blue_market_closed_state():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const marketClosedActionButton" in source
+    assert "marketClosedActionButton.style.background = marketClosed ? '#007bff' : '';" in source
+    assert "marketClosedActionButton.innerHTML = 'MARKET CLOSED';" in source
+
+
 def test_indicator_performance_centers_canonical_present_absent_columns():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
