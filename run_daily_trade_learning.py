@@ -34,6 +34,7 @@ from reports.missed_opportunities_shadow_report import (
     write_missed_opportunities_shadow_report,
 )
 from reports.startup_guard_review import write_startup_guard_review
+from reports.cooling_period_review import write_cooling_period_review
 
 
 WORKSPACE = Path(__file__).parent
@@ -615,6 +616,15 @@ def run_daily_learning(target_date: str | None = None) -> int:
         root=WORKSPACE,
         reconciliation_complete=bool(loss_attribution["reconciliation"]["complete"]),
     )
+    (
+        cooling_period_review,
+        cooling_period_json,
+        cooling_period_md,
+    ) = write_cooling_period_review(
+        trading_date,
+        root=WORKSPACE,
+        reconciliation_complete=bool(loss_attribution["reconciliation"]["complete"]),
+    )
     if not loss_attribution["reconciliation"]["complete"]:
         lessons = [{
             "priority": "high",
@@ -654,6 +664,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "day_trade_spy_shadow": day_trade_spy_shadow,
         "missed_opportunities_shadow": missed_opportunities_shadow,
         "startup_guard_review": startup_guard_review,
+        "cooling_period_review": cooling_period_review,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -669,6 +680,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
         handle.write(missed_opportunities_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(startup_guard_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(cooling_period_md.read_text(encoding="utf-8"))
     _write_daily_csv(day_csv, rows)
 
     (LEARNING_DIR / "latest_daily_trade_learning.json").write_text(
@@ -720,6 +733,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {missed_opportunities_shadow_md}")
     print(f"Wrote: {startup_guard_json}")
     print(f"Wrote: {startup_guard_md}")
+    print(f"Wrote: {cooling_period_json}")
+    print(f"Wrote: {cooling_period_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;
