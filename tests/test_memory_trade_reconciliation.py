@@ -126,6 +126,61 @@ def test_legacy_backfill_does_not_overwrite_broker_cash_trade(tmp_path):
     assert loaded[0]["pnl_source"] == "broker_cash"
 
 
+def test_legacy_backfill_rejects_reference_price_row_without_option_fills(tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    memory.initialize_live_trade_store()
+    phantom = {
+        "entry_time": "2026-07-29T09:20:33-04:00",
+        "exit_time": "2026-07-29T10:20:40-04:00",
+        "direction": "CALL",
+        "entry_price": 750.0,
+        "exit_price": 736.08,
+        "pnl": -1.33,
+        "exit_reason": "MANUAL_EXIT_MARKET",
+        "option_symbol": "SPY   260729C00754000",
+        "option_quantity": 1,
+    }
+    with sqlite3.connect(memory.db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO trade_log (
+                entry_time, exit_time, direction, entry_price, exit_price, pnl,
+                exit_reason, option_symbol, option_quantity
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            tuple(phantom[key] for key in (
+                "entry_time", "exit_time", "direction", "entry_price", "exit_price",
+                "pnl", "exit_reason", "option_symbol", "option_quantity",
+            )),
+        )
+
+    assert memory.load_completed_trades_for_date("2026-07-29") == []
+    with sqlite3.connect(memory.db_path) as connection:
+        canonical_count = connection.execute(
+            "SELECT COUNT(*) FROM canonical_completed_trades"
+        ).fetchone()[0]
+    assert canonical_count == 0
+
+
+def test_existing_invalid_legacy_canonical_trade_is_hidden(tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    memory.upsert_completed_trade(
+        {
+            "entry_time": "2026-07-29T09:20:33-04:00",
+            "exit_time": "2026-07-29T10:20:40-04:00",
+            "direction": "CALL",
+            "entry_price": 750.0,
+            "exit_price": 736.08,
+            "pnl": -1.33,
+            "option_symbol": "SPY   260729C00754000",
+            "option_quantity": 1,
+        },
+        source="legacy_trade_log_backfill",
+    )
+
+    assert memory.load_completed_trades_for_date("2026-07-29") == []
+
+
 def test_reconciliation_health_requires_count_and_pnl_parity(tmp_path):
     memory = Memory(db_path=tmp_path / "memory.sqlite")
     trade = _broker_trade()

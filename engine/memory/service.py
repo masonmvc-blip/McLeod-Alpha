@@ -341,7 +341,14 @@ class Memory:
                 and int(canonical_version) > int(existing.get("canonical_version") or 0)
             ):
                 selected[canonical_trade_id] = payload
-        return sorted(selected.values(), key=lambda trade: (str(trade.get("entry_time") or ""), str(trade.get("canonical_trade_id") or "")))
+        completed_trades = [
+            trade for trade in selected.values()
+            if (
+                str(trade.get("source") or "") != "legacy_trade_log_backfill"
+                or self._is_valid_legacy_option_trade(trade)
+            )
+        ]
+        return sorted(completed_trades, key=lambda trade: (str(trade.get("entry_time") or ""), str(trade.get("canonical_trade_id") or "")))
 
     def load_completed_trades_for_date(self, trade_date: str) -> list[dict[str, Any]]:
         return self.load_completed_trades(trade_date)
@@ -413,6 +420,8 @@ class Memory:
                 (start_date, end_date),
             ).fetchall()]
         for row in rows:
+            if not self._is_valid_legacy_option_trade(row):
+                continue
             canonical_trade_id = self._canonical_trade_id(row)
             with sqlite3.connect(self.db_path) as connection:
                 existing = connection.execute(
@@ -433,6 +442,28 @@ class Memory:
                 except (TypeError, ValueError, json.JSONDecodeError):
                     pass
             self.upsert_completed_trade(row, source="legacy_trade_log_backfill")
+
+    @staticmethod
+    def _is_valid_legacy_option_trade(trade: dict[str, Any]) -> bool:
+        """Reject legacy rows that contain SPY reference prices but no option fills."""
+        symbol = str(trade.get("option_symbol") or "").strip().replace(" ", "")
+        direction = str(trade.get("direction") or "").upper()
+        if direction not in {"CALL", "PUT"}:
+            return False
+        if len(symbol) != 18 or not symbol.startswith("SPY"):
+            return False
+        option_type_index = 9
+        if symbol[option_type_index] != ("C" if direction == "CALL" else "P"):
+            return False
+        if not symbol[3:9].isdigit() or not symbol[10:].isdigit():
+            return False
+        try:
+            option_entry = float(trade.get("option_entry"))
+            option_exit = float(trade.get("option_exit"))
+            option_quantity = float(trade.get("option_quantity"))
+        except (TypeError, ValueError):
+            return False
+        return option_entry > 0 and option_exit > 0 and option_quantity > 0
 
     def reconcile_broker_trades(self, broker_rows, source="broker_reconciliation"):
         """Idempotently persist broker-paired trades and emit one event per inserted row."""
