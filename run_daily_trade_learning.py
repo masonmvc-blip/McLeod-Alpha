@@ -20,6 +20,7 @@ from typing import Any
 
 from engine.model_evaluator import run_model_evaluator
 from engine.weight_optimizer import run_weight_optimizer
+from engine.memory import get_memory
 from reports.daily_loss_attribution import (
     build_loss_attribution,
     fetch_reconciliation_health,
@@ -104,7 +105,7 @@ def _resolve_target_date(con: sqlite3.Connection, date_arg: str | None) -> str:
     return str(row["trade_date"])
 
 
-def _load_day_rows(con: sqlite3.Connection, trading_date: str) -> list[sqlite3.Row]:
+def _load_day_rows(con: sqlite3.Connection, trading_date: str) -> list[dict[str, Any]]:
     rows = con.execute(
         """
         SELECT
@@ -123,7 +124,48 @@ def _load_day_rows(con: sqlite3.Connection, trading_date: str) -> list[sqlite3.R
         """,
         (trading_date,),
     ).fetchall()
-    return list(rows)
+    output = [dict(row) for row in rows]
+
+    # The append-only canonical ledger can contain a later broker-audited
+    # classification of an exit that the live process initially recorded with
+    # the generic BROKER_RECONCILED_EXIT fallback.  Preserve the local row ID
+    # and diagnostics, but use the canonical reason for learning/reporting.
+    canonical = get_memory().load_completed_trades_for_date(trading_date)
+    by_pair = {
+        (
+            str(row.get("broker_entry_order_id") or ""),
+            str(row.get("broker_exit_order_id") or ""),
+        ): row
+        for row in canonical
+        if row.get("broker_entry_order_id") or row.get("broker_exit_order_id")
+    }
+    by_entry = {
+        str(row.get("broker_entry_order_id")): row
+        for row in canonical
+        if row.get("broker_entry_order_id")
+    }
+    by_exit = {
+        str(row.get("broker_exit_order_id")): row
+        for row in canonical
+        if row.get("broker_exit_order_id")
+    }
+    for row in output:
+        entry_id = str(row.get("broker_entry_order_id") or "")
+        exit_id = str(row.get("broker_exit_order_id") or "")
+        audited = (
+            by_pair.get((entry_id, exit_id))
+            or by_entry.get(entry_id)
+            or by_exit.get(exit_id)
+        )
+        if not audited:
+            continue
+        canonical_reason = str(audited.get("exit_reason") or "").strip()
+        if canonical_reason:
+            row["exit_reason"] = canonical_reason
+        canonical_pnl = audited.get("pnl")
+        if canonical_pnl is not None:
+            row["pnl_dollars"] = canonical_pnl
+    return output
 
 
 def _accumulate_stats(stats: SliceStats, pnl: float) -> None:
@@ -135,7 +177,7 @@ def _accumulate_stats(stats: SliceStats, pnl: float) -> None:
         stats.losses += 1
 
 
-def _summarize_rows(rows: list[sqlite3.Row]) -> dict[str, Any]:
+def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     overall = SliceStats()
     broker = SliceStats()
     unlinked = SliceStats()
@@ -408,7 +450,7 @@ def _build_scale_decision(
     }
 
 
-def _write_daily_csv(path: Path, rows: list[sqlite3.Row]) -> None:
+def _write_daily_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)

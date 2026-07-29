@@ -62,7 +62,209 @@ def _inline(text: str) -> str:
     return escaped
 
 
-def markdown_to_email_html(markdown: str, trading_date: str) -> str:
+def _currency(value: Any) -> str:
+    try:
+        number = float(str(value).replace("$", "").replace(",", ""))
+    except (TypeError, ValueError):
+        return str(value)
+    prefix = "-" if number < 0 else ""
+    return f"{prefix}${abs(number):,.2f}"
+
+
+def _monetary_header(header: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9]+", " ", str(header).lower()).strip()
+    if any(
+        excluded in normalized
+        for excluded in (
+            "time", "minute", "count", "trades", "rate", "pct", "percent",
+            "quantity", "contracts", "score", "id", "reason",
+        )
+    ):
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "pnl", "p l", "profit", "loss", "average", "entry", "exit",
+            "price", "bid", "ask", "spread", "drag", "shortfall", "saving",
+            "cost", "stop", "mfe", "mae",
+        )
+    )
+
+
+def _normalize_dollar_markdown(markdown: str) -> str:
+    """Add consistent currency symbols to monetary Markdown values."""
+    lines = markdown.splitlines()
+    output: list[str] = []
+    headers: list[str] | None = None
+    in_table = False
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if (
+            line.startswith("|")
+            and index + 1 < len(lines)
+            and re.match(r"^\|\s*:?-{3,}", lines[index + 1].strip())
+        ):
+            headers = [cell.strip() for cell in line.strip("|").split("|")]
+            in_table = True
+            output.append(raw)
+            continue
+        if in_table and line.startswith("|") and headers:
+            if re.match(r"^\|\s*:?-{3,}", line):
+                output.append(raw)
+                continue
+            cells = [cell.strip() for cell in line.strip("|").split("|")]
+            for cell_index, cell in enumerate(cells):
+                cells[cell_index] = re.sub(
+                    r"\$-([\d,]+(?:\.\d+)?)",
+                    r"-$\1",
+                    cell,
+                )
+                if cell_index >= len(headers) or not _monetary_header(headers[cell_index]):
+                    continue
+                if re.fullmatch(r"\$?-?[\d,]+(?:\.\d+)?", cells[cell_index]):
+                    cells[cell_index] = _currency(cells[cell_index])
+            output.append("| " + " | ".join(cells) + " |")
+            continue
+        if in_table and not line.startswith("|"):
+            in_table = False
+            headers = None
+
+        normalized = re.sub(
+            r"(?i)\b(pnl|p&l|broker_pnl|unlinked_pnl|stop_pnl|price|cost|drag|shortfall|saving)"
+            r"=(-?[\d,]+(?:\.\d+)?)",
+            lambda match: f"{match.group(1)}={_currency(match.group(2))}",
+            raw,
+        )
+        normalized = re.sub(
+            r"(?i)(\boutperformed\b.+?\bby\s+)(-?[\d,]+\.\d{2})\b",
+            lambda match: match.group(1) + _currency(match.group(2)),
+            normalized,
+        )
+        normalized = re.sub(
+            r"\$-([\d,]+(?:\.\d+)?)",
+            r"-$\1",
+            normalized,
+        )
+        output.append(normalized)
+    return "\n".join(output)
+
+
+def _build_email_summary(trading_date: str) -> dict[str, Any]:
+    learning = _load_json(REPORT_DIR / f"daily_trade_learning_{trading_date}.json")
+    broker = (learning.get("summary") or {}).get("broker_backed") or {}
+    lessons = [
+        row for row in (learning.get("actionable_lessons") or [])
+        if isinstance(row, dict)
+    ]
+    scale = learning.get("scale_decision") or {}
+    trades = int(broker.get("trades") or 0)
+    wins = int(broker.get("wins") or 0)
+    pnl = float(broker.get("pnl") or 0.0)
+    return {
+        "pnl": pnl,
+        "trades": trades,
+        "wins": wins,
+        "losses": int(broker.get("losses") or 0),
+        "win_rate": float(broker.get("win_rate") or 0.0),
+        "lessons": lessons[:3],
+        "next_session": str(
+            scale.get("rationale")
+            or "Keep live settings unchanged until the evidence gates are satisfied."
+        ),
+        "measurements": [
+            (
+                "Continue protective-stop and ratchet reliability measurement, "
+                "including desired, submitted, and broker-verified stop states."
+            ),
+            (
+                "Begin spread-aware contract-selection comparison using actual "
+                "ask entry and subsequent executable bid evidence."
+            ),
+            (
+                "Continue entry/exit slippage, management-cycle latency, blockers, "
+                "cooling, startup guard, and missed-opportunity tracking."
+            ),
+        ],
+    }
+
+
+def _summary_text(summary: dict[str, Any]) -> str:
+    lines = [
+        "SUMMARY",
+        (
+            f"Result: {_currency(summary['pnl'])} over {summary['trades']} trades; "
+            f"{summary['wins']} wins, {summary['losses']} losses, "
+            f"{summary['win_rate']:.1%} win rate."
+        ),
+        "What We Learned:",
+    ]
+    for lesson in summary["lessons"]:
+        lines.append(
+            f"- {lesson.get('title')}: {lesson.get('signal')}. "
+            f"{lesson.get('action')}"
+        )
+    lines.extend([
+        f"Next Session: {summary['next_session']}",
+        "Measurements Starting Or Continuing:",
+        *[f"- {measurement}" for measurement in summary["measurements"]],
+    ])
+    return _normalize_dollar_markdown("\n".join(lines))
+
+
+def _summary_html(summary: dict[str, Any]) -> str:
+    pnl = float(summary["pnl"])
+    result_color = "#147a45" if pnl >= 0 else "#b42335"
+    result_background = "#eaf8f0" if pnl >= 0 else "#fff0f1"
+    lessons = "".join(
+        "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
+        f"<strong>{_inline(str(row.get('title') or 'Learning'))}:</strong> "
+        f"{_inline(_normalize_dollar_markdown(str(row.get('signal') or '')))}. "
+        f"{_inline(str(row.get('action') or ''))}</li>"
+        for row in summary["lessons"]
+    )
+    measurements = "".join(
+        "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
+        f"{_inline(row)}</li>"
+        for row in summary["measurements"]
+    )
+    return f"""
+<div style="border:1px solid #d7e2f0;border-radius:14px;overflow:hidden;background:#f9fbfe;margin:0 0 22px;">
+  <div style="padding:14px 18px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+    <tr>
+      <td style="width:34%;padding:14px 10px 14px 18px;background:{result_background};">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Net P&amp;L</div>
+        <div style="font-size:24px;font-weight:800;color:{result_color};margin-top:3px;">{_currency(pnl)}</div>
+      </td>
+      <td style="width:33%;padding:14px 10px;text-align:center;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Trades</div>
+        <div style="font-size:24px;font-weight:800;color:#173763;margin-top:3px;">{summary['trades']}</div>
+      </td>
+      <td style="width:33%;padding:14px 18px 14px 10px;text-align:right;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Win Rate</div>
+        <div style="font-size:24px;font-weight:800;color:#173763;margin-top:3px;">{summary['win_rate']:.1%}</div>
+      </td>
+    </tr>
+  </table>
+  <div style="padding:2px 18px 16px;">
+    <div style="font-size:14px;font-weight:750;color:#173763;margin-top:12px;">What We Learned</div>
+    <ul style="margin:4px 0 12px;padding-left:19px;">{lessons}</ul>
+    <div style="padding:11px 13px;border-left:4px solid #4f7ec8;background:#eef4fc;border-radius:6px;color:#34445f;font-size:13px;">
+      <strong>Next Session:</strong> {_inline(summary['next_session'])}
+    </div>
+    <div style="font-size:14px;font-weight:750;color:#173763;margin-top:14px;">Measurements Starting Or Continuing</div>
+    <ul style="margin:4px 0 0;padding-left:19px;">{measurements}</ul>
+  </div>
+</div>
+"""
+
+
+def markdown_to_email_html(
+    markdown: str,
+    trading_date: str,
+    *,
+    summary: dict[str, Any] | None = None,
+) -> str:
     """Render the review's constrained Markdown into email-safe HTML."""
     blocks: list[str] = []
     list_open = False
@@ -139,6 +341,7 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
     close_list()
 
     content = "\n".join(blocks)
+    summary_card = _summary_html(summary) if summary else ""
     return f"""<!doctype html>
 <html>
 <head>
@@ -149,18 +352,18 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
 <body style="margin:0;background:#f3f6fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;">Broker-reconciled McLeod Alpha bot trade review</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb;">
-    <tr><td align="center" style="padding:28px 12px;">
+    <tr><td align="center" style="padding:8px 10px 18px;">
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(31,49,82,.10);">
-        <tr><td style="padding:28px 34px;background:linear-gradient(135deg,#15284c,#365b9d);color:#ffffff;">
+        <tr><td style="padding:20px 28px;background:linear-gradient(135deg,#15284c,#365b9d);color:#ffffff;">
           <div style="font-size:12px;letter-spacing:1.7px;text-transform:uppercase;opacity:.78;">McLeod Alpha</div>
           <div style="font-size:28px;font-weight:750;margin-top:7px;">Daily Bot Trade Review</div>
           <div style="font-size:15px;margin-top:7px;opacity:.86;">Broker-Reconciled Learning</div>
         </td></tr>
-        <tr><td class="review" style="padding:30px 34px;line-height:1.58;">
+        <tr><td class="review" style="padding:18px 28px 28px;line-height:1.52;">
           <style>
             .review h1 {{ display:none; }}
-            .review h2 {{ color:#24487f;font-size:21px;margin:30px 0 12px;border-bottom:1px solid #dce5f2;padding-bottom:8px; }}
-            .review h3 {{ color:#172f58;font-size:17px;margin:24px 0 8px; }}
+            .review h2 {{ color:#24487f;font-size:20px;margin:22px 0 10px;border-bottom:1px solid #dce5f2;padding-bottom:7px; }}
+            .review h3 {{ color:#172f58;font-size:16px;margin:18px 0 7px; }}
             .review p {{ margin:9px 0;color:#3d4960;font-size:14px; }}
             .review ul {{ margin:8px 0 18px;padding-left:21px; }}
             .review li {{ margin:6px 0;color:#3d4960;font-size:14px; }}
@@ -168,6 +371,7 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
             .review code {{ background:#eef3fa;border-radius:5px;padding:2px 5px;font-size:12px; }}
             .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:9px 12px;border-radius:4px; }}
           </style>
+          {summary_card}
           {content}
         </td></tr>
         <tr><td style="padding:20px 34px;background:#edf3fb;color:#5a6780;font-size:12px;line-height:1.5;">
@@ -468,8 +672,13 @@ def send_review(
         trading_date,
     )
     md_path.write_text(markdown, encoding="utf-8")
-    email_markdown = _email_markdown(markdown)
-    html_body = markdown_to_email_html(email_markdown, trading_date)
+    email_markdown = _normalize_dollar_markdown(_email_markdown(markdown))
+    email_summary = _build_email_summary(trading_date)
+    html_body = markdown_to_email_html(
+        email_markdown,
+        trading_date,
+        summary=email_summary,
+    )
     html_path.write_text(html_body, encoding="utf-8")
     if dry_run:
         return html_path
@@ -506,6 +715,7 @@ def send_review(
     text_body = (
         "McLeod Alpha Daily Bot Trade Review\n"
         "Canonical broker reconciliation: complete\n\n"
+        f"{_summary_text(email_summary)}\n\n"
         f"{email_markdown}\n"
     )
     _send_smtp(

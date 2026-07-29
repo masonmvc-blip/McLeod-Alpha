@@ -3,6 +3,7 @@ from pathlib import Path
 from scripts import send_daily_bot_trade_review as review_email
 from scripts.send_daily_bot_trade_review import (
     _email_markdown,
+    _normalize_dollar_markdown,
     _reconciliation_is_sendable,
     _subject,
     markdown_to_email_html,
@@ -63,6 +64,44 @@ def test_email_body_removes_generator_metadata_and_core_performance():
     assert "Core Performance" not in cleaned
     assert "| Overall | 6 |" not in cleaned
     assert "## Exit Reason Breakdown" in cleaned
+
+
+def test_email_currency_normalization_formats_monetary_tables_and_signals():
+    normalized = _normalize_dollar_markdown(
+        "| Exit Reason | Trades | PnL | Win Rate |\n"
+        "| --- | ---: | ---: | ---: |\n"
+        "| STOP | 1 | -198.39 | 0.0% |\n\n"
+        "- Signal: stop_pnl=-198.39 and PUT outperformed CALL by 207.73\n"
+    )
+
+    assert "| STOP | 1 | -$198.39 | 0.0% |" in normalized
+    assert "stop_pnl=-$198.39" in normalized
+    assert "outperformed CALL by $207.73" in normalized
+
+
+def test_summary_card_appears_before_detailed_sections():
+    rendered = markdown_to_email_html(
+        "## Exit Reason Breakdown\n\nDetails",
+        "2026-07-29",
+        summary={
+            "pnl": 664.25,
+            "trades": 6,
+            "wins": 4,
+            "losses": 2,
+            "win_rate": 0.6667,
+            "lessons": [{
+                "title": "Protect exits",
+                "signal": "stop_pnl=-198.39",
+                "action": "Keep measuring ratchet reliability.",
+            }],
+            "next_session": "Hold live settings unchanged.",
+            "measurements": ["Track executable spread cost."],
+        },
+    )
+
+    assert rendered.index(">Summary<") < rendered.index(">Exit Reason Breakdown<")
+    assert "$664.25" in rendered
+    assert "padding:8px 10px 18px" in rendered
 
 
 def test_subject_uses_reconciled_broker_result(monkeypatch):
