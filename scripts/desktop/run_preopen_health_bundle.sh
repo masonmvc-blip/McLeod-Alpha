@@ -27,7 +27,13 @@ overall=0
 run_step "desktop_preflight" "$ROOT_DIR/scripts/desktop/desktop_performance_preflight.sh" || overall=1
 run_step "repo_hygiene" "$ROOT_DIR/scripts/maintenance/check_repo_hygiene.sh" || overall=1
 run_step "morning_cio_health" "$PY" "$ROOT_DIR/ops/check_morning_cio_health.py" --require-smtp --max-age-hours 26 || overall=1
-run_step "ibd_auto_import_health" "$PY" "$ROOT_DIR/ops/check_ibd_auto_import_health.py" --max-age-hours 30 || overall=1
+if [[ -f "$ROOT_DIR/data/ibd_auto_export.env" \
+   || -f "$ROOT_DIR/data/ibd_rankings_manual.csv" \
+   || -n "$(find "$HOME/Downloads/IBD" -maxdepth 1 -type f -name 'ibd*.csv' -print -quit 2>/dev/null)" ]]; then
+  run_step "ibd_auto_import_health" "$PY" "$ROOT_DIR/ops/check_ibd_auto_import_health.py" --max-age-hours 30 || overall=1
+else
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] SKIP: ibd_auto_import_health (optional feed not configured)" | tee -a "$LOG"
+fi
 run_step "log_rotation" "$ROOT_DIR/ops/rotate_runtime_logs.sh" || overall=1
 
 if [[ "$overall" == "0" ]]; then
