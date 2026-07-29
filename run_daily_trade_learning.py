@@ -571,6 +571,13 @@ def run_daily_learning(target_date: str | None = None) -> int:
     # Broker truth and duplicate auditing must finish before any daily rows,
     # statistics, learning conclusions, or email artifacts are produced.
     reconciliation = fetch_reconciliation_health(trading_date)
+    if reconciliation.get("healthy") is True:
+        from execution.daily_trade_log_email import (
+            generate_daily_trade_review_data,
+        )
+
+        generate_daily_trade_review_data(trading_date)
+        reconciliation = fetch_reconciliation_health(trading_date)
 
     with sqlite3.connect(str(DB_PATH)) as con:
         con.row_factory = sqlite3.Row
