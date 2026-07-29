@@ -110,6 +110,11 @@ def _diagnostic_values(row: sqlite3.Row) -> dict[str, Any]:
             )
         ),
         "indicator_labels": indicator_labels,
+        "volume_shadow": (
+            payload.get("volume_shadow")
+            if isinstance(payload.get("volume_shadow"), dict)
+            else None
+        ),
     }
 
 

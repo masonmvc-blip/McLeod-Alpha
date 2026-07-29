@@ -237,6 +237,14 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             write_entry_quality_shadow_report(trading_date, root=ROOT)
         except Exception as exc:
             print(f"Entry quality shadow report warning: {exc}")
+    volume_shadow_path = REPORT_DIR / f"volume_shadow_{trading_date}.md"
+    if not volume_shadow_path.exists():
+        try:
+            from reports.volume_shadow_report import write_volume_shadow_report
+
+            write_volume_shadow_report(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Volume shadow report warning: {exc}")
     day_trade_spy_path = REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.md"
     if not day_trade_spy_path.exists():
         try:
@@ -305,6 +313,7 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
     headings = (
         "## Trend Lifecycle V2 Shadow Review",
         "## Entry Quality Shadow Studies",
+        "## Volume — Daily Shadow Test",
         "## Day Trade SPY Five-Test Shadow Review",
         "## Missed Opportunities — Shadow Review",
         "## Startup Guard — Daily Assessment",
@@ -320,6 +329,7 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
         for path in (
             lifecycle_path,
             entry_quality_path,
+            volume_shadow_path,
             day_trade_spy_path,
             missed_opportunities_path,
             startup_guard_path,

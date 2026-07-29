@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from engine.memory import get_memory
 from strategy.market_state import classify_market_state
+from strategy.volume_shadow import build_volume_shadow
 
 
 EASTERN_TZ = ZoneInfo("America/New_York")
@@ -755,6 +756,12 @@ def _build_setup_record(
             "automatic_live_change_allowed": False,
         },
         "day_trade_spy_shadow_suite": day_trade_spy_shadow_suite,
+        "volume_shadow": build_volume_shadow(
+            df,
+            direction,
+            observed_score=score,
+            entry_threshold=entry_threshold,
+        ),
     }
 
     record.update(_build_threshold_distance_payload(

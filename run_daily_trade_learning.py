@@ -29,6 +29,7 @@ from reports.daily_loss_attribution import (
 )
 from reports.trend_lifecycle_shadow_report import write_trend_lifecycle_shadow_report
 from reports.entry_quality_shadow_report import write_entry_quality_shadow_report
+from reports.volume_shadow_report import write_volume_shadow_report
 from reports.day_trade_spy_shadow_report import write_day_trade_spy_shadow_report
 from reports.missed_opportunities_shadow_report import (
     write_missed_opportunities_shadow_report,
@@ -612,6 +613,11 @@ def run_daily_learning(target_date: str | None = None) -> int:
         entry_quality_shadow_md,
     ) = write_entry_quality_shadow_report(trading_date, root=WORKSPACE)
     (
+        volume_shadow,
+        volume_shadow_json,
+        volume_shadow_md,
+    ) = write_volume_shadow_report(trading_date, root=WORKSPACE)
+    (
         day_trade_spy_shadow,
         day_trade_spy_shadow_json,
         day_trade_spy_shadow_csv,
@@ -688,6 +694,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "daily_loss_attribution": loss_attribution,
         "trend_lifecycle_v2_shadow": lifecycle_shadow,
         "entry_quality_shadow": entry_quality_shadow,
+        "volume_shadow": volume_shadow,
         "day_trade_spy_shadow": day_trade_spy_shadow,
         "missed_opportunities_shadow": missed_opportunities_shadow,
         "startup_guard_review": startup_guard_review,
@@ -703,6 +710,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
         handle.write(lifecycle_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(entry_quality_shadow_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(volume_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(day_trade_spy_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
@@ -758,6 +767,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {entry_quality_shadow_json}")
     print(f"Wrote: {entry_quality_shadow_csv}")
     print(f"Wrote: {entry_quality_shadow_md}")
+    print(f"Wrote: {volume_shadow_json}")
+    print(f"Wrote: {volume_shadow_md}")
     print(f"Wrote: {day_trade_spy_shadow_json}")
     print(f"Wrote: {day_trade_spy_shadow_csv}")
     print(f"Wrote: {day_trade_spy_shadow_md}")

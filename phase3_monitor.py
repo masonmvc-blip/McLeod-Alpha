@@ -22,6 +22,7 @@ from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
 from strategy.trend_lifecycle_v2 import classify_trend_lifecycle_v2
+from strategy.volume_shadow import build_volume_shadow
 from strategy.day_trade_spy_shadow_suite import evaluate_day_trade_spy_shadow_suite
 from execution.trend_lifecycle_shadow import record_lifecycle_shadow_snapshot
 from backtesting.signal_replay import confidence_score_engine
@@ -1454,6 +1455,12 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
     )
     lifecycle_v2_shadow = classify_trend_lifecycle_v2(frame, direction)
     session_market_trend_snapshot = _session_market_trend_snapshot(frame)
+    volume_shadow = build_volume_shadow(
+        frame,
+        direction,
+        observed_score=entry_score,
+        entry_threshold=LIVE_ENTRY_MIN_SCORE,
+    )
 
     return json.dumps({
         "captured_at": datetime.now(EASTERN_TZ).isoformat(),
@@ -1487,6 +1494,7 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
         "trend_efficiency": trend_efficiency,
         "momentum_expansion": momentum_expansion,
         "absorption": absorption,
+        "volume_shadow": volume_shadow,
         "vwap": vwap_snapshot,
         "support_resistance": market_structure.get("support_resistance", {}),
         "fibonacci_levels": market_structure.get("fibonacci_levels", {}),
