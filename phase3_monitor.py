@@ -1574,6 +1574,38 @@ def _process_manual_exit_command(
     if str(command.get("action") or "").upper() != "EXIT_TRADE":
         return False
     command_status = str(command.get("status") or "").upper()
+    if command_status == "DIRECT_SUBMITTING":
+        # Cockpit's broker-direct kill switch owns the position lifecycle.
+        # Suppress ordinary stop management until it reports a result.
+        return True
+    direct_result = command.get("direct_result") or {}
+    if (
+        command_status == "RETRYING"
+        and str(direct_result.get("status") or "").lower() == "flat"
+    ):
+        # Broker truth is already flat. Clear only the stale local lifecycle;
+        # the canonical broker reconciler will create the authoritative trade.
+        try:
+            ENGINE_MODULE.clear_position()
+        except Exception:
+            pass
+        ENGINE_MODULE.current_position = None
+        try:
+            ENGINE_MODULE._arm_post_exit_cooling(
+                "MANUAL_EXIT_MARKET",
+                "cockpit_kill_switch",
+            )
+        except Exception:
+            pass
+        command["status"] = "COMPLETED"
+        command["completed_at"] = datetime.now(UTC_TZ).isoformat()
+        get_memory().save_setting(
+            "control_command",
+            command,
+            CONTROL_COMMAND_PATH,
+            source="cockpit_kill_switch_reconciliation",
+        )
+        return True
     if command_status == "SUBMITTING":
         try:
             last_attempt = datetime.fromisoformat(str(command.get("last_attempt_at") or ""))

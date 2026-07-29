@@ -48,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils.account_manager import AccountManager
 from utils.decision_contract import normalize_reason_text, reason_code_from_text, quote_state_from_age
 from execution.equity_stream import SchwabEquityQuoteStream
+from execution.emergency_exit import flatten_all_spy_options
 from engine.architecture_health import build_architecture_health
 from spy_bot_reviewer import SpyBotReviewer
 
@@ -2808,6 +2809,17 @@ def trigger_go_live() -> dict:
 
 def queue_exit_trade_command():
     """Queue a manual exit command for the running monitor process."""
+    memory = get_memory()
+    try:
+        existing = memory.load_setting(CONTROL_COMMAND_FILE, {}) or {}
+    except Exception:
+        existing = {}
+    if (
+        str(existing.get("action") or "").upper() == "EXIT_TRADE"
+        and str(existing.get("status") or "").upper() in {"PENDING", "SUBMITTING", "RETRYING"}
+    ):
+        return existing
+
     command = {
         "id": int(time.time() * 1000),
         "action": "EXIT_TRADE",
@@ -2816,7 +2828,7 @@ def queue_exit_trade_command():
         "source": "COCKPIT",
     }
 
-    get_memory().save_setting("control_command", command, CONTROL_COMMAND_FILE)
+    memory.save_setting("control_command", command, CONTROL_COMMAND_FILE)
     return command
 
 
@@ -5059,8 +5071,22 @@ def api_position_status():
     """Return the local position lifecycle state without expensive status aggregation."""
     position_path = PROJECT_ROOT / "data" / "open_position.json"
     try:
+        command = get_memory().load_setting(CONTROL_COMMAND_FILE, {}) or {}
+    except Exception:
+        command = {}
+    command_is_exit = str(command.get("action") or "").upper() == "EXIT_TRADE"
+    exit_fields = {
+        "exit_status": str(command.get("status") or "").upper() if command_is_exit else None,
+        "exit_command_id": command.get("id") if command_is_exit else None,
+        "exit_error": command.get("last_error") if command_is_exit else None,
+    }
+    try:
         if not position_path.exists():
-            return jsonify({"has_open_position": False, "observed_at": datetime.now(timezone.utc).isoformat()})
+            return jsonify({
+                "has_open_position": False,
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                **exit_fields,
+            })
         payload = json.loads(position_path.read_text(encoding="utf-8"))
         return jsonify({
             "has_open_position": True,
@@ -5068,9 +5094,14 @@ def api_position_status():
             "option_symbol": str(payload.get("option_symbol") or "") or None,
             **_entry_context_from_position_payload(payload),
             "observed_at": datetime.now(timezone.utc).isoformat(),
+            **exit_fields,
         })
     except (OSError, json.JSONDecodeError):
-        return jsonify({"has_open_position": True, "observed_at": datetime.now(timezone.utc).isoformat()})
+        return jsonify({
+            "has_open_position": True,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            **exit_fields,
+        })
 
 
 @app.route('/api/architecture-health', methods=['GET'])
@@ -5223,7 +5254,7 @@ def api_stop():
 
 @app.route('/api/exit-trade', methods=['POST'])
 def api_exit_trade():
-    """Queue a manual exit command for the monitor process."""
+    """Immediately flatten every long SPY option position at the broker."""
     try:
         status = parse_bot_status()
         if not status.get("bot_running"):
@@ -5232,10 +5263,63 @@ def api_exit_trade():
             return jsonify({"status": "error", "message": "EXIT TRADE is only available in LIVE TRADING mode"}), 400
 
         command = queue_exit_trade_command()
+        command["status"] = "DIRECT_SUBMITTING"
+        command["direct_started_at"] = datetime.now(timezone.utc).isoformat()
+        get_memory().save_setting(
+            "control_command",
+            command,
+            CONTROL_COMMAND_FILE,
+            source="cockpit_kill_switch",
+        )
+        try:
+            result = flatten_all_spy_options(
+                _get_broker_client(),
+                os.environ["SCHWAB_ACCOUNT_HASH"],
+            )
+        except Exception as exc:
+            command["status"] = "RETRYING"
+            command["last_error"] = (
+                f"Broker-direct kill switch raised {type(exc).__name__}; "
+                "immediate monitor retry remains active"
+            )
+            get_memory().save_setting(
+                "control_command",
+                command,
+                CONTROL_COMMAND_FILE,
+                source="cockpit_kill_switch",
+            )
+            return jsonify({
+                "status": "error",
+                "message": command["last_error"],
+                "command_id": command.get("id"),
+            }), 502
+        command["direct_result"] = result
+        command["direct_completed_at"] = datetime.now(timezone.utc).isoformat()
+        # The monitor performs local logging/cleanup after broker truth is flat.
+        command["status"] = "RETRYING"
+        command["last_error"] = (
+            None
+            if result.get("status") == "flat"
+            else "Broker flattening was not confirmed; immediate retry remains active"
+        )
+        get_memory().save_setting(
+            "control_command",
+            command,
+            CONTROL_COMMAND_FILE,
+            source="cockpit_kill_switch",
+        )
+        if result.get("status") != "flat":
+            return jsonify({
+                "status": "error",
+                "message": "Emergency exit submitted but Schwab has not confirmed the account flat; retry remains active.",
+                "command_id": command.get("id"),
+                "broker_result": result,
+            }), 502
         return jsonify({
             "status": "success",
-            "message": "EXIT TRADE command queued. Bot will submit the close while protection remains active.",
+            "message": "KILL SWITCH COMPLETE: Schwab confirms all long SPY option positions are flat.",
             "command_id": command.get("id"),
+            "broker_result": result,
         })
     except Exception as e:
         return jsonify({"status": "error", "message": f"Failed to queue EXIT TRADE: {e}"}), 500

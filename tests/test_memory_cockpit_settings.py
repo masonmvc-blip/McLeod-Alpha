@@ -42,6 +42,9 @@ def test_cockpit_operator_actions_delegate_to_memory(monkeypatch, tmp_path):
     calls = []
 
     class _Memory:
+        def load_setting(self, projection_path, default=None):
+            return default
+
         def save_setting(self, name, value, projection_path=None):
             calls.append(("save", name, value, projection_path))
 
@@ -73,10 +76,26 @@ def test_entry_pause_toggle_is_persisted(monkeypatch, tmp_path):
     assert cockpit.toggle_entry_pause_command()["paused"] is False
 
 
+def test_repeated_exit_click_reuses_active_command(monkeypatch, tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    monkeypatch.setattr(cockpit, "CONTROL_COMMAND_FILE", tmp_path / "control_command.json")
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
+
+    first = cockpit.queue_exit_trade_command()
+    second = cockpit.queue_exit_trade_command()
+
+    assert second["id"] == first["id"]
+    assert second["status"] == "PENDING"
+
+
 def test_exit_endpoint_queues_exit_even_when_status_has_not_seen_open_position(monkeypatch):
     queued = []
     monkeypatch.setattr(cockpit, "parse_bot_status", lambda: {"bot_running": True, "mode": "LIVE TRADING", "has_open_position": False})
     monkeypatch.setattr(cockpit, "queue_exit_trade_command", lambda: queued.append(True) or {"id": 123})
+    monkeypatch.setattr(cockpit, "flatten_all_spy_options", lambda *args, **kwargs: {
+        "status": "flat", "initial_positions": {}, "submitted_orders": [],
+    })
+    monkeypatch.setattr(cockpit, "_get_broker_client", lambda: object())
     monkeypatch.setattr(cockpit, "toggle_entry_pause_command", lambda: (_ for _ in ()).throw(AssertionError("exit must not pause entries")))
 
     response = cockpit.app.test_client().post("/api/exit-trade")

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from engine.memory.service import Memory
@@ -49,6 +49,22 @@ def test_exit_quality_metrics_include_peak_capture_and_time_fields():
         "minutes_to_peak": 5.0,
         "minutes_after_peak_until_exit": 5.0,
     }
+
+
+def test_exit_quality_normalizes_mixed_datetime_awareness():
+    metrics = exit_quality_metrics(
+        option_entry=5.0,
+        option_exit=5.5,
+        option_high=6.0,
+        option_low=4.5,
+        quantity=2,
+        entry_time=datetime(2026, 7, 29, 19, 24),
+        exit_time=datetime(2026, 7, 29, 19, 27, tzinfo=timezone.utc),
+        high_timestamp="2026-07-29T15:26:00-04:00",
+    )
+
+    assert metrics["minutes_to_peak"] == 2.0
+    assert metrics["minutes_after_peak_until_exit"] == 1.0
 
 
 def test_memory_persists_exit_quality_fields_for_exports(tmp_path):

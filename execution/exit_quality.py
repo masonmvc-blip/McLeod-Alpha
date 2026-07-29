@@ -76,6 +76,8 @@ def exit_quality_metrics(*, option_entry: Any, option_exit: Any, option_high: An
 
     def _parse(value: Any) -> datetime | None:
         if isinstance(value, datetime):
+            if value.tzinfo is not None:
+                return value.astimezone(timezone.utc).replace(tzinfo=None)
             return value
         if not value:
             return None
