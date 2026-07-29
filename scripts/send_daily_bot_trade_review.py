@@ -210,14 +210,16 @@ def _attachments(trading_date: str, md_path: Path) -> list[Path]:
         REPORT_DIR / f"daily_trade_learning_trades_{trading_date}.csv",
         REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.json",
         REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.csv",
+        REPORT_DIR / f"entry_quality_shadow_{trading_date}.json",
+        REPORT_DIR / f"entry_quality_shadow_{trading_date}.csv",
     ]
     return [path for path in candidates if path.exists()]
 
 
-def _merge_lifecycle_shadow(markdown: str, trading_date: str) -> str:
-    """Idempotently add the shadow worksheet to the pretty daily review."""
-    shadow_path = REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.md"
-    if not shadow_path.exists():
+def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
+    """Idempotently add all shadow worksheets to the pretty daily review."""
+    lifecycle_path = REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.md"
+    if not lifecycle_path.exists():
         try:
             from reports.trend_lifecycle_shadow_report import (
                 write_trend_lifecycle_shadow_report,
@@ -225,12 +227,31 @@ def _merge_lifecycle_shadow(markdown: str, trading_date: str) -> str:
             write_trend_lifecycle_shadow_report(trading_date, root=ROOT)
         except Exception as exc:
             print(f"Trend lifecycle shadow report warning: {exc}")
-    if not shadow_path.exists():
+    entry_quality_path = REPORT_DIR / f"entry_quality_shadow_{trading_date}.md"
+    if not entry_quality_path.exists():
+        try:
+            from reports.entry_quality_shadow_report import (
+                write_entry_quality_shadow_report,
+            )
+            write_entry_quality_shadow_report(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Entry quality shadow report warning: {exc}")
+
+    headings = (
+        "## Trend Lifecycle V2 Shadow Review",
+        "## Entry Quality Shadow Studies",
+    )
+    positions = [markdown.find(heading) for heading in headings if heading in markdown]
+    if positions:
+        markdown = markdown[:min(positions)].rstrip()
+    sections = [
+        path.read_text(encoding="utf-8").strip()
+        for path in (lifecycle_path, entry_quality_path)
+        if path.exists()
+    ]
+    if not sections:
         return markdown
-    heading = "## Trend Lifecycle V2 Shadow Review"
-    if heading in markdown:
-        markdown = markdown.split(heading, 1)[0].rstrip()
-    return markdown.rstrip() + "\n\n" + shadow_path.read_text(encoding="utf-8").lstrip()
+    return markdown.rstrip() + "\n\n" + "\n\n".join(sections) + "\n"
 
 
 def _send_smtp(
@@ -294,7 +315,7 @@ def send_review(
     if not md_path.exists():
         raise FileNotFoundError(f"Review artifact not found: {md_path}")
 
-    markdown = _merge_lifecycle_shadow(
+    markdown = _merge_shadow_studies(
         md_path.read_text(encoding="utf-8"),
         trading_date,
     )

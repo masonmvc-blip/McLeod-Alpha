@@ -43,6 +43,7 @@ def test_review_email_script_uses_repo_data_paths():
     source = Path("scripts/send_daily_bot_trade_review.py").read_text(encoding="utf-8")
     assert 'ROOT / "data" / "learning"' in source
     assert "last_artifact_sha256" in source
+    assert "entry_quality_shadow" in source
 
 
 def test_smtp_uses_working_email_credentials(monkeypatch):

@@ -28,6 +28,7 @@ from reports.daily_loss_attribution import (
     write_report as write_loss_attribution_report,
 )
 from reports.trend_lifecycle_shadow_report import write_trend_lifecycle_shadow_report
+from reports.entry_quality_shadow_report import write_entry_quality_shadow_report
 
 
 WORKSPACE = Path(__file__).parent
@@ -582,6 +583,12 @@ def run_daily_learning(target_date: str | None = None) -> int:
         lifecycle_shadow_csv,
         lifecycle_shadow_md,
     ) = write_trend_lifecycle_shadow_report(trading_date, root=WORKSPACE)
+    (
+        entry_quality_shadow,
+        entry_quality_shadow_json,
+        entry_quality_shadow_csv,
+        entry_quality_shadow_md,
+    ) = write_entry_quality_shadow_report(trading_date, root=WORKSPACE)
     if not loss_attribution["reconciliation"]["complete"]:
         lessons = [{
             "priority": "high",
@@ -617,6 +624,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "weight_optimizer": optimizer_result,
         "daily_loss_attribution": loss_attribution,
         "trend_lifecycle_v2_shadow": lifecycle_shadow,
+        "entry_quality_shadow": entry_quality_shadow,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -624,6 +632,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     with day_md.open("a", encoding="utf-8") as handle:
         handle.write("\n")
         handle.write(lifecycle_shadow_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(entry_quality_shadow_md.read_text(encoding="utf-8"))
     _write_daily_csv(day_csv, rows)
 
     (LEARNING_DIR / "latest_daily_trade_learning.json").write_text(
@@ -664,6 +674,9 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {lifecycle_shadow_json}")
     print(f"Wrote: {lifecycle_shadow_csv}")
     print(f"Wrote: {lifecycle_shadow_md}")
+    print(f"Wrote: {entry_quality_shadow_json}")
+    print(f"Wrote: {entry_quality_shadow_csv}")
+    print(f"Wrote: {entry_quality_shadow_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;
