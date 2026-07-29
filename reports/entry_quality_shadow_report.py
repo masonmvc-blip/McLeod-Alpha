@@ -15,9 +15,10 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 EASTERN_TZ = ZoneInfo("America/New_York")
-STUDY_VERSION = "entry-quality-shadow.v1"
+STUDY_VERSION = "entry-quality-shadow.v2"
 FRESH_START_DATE = "2026-07-29"
 MINIMUM_GROUP_SAMPLE = 20
+CHECKLIST_SCORES = (5, 6, 7)
 STANDARD_PHASES = {
     "INITIATION",
     "EARLY_CONTINUATION",
@@ -55,6 +56,20 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _diagnostic_values(row: sqlite3.Row) -> dict[str, Any]:
     payload = _object(row["feature_payload"])
     stage = payload.get("trend_stage") or {}
+    checklist = payload.get("checklist") if isinstance(payload.get("checklist"), dict) else {}
+    indicator_labels: list[str] = []
+    for candidate in (
+        checklist.get("entry_reasons"),
+        payload.get("entry_reasons"),
+        payload.get("entry_reasons_call"),
+        payload.get("entry_reasons_put"),
+    ):
+        if not isinstance(candidate, list):
+            continue
+        for value in candidate:
+            label = str(value or "").strip()
+            if label and label not in indicator_labels:
+                indicator_labels.append(label)
     return {
         "phase": (
             payload.get("momentum_phase")
@@ -85,6 +100,16 @@ def _diagnostic_values(row: sqlite3.Row) -> dict[str, Any]:
             if payload.get("confidence_score") is not None
             else (payload.get("confidence") or {}).get("score")
         ),
+        "checklist_score": _number(
+            payload.get("entry_score")
+            if payload.get("entry_score") is not None
+            else (
+                checklist.get("entry_score")
+                if checklist.get("entry_score") is not None
+                else checklist.get("passed")
+            )
+        ),
+        "indicator_labels": indicator_labels,
     }
 
 
@@ -101,7 +126,10 @@ def _load_best_diagnostics(connection: sqlite3.Connection) -> dict[str, dict[str
     selected: dict[str, tuple[int, int, dict[str, Any]]] = {}
     for row in rows:
         values = _diagnostic_values(row)
-        coverage = sum(value is not None for value in values.values())
+        coverage = sum(
+            value is not None and (not isinstance(value, list) or bool(value))
+            for value in values.values()
+        )
         order_id = str(row["broker_entry_order_id"] or "")
         candidate = (coverage, int(row["id"]), values)
         if order_id not in selected or candidate[:2] > selected[order_id][:2]:
@@ -212,6 +240,8 @@ def load_study_trades(*, root: Path = ROOT) -> tuple[list[dict[str, Any]], dict[
             and trade.get("phase") in STANDARD_PHASES
             for trade in trades
         ),
+        "checklist_score": sum(trade.get("checklist_score") is not None for trade in trades),
+        "indicator_labels": sum(bool(trade.get("indicator_labels")) for trade in trades),
     }
     return trades, coverage
 
@@ -267,14 +297,253 @@ def _cohorts(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     }
 
 
+def _score_tables(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    scored = [
+        row for row in rows
+        if _number(row.get("checklist_score")) is not None
+    ]
+
+    def by_score(group: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            str(score): _stats([
+                row for row in group
+                if int(float(row.get("checklist_score") or 0)) == score
+            ])
+            for score in CHECKLIST_SCORES
+        }
+
+    direction_phase: dict[str, dict[str, Any]] = {}
+    for direction in ("CALL", "PUT"):
+        direction_rows = [row for row in scored if row.get("direction") == direction]
+        direction_phase[direction] = {
+            "all_phases": by_score(direction_rows),
+            "by_phase": {
+                phase: by_score([
+                    row for row in direction_rows if row.get("phase") == phase
+                ])
+                for phase in sorted(STANDARD_PHASES)
+            },
+        }
+    return {
+        "covered_trades": len(scored),
+        "overall": by_score(scored),
+        "by_direction_and_phase": direction_phase,
+    }
+
+
+def _indicator_present(row: dict[str, Any], indicator: str) -> bool:
+    return indicator in (row.get("indicator_labels") or [])
+
+
+def _phase_count(rows: list[dict[str, Any]]) -> int:
+    return len({
+        row.get("phase") for row in rows
+        if row.get("phase") in STANDARD_PHASES
+    })
+
+
+def _weight_hypothesis(
+    rows: list[dict[str, Any]],
+    *,
+    direction: str,
+    indicator: str,
+) -> dict[str, Any]:
+    universe = [row for row in rows if row.get("direction") == direction]
+    present = [row for row in universe if _indicator_present(row, indicator)]
+    absent = [row for row in universe if not _indicator_present(row, indicator)]
+    return {
+        "direction": direction,
+        "indicator": indicator,
+        "present": _stats(present),
+        "absent_same_direction": _stats(absent),
+        "phase_breakdown": {
+            phase: {
+                "present": _stats([
+                    row for row in present if row.get("phase") == phase
+                ]),
+                "absent_same_direction": _stats([
+                    row for row in absent if row.get("phase") == phase
+                ]),
+            }
+            for phase in sorted(STANDARD_PHASES)
+        },
+        "phase_counts": {
+            "present": _phase_count(present),
+            "absent_same_direction": _phase_count(absent),
+        },
+    }
+
+
+def _indicator_weight_study(
+    historical_rows: list[dict[str, Any]],
+    fresh_rows: list[dict[str, Any]],
+    *,
+    reconciliation_complete: bool,
+    collection_started: bool,
+) -> dict[str, Any]:
+    definitions = {
+        "call_breaks_previous_high": ("CALL", "breaks_prev_high", "INCREASE"),
+        "call_macd_improving": ("CALL", "macd_improving", "INCREASE"),
+        "put_bearish_volume_bonus": (
+            "PUT",
+            "volume_confirming_bearish_move",
+            "REMOVE_OR_REDUCE",
+        ),
+    }
+    hypotheses: dict[str, Any] = {}
+    for name, (direction, indicator, proposed_action) in definitions.items():
+        historical = _weight_hypothesis(
+            historical_rows,
+            direction=direction,
+            indicator=indicator,
+        )
+        fresh = _weight_hypothesis(
+            fresh_rows,
+            direction=direction,
+            indicator=indicator,
+        )
+        checks = {
+            "fresh_collection_started": collection_started,
+            "canonical_reconciliation_complete": reconciliation_complete,
+            "present_minimum_20": fresh["present"]["trades"] >= MINIMUM_GROUP_SAMPLE,
+            "absent_same_direction_minimum_20": (
+                fresh["absent_same_direction"]["trades"] >= MINIMUM_GROUP_SAMPLE
+            ),
+            "present_has_two_phases": fresh["phase_counts"]["present"] >= 2,
+            "absent_has_two_phases": fresh["phase_counts"]["absent_same_direction"] >= 2,
+        }
+        ready = all(checks.values())
+        hypotheses[name] = {
+            "proposed_action": proposed_action,
+            "historical": historical,
+            "fresh": fresh,
+            "checks": checks,
+            "ready_for_human_review": ready,
+            "decision": "ELIGIBLE_FOR_HUMAN_REVIEW" if ready else "COLLECT_MORE_DATA",
+        }
+    return hypotheses
+
+
+def _score_study_checks(
+    score_tables: dict[str, Any],
+    *,
+    reconciliation_complete: bool,
+    collection_started: bool,
+) -> dict[str, bool]:
+    checks = {
+        "fresh_collection_started": collection_started,
+        "canonical_reconciliation_complete": reconciliation_complete,
+    }
+    for direction in ("CALL", "PUT"):
+        direction_rows = score_tables["by_direction_and_phase"][direction]
+        for score in CHECKLIST_SCORES:
+            stats = direction_rows["all_phases"][str(score)]
+            phases_with_trades = sum(
+                direction_rows["by_phase"][phase][str(score)]["trades"] > 0
+                for phase in STANDARD_PHASES
+            )
+            checks[f"{direction.lower()}_score_{score}_minimum_20"] = (
+                stats["trades"] >= MINIMUM_GROUP_SAMPLE
+            )
+            checks[f"{direction.lower()}_score_{score}_has_two_phases"] = (
+                phases_with_trades >= 2
+            )
+    return checks
+
+
+def canonical_indicator_performance(
+    trades: list[dict[str, Any]],
+    *,
+    trading_date: str,
+    minimum_sample_size: int = MINIMUM_GROUP_SAMPLE,
+) -> list[dict[str, Any]]:
+    """Compare each indicator with its same-direction absent comparator."""
+    indicators = sorted({
+        label
+        for trade in trades
+        for label in (trade.get("indicator_labels") or [])
+    })
+    rows: list[dict[str, Any]] = []
+    for indicator in indicators:
+        present_all = [trade for trade in trades if _indicator_present(trade, indicator)]
+        direction_counts = {
+            direction: sum(trade.get("direction") == direction for trade in present_all)
+            for direction in ("CALL", "PUT")
+        }
+        direction = max(direction_counts, key=direction_counts.get)
+        universe = [trade for trade in trades if trade.get("direction") == direction]
+        present = [trade for trade in universe if _indicator_present(trade, indicator)]
+        absent = [trade for trade in universe if not _indicator_present(trade, indicator)]
+        present_stats = _stats(present)
+        absent_stats = _stats(absent)
+        today = [
+            trade for trade in present
+            if str(trade.get("trade_date") or "") == trading_date
+        ]
+        today_stats = _stats(today)
+
+        if len(present) < minimum_sample_size or len(absent) < minimum_sample_size:
+            guidance = "Collect canonical comparators"
+        else:
+            present_rate = float(present_stats.get("win_rate") or 0.0)
+            absent_rate = float(absent_stats.get("win_rate") or 0.0)
+            present_average = float(present_stats.get("average_pnl_dollars") or 0.0)
+            absent_average = float(absent_stats.get("average_pnl_dollars") or 0.0)
+            if present_rate >= absent_rate + 0.10 and present_average >= absent_average + 10:
+                guidance = "Shadow increase candidate"
+            elif present_rate <= absent_rate - 0.10 and present_average <= absent_average - 10:
+                guidance = "Shadow reduction candidate"
+            else:
+                guidance = "Keep shadowing"
+        rows.append({
+            "indicator": indicator,
+            "direction": direction,
+            "trades": present_stats["trades"],
+            "wins": present_stats["wins"],
+            "losses": present_stats["losses"],
+            "breakeven": present_stats["trades"] - present_stats["wins"] - present_stats["losses"],
+            "win_rate_pct": round(float(present_stats.get("win_rate") or 0.0) * 100, 1),
+            "average_return": present_stats["average_pnl_dollars"] or 0.0,
+            "absent_trades": absent_stats["trades"],
+            "absent_wins": absent_stats["wins"],
+            "absent_losses": absent_stats["losses"],
+            "absent_win_rate_pct": round(float(absent_stats.get("win_rate") or 0.0) * 100, 1),
+            "absent_average_return": absent_stats["average_pnl_dollars"] or 0.0,
+            "today_trades": today_stats["trades"],
+            "today_wins": today_stats["wins"],
+            "today_losses": today_stats["losses"],
+            "today_breakeven": (
+                today_stats["trades"] - today_stats["wins"] - today_stats["losses"]
+            ),
+            "guidance": guidance,
+            "canonical": True,
+            "automatic_live_change_allowed": False,
+        })
+    return sorted(
+        rows,
+        key=lambda row: (
+            row["guidance"] not in {
+                "Shadow increase candidate",
+                "Shadow reduction candidate",
+            },
+            -row["trades"],
+            row["indicator"],
+        ),
+    )
+
+
 def evaluate_entry_quality_shadow(
     trades: list[dict[str, Any]],
     *,
     trading_date: str,
     reconciliation: dict[str, Any],
 ) -> dict[str, Any]:
-    comparable = [
+    bounded_trades = [
         trade for trade in trades
+        if str(trade.get("trade_date") or "") <= trading_date
+    ]
+    comparable = [
+        trade for trade in bounded_trades
         if trade.get("phase") in STANDARD_PHASES
         and all(trade.get(key) is not None for key in ("cq", "mas", "abs", "conf"))
     ]
@@ -315,6 +584,24 @@ def evaluate_entry_quality_shadow(
         "fresh_collection_started": trading_date >= FRESH_START_DATE,
         "canonical_reconciliation_complete": bool(reconciliation.get("complete")),
     }
+    score_historical = _score_tables(bounded_trades)
+    score_fresh_rows = [
+        trade for trade in bounded_trades
+        if FRESH_START_DATE <= str(trade.get("trade_date") or "") <= trading_date
+    ]
+    score_fresh = _score_tables(score_fresh_rows)
+    score_checks = _score_study_checks(
+        score_fresh,
+        reconciliation_complete=bool(reconciliation.get("complete")),
+        collection_started=trading_date >= FRESH_START_DATE,
+    )
+    score_ready = all(score_checks.values())
+    indicator_hypotheses = _indicator_weight_study(
+        bounded_trades,
+        score_fresh_rows,
+        reconciliation_complete=bool(reconciliation.get("complete")),
+        collection_started=trading_date >= FRESH_START_DATE,
+    )
     primary_ready = all({**common_checks, **primary_checks}.values())
     established_ready = all({**common_checks, **established_checks}.values())
     return {
@@ -330,6 +617,24 @@ def evaluate_entry_quality_shadow(
         ],
         "historical_cohorts": historical_stats,
         "fresh_cohorts": fresh_stats,
+        "checklist_score_study": {
+            "score_semantics": (
+                "Weighted points: five base conditions, EMA stack is worth two "
+                "points, and volume can add or subtract one."
+            ),
+            "historical": score_historical,
+            "fresh": score_fresh,
+            "checks": score_checks,
+            "ready_for_human_review": score_ready,
+            "decision": (
+                "ELIGIBLE_FOR_HUMAN_REVIEW" if score_ready else "COLLECT_MORE_DATA"
+            ),
+        },
+        "indicator_weight_study": {
+            "hypotheses": indicator_hypotheses,
+            "minimum_present_and_absent_sample": MINIMUM_GROUP_SAMPLE,
+            "phase_control_required": True,
+        },
         "hypotheses": {
             "early_continuation_conf_4": {
                 "candidate": "early_continuation_conf_4_candidate",
@@ -342,6 +647,23 @@ def evaluate_entry_quality_shadow(
                 "checks": {**common_checks, **established_checks},
                 "ready_for_human_review": established_ready,
                 "decision": "ELIGIBLE_FOR_HUMAN_REVIEW" if established_ready else "COLLECT_MORE_DATA",
+            },
+            "checklist_scores_5_6_7_by_direction_and_phase": {
+                "checks": score_checks,
+                "ready_for_human_review": score_ready,
+                "decision": (
+                    "ELIGIBLE_FOR_HUMAN_REVIEW"
+                    if score_ready
+                    else "COLLECT_MORE_DATA"
+                ),
+            },
+            **{
+                f"indicator_weight_{name}": {
+                    "checks": hypothesis["checks"],
+                    "ready_for_human_review": hypothesis["ready_for_human_review"],
+                    "decision": hypothesis["decision"],
+                }
+                for name, hypothesis in indicator_hypotheses.items()
             },
         },
         "reconciliation": reconciliation,
@@ -369,8 +691,8 @@ def render_entry_quality_shadow_markdown(payload: dict[str, Any]) -> str:
     lines.extend([
         "### Today's Recorded Metrics",
         "",
-        "| Order | Direction | Phase | CQ | MAS | ABS | CONF | Shadow Cohort | P&L |",
-        "| --- | --- | --- | ---: | ---: | ---: | ---: | --- | ---: |",
+        "| Order | Direction | Phase | Score | CQ | MAS | ABS | CONF | Shadow Cohort | P&L |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |",
     ])
     today_rows = payload.get("today_trades") or []
     if today_rows:
@@ -387,13 +709,14 @@ def render_entry_quality_shadow_markdown(payload: dict[str, Any]) -> str:
                 cohorts.append(f"Established {trade.get('direction')} shadow reject")
             lines.append(
                 f"| {trade.get('broker_entry_order_id')} | {trade.get('direction')} "
-                f"| {trade.get('phase')} | {float(trade.get('cq') or 0):.2f} "
+                f"| {trade.get('phase')} | {float(trade.get('checklist_score') or 0):.0f} "
+                f"| {float(trade.get('cq') or 0):.2f} "
                 f"| {float(trade.get('mas') or 0):.2f} | {float(trade.get('abs') or 0):.2f} "
                 f"| {float(trade.get('conf') or 0):.2f} | {', '.join(cohorts)} "
                 f"| ${float(trade.get('pnl_dollars') or 0):.2f} |"
             )
     else:
-        lines.append("| — | — | No comparable trades | — | — | — | — | — | $0.00 |")
+        lines.append("| — | — | No comparable trades | — | — | — | — | — | — | $0.00 |")
     lines.append("")
 
     labels = {
@@ -428,7 +751,75 @@ def render_entry_quality_shadow_markdown(payload: dict[str, Any]) -> str:
             )
         lines.append("")
 
-    lines.extend(["### Locked Evidence Gates", ""])
+    score_study = payload.get("checklist_score_study") or {}
+    lines.extend([
+        "### Weighted Checklist Score Study",
+        "",
+        f"- {score_study.get('score_semantics', '')}",
+        "- Results are separated by direction and lifecycle phase; a higher point total is not assumed to be better.",
+        "",
+    ])
+    for title, key in (
+        ("Historical Context", "historical"),
+        ("Fresh Forward Sample", "fresh"),
+    ):
+        tables = score_study.get(key) or {}
+        lines.extend([
+            f"#### {title}",
+            "",
+            "| Direction | Score | Trades | W-L | Win Rate | P&L | Average |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ])
+        direction_tables = tables.get("by_direction_and_phase") or {}
+        for direction in ("CALL", "PUT"):
+            overall = (direction_tables.get(direction) or {}).get("all_phases") or {}
+            for score in CHECKLIST_SCORES:
+                stats = overall.get(str(score)) or {}
+                rate = stats.get("win_rate")
+                rate_text = f"{rate:.1%}" if rate is not None else "N/A"
+                average = stats.get("average_pnl_dollars")
+                average_text = f"${average:.2f}" if average is not None else "N/A"
+                lines.append(
+                    f"| {direction} | {score} | {stats.get('trades', 0)} "
+                    f"| {stats.get('wins', 0)}-{stats.get('losses', 0)} "
+                    f"| {rate_text} | ${float(stats.get('pnl_dollars') or 0):.2f} "
+                    f"| {average_text} |"
+                )
+        lines.append("")
+
+    lines.extend([
+        "### Indicator Weight Shadow Comparisons",
+        "",
+        "- Each indicator is compared with trades of the same direction where that indicator was absent.",
+        "- The gate requires at least 20 fresh present and 20 fresh absent trades across at least two lifecycle phases.",
+        "",
+        "| Hypothesis | Sample | Present W-L | Present P&L | Absent W-L | Absent P&L | Decision |",
+        "| --- | --- | ---: | ---: | ---: | ---: | --- |",
+    ])
+    for name, hypothesis in (
+        (score_study and payload.get("indicator_weight_study") or {}).get("hypotheses", {})
+    ).items():
+        historical = hypothesis.get("historical") or {}
+        present = historical.get("present") or {}
+        absent = historical.get("absent_same_direction") or {}
+        lines.append(
+            f"| {name} | Historical | {present.get('wins', 0)}-{present.get('losses', 0)} "
+            f"| ${float(present.get('pnl_dollars') or 0):.2f} "
+            f"| {absent.get('wins', 0)}-{absent.get('losses', 0)} "
+            f"| ${float(absent.get('pnl_dollars') or 0):.2f} "
+            f"| {hypothesis.get('decision')} |"
+        )
+        fresh_hypothesis = hypothesis.get("fresh") or {}
+        present = fresh_hypothesis.get("present") or {}
+        absent = fresh_hypothesis.get("absent_same_direction") or {}
+        lines.append(
+            f"| {name} | Fresh | {present.get('wins', 0)}-{present.get('losses', 0)} "
+            f"| ${float(present.get('pnl_dollars') or 0):.2f} "
+            f"| {absent.get('wins', 0)}-{absent.get('losses', 0)} "
+            f"| ${float(absent.get('pnl_dollars') or 0):.2f} "
+            f"| {hypothesis.get('decision')} |"
+        )
+    lines.extend(["", "### Locked Evidence Gates", ""])
     for name, hypothesis in (payload.get("hypotheses") or {}).items():
         lines.append(f"- **{name}: {hypothesis.get('decision')}**")
         for check, passed in (hypothesis.get("checks") or {}).items():
@@ -471,13 +862,18 @@ def write_entry_quality_shadow_report(
         writer = csv.writer(handle)
         writer.writerow([
             "broker_entry_order_id", "trade_date", "direction", "phase",
-            "cq", "mas", "abs", "conf", "pnl_dollars", "fresh",
+            "checklist_score", "indicator_labels", "cq", "mas", "abs", "conf",
+            "pnl_dollars", "fresh",
             "early_continuation_conf_4_candidate", "established_shadow_reject",
+            "call_breaks_previous_high", "call_macd_improving",
+            "put_bearish_volume_confirming",
         ])
         for trade in trades:
+            indicators = trade.get("indicator_labels") or []
             writer.writerow([
                 trade.get("broker_entry_order_id"), trade.get("trade_date"),
-                trade.get("direction"), trade.get("phase"), trade.get("cq"),
+                trade.get("direction"), trade.get("phase"),
+                trade.get("checklist_score"), "|".join(indicators), trade.get("cq"),
                 trade.get("mas"), trade.get("abs"), trade.get("conf"),
                 trade.get("pnl_dollars"),
                 int(str(trade.get("trade_date") or "") >= FRESH_START_DATE),
@@ -486,5 +882,17 @@ def write_entry_quality_shadow_report(
                     and float(trade.get("conf") or 0) >= 4.0
                 ),
                 int(trade.get("phase") == "ESTABLISHED"),
+                int(
+                    trade.get("direction") == "CALL"
+                    and "breaks_prev_high" in indicators
+                ),
+                int(
+                    trade.get("direction") == "CALL"
+                    and "macd_improving" in indicators
+                ),
+                int(
+                    trade.get("direction") == "PUT"
+                    and "volume_confirming_bearish_move" in indicators
+                ),
             ])
     return payload, json_path, csv_path, md_path

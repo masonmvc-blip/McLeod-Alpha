@@ -4737,34 +4737,38 @@ def api_cio_dashboard():
 
 @app.route('/api/indicator-performance', methods=['GET'])
 def api_indicator_performance():
-    """Return closed-trade win rates attributed to each recorded entry indicator."""
+    """Return canonical present-vs-absent indicator comparisons."""
     try:
-        db_path = PROJECT_ROOT / "data" / "mcleod_alpha.db"
-        if not db_path.exists():
-            return jsonify({"minimum_sample_size": 10, "indicators": [], "closed_trades": 0})
-        with sqlite3.connect(str(db_path)) as con:
-            con.row_factory = sqlite3.Row
-            rows = [dict(row) for row in con.execute("""
-                SELECT id, direction, exit_time, pnl, option_pnl_dollars, option_pnl_pct,
-                       feature_payload, entry_diagnostic_snapshot, option_symbol,
-                       broker_entry_order_id, broker_exit_order_id
-                FROM trade_log
-                WHERE exit_time IS NOT NULL AND TRIM(exit_time) <> ''
-            """).fetchall()]
-        closed_trades = _filter_synthetic_test_trade_rows(rows)
+        from reports.entry_quality_shadow_report import (
+            MINIMUM_GROUP_SAMPLE,
+            canonical_indicator_performance,
+            load_study_trades,
+        )
+
+        trades, coverage = load_study_trades(root=PROJECT_ROOT)
         today = datetime.now(EASTERN_TZ).date().isoformat()
-        today_outcomes = _today_indicator_trade_outcomes(closed_trades, today)
-        indicators = _indicator_performance_summary(closed_trades)
-        for indicator in indicators:
-            indicator.update(today_outcomes.get(indicator["indicator"], {
-                "today_trades": 0,
-                "today_wins": 0,
-                "today_losses": 0,
-                "today_breakeven": 0,
-            }))
-        return jsonify({"minimum_sample_size": 10, "closed_trades": len(closed_trades), "trading_date": today, "indicators": indicators})
+        indicators = canonical_indicator_performance(
+            trades,
+            trading_date=today,
+            minimum_sample_size=MINIMUM_GROUP_SAMPLE,
+        )
+        return jsonify({
+            "minimum_sample_size": MINIMUM_GROUP_SAMPLE,
+            "closed_trades": len(trades),
+            "canonical_broker_entries": len(trades),
+            "coverage": coverage,
+            "trading_date": today,
+            "methodology": "canonical_same_direction_present_vs_absent",
+            "automatic_live_change_allowed": False,
+            "indicators": indicators,
+        })
     except Exception as exc:
-        return jsonify({"minimum_sample_size": 10, "closed_trades": 0, "indicators": [], "error": str(exc)})
+        return jsonify({
+            "minimum_sample_size": 20,
+            "closed_trades": 0,
+            "indicators": [],
+            "error": str(exc),
+        })
 
 
 def _bot_order_ids_from_audit():
@@ -7525,9 +7529,9 @@ HTML_DASHBOARD = """
                 <div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>Today's Trades</span>
-                    <span>All Trades</span>
-                    <span>Average P&amp;L</span>
-                    <span>Guidance</span>
+                    <span>Present (Canonical)</span>
+                    <span>Absent, Same Direction</span>
+                    <span>Research Guidance</span>
                 </div>
                 <div style="text-align: center; color: #999; padding: 12px;">Loading indicator performance...</div>
             </div>
@@ -8916,9 +8920,9 @@ HTML_DASHBOARD = """
                 const columns = `<div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>Today's Trades</span>
-                    <span>All Trades</span>
-                    <span>Average P&amp;L</span>
-                    <span>Guidance</span>
+                    <span>Present (Canonical)</span>
+                    <span>Absent, Same Direction</span>
+                    <span>Research Guidance</span>
                 </div>`;
                 const escapeText = (value) => String(value || '')
                     .replaceAll('&', '&amp;')
@@ -8967,17 +8971,24 @@ HTML_DASHBOARD = """
                     const wins = Number(row.wins || 0);
                     const losses = Number(row.losses || 0);
                     const winRate = Number(row.win_rate_pct || 0);
+                    const absentWins = Number(row.absent_wins || 0);
+                    const absentLosses = Number(row.absent_losses || 0);
+                    const absentWinRate = Number(row.absent_win_rate_pct || 0);
+                    const absentAverageReturn = Number(row.absent_average_return || 0);
                     const todayTrades = todayIndicatorResult(row);
-                    const guidance = String(row.guidance || 'Keep monitoring');
-                    const tone = guidance === 'Candidate to increase weight'
+                    const guidance = String(row.guidance || 'Keep shadowing');
+                    const tone = guidance === 'Shadow increase candidate'
                         ? 'candidate'
-                        : (guidance === 'Review for reduction' ? 'review' : (guidance === 'Collect more data' ? 'collect' : ''));
+                        : (guidance === 'Shadow reduction candidate'
+                            ? 'review'
+                            : (guidance === 'Collect canonical comparators' ? 'collect' : ''));
                     const averageTone = averageReturn > 0 ? 'positive' : (averageReturn < 0 ? 'negative' : '');
+                    const absentAverageTone = absentAverageReturn > 0 ? 'positive' : (absentAverageReturn < 0 ? 'negative' : '');
                     return `<article class="indicator-performance-row">
-                        <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
+                        <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}<br><small>${escapeText(row.direction || '')}</small></div>
                         <div class="indicator-performance-stats">${todayTrades}</div>
-                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(0)}%)</div>
-                        <div class="indicator-performance-stats indicator-performance-average ${averageTone}">${money(averageReturn)}</div>
+                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(0)}%)<br><span class="indicator-performance-average ${averageTone}">${money(averageReturn)} avg</span></div>
+                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${absentWins}W</span> / <span class="indicator-performance-losses">${absentLosses}L</span> (${absentWinRate.toFixed(0)}%)<br><span class="indicator-performance-average ${absentAverageTone}">${money(absentAverageReturn)} avg</span></div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
                     </article>`;
                 }).join('');

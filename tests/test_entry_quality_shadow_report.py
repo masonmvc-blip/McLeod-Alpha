@@ -1,7 +1,20 @@
-from reports.entry_quality_shadow_report import evaluate_entry_quality_shadow
+from reports.entry_quality_shadow_report import (
+    canonical_indicator_performance,
+    evaluate_entry_quality_shadow,
+)
 
 
-def _trade(index, *, phase, conf, direction, pnl, trade_date="2026-07-29"):
+def _trade(
+    index,
+    *,
+    phase,
+    conf,
+    direction,
+    pnl,
+    trade_date="2026-07-29",
+    score=None,
+    indicators=None,
+):
     return {
         "broker_entry_order_id": str(index),
         "trade_date": trade_date,
@@ -12,6 +25,8 @@ def _trade(index, *, phase, conf, direction, pnl, trade_date="2026-07-29"):
         "abs": 3.33,
         "conf": conf,
         "pnl_dollars": pnl,
+        "checklist_score": score,
+        "indicator_labels": indicators or [],
     }
 
 
@@ -108,3 +123,122 @@ def test_incomplete_reconciliation_keeps_every_gate_locked():
     )
     assert result["conclusions_withheld"] is True
     assert result["hypotheses"]["early_continuation_conf_4"]["ready_for_human_review"] is False
+
+
+def test_checklist_scores_are_separated_by_direction_and_phase():
+    rows = [
+        _trade(
+            1,
+            phase="EARLY_CONTINUATION",
+            conf=4.2,
+            direction="CALL",
+            pnl=25,
+            score=5,
+        ),
+        _trade(
+            2,
+            phase="ESTABLISHED",
+            conf=3.2,
+            direction="CALL",
+            pnl=-10,
+            score=7,
+        ),
+        _trade(
+            3,
+            phase="EARLY_CONTINUATION",
+            conf=3.8,
+            direction="PUT",
+            pnl=-20,
+            score=7,
+        ),
+    ]
+
+    result = evaluate_entry_quality_shadow(
+        rows,
+        trading_date="2026-07-29",
+        reconciliation={"complete": True},
+    )
+    fresh = result["checklist_score_study"]["fresh"]["by_direction_and_phase"]
+
+    assert fresh["CALL"]["all_phases"]["5"]["pnl_dollars"] == 25
+    assert fresh["CALL"]["by_phase"]["ESTABLISHED"]["7"]["pnl_dollars"] == -10
+    assert fresh["PUT"]["by_phase"]["EARLY_CONTINUATION"]["7"]["trades"] == 1
+    assert result["checklist_score_study"]["decision"] == "COLLECT_MORE_DATA"
+
+
+def test_indicator_weight_gate_requires_present_absent_and_phase_coverage():
+    rows = []
+    for index in range(40):
+        indicators = ["macd_improving"] if index < 20 else []
+        rows.append(_trade(
+            index,
+            phase="EARLY_CONTINUATION" if index % 2 else "INITIATION",
+            conf=4.0,
+            direction="CALL",
+            pnl=10 if indicators else -5,
+            score=5,
+            indicators=indicators,
+        ))
+
+    result = evaluate_entry_quality_shadow(
+        rows,
+        trading_date="2026-07-29",
+        reconciliation={"complete": True},
+    )
+    hypothesis = (
+        result["indicator_weight_study"]["hypotheses"]["call_macd_improving"]
+    )
+
+    assert hypothesis["fresh"]["present"]["trades"] == 20
+    assert hypothesis["fresh"]["absent_same_direction"]["trades"] == 20
+    assert hypothesis["ready_for_human_review"] is True
+    assert hypothesis["decision"] == "ELIGIBLE_FOR_HUMAN_REVIEW"
+
+
+def test_canonical_indicator_performance_uses_same_direction_absent_comparator():
+    rows = [
+        _trade(
+            1,
+            phase="EARLY_CONTINUATION",
+            conf=4.0,
+            direction="CALL",
+            pnl=20,
+            score=6,
+            indicators=["breaks_prev_high"],
+        ),
+        _trade(
+            2,
+            phase="EARLY_CONTINUATION",
+            conf=4.0,
+            direction="CALL",
+            pnl=-10,
+            score=5,
+            indicators=[],
+        ),
+        _trade(
+            3,
+            phase="EARLY_CONTINUATION",
+            conf=4.0,
+            direction="PUT",
+            pnl=-100,
+            score=7,
+            indicators=["breaks_prev_low"],
+        ),
+    ]
+
+    performance = canonical_indicator_performance(
+        rows,
+        trading_date="2026-07-29",
+        minimum_sample_size=1,
+    )
+    break_high = next(
+        row for row in performance if row["indicator"] == "breaks_prev_high"
+    )
+
+    assert break_high["direction"] == "CALL"
+    assert break_high["trades"] == 1
+    assert break_high["average_return"] == 20
+    assert break_high["absent_trades"] == 1
+    assert break_high["absent_average_return"] == -10
+    assert break_high["guidance"] == "Shadow increase candidate"
+    assert break_high["automatic_live_change_allowed"] is False
