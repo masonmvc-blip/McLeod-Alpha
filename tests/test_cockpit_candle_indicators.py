@@ -139,6 +139,15 @@ def test_today_trades_renders_immutable_entry_checklist_count_before_gate_score(
     assert "const checklistPassed = Math.max(0, Math.min(5, gateRounded));" not in source
 
 
+def test_today_trades_renders_phase_in_title_case():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const momentumPhase = String(trade.momentum_phase || '')" in source
+    assert ".replaceAll('_', ' ')" in source
+    assert ".toLowerCase()" in source
+    assert ".map((word) => word.charAt(0).toUpperCase() + word.slice(1))" in source
+
+
 def test_market_bells_use_independent_visible_dashboard_clock():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

@@ -9134,7 +9134,13 @@ HTML_DASHBOARD = """
                         indicators = `${formatNumber(indicatorCountRaw)} / ${formatNumber(indicatorTotalRaw)}`;
                     }
                     const cq = (trade.continuation_quality_score === null || trade.continuation_quality_score === undefined) ? '-' : formatNumber(trade.continuation_quality_score, 2);
-                    const momentumPhase = String(trade.momentum_phase || '').replaceAll('_', ' ') || '-';
+                    const momentumPhase = String(trade.momentum_phase || '')
+                        .replaceAll('_', ' ')
+                        .toLowerCase()
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ') || '-';
                     const mas = (trade.momentum_acceleration_score === null || trade.momentum_acceleration_score === undefined) ? '-' : formatNumber(trade.momentum_acceleration_score, 2);
                     const abs = (trade.absorption_score === null || trade.absorption_score === undefined) ? '-' : formatNumber(trade.absorption_score, 2);
                     const conf = (trade.confidence_score === null || trade.confidence_score === undefined) ? '-' : formatNumber(trade.confidence_score, 2);
