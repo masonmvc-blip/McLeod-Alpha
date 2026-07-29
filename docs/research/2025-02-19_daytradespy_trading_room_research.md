@@ -1,33 +1,30 @@
-# McLeod Alpha Research Report: February 19, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-02-19 Trading Room — Post 38624
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses the accessible authorized browser transcript from `00:00` through `33:27` (261 cues). The player duration is `1:10:41`; the available source is therefore incomplete. No visual chart review, independent quotes, broker records, or canonical ledger evidence is available.
+The prior-day calls were said to have exited at the last minute, but no premium
+was supplied. The current February 21 `610`-put OMG entered `2.38`, targeted
+`2.52`, and remained open. The published February 28 `610`-call pick was
+reconstructed at `5.04` with a `5.34` target and likewise remained unresolved.
+No separate `$200` call trade was entered.
 
-## Range and Confirmation Framework
+## Source and Context
 
-- The presenter placed lower range support around `609.70–609.80` and upper resistance around `610.50–610.51`, describing price as moving between support, the 10/20 EMA references, and the `610` zone.
-- The source stated that calls would be considered only after price returned above and broke through the `610.50` resistance/neckline area. Later discussion continued to prefer a higher low or breakout over trading inside the range noise.
-- The presenter described the first five-minute candle close outside the OMG boundary as the directional trigger, with the stated boundaries near `609.70` support and `610.50` resistance.
+- Post `38624`; Vimeo `1058307653`, title `TR Feb 19`, `01:10:41`.
+- Complete caption track: 1,625 cues, `00:00:00.275-01:09:54.665`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported Risk Template
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 08:12 | Prior-day calls reportedly exited last minute; price unstated. | carryover context |
+| 44:18-end | Feb. 21 `610` puts `2.38`, target `2.52`. | unresolved OMG |
+| 1:02:50-end | Feb. 28 `610` calls modeled `5.04`, target `5.34`. | unresolved modeled pick |
+| end | Source says both the pick and OMG are “in limbo.” | terminal state |
 
-- The transcript states a general 6% profit target and a suggested 40% stop loss for the OMG framework, while claiming that the target had been working statistically well.
-- It also describes a potential lower-price purchase after confirmation, but does not provide a source-supported trade entry, option premium, contract count, fill, exit, or final session outcome in the accessible portion.
-- References to puts and a prior high were conversational context; they are insufficiently specified to reconstruct a position.
+The evidence-honest result is not a loss or a win: both tracked positions were
+open when the recording ended. The opposing call/put pair also shows why later
+mentions must be reconciled by contract and date rather than netted.
 
-## Reusable Research Observations
-
-1. Test `OMG_CLOSE_OUTSIDE_TIGHT_RANGE` using independent opening bars. A narrow `609.70–610.50` range can make price noise and option friction decisive.
-2. Test `RESISTANCE_CLEARANCE_PLUS_HIGHER_LOW` separately from the initial close-outside trigger; the presenter implicitly treated these as additional confirmation.
-3. Evaluate `SIX_PERCENT_TARGET_FORTY_PERCENT_STOP` with actual entry timing, option bid/ask, fill assumptions, and maximum adverse excursion. The ratio cannot be assessed from narration.
-4. Reject unstructured in-range trades in the research design; the source itself described waiting through noise rather than treating every EMA touch as a signal.
-
-## Evidence Limitations
-
-- The accessible transcript ends less than halfway through the recording; later setup resolution and outcomes are unknown.
-- No independent market data or execution evidence verifies the stated levels, target performance, or stop behavior.
-
-## Decision
-
-No live trading behavior changes are authorized. The partial source supports research-only testing of close-outside confirmation, range width, and executable option risk/reward under real spreads.
+No independent ledger, terminal fills, executable paths, Greeks, MFE/MAE,
+fees, or visual review exists. `RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.
