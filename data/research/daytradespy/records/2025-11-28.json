@@ -1,0 +1,32 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42468, "title": "Trading Room Video Recording – November 28, 2025", "publication_date": "2025-11-28", "post_publication_date": "2025-12-01", "source_url": "https://daytradespy.com/42468/trading-room-video-recording-november-28-2025/", "duration_seconds": 3336, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 373, "first_timestamp": "00:00", "last_timestamp": "00:54:42", "raw_transcript_persisted": false, "coverage_note": "Complete player transcript for the 00:55:36 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 96, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:24:01", "classification": "EXPLICIT_NO_TRADE", "claim": "Live calls and puts rejected due extreme spreads and low liquidity."},
+    {"timestamp": "00:38:30", "classification": "PAPER_ONLY", "claim": "Simulator demonstration fills were explicitly disclaimed as unrealistic and unintended."},
+    {"timestamp": "00:41:57", "classification": "EXPLICIT_NO_TRADE", "claim": "No formal OMG was issued."},
+    {"timestamp": "00:43:27", "classification": "PUBLISHED_PICK_INCOMPLETE", "claim": "Modeled 682-call pick had not reached its 5.12 target."}
+  ],
+  "claims": [
+    {"id": "DTS-20251128-P42468-C01", "timestamp": "00:41:57", "label": "FORMAL_OMG_NO_TRADE", "fact_classification": "EXPLICIT_NO_TRADE", "status": "SOURCE_SUPPORTED", "claim": "No formal OMG or intended live room trade was taken because holiday liquidity and spreads failed execution gates.", "forward_outcomes": {"1m": "NO_TRADE", "3m": "NO_TRADE", "5m": "NO_TRADE", "10m": "NO_TRADE", "15m": "NO_TRADE", "remainder_session": "NO_TRADE"}, "disconfirming_evidence_required": "Broker ledger showing intended live execution."},
+    {"id": "DTS-20251128-P42468-C02", "timestamp": "00:38:30", "label": "SIMULATOR_FILLS_EXCLUDED", "fact_classification": "PAPER_ONLY", "status": "SOURCE_SUPPORTED", "claim": "Paper-account demonstration fills were not real trade intent and were described as unrealistic.", "forward_outcomes": {"1m": "EXCLUDED", "3m": "EXCLUDED", "5m": "EXCLUDED", "10m": "EXCLUDED", "15m": "EXCLUDED", "remainder_session": "EXCLUDED"}, "disconfirming_evidence_required": "Evidence of intended live orders."},
+    {"id": "DTS-20251128-P42468-C03", "timestamp": "00:43:27", "label": "PUBLISHED_PICK_TARGET_NOT_YET_REACHED", "fact_classification": "PUBLISHED_PICK_INCOMPLETE", "status": "PARTIAL_EVIDENCE", "claim": "December 5 682-call pick modeled average 4.83 and 5.12 target, which had not traded by the in-source review.", "forward_outcomes": {"1m": "MIXED", "3m": "MIXED", "5m": "MIXED", "10m": "MIXED", "15m": "MIXED", "remainder_session": "UNAVAILABLE"}, "disconfirming_evidence_required": "Later option path and original alert."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251128-P42468-T01", "type": "PUBLISHED_PICK", "setup": "December 5 682 calls; modeled published pick", "entry_time": "00:09:31", "entry_premium": 4.83, "exit_time": "UNAVAILABLE", "exit_premium": null, "stop_or_invalidation": "5.12 target not yet reached at 00:43:05"},
+    {"source_trade_id": "DTS-20251128-P42468-T02", "type": "PAPER_ONLY_DEMONSTRATION", "setup": "December 5 682 calls; simulator mechanics demonstration", "entry_time": "00:36:41", "entry_premium": 4.90, "exit_time": "EXCLUDED", "exit_premium": null, "stop_or_invalidation": "Not intended live execution; exclude from outcomes"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 2, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Simulator fills must be excluded.", "Later published-pick outcome unavailable."], "unavailable_evidence": ["Broker ledger and later pick path", "Executable quotes, Greeks, MFE, MAE, fees, and full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:12:13", "state": "BLACK_FRIDAY_ILLIQUIDITY", "evidence": "Wide spreads and low volume persisted."}],
+  "counterfactuals": [{"timestamp": "00:41:57", "type": "LIQUIDITY_GATE", "detail": "Preserve abstention as a valid formal outcome."}],
+  "instrumentation_gaps": ["Broker ledger and later pick path", "Executable quotes, Greeks, MFE, MAE, fees, and full chart review"],
+  "hypothesis_references": ["DTS-20251128-P42468-C01", "DTS-20251128-P42468-C02", "DTS-20251128-P42468-C03"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
