@@ -302,6 +302,7 @@ def build_day_trade_spy_shadow_report(
         reconciliation = {}
     opportunities = _load_opportunities(root, trading_date)
     prior_rows: list[dict[str, Any]] = []
+    prior_reconciliation: list[bool] = []
     report_dir = root / "reports" / "daily_trade_learning"
     for path in sorted(report_dir.glob("day_trade_spy_shadow_????-??-??.json")):
         if path.name == f"day_trade_spy_shadow_{trading_date}.json":
@@ -309,6 +310,9 @@ def build_day_trade_spy_shadow_report(
         prior = _object(path.read_text(encoding="utf-8"))
         if str(prior.get("trading_date") or "") < trading_date:
             prior_rows.extend(prior.get("trades") or [])
+            prior_reconciliation.append(
+                bool((prior.get("reconciliation") or {}).get("complete"))
+            )
     rolling = prior_rows + reviewed
     valid = [
         row for row in rolling
@@ -328,8 +332,11 @@ def build_day_trade_spy_shadow_report(
         if phase != "UNAVAILABLE":
             phase_counts[phase] = phase_counts.get(phase, 0) + 1
     minimum_phase = min(phase_counts.values(), default=0)
+    rolling_reconciliation_complete = bool(reconciliation.get("complete")) and all(
+        prior_reconciliation
+    )
     checks = {
-        "canonical_reconciliation_complete": bool(reconciliation.get("complete")),
+        "canonical_reconciliation_complete": rolling_reconciliation_complete,
         "minimum_total_sample_50": len(valid) >= 50,
         "minimum_per_observed_phase_10": minimum_phase >= 10,
         "first_passage_coverage_80pct": (
@@ -355,6 +362,7 @@ def build_day_trade_spy_shadow_report(
             "valid_sample_size": len(valid),
             "known_first_passage": len(known_passage),
             "session_phase_counts": phase_counts,
+            "all_included_dates_reconciled": rolling_reconciliation_complete,
             "test_summary": _test_summary(rolling),
         },
         "promotion_gate": {
