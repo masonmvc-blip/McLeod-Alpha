@@ -59,9 +59,7 @@ def _extract_trail_multiplier(text: str, tier: int, var_name: str) -> float:
 def _build_policy() -> Dict[str, object]:
     from engine.brain import Brain
 
-    brain_consts = _parse_constants(_read_text(BRAIN_ENGINE))
     initial_stop_loss_pct = -4.0
-    max_trade_hold_minutes = brain_consts.get("MAX_TRADE_HOLD_MINUTES")
     policy = Brain()
     tiers = []
     for profit_trigger in (1.0, 2.0, 3.0, 4.0):
@@ -76,22 +74,7 @@ def _build_policy() -> Dict[str, object]:
     return {
         "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "initial_stop_loss_pct": float(initial_stop_loss_pct),
-        "max_trade_hold_minutes": int(max_trade_hold_minutes) if max_trade_hold_minutes is not None else None,
         "tiers": tiers,
-        "two_pct_trigger": 1.0,
-        "two_pct_entry_stop_pct": 3.0,
-        "three_pct_trigger": 2.0,
-        "three_pct_entry_stop_pct": 2.0,
-        "trail_5_trigger": 3.0,
-        "trail_5_pct": 1.5,
-        "trail_4_trigger": 4.0,
-        "trail_4_pct": 1.0,
-        "trail_3_trigger": 4.0,
-        "trail_3_pct": 1.0,
-        "trail_2_trigger": 4.0,
-        "trail_2_pct": 1.0,
-        "trail_1_trigger": 4.0,
-        "trail_1_pct": 1.0,
         "brain_source": str(BRAIN_ENGINE.relative_to(ROOT)),
     }
 
@@ -124,50 +107,21 @@ def _trigger_to_stop_spacing(trigger_price: float, stop_price: float) -> str:
 def _build_html(policy: Dict[str, object]) -> str:
     entry = 5.00
     initial_stop = entry * (1.0 + float(policy["initial_stop_loss_pct"]) / 100.0)
-    at_t3 = entry * (1.0 + float(policy["trail_3_trigger"]) / 100.0)
-    stop_t3 = at_t3 * (1.0 - float(policy["trail_3_pct"]) / 100.0)
-    at_t4 = entry * (1.0 + float(policy["trail_4_trigger"]) / 100.0)
-    stop_t4 = at_t4 * (1.0 - float(policy["trail_4_pct"]) / 100.0)
-    at_t5 = entry * (1.0 + float(policy["trail_5_trigger"]) / 100.0)
-    stop_t5 = at_t5 * (1.0 - float(policy["trail_5_pct"]) / 100.0)
-    at_t2 = entry * (1.0 + float(policy["trail_2_trigger"]) / 100.0)
-    stop_t2 = at_t2 * (1.0 - float(policy["trail_2_pct"]) / 100.0)
-    at_t1 = entry * (1.0 + float(policy["trail_1_trigger"]) / 100.0)
-    stop_t1 = at_t1 * (1.0 - float(policy["trail_1_pct"]) / 100.0)
-
-    two_pct_trigger = policy.get("two_pct_trigger")
-    two_pct_entry_stop_pct = policy.get("two_pct_entry_stop_pct")
-    two_pct_rule_row = ""
-    if two_pct_trigger is not None and two_pct_entry_stop_pct is not None:
-        at_t2_lock = entry * (1.0 + float(two_pct_trigger) / 100.0)
-        stop_t2_lock = at_t2_lock * (1.0 - float(two_pct_entry_stop_pct) / 100.0)
-        two_pct_rule_row = f"""
+    tier_rows = ""
+    for tier in policy["tiers"]:
+        trigger = float(tier["profit_trigger"])
+        trail_pct = float(tier["stop_pct"])
+        quote = entry * (1.0 + (trigger / 100.0))
+        stop = quote * (1.0 - (trail_pct / 100.0))
+        tier_rows += f"""
             <tr>
-              <td>1% Stop</td>
-              <td>>= +{float(two_pct_trigger):.1f}%</td>
-              <td>Trail {float(two_pct_entry_stop_pct):.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(two_pct_entry_stop_pct))}</td>
-              <td>{_money(at_t2_lock)} -> {_money(stop_t2_lock)}</td>
-              <td>{_trigger_to_stop_spacing(at_t2_lock, stop_t2_lock)}</td>
-              <td>{_exit_pl_formula(entry, stop_t2_lock)}</td>
-            </tr>
-"""
-
-    three_pct_trigger = policy.get("three_pct_trigger")
-    three_pct_entry_stop_pct = policy.get("three_pct_entry_stop_pct")
-    three_pct_rule_row = ""
-    if three_pct_trigger is not None and three_pct_entry_stop_pct is not None:
-        at_t3_lock = entry * (1.0 + float(three_pct_trigger) / 100.0)
-        stop_t3_lock = at_t3_lock * (1.0 - float(three_pct_entry_stop_pct) / 100.0)
-        three_pct_rule_row = f"""
-            <tr>
-              <td>2% Stop</td>
-              <td>>= +{float(three_pct_trigger):.1f}%</td>
-              <td>Trail {float(three_pct_entry_stop_pct):.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(three_pct_entry_stop_pct))}</td>
-              <td>{_money(at_t3_lock)} -> {_money(stop_t3_lock)}</td>
-              <td>{_trigger_to_stop_spacing(at_t3_lock, stop_t3_lock)}</td>
-              <td>{_exit_pl_formula(entry, stop_t3_lock)}</td>
+              <td>{html.escape(str(tier['reason']))}</td>
+              <td>&gt;= +{trigger:.1f}%</td>
+              <td>Trail {trail_pct:.1f}% below high bid</td>
+              <td>high bid x {_multiplier_from_pct(trail_pct)}</td>
+              <td>{_money(quote)} -&gt; {_money(stop)}</td>
+              <td>{_trigger_to_stop_spacing(quote, stop)}</td>
+              <td>{_exit_pl_formula(entry, stop)}</td>
             </tr>
 """
 
@@ -235,26 +189,7 @@ def _build_html(policy: Dict[str, object]) -> str:
               <td>{_trigger_to_stop_spacing(entry, initial_stop)}</td>
               <td>{_exit_pl_formula(entry, initial_stop)}</td>
             </tr>
-{two_pct_rule_row}
-{three_pct_rule_row}
-            <tr>
-              <td>3% Stop</td>
-              <td>>= +{policy['trail_5_trigger']:.1f}%</td>
-              <td>Trail {policy['trail_5_pct']:.1f}% below quote</td>
-              <td>quote x {_multiplier_from_pct(float(policy['trail_5_pct']))}</td>
-              <td>{_money(at_t5)} -> {_money(stop_t5)}</td>
-              <td>{_trigger_to_stop_spacing(at_t5, stop_t5)}</td>
-              <td>{_exit_pl_formula(entry, stop_t5)}</td>
-            </tr>
-              <tr>
-                <td>4% Stop</td>
-                <td>>= +{policy['trail_2_trigger']:.1f}%</td>
-                <td>Trail {policy['trail_2_pct']:.1f}% below quote</td>
-                <td>quote x {_multiplier_from_pct(float(policy['trail_2_pct']))}</td>
-                <td>{_money(at_t2)} -> {_money(stop_t2)}</td>
-                <td>{_trigger_to_stop_spacing(at_t2, stop_t2)}</td>
-                <td>{_exit_pl_formula(entry, stop_t2)}</td>
-              </tr>
+{tier_rows}
           </tbody>
         </table>
       </div>
@@ -265,12 +200,12 @@ def _build_html(policy: Dict[str, object]) -> str:
       <div class=\"body\">
         <ul>
           <li>Stops ratchet upward only; they never move down.</li>
-          <li>At +2% and +3%, stop labels are 2% Stop and 3% Stop before trail tiers take over.</li>
-          <li>Protective broker order uses STOP_LIMIT.</li>
+          <li>The trailing reference is the highest observed executable option bid since entry.</li>
+          <li>Protective broker order uses a Schwab SELL_TO_CLOSE STOP order.</li>
           <li>Stop checks use option bid first, mark as fallback.</li>
           <li>No new entries are allowed at or after 3:45 PM ET.</li>
           <li>At 3:45 PM ET, the engine immediately exits any open option position through the normal broker-safe close path.</li>
-          <li>Maximum live trade hold: {policy['max_trade_hold_minutes']} minutes; engine exits through the normal broker-safe close path.</li>
+          <li>There is no maximum intraday hold; exits remain price-, target-, manual-, or end-of-day-driven.</li>
           <li>If broker stop sync fails, engine closes position to avoid unprotected exposure.</li>
         </ul>
       </div>
