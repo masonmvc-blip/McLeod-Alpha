@@ -454,8 +454,14 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
         ("P&L", "pnl"),
         ("Exit", "exit_reason"),
     )
+    column_width = f"{100 / len(columns):.3f}%"
+    colgroup = "<colgroup>" + "".join(
+        f"<col style=\"width:{column_width};\">"
+        for _ in columns
+    ) + "</colgroup>"
     head = "".join(
-        "<th style=\"padding:8px 6px;text-align:center;background:#edf3fb;"
+        f"<th width=\"{column_width}\" style=\"width:{column_width};padding:8px 5px;"
+        "text-align:center;vertical-align:middle;background:#edf3fb;"
         "border-bottom:2px solid #cbd8ea;font-size:10px;letter-spacing:.25px;"
         f"text-transform:uppercase;color:#52657f;white-space:nowrap;\">{html.escape(label)}</th>"
         for label, _ in columns
@@ -471,7 +477,8 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
             )
             weight = "700" if key in {"option", "pnl"} else "500"
             cells.append(
-                "<td style=\"padding:9px 6px;text-align:center;"
+                f"<td width=\"{column_width}\" style=\"width:{column_width};padding:9px 5px;"
+                "text-align:center;vertical-align:middle;"
                 f"border-bottom:1px solid #e6ebf2;font-size:11px;color:{color};"
                 f"font-weight:{weight};white-space:nowrap;\">"
                 f"{html.escape(str(row.get(key) or '—'))}</td>"
@@ -490,8 +497,9 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
         "font-size:17px;font-weight:750;text-align:center;\">Today's Trades</div>"
         "<div style=\"overflow-x:auto;\">"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
-        "style=\"width:100%;border-collapse:collapse;\">"
-        f"<thead><tr>{head}</tr></thead><tbody>{''.join(body_rows)}</tbody></table>"
+        "style=\"width:100%;table-layout:fixed;border-collapse:collapse;\">"
+        f"{colgroup}<thead><tr>{head}</tr></thead>"
+        f"<tbody>{''.join(body_rows)}</tbody></table>"
         "</div></div>"
     )
 

@@ -6953,6 +6953,7 @@ HTML_DASHBOARD = """
         
         .trades-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             background: white;
             font-size: 12px;
@@ -6970,8 +6971,10 @@ HTML_DASHBOARD = """
         }
         
         .trades-table th {
+            width: 11.111%;
             padding: 6px;
             text-align: center;
+            vertical-align: middle;
             font-weight: 600;
             color: #666;
             text-transform: uppercase;
@@ -6979,8 +6982,10 @@ HTML_DASHBOARD = """
         }
         
         .trades-table td {
+            width: 11.111%;
             padding: 6px;
             text-align: center;
+            vertical-align: middle;
             border-bottom: 1px solid #eee;
         }
         
