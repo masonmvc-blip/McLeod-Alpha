@@ -1,34 +1,31 @@
-# McLeod Alpha Research Report: February 26, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-02-26 Trading Room — Post 38702
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses the authorized browser transcript cues collected through the accessible runtime list. The player duration is `1:40:24`; the initial collection reached `50:37`, while a later virtualized-list pass exposed later cues. Because the complete final cue boundary and visual review were not independently preserved, this remains a source-limited report rather than a full-session completion record. No broker, quote, or ledger reconciliation is available.
+The formal February 28 `595`-put OMG entered `4.03` and was scored at its
+`2.42` 40% stop, a second consecutive OMG loss. Seven March 7 `598` calls
+completed `6.61` to `7.10` for a claimed `$336` net. The prior-day February
+28 `598` calls completed `4.64` to `4.77` for `$120` net. A late eight-
+contract March 7 `600`-call scalp completed `6.26` to `6.20`, a claimed
+`$56` loss. The published `598`-call pick was modeled `5.94` to `6.30`.
 
-## Market Structure and OMG Boundaries
+## Source and Context
 
-- The presenter described a five-minute head-and-shoulders pattern with downward MACD divergence, then set an OMG downside boundary around `595.79–595.81` below a recent low and discussed an upper reference near `597–597.18`.
-- The source emphasized that support/resistance influences a zone rather than an exact penny and used a close outside the boundary as the directional premise.
-- Later comments referred to holding at a January 27 low and expected buyers to emerge only after sellers were exhausted. These are source-reported technical interpretations, not independently verified bars or indicators.
+- Post `38702`; Vimeo `1060552727`, title `TR Feb 26`, `01:40:24`.
+- Complete caption track: 2,099 cues, `00:00:00.195-01:40:08.685`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported February 28 `595` Put Trade
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 15:36-1:07:04 | Formal `595` puts `4.03` to stop `2.42`. | completed loss |
+| 29:01-49:16 | Seven `598` calls `6.61` to `7.10`. | completed trade |
+| prior day-1:32:40 | Ten `598` calls `4.64` to `4.77`. | completed carryover |
+| 1:20:13-1:37:56 | Eight `600` calls `6.26` to `6.20`. | completed loss |
+| 1:09:16-1:09:51 | Published `598` calls modeled `5.94` to `6.30`. | modeled pick |
 
-- At approximately `09:36`, the presenter reported filling February 28 `595` puts at `4.03` for the OMG trade.
-- The source states a rationale for using the nearer Friday expiry for puts because downside moves were described as occurring quickly, unlike the usual next-Friday call approach.
-- The stated 6% GTC target was `4.27`. This is a target order, not independently verified evidence of a fill or profit.
-- The transcript also refers to a prior-day `$200` trade in `598` calls at `4.64`; it is prior exposure and must not be mixed with the February 26 put trade.
+This source prevents survivorship bias: profitable call management occurred
+beside a large formal put loss and a final realized call loss. No independent
+ledger, executable paths, Greeks, MFE/MAE, fees, or visual review exists.
 
-## Reusable Research Observations
-
-1. Test `OMG_CLOSE_BELOW_RECENT_LOW` with independently reconstructed five-minute closes and a zone-based boundary rather than false precision.
-2. Test `NEAR_TERM_PUT_EXPIRY_FOR_FAST_MOVE` against measured downside speed, spread, theta, and fill quality; stated expectations do not establish a robust expiry rule.
-3. Treat `4.27` as an unverified target order until synchronized option bid/ask and execution data show its feasibility and fill status.
-4. Keep prior-day `598` call management and current-day `595` put activity in separate position records.
-
-## Evidence Limitations
-
-- The long player and virtualized transcript make final coverage provenance incomplete; this report does not assert full-session review.
-- All levels, entry, expiration choice, target, and trade rationale are presenter-reported without independent market, option, broker, or ledger evidence.
-
-## Decision
-
-No live trading behavior changes are authorized. The source supports research-only validation of close-through-low conditions, expiration selection under downside velocity, and executable target-order quality.
+`RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.
