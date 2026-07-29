@@ -13,14 +13,14 @@ Audit date: 2026-07-28.
 - The 2025 archive registry contains 230 posts representing 208 publication
   dates; 21 dates contain duplicate, delayed, or reposted entries that require
   post-level resolution.
-- `docs/research` contains 227 canonical dated 2025 daily-report filenames, plus three
-  post-qualified June 27, October 7, and October 14 lineage-resolution reports.
-- `data/research/daytradespy/records` contains 191 tracked machine records, including
+- `docs/research` contains 227 canonical dated 2025 daily-report filenames, plus four
+  post-qualified March 17, June 27, October 7, and October 14 lineage-resolution reports.
+- `data/research/daytradespy/records` contains 193 tracked machine records, including
   post-qualified filenames required to avoid silent duplicate-date
   overwrite.
-- The registry contains 229 post-level reviews with evidence metadata: 221 Tier C
-  transcript-based reviews and 8 Tier E access/content/duplicate gaps. One
-  archive post remains pending.
+- The registry contains 230 post-level reviews with evidence metadata: 221 Tier C
+  transcript-based reviews and 9 Tier E access/content/duplicate gaps. No
+  archive posts remain pending.
 - Registry `pending` status is not equivalent to a missing Markdown report.
   Several January-March reports predate complete machine-record backfill.
 - Reports dated May 6, May 7, and June 12 are evidence-gap placeholders, not substantive
@@ -41,6 +41,10 @@ Audit date: 2026-07-28.
   `1096956515`, title `TR June 27`, and caption asset `239351476`. Its separate
   Tier E record resolves the archive post without double-counting June 27
   evidence.
+- Post `38923` is an exact duplicate of canonical post `38934`: both embed
+  Vimeo asset `1066918242`, title `TR Mar 17`, and caption asset `219967671`.
+  Its separate Tier E record resolves the archive post without double-counting
+  March 17 evidence.
 - No 2025 recording is Tier A because full visual review and independent
   underlying, option-path, broker-fill, and ledger evidence are unavailable.
 
@@ -103,15 +107,13 @@ Process no more than three source recordings per research batch. Commit only
 the reports, machine records, registry changes, and validation support required
 for that batch. Do not alter live trading behavior.
 
-## Current Next Recording
+## Source Coverage Status
 
-- Recording/publication date: March 17, 2025
-- Post ID: `38923`
-- Source:
-  `https://daytradespy.com/38923/trading-room-video-recording-march-17-2025/`
-- Current status: registry pending
-- Required first step: resolve the immutable player asset and recover the
-  complete authorized transcript, if available, with playback muted.
+All 230 archive posts are resolved at the post level. The 221 substantive
+Tier C reviews represent the available distinct recording evidence; the nine
+Tier E reviews preserve inaccessible, missing, or exact-duplicate posts
+without fabricating or double-counting evidence. Machine-record existence and
+schema validation remain the next completion gate before synthesis.
 
 ## Governance
 

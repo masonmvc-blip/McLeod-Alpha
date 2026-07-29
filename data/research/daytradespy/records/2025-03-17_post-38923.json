@@ -1,0 +1,28 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38923,
+    "title": "Trading Room Video Recording – March 17, 2025 [duplicate of canonical post 38934]",
+    "publication_date": "2025-03-17",
+    "post_publication_date": "2025-03-17",
+    "source_url": "https://daytradespy.com/38923/trading-room-video-recording-march-17-2025/",
+    "duration_seconds": 4243,
+    "reviewed_at": "2026-07-28T00:00:00+00:00",
+    "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "DUPLICATE_SOURCE_ASSET", "completeness_pct": 0, "path": "", "timestamps_preserved": false, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_BROWSER_RUNTIME", "cue_count": 0, "first_timestamp": "UNKNOWN", "last_timestamp": "UNKNOWN", "raw_transcript_persisted": false, "coverage_note": "Post 38923 embeds Vimeo asset 1066918242, title TR Mar 17, and caption asset 219967671, exactly matching canonical post 38934. Both players were verified paused at zero volume; canonical transcript evidence was not copied or counted twice."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 0, "trade_details_captured_pct": 0, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "DUPLICATE_SOURCE_ASSET_SAME_DATE_CANONICAL_POST_38934", "tier": "E"},
+  "timeline": [],
+  "claims": [],
+  "reported_trades": [],
+  "ledger_reconciliation": {"source_reported_trades": 0, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Post 38923 is the exact Vimeo and caption source already reviewed under post 38934.", "No post-38923-specific trade evidence can be distinguished."], "unavailable_evidence": ["A distinct source asset or independently verified post-specific recording"]},
+  "market_state_timeline": [{"timestamp": "UNKNOWN", "market_direction": "UNKNOWN", "trend_strength": "UNKNOWN", "volatility": "UNKNOWN", "vwap_state": "UNKNOWN", "room_to_target": "UNKNOWN"}],
+  "counterfactuals": [{"timestamp": "UNKNOWN", "type": "DUPLICATE_SOURCE_ASSET", "detail": "Do not count the same immutable recording twice; evaluate March 17 evidence under canonical post 38934."}],
+  "hypothesis_references": [],
+  "expected_value_tracking": {"confidence": "NONE", "evidence_count": 0, "current_lifecycle_stage": "OBSERVATION_ONLY", "replay_improvement": "UNAVAILABLE_EVIDENCE"},
+  "instrumentation_gaps": ["Distinct post-38923 source asset", "Visual review", "Broker fills and canonical ledger mapping"],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
