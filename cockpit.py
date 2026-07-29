@@ -7631,19 +7631,6 @@ HTML_DASHBOARD = """
             </div>
         </div>
 
-        <section class="indicator-performance-wrap" aria-label="Indicator performance">
-            <div class="indicator-performance-list" id="indicatorPerformanceContainer">
-                <div class="indicator-performance-columns" aria-hidden="true">
-                    <span>Indicator</span>
-                    <span>Today's Trades</span>
-                    <span>Present (Canonical)</span>
-                    <span>Absent, Same Direction</span>
-                    <span>Research Guidance</span>
-                </div>
-                <div style="text-align: center; color: #999; padding: 12px;">Loading indicator performance...</div>
-            </div>
-        </section>
-        
         <div class="logs">
             <div class="logs-title">📋 Recent Logs <span id="logsLastUpdated" class="logs-meta">(log updated: loading...)</span></div>
             <pre id="logsContent">Loading logs...</pre>
@@ -7687,6 +7674,8 @@ HTML_DASHBOARD = """
         let fastPositionContext = null;
         let positionContextRefreshInterval = null;
         let positionContextRefreshInFlight = false;
+        let entryChimePreviousHasOpenPosition = null;
+        let entryChimeAudioContext = null;
 
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
@@ -8005,6 +7994,61 @@ HTML_DASHBOARD = """
                 return { played: false, source: 'NYSE bell' };
             }
         }
+
+        function getEntryChimeAudioContext() {
+            if (entryChimeAudioContext) {
+                return entryChimeAudioContext;
+            }
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) {
+                return null;
+            }
+            entryChimeAudioContext = new AudioContextClass();
+            return entryChimeAudioContext;
+        }
+
+        function primeTradeEntryChime() {
+            const context = getEntryChimeAudioContext();
+            if (context && context.state === 'suspended') {
+                context.resume().catch(() => {});
+            }
+        }
+
+        function playTradeEntryChime() {
+            const context = getEntryChimeAudioContext();
+            if (!context) {
+                return;
+            }
+            const schedule = () => {
+                const start = context.currentTime + 0.01;
+                [
+                    { frequency: 659.25, offset: 0.00, duration: 0.20 },
+                    { frequency: 987.77, offset: 0.16, duration: 0.32 },
+                ].forEach((note) => {
+                    const oscillator = context.createOscillator();
+                    const gain = context.createGain();
+                    const noteStart = start + note.offset;
+                    const noteEnd = noteStart + note.duration;
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(note.frequency, noteStart);
+                    gain.gain.setValueAtTime(0.0001, noteStart);
+                    gain.gain.exponentialRampToValueAtTime(0.11, noteStart + 0.025);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+                    oscillator.connect(gain);
+                    gain.connect(context.destination);
+                    oscillator.start(noteStart);
+                    oscillator.stop(noteEnd + 0.01);
+                });
+            };
+            if (context.state === 'suspended') {
+                context.resume().then(schedule).catch(() => {});
+            } else {
+                schedule();
+            }
+        }
+
+        document.addEventListener('pointerdown', primeTradeEntryChime, { once: true, capture: true });
+        document.addEventListener('keydown', primeTradeEntryChime, { once: true, capture: true });
 
         function maybePlayMarketSessionBells(status) {
             const now = status && status.server_time_et
@@ -8628,6 +8672,10 @@ HTML_DASHBOARD = """
                 }
 
                 const hasOpenPosition = !!status.has_open_position;
+                if (entryChimePreviousHasOpenPosition === false && hasOpenPosition) {
+                    playTradeEntryChime();
+                }
+                entryChimePreviousHasOpenPosition = hasOpenPosition;
                 const positionTitleEl = document.getElementById('currentPositionTitle');
                 if (positionTitleEl) {
                     positionTitleEl.hidden = hasOpenPosition;
@@ -9136,6 +9184,12 @@ HTML_DASHBOARD = """
                 return;
             }
 
+            const container = document.getElementById('indicatorPerformanceContainer');
+            if (!container) {
+                lastIndicatorPerformanceRefreshMs = Date.now();
+                return;
+            }
+
             indicatorPerformanceRefreshInFlight = true;
             try {
                 const response = await fetch('/api/indicator-performance');
@@ -9144,7 +9198,6 @@ HTML_DASHBOARD = """
                 }
                 const data = await response.json();
                 const rows = Array.isArray(data.indicators) ? data.indicators : [];
-                const container = document.getElementById('indicatorPerformanceContainer');
                 const columns = `<div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>Today's Trades</span>
@@ -9223,7 +9276,7 @@ HTML_DASHBOARD = """
                 lastIndicatorPerformanceRefreshMs = Date.now();
             } catch (error) {
                 console.error('Error loading indicator performance:', error);
-                document.getElementById('indicatorPerformanceContainer').innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">Indicator performance unavailable</div>';
+                container.innerHTML = '<div style="text-align: center; color: #999; padding: 12px;">Indicator performance unavailable</div>';
             } finally {
                 indicatorPerformanceRefreshInFlight = false;
             }

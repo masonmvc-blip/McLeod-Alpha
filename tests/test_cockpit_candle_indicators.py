@@ -505,6 +505,25 @@ def test_trade_action_button_has_blue_market_closed_state():
     assert "marketClosedActionButton.innerHTML = 'MARKET CLOSED';" in source
 
 
+def test_indicator_chart_is_hidden_but_tracking_api_remains():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert '<section class="indicator-performance-wrap"' not in source
+    assert "@app.route('/api/indicator-performance', methods=['GET'])" in source
+    assert "canonical_indicator_performance" in source
+    assert "if (!container)" in source
+
+
+def test_trade_entry_uses_distinct_rising_two_note_chime():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "function playTradeEntryChime()" in source
+    assert "frequency: 659.25" in source
+    assert "frequency: 987.77" in source
+    assert "entryChimePreviousHasOpenPosition === false && hasOpenPosition" in source
+    assert "playTradeEntryChime();" in source
+
+
 def test_indicator_performance_centers_canonical_present_absent_columns():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
