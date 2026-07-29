@@ -14,12 +14,14 @@ from reports.scheduler_health import maybe_generate_scheduler_health_dashboard
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
 from engine.brain.candidate_controls import candidate_entry_block_reason, load_candidate_controls
 from execution.accepted_breakout_observer import observe_candidate, record_candidate_observation
+from execution.day_trade_spy_shadow import record_day_trade_spy_shadow
 from engine.memory import get_memory
 from spy_bot_reviewer import SpyBotReviewer
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
 from strategy.trend_lifecycle_v2 import classify_trend_lifecycle_v2
+from strategy.day_trade_spy_shadow_suite import evaluate_day_trade_spy_shadow_suite
 from execution.trend_lifecycle_shadow import record_lifecycle_shadow_snapshot
 from backtesting.signal_replay import confidence_score_engine
 
@@ -141,6 +143,30 @@ def _candidate_control_block_reason(feature_payload, option):
         return None
     return candidate_entry_block_reason(features or {}, option, load_candidate_controls())
 
+
+def _prior_shadow_attempts(candle_time, direction):
+    """Count earlier qualified same-direction attempts from append-only telemetry."""
+    try:
+        candle_at = pd.to_datetime(candle_time, utc=True)
+        trading_date = candle_at.tz_convert(EASTERN_TZ).date().isoformat()
+        path = Path("data/reports/opportunity_logs") / f"opportunity_setups_{trading_date}.jsonl"
+        if not path.exists():
+            return 0
+        seen = set()
+        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            row = json.loads(line)
+            if str(row.get("direction") or "").upper() != str(direction).upper():
+                continue
+            if not bool((row.get("research") or {}).get("current_engine_qualified")):
+                continue
+            event_id = str(row.get("event_id") or "")
+            if event_id:
+                seen.add(event_id)
+        return len(seen)
+    except Exception:
+        return None
+
+
 def _log_shadow_opportunities(
     *,
     last,
@@ -161,6 +187,31 @@ def _log_shadow_opportunities(
     """Capture evaluated setups as non-blocking research telemetry."""
     try:
         payload = json.loads(feature_payload) if isinstance(feature_payload, str) else feature_payload
+        suites = {}
+        for direction, option in (
+            ("CALL", selected_option_call),
+            ("PUT", selected_option_put),
+        ):
+            direction_payload = payload if str((payload or {}).get("direction") or "").upper() == direction else {}
+            captured_suite = (direction_payload or {}).get("day_trade_spy_shadow_suite")
+            suites[direction] = (
+                captured_suite
+                if isinstance(captured_suite, dict)
+                else evaluate_day_trade_spy_shadow_suite(
+                    completed_candles,
+                    direction,
+                    feature_payload=direction_payload,
+                    option=option,
+                    same_regime_attempt_count=_prior_shadow_attempts(last.name, direction),
+                    provenance="captured_live",
+                )
+            )
+            record_day_trade_spy_shadow(
+                suites[direction],
+                event_phase="opportunity_evaluated",
+                entered=entered_call if direction == "CALL" else entered_put,
+                option_symbol=(option or {}).get("symbol") if isinstance(option, dict) else None,
+            )
         log_evaluated_setups(
             last=last,
             prev=prev,
@@ -180,9 +231,24 @@ def _log_shadow_opportunities(
             selected_option_call=selected_option_call,
             selected_option_put=selected_option_put,
             blocked_entry=blocked_entry,
+            day_trade_spy_shadow_suites=suites,
         )
     except Exception as exc:
         print(f"Shadow opportunity logging error: {exc}")
+
+
+def _record_shadow_pair(completed_candles, *, event_phase):
+    """Record both directional research labels when live entry is not evaluated."""
+    for direction in ("CALL", "PUT"):
+        try:
+            snapshot = evaluate_day_trade_spy_shadow_suite(
+                completed_candles,
+                direction,
+                provenance="captured_live",
+            )
+            record_day_trade_spy_shadow(snapshot, event_phase=event_phase)
+        except Exception as exc:
+            print(f"Day Trade SPY shadow logging error: {exc}")
 
 
 def _append_latency_skip_event(*, reason, cycle_start_ms, candles_fetch_ms=None, indicators_ms=None):
@@ -1484,6 +1550,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
 
     if in_trade():
         print("Entry skipped: already in trade")
+        _record_shadow_pair(completed_candles, event_phase="already_in_trade")
         return {
             "attempted": False,
             "opened": False,
@@ -1559,6 +1626,7 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
     )
 
     if not _is_entry_window_now():
+        _record_shadow_pair(completed_candles, event_phase="outside_entry_window")
         return {
             "attempted": False,
             "opened": False,
@@ -1640,6 +1708,21 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data = json.loads(feature_payload)
         observation = observe_candidate(completed_candles, "CALL")
         feature_payload_data.update(observation)
+        shadow_suite = evaluate_day_trade_spy_shadow_suite(
+            completed_candles,
+            "CALL",
+            feature_payload=feature_payload_data,
+            option=option,
+            trade_plan={
+                "entry": entry,
+                "stop": stop,
+                "target": target,
+                "quantity": quantity,
+            },
+            same_regime_attempt_count=_prior_shadow_attempts(last.name, "CALL"),
+            provenance="captured_live",
+        )
+        feature_payload_data["day_trade_spy_shadow_suite"] = shadow_suite
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
         candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)
@@ -1751,6 +1834,21 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data = json.loads(feature_payload)
         observation = observe_candidate(completed_candles, "PUT")
         feature_payload_data.update(observation)
+        shadow_suite = evaluate_day_trade_spy_shadow_suite(
+            completed_candles,
+            "PUT",
+            feature_payload=feature_payload_data,
+            option=option,
+            trade_plan={
+                "entry": entry,
+                "stop": stop,
+                "target": target,
+                "quantity": quantity,
+            },
+            same_regime_attempt_count=_prior_shadow_attempts(last.name, "PUT"),
+            provenance="captured_live",
+        )
+        feature_payload_data["day_trade_spy_shadow_suite"] = shadow_suite
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
         candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)

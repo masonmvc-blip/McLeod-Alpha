@@ -14,6 +14,7 @@ KEY DIFFERENCES FROM STUB:
 
 from execution.position_store import save_position, load_position, clear_position
 from execution.sms_alerts import send_trade_entry_alert, send_trade_exit_alert, send_emergency_alert
+from execution.entry_quote_telemetry import attach_entry_quote_telemetry
 from execution.contract_limits import MAX_OPEN_CONTRACTS
 from execution.diagnostic_snapshots import extract_entry_diagnostic_snapshot
 from execution.stop_telemetry import record_stop_event
@@ -2688,6 +2689,14 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_price = 0.0
     else:
         print(f"\n✓ Position protection established")
+
+    feature_payload = attach_entry_quote_telemetry(
+        feature_payload,
+        quote_snapshot=quote_levels,
+        submitted_limit_price=limit_price,
+        broker_fill_price=fill_price,
+        filled_via=metrics.get("filled_via"),
+    )
 
     current_position = Position(
         direction=direction,

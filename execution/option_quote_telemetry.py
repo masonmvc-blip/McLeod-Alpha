@@ -101,6 +101,11 @@ def build_option_management_cycle(
         "accepted_breakout_admit": feature_payload.get("accepted_breakout_admit"),
         "accepted_breakout_reason": feature_payload.get("accepted_breakout_reason"),
         "structural_room": feature_payload.get("support_resistance"),
+        "day_trade_spy_shadow_evaluation_id": (
+            feature_payload.get("day_trade_spy_shadow_suite") or {}
+        ).get("evaluation_id"),
+        "day_trade_spy_shadow_suite": feature_payload.get("day_trade_spy_shadow_suite"),
+        "entry_option_quote_snapshot": feature_payload.get("entry_option_quote_snapshot"),
         "broker_fees_dollars": feature_payload.get("broker_fees_dollars"),
     }
 

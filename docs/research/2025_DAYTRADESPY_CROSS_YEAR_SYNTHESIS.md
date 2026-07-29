@@ -223,6 +223,14 @@ promote themselves.
 - No live entry, exit, stop, target, sizing, direction, expiry, averaging,
   re-entry, or overnight-hold rule changes.
 - No source-reported win rate is imported into the bot.
+
+## Automated Shadow Implementation
+
+The five prioritized findings are implemented as the observe-only
+`day-trade-spy-shadow-suite.v1`. Prospective capture, historical backfill,
+daily reporting, provenance rules, and the human-only promotion boundary are
+documented in
+[`DAY_TRADE_SPY_SHADOW_AUTOMATION.md`](DAY_TRADE_SPY_SHADOW_AUTOMATION.md).
 - No target without a verified fill is scored as completed.
 - No open or unknown lifecycle is scored as profitable.
 - No duplicate source post is counted as an independent observation.

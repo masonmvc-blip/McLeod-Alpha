@@ -38,6 +38,8 @@ artifacts/test_reports/
 
 # Local databases
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 *.sqlite-wal

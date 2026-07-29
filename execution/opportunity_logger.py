@@ -469,6 +469,7 @@ def _build_setup_record(
     prev,
     feature_payload: Dict[str, Any],
     selected_option: Any,
+    day_trade_spy_shadow_suite: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     positives, penalties = _extract_positives_and_penalties(reasons)
 
@@ -514,6 +515,7 @@ def _build_setup_record(
         "rejected": not bool(entered),
         "rejection_reason": rejection_reason,
         "market_regime": regime,
+        "day_trade_spy_shadow_suite": day_trade_spy_shadow_suite,
     }
 
     record.update(_build_threshold_distance_payload(
@@ -558,6 +560,7 @@ def log_evaluated_setups(
     selected_option_call: Any = None,
     selected_option_put: Any = None,
     blocked_entry: Dict[str, Any] | None = None,
+    day_trade_spy_shadow_suites: Dict[str, Dict[str, Any]] | None = None,
 ) -> None:
     payload = feature_payload or {}
     market_state = classify_market_state(df)
@@ -585,6 +588,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_call,
+        day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("CALL"),
     )
     call_record["shadow_market_state"] = market_state
     if blocked_entry and blocked_entry.get("direction") == "CALL":
@@ -622,6 +626,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_put,
+        day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("PUT"),
     )
     put_record["shadow_market_state"] = market_state
     if blocked_entry and blocked_entry.get("direction") == "PUT":

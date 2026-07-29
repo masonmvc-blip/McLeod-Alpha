@@ -29,6 +29,7 @@ from reports.daily_loss_attribution import (
 )
 from reports.trend_lifecycle_shadow_report import write_trend_lifecycle_shadow_report
 from reports.entry_quality_shadow_report import write_entry_quality_shadow_report
+from reports.day_trade_spy_shadow_report import write_day_trade_spy_shadow_report
 
 
 WORKSPACE = Path(__file__).parent
@@ -589,6 +590,12 @@ def run_daily_learning(target_date: str | None = None) -> int:
         entry_quality_shadow_csv,
         entry_quality_shadow_md,
     ) = write_entry_quality_shadow_report(trading_date, root=WORKSPACE)
+    (
+        day_trade_spy_shadow,
+        day_trade_spy_shadow_json,
+        day_trade_spy_shadow_csv,
+        day_trade_spy_shadow_md,
+    ) = write_day_trade_spy_shadow_report(trading_date, root=WORKSPACE)
     if not loss_attribution["reconciliation"]["complete"]:
         lessons = [{
             "priority": "high",
@@ -625,6 +632,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "daily_loss_attribution": loss_attribution,
         "trend_lifecycle_v2_shadow": lifecycle_shadow,
         "entry_quality_shadow": entry_quality_shadow,
+        "day_trade_spy_shadow": day_trade_spy_shadow,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -634,6 +642,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
         handle.write(lifecycle_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(entry_quality_shadow_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(day_trade_spy_shadow_md.read_text(encoding="utf-8"))
     _write_daily_csv(day_csv, rows)
 
     (LEARNING_DIR / "latest_daily_trade_learning.json").write_text(
@@ -677,6 +687,9 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {entry_quality_shadow_json}")
     print(f"Wrote: {entry_quality_shadow_csv}")
     print(f"Wrote: {entry_quality_shadow_md}")
+    print(f"Wrote: {day_trade_spy_shadow_json}")
+    print(f"Wrote: {day_trade_spy_shadow_csv}")
+    print(f"Wrote: {day_trade_spy_shadow_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;
