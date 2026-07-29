@@ -44,6 +44,22 @@ EMAIL_HIDDEN_SECTIONS = {
     "## Model Learning Jobs",
     "## Trend Lifecycle V2 Shadow Review",
     "## Entry Quality Shadow Studies",
+    "## Day Trade SPY Five-Test Shadow Review",
+    "### Indicator Weight Shadow Comparisons",
+    "### Losses Correctly Avoided",
+    "### Recurring Rejection Patterns",
+}
+EMAIL_HIDDEN_SECTION_TITLES = {
+    re.sub(r"^#{1,6}\s+", "", heading)
+    for heading in EMAIL_HIDDEN_SECTIONS
+}
+EMAIL_HIDDEN_SECTION_TITLES.update({
+    "Historical Context",
+    "Fresh Forward Sample",
+    "Locked Evidence Gates",
+})
+EMAIL_SUPPRESSED_HEADINGS = {
+    "Missed Opportunities — Shadow Review",
 }
 
 
@@ -698,12 +714,12 @@ def _email_markdown(markdown: str) -> str:
     skipped_heading_level: int | None = None
     for raw in lines:
         line = raw.strip()
-        heading_match = re.match(r"^(#{1,6})\s+", line)
+        heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
         heading_level = len(heading_match.group(1)) if heading_match else None
+        heading_title = heading_match.group(2).strip() if heading_match else ""
         hide_heading = (
-            line in EMAIL_HIDDEN_SECTIONS
-            or line.startswith("### Evidence Gate")
-            or line == "### Locked Evidence Gates"
+            heading_title in EMAIL_HIDDEN_SECTION_TITLES
+            or heading_title.startswith("Evidence Gate")
         )
         if hide_heading:
             skipped_heading_level = heading_level
@@ -713,6 +729,8 @@ def _email_markdown(markdown: str) -> str:
                 skipped_heading_level = None
             else:
                 continue
+        if heading_title in EMAIL_SUPPRESSED_HEADINGS:
+            continue
         if line == "# Daily Trade Learning Report":
             continue
         if re.match(r"^(Date|Generated):\s*", line, flags=re.IGNORECASE):

@@ -75,9 +75,20 @@ def test_email_view_hides_requested_sections_without_altering_source_artifact():
         "## Model Learning Jobs\n\n- Still runs locally\n\n"
         "## Trend Lifecycle V2 Shadow Review\n\n### Evidence Gate\n\n- Hidden\n\n"
         "## Entry Quality Shadow Studies\n\n### Today's Recorded Metrics\n\n- Hidden\n\n"
+        "## Day Trade SPY Five-Test Shadow Review\n\n- Hidden research review\n\n"
         "## Volume — Daily Shadow Test\n\nVisible volume summary\n\n"
+        "### Indicator Weight Shadow Comparisons\n\n- Hidden weights\n\n"
+        "### Historical Context\n\n- Hidden history\n\n"
+        "### Fresh Forward Sample\n\n- Hidden sample\n\n"
         "### Evidence Gate: **COLLECT_MORE_DATA**\n\n- Hidden gate detail\n\n"
         "### Alternative Checklist Policies\n\nVisible policy detail\n\n"
+        "## Missed Opportunities — Shadow Review\n\n"
+        "### Daily Scorecard\n\nVisible scorecard\n\n"
+        "### Canonical Missed Opportunities\n\nVisible canonical misses\n\n"
+        "### Losses Correctly Avoided\n\n- Hidden avoided losses\n\n"
+        "### Recurring Rejection Patterns\n\n- Hidden rejection patterns\n\n"
+        "### Blocker Usefulness\n\nVisible blocker usefulness\n\n"
+        "### Locked Evidence Gates\n\n- Hidden locked gates\n\n"
         "## Exit Reason Breakdown\n\nVisible\n"
     )
     cleaned = _email_markdown(source)
@@ -88,8 +99,22 @@ def test_email_view_hides_requested_sections_without_altering_source_artifact():
     assert "Model Learning Jobs" not in cleaned
     assert "Trend Lifecycle V2" not in cleaned
     assert "Entry Quality Shadow Studies" not in cleaned
+    assert "Day Trade SPY Five-Test Shadow Review" not in cleaned
+    assert "Indicator Weight Shadow Comparisons" not in cleaned
+    assert "Historical Context" not in cleaned
+    assert "Fresh Forward Sample" not in cleaned
     assert "Evidence Gate" not in cleaned
     assert "Hidden gate detail" not in cleaned
+    assert "Missed Opportunities — Shadow Review" not in cleaned
+    assert "Daily Scorecard" in cleaned
+    assert "Visible scorecard" in cleaned
+    assert "Canonical Missed Opportunities" in cleaned
+    assert "Visible canonical misses" in cleaned
+    assert "Losses Correctly Avoided" not in cleaned
+    assert "Recurring Rejection Patterns" not in cleaned
+    assert "Blocker Usefulness" in cleaned
+    assert "Visible blocker usefulness" in cleaned
+    assert "Locked Evidence Gates" not in cleaned
     assert "Visible volume summary" in cleaned
     assert "Visible policy detail" in cleaned
     assert "## Exit Reason Breakdown" in cleaned
