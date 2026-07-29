@@ -13,7 +13,6 @@ import shutil
 import smtplib
 import subprocess
 import sys
-from base64 import b64encode
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import formataddr, parseaddr
@@ -34,9 +33,9 @@ STATE_PATH = ROOT / "data" / "daily_bot_trade_review_email_state.json"
 DELIVERY_LOG_PATH = LEARNING_DIR / "daily_bot_trade_review_email.log"
 EASTERN_TZ = ZoneInfo("America/New_York")
 SENDER_DISPLAY_NAME = "McLeod Alpha Daily Review"
-TODAY_TRADES_IMAGE_CID = "mcleod-alpha-todays-trades"
 EMAIL_HIDDEN_SECTIONS = {
     "## Core Performance",
+    "## Exit Reason Breakdown",
     "## Biggest Losses (Top 5)",
     "## Biggest Wins (Top 5)",
     "## Actionable Lessons",
@@ -44,8 +43,14 @@ EMAIL_HIDDEN_SECTIONS = {
     "## Model Learning Jobs",
     "## Trend Lifecycle V2 Shadow Review",
     "## Entry Quality Shadow Studies",
+    "## Volume — Daily Shadow Test",
+    "## Option Selection — Spread-Aware Shadow Ranking",
     "## Day Trade SPY Five-Test Shadow Review",
     "### Indicator Weight Shadow Comparisons",
+    "### Weighted Checklist Score Study",
+    "### Alternative Checklist Policies",
+    "### Broker-Backed Executed Trades",
+    "### Today's Contract Comparisons",
     "### Losses Correctly Avoided",
     "### Recurring Rejection Patterns",
 }
@@ -109,6 +114,8 @@ def _currency(value: Any) -> str:
 
 def _monetary_header(header: str) -> bool:
     normalized = re.sub(r"[^a-z0-9]+", " ", str(header).lower()).strip()
+    if normalized in {"wins", "losses", "missed", "protected"}:
+        return False
     if any(
         excluded in normalized
         for excluded in (
@@ -187,109 +194,61 @@ def _normalize_dollar_markdown(markdown: str) -> str:
 
 def _build_email_summary(trading_date: str) -> dict[str, Any]:
     learning = _load_json(REPORT_DIR / f"daily_trade_learning_{trading_date}.json")
-    broker = (learning.get("summary") or {}).get("broker_backed") or {}
     lessons = [
         row for row in (learning.get("actionable_lessons") or [])
         if isinstance(row, dict)
     ]
     scale = learning.get("scale_decision") or {}
-    trades = int(broker.get("trades") or 0)
-    wins = int(broker.get("wins") or 0)
-    pnl = float(broker.get("pnl") or 0.0)
+    changes = [
+        str(row.get("action") or "").strip()
+        for row in lessons
+        if str(row.get("action") or "").strip()
+    ]
+    scale_action = str(scale.get("rationale") or "").strip()
+    if scale_action and scale_action not in changes:
+        changes.append(scale_action)
     return {
-        "pnl": pnl,
-        "trades": trades,
-        "wins": wins,
-        "losses": int(broker.get("losses") or 0),
-        "win_rate": float(broker.get("win_rate") or 0.0),
         "lessons": lessons[:3],
-        "next_session": str(
-            scale.get("rationale")
-            or "Keep live settings unchanged until the evidence gates are satisfied."
-        ),
-        "measurements": [
-            (
-                "Continue protective-stop and ratchet reliability measurement, "
-                "including desired, submitted, and broker-verified stop states."
-            ),
-            (
-                "Begin spread-aware contract-selection comparison using actual "
-                "ask entry and subsequent executable bid evidence."
-            ),
-            (
-                "Continue entry/exit slippage, management-cycle latency, blockers, "
-                "cooling, startup guard, and missed-opportunity tracking."
-            ),
+        "changes": changes[:3] or [
+            "Keep live settings unchanged until the governed evidence gates are satisfied."
         ],
     }
 
 
 def _summary_text(summary: dict[str, Any]) -> str:
-    lines = [
-        "SUMMARY",
-        (
-            f"Result: {_currency(summary['pnl'])} over {summary['trades']} trades; "
-            f"{summary['wins']} wins, {summary['losses']} losses, "
-            f"{summary['win_rate']:.1%} win rate."
-        ),
-        "What We Learned:",
-    ]
+    lines = ["SUMMARY", "1. What We Learned:"]
     for lesson in summary["lessons"]:
         lines.append(
-            f"- {lesson.get('title')}: {lesson.get('signal')}. "
-            f"{lesson.get('action')}"
+            f"- {lesson.get('title')}: {lesson.get('signal')}."
         )
-    lines.extend([
-        f"Next Session: {summary['next_session']}",
-        "Measurements Starting Or Continuing:",
-        *[f"- {measurement}" for measurement in summary["measurements"]],
-    ])
+    lines.extend(
+        ["2. Changes We Need To Make:", *[
+            f"- {change}" for change in summary["changes"]
+        ]]
+    )
     return _normalize_dollar_markdown("\n".join(lines))
 
 
 def _summary_html(summary: dict[str, Any]) -> str:
-    pnl = float(summary["pnl"])
-    result_color = "#147a45" if pnl >= 0 else "#b42335"
-    result_background = "#eaf8f0" if pnl >= 0 else "#fff0f1"
     lessons = "".join(
         "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
         f"<strong>{_inline(str(row.get('title') or 'Learning'))}:</strong> "
-        f"{_inline(_normalize_dollar_markdown(str(row.get('signal') or '')))}. "
-        f"{_inline(str(row.get('action') or ''))}</li>"
+        f"{_inline(_normalize_dollar_markdown(str(row.get('signal') or '')))}.</li>"
         for row in summary["lessons"]
     )
-    measurements = "".join(
+    changes = "".join(
         "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
         f"{_inline(row)}</li>"
-        for row in summary["measurements"]
+        for row in summary["changes"]
     )
     return f"""
-<div style="border:1px solid #d7e2f0;border-radius:14px;overflow:hidden;background:#f9fbfe;margin:0 0 22px;">
-  <div style="padding:14px 18px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-    <tr>
-      <td style="width:34%;padding:14px 10px 14px 18px;background:{result_background};">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Net P&amp;L</div>
-        <div style="font-size:24px;font-weight:800;color:{result_color};margin-top:3px;">{_currency(pnl)}</div>
-      </td>
-      <td style="width:33%;padding:14px 10px;text-align:center;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Trades</div>
-        <div style="font-size:24px;font-weight:800;color:#173763;margin-top:3px;">{summary['trades']}</div>
-      </td>
-      <td style="width:33%;padding:14px 18px 14px 10px;text-align:right;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#67768c;">Win Rate</div>
-        <div style="font-size:24px;font-weight:800;color:#173763;margin-top:3px;">{summary['win_rate']:.1%}</div>
-      </td>
-    </tr>
-  </table>
-  <div style="padding:2px 18px 16px;">
-    <div style="font-size:14px;font-weight:750;color:#173763;margin-top:12px;">What We Learned</div>
+<div style="border:1px solid #d7e2f0;border-top:0;border-radius:0 0 14px 14px;overflow:hidden;background:#f9fbfe;margin:0;">
+  <div style="padding:12px 18px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
+  <div style="padding:12px 18px 14px;">
+    <div style="font-size:14px;font-weight:750;color:#173763;">1. What We Learned</div>
     <ul style="margin:4px 0 12px;padding-left:19px;">{lessons}</ul>
-    <div style="padding:11px 13px;border-left:4px solid #4f7ec8;background:#eef4fc;border-radius:6px;color:#34445f;font-size:13px;">
-      <strong>Next Session:</strong> {_inline(summary['next_session'])}
-    </div>
-    <div style="font-size:14px;font-weight:750;color:#173763;margin-top:14px;">Measurements Starting Or Continuing</div>
-    <ul style="margin:4px 0 0;padding-left:19px;">{measurements}</ul>
+    <div style="font-size:14px;font-weight:750;color:#173763;">2. Changes We Need To Make</div>
+    <ul style="margin:4px 0 0;padding-left:19px;">{changes}</ul>
   </div>
 </div>
 """
@@ -428,10 +387,6 @@ def _today_trades_svg(trading_date: str, rows: list[dict[str, str]]) -> str:
         ("Exit", "exit", 76),
         ("Checklist", "checklist", 85),
         ("Phase", "phase", 165),
-        ("CQ", "cq", 58),
-        ("MAS", "mas", 58),
-        ("ABS", "abs", 58),
-        ("CONF", "conf", 64),
         ("P&L", "pnl", 130),
         ("Exit", "exit_reason", 130),
     ]
@@ -486,6 +441,61 @@ def _today_trades_svg(trading_date: str, rows: list[dict[str, str]]) -> str:
 </svg>"""
 
 
+def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
+    """Render Today's Trades natively so Outlook creates no image attachment."""
+    columns = (
+        ("Time", "time"),
+        ("Option", "option"),
+        ("#", "contracts"),
+        ("Entry", "entry"),
+        ("Exit", "exit"),
+        ("Checklist", "checklist"),
+        ("Phase", "phase"),
+        ("P&L", "pnl"),
+        ("Exit", "exit_reason"),
+    )
+    head = "".join(
+        "<th style=\"padding:8px 6px;text-align:center;background:#edf3fb;"
+        "border-bottom:2px solid #cbd8ea;font-size:10px;letter-spacing:.25px;"
+        f"text-transform:uppercase;color:#52657f;white-space:nowrap;\">{html.escape(label)}</th>"
+        for label, _ in columns
+    )
+    body_rows = []
+    for index, row in enumerate(rows):
+        cells = []
+        for _, key in columns:
+            color = (
+                "#159447" if key == "pnl" and row["positive"]
+                else "#d9364f" if key == "pnl"
+                else "#334155"
+            )
+            weight = "700" if key in {"option", "pnl"} else "500"
+            cells.append(
+                "<td style=\"padding:9px 6px;text-align:center;"
+                f"border-bottom:1px solid #e6ebf2;font-size:11px;color:{color};"
+                f"font-weight:{weight};white-space:nowrap;\">"
+                f"{html.escape(str(row.get(key) or '—'))}</td>"
+            )
+        background = "#ffffff" if index % 2 == 0 else "#f8fafc"
+        body_rows.append(f"<tr style=\"background:{background};\">{''.join(cells)}</tr>")
+    if not body_rows:
+        body_rows.append(
+            "<tr><td colspan=\"9\" style=\"padding:18px;text-align:center;"
+            "color:#64748b;font-size:12px;\">No completed trades</td></tr>"
+        )
+    return (
+        "<div style=\"margin:0 0 18px;border:1px solid #d7e2f0;"
+        "border-top:0;border-radius:0 0 12px 12px;overflow:hidden;\">"
+        "<div style=\"padding:12px 14px;background:#173763;color:#ffffff;"
+        "font-size:17px;font-weight:750;text-align:center;\">Today's Trades</div>"
+        "<div style=\"overflow-x:auto;\">"
+        "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
+        "style=\"width:100%;border-collapse:collapse;\">"
+        f"<thead><tr>{head}</tr></thead><tbody>{''.join(body_rows)}</tbody></table>"
+        "</div></div>"
+    )
+
+
 def _write_today_trades_snapshot(trading_date: str) -> Path:
     """Render an email-safe PNG of the Cockpit Today's Trades table."""
     output_dir = LEARNING_DIR / "email_images"
@@ -517,7 +527,7 @@ def markdown_to_email_html(
     trading_date: str,
     *,
     summary: dict[str, Any] | None = None,
-    trades_image_src: str | None = None,
+    trades: list[dict[str, str]] | None = None,
 ) -> str:
     """Render the review's constrained Markdown into email-safe HTML."""
     blocks: list[str] = []
@@ -596,14 +606,7 @@ def markdown_to_email_html(
 
     content = "\n".join(blocks)
     summary_card = _summary_html(summary) if summary else ""
-    trades_image = (
-        "<div style=\"margin:0 0 22px;\">"
-        f"<img src=\"{html.escape(trades_image_src, quote=True)}\" "
-        "alt=\"Today's Trades\" width=\"100%\" "
-        "style=\"display:block;width:100%;height:auto;border:0;border-radius:12px;\">"
-        "</div>"
-        if trades_image_src else ""
-    )
+    trades_table = _today_trades_email_html(trades) if trades is not None else ""
     return f"""<!doctype html>
 <html>
 <head>
@@ -614,14 +617,14 @@ def markdown_to_email_html(
 <body style="margin:0;background:#f3f6fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;">Broker-reconciled McLeod Alpha bot trade review</div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb;">
-    <tr><td align="center" style="padding:8px 10px 18px;">
+    <tr><td align="center" style="padding:0 10px 18px;">
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(31,49,82,.10);">
         <tr><td style="padding:20px 28px;background:linear-gradient(135deg,#15284c,#365b9d);color:#ffffff;">
           <div style="font-size:12px;letter-spacing:1.7px;text-transform:uppercase;opacity:.78;">McLeod Alpha</div>
           <div style="font-size:28px;font-weight:750;margin-top:7px;">Daily Bot Trade Review</div>
           <div style="font-size:15px;margin-top:7px;opacity:.86;">Broker-Reconciled Learning</div>
         </td></tr>
-        <tr><td class="review" style="padding:18px 28px 28px;line-height:1.52;">
+        <tr><td class="review" style="padding:0 28px 28px;line-height:1.52;">
           <style>
             .review h1 {{ display:none; }}
             .review h2 {{ color:#173763;font-size:19px;margin:24px 0 11px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:10px 12px;border-radius:8px; }}
@@ -640,7 +643,7 @@ def markdown_to_email_html(
             }}
           </style>
           {summary_card}
-          {trades_image}
+          {trades_table}
           {content}
         </td></tr>
         <tr><td style="padding:20px 34px;background:#edf3fb;color:#5a6780;font-size:12px;line-height:1.5;">
@@ -714,9 +717,9 @@ def _reconciliation_label(trading_date: str) -> str:
     return "unknown"
 
 
-def _email_markdown(markdown: str) -> str:
+def _email_markdown(markdown: str, *, trading_date: str | None = None) -> str:
     """Apply the lean email view without deleting any underlying learning data."""
-    markdown = _compact_operational_sections(markdown)
+    markdown = _compact_operational_sections(markdown, trading_date=trading_date)
     lines = markdown.splitlines()
     cleaned: list[str] = []
     skipped_heading_level: int | None = None
@@ -762,8 +765,134 @@ def _replace_h2_section(markdown: str, title: str, replacement: str) -> str:
     return pattern.sub(replacement.rstrip() + "\n\n", markdown, count=1)
 
 
-def _compact_operational_sections(markdown: str) -> str:
+def _all_time_direction_breakdown() -> str | None:
+    try:
+        from reports.entry_quality_shadow_report import load_study_trades
+
+        trades, _ = load_study_trades(root=ROOT)
+    except Exception:
+        return None
+    rows = []
+    for direction in ("CALL", "PUT"):
+        selected = [row for row in trades if row.get("direction") == direction]
+        if not selected:
+            continue
+        wins = sum(float(row.get("pnl_dollars") or 0.0) > 0 for row in selected)
+        pnl = sum(float(row.get("pnl_dollars") or 0.0) for row in selected)
+        rows.append(
+            f"| {direction} | {len(selected)} | {wins} | {len(selected) - wins} | "
+            f"{wins / len(selected):.1%} | {_currency(pnl)} | "
+            f"{_currency(pnl / len(selected))} |"
+        )
+    if not rows:
+        return None
+    return """## Direction Breakdown — All Time
+
+| Direction | Trades | Wins | Losses | Win Rate | Net P&L | Average P&L |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+""" + "\n".join(rows)
+
+
+def _replace_h3_section(markdown: str, title: str, replacement: str) -> str:
+    pattern = re.compile(
+        rf"(?ms)^###\s+{re.escape(title)}\s*$.*?(?=^###\s+|^##\s+|\Z)"
+    )
+    return pattern.sub(replacement.rstrip() + "\n\n", markdown, count=1)
+
+
+def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> str:
+    markdown = re.sub(
+        r"(?ms)^##\s+Missed Opportunities — Shadow Review\s*$.*?"
+        r"(?=^###\s+Daily Scorecard\s*$)",
+        "",
+        markdown,
+        count=1,
+    )
+    payload = _load_json(
+        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.json"
+    )
+    summary = payload.get("summary") or {}
+    missed = [
+        row for row in (payload.get("missed_opportunities") or [])
+        if isinstance(row, dict)
+    ]
+    patterns = [
+        row for row in (payload.get("today_pattern_summary") or [])
+        if isinstance(row, dict)
+    ]
+    blockers = [
+        row for row in (payload.get("today_blocker_summary") or [])
+        if isinstance(row, dict)
+    ]
+    if missed:
+        missed_count = int(summary.get("canonical_missed_opportunities") or len(missed))
+        unseen = int(summary.get("unseen_market_moves") or 0)
+        near = int(summary.get("near_miss_opportunities") or 0)
+        coverage = float(summary.get("option_evidence_coverage") or 0.0)
+        top_pattern = max(
+            patterns,
+            key=lambda row: (
+                int(row.get("missed_profitable") or 0),
+                int(row.get("canonical_episodes") or 0),
+            ),
+            default={},
+        )
+        pattern_text = (
+            f"The largest repeatable cluster was {top_pattern.get('direction', 'unknown')} "
+            f"{str(top_pattern.get('phase') or 'unknown').replace('_', ' ').title()} "
+            f"blocked by {top_pattern.get('rejection_reason', 'an unclassified gate')}: "
+            f"{int(top_pattern.get('missed_profitable') or 0)} misses in "
+            f"{int(top_pattern.get('canonical_episodes') or 0)} canonical episodes."
+        )
+        canonical_summary = f"""### Canonical Missed Opportunities
+
+- **What we missed:** **{missed_count}** executable +6%-before-stop opportunities: **{unseen}** were moves the live setup did not recognize and **{near}** were near-miss rejections.
+- **Where it concentrated:** {pattern_text}
+- **What we learned:** Improve earlier move recognition and candidate coverage before weakening gates. Executable evidence coverage was **{coverage:.1%}**, below the governed 80% threshold, and the leading blocker patterns produced mixed outcomes."""
+        markdown = _replace_h3_section(
+            markdown,
+            "Canonical Missed Opportunities",
+            canonical_summary,
+        )
+
+    if blockers:
+        primary = max(
+            blockers,
+            key=lambda row: int(row.get("sole_blocker_episodes") or 0),
+        )
+        overlap = max(
+            (
+                row for row in blockers
+                if int(row.get("canonical_episodes") or 0)
+                > int(row.get("sole_blocker_episodes") or 0)
+            ),
+            key=lambda row: int(row.get("canonical_episodes") or 0),
+            default={},
+        )
+        blocker_summary = f"""### Blocker Usefulness
+
+- **Most measurable blocker:** {primary.get('blocker_code', 'Unknown')} was the sole blocker in **{int(primary.get('sole_blocker_episodes') or 0)}** episodes; it missed **{int(primary.get('missed_profitable') or 0)}** profitable moves and protected against **{int(primary.get('losses_avoided') or 0)}** losing moves.
+- **Overlap warning:** {overlap.get('blocker_code', 'Overlapping gates')} appeared in **{int(overlap.get('canonical_episodes') or 0)}** episodes but was the sole blocker only **{int(overlap.get('sole_blocker_episodes') or 0)}** time(s), so it cannot receive causal credit.
+- **Decision:** Keep blocker logic unchanged. Continue collecting executable outcomes until each proposed change has at least 20 canonical episodes and 80% coverage."""
+        markdown = _replace_h3_section(
+            markdown,
+            "Blocker Usefulness",
+            blocker_summary,
+        )
+    return markdown
+
+
+def _compact_operational_sections(
+    markdown: str,
+    *,
+    trading_date: str | None = None,
+) -> str:
     """Create concise email-only control summaries from the full worksheets."""
+    direction = _all_time_direction_breakdown()
+    if direction:
+        markdown = _replace_h2_section(markdown, "Direction Breakdown", direction)
+    if trading_date:
+        markdown = _compact_missed_opportunity_sections(markdown, trading_date)
     startup_title = "Startup Guard — Daily Assessment"
     startup_match = re.search(
         rf"(?ms)^##\s+{re.escape(startup_title)}\s*$.*?(?=^##\s+|\Z)",
@@ -972,8 +1101,6 @@ def _send_smtp(
     subject: str,
     text_body: str,
     html_body: str,
-    inline_image_path: Path | None = None,
-    inline_image_cid: str = TODAY_TRADES_IMAGE_CID,
 ) -> None:
     username = (
         os.getenv("SMTP_USERNAME", "").strip()
@@ -1002,15 +1129,6 @@ def _send_smtp(
     message["To"] = recipient
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
-    if inline_image_path is not None:
-        html_part = message.get_payload()[-1]
-        html_part.add_related(
-            inline_image_path.read_bytes(),
-            maintype="image",
-            subtype="png",
-            cid=f"<{inline_image_cid}>",
-            disposition="inline",
-        )
 
     with smtplib.SMTP(host, port, timeout=20) as smtp:
         smtp.starttls()
@@ -1042,7 +1160,9 @@ def send_review(
         trading_date,
     )
     md_path.write_text(markdown, encoding="utf-8")
-    email_markdown = _normalize_dollar_markdown(_email_markdown(markdown))
+    email_markdown = _normalize_dollar_markdown(
+        _email_markdown(markdown, trading_date=trading_date)
+    )
     email_summary = _build_email_summary(trading_date)
     if not dry_run:
         reconciliation_data = _reconciliation(trading_date)
@@ -1052,16 +1172,12 @@ def send_review(
                 "and zero pending outbox entries are required"
             )
 
-    trades_image_path = _write_today_trades_snapshot(trading_date)
-    preview_image_src = (
-        "data:image/png;base64,"
-        + b64encode(trades_image_path.read_bytes()).decode("ascii")
-    )
+    trade_rows = _snapshot_trade_rows(trading_date)
     preview_html = markdown_to_email_html(
         email_markdown,
         trading_date,
         summary=email_summary,
-        trades_image_src=preview_image_src,
+        trades=trade_rows,
     )
     html_path.write_text(preview_html, encoding="utf-8")
     if dry_run:
@@ -1071,12 +1187,13 @@ def send_review(
         email_markdown,
         trading_date,
         summary=email_summary,
-        trades_image_src=f"cid:{TODAY_TRADES_IMAGE_CID}",
+        trades=trade_rows,
     )
 
     state = _load_json(STATE_PATH)
     digest = hashlib.sha256(
-        email_markdown.encode("utf-8") + trades_image_path.read_bytes()
+        email_markdown.encode("utf-8")
+        + json.dumps(trade_rows, sort_keys=True).encode("utf-8")
     ).hexdigest()
     if (
         not force
@@ -1109,7 +1226,6 @@ def send_review(
         subject=subject,
         text_body=text_body,
         html_body=html_body,
-        inline_image_path=trades_image_path,
     )
 
     sent_at = datetime.now(EASTERN_TZ).isoformat(timespec="seconds")
@@ -1124,7 +1240,7 @@ def send_review(
             "reconciliation": reconciliation,
             "last_html_path": str(html_path),
             "attachments_sent": 0,
-            "inline_images_sent": 1,
+            "inline_images_sent": 0,
         },
     )
     DELIVERY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -1132,7 +1248,7 @@ def send_review(
         log.write(
             f"{sent_at} | send_success | date={trading_date}"
             f" | recipient={to_email} | reconciliation={reconciliation}"
-            " | attachments=0 | inline_images=1\n"
+            " | attachments=0 | inline_images=0\n"
         )
     print(f"Daily bot trade review emailed for {trading_date} to {to_email}")
     return html_path

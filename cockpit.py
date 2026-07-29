@@ -9398,7 +9398,7 @@ HTML_DASHBOARD = """
                 todayPnl.textContent = `${totalPnlText} (${totalReturnPctText})`;
                 
                 html += '<div class="trades-table-wrap"><table class="trades-table"><thead><tr>';
-                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Phase</th><th>CQ</th><th>MAS</th><th>ABS</th><th>Conf</th><th>P&L</th><th>Exit</th>';
+                html += '<th>Time</th><th>OPTION</th><th>#</th><th>Entry</th><th>Exit</th><th>Checklist</th><th>Phase</th><th>P&L</th><th>Exit</th>';
                 html += '</tr></thead><tbody>';
                 
                 data.trades.forEach(trade => {
@@ -9425,7 +9425,6 @@ HTML_DASHBOARD = """
                     if (!(indicatorCountRaw === null || indicatorCountRaw === undefined || indicatorTotalRaw === null || indicatorTotalRaw === undefined)) {
                         indicators = `${formatNumber(indicatorCountRaw)} / ${formatNumber(indicatorTotalRaw)}`;
                     }
-                    const cq = (trade.continuation_quality_score === null || trade.continuation_quality_score === undefined) ? '-' : formatNumber(trade.continuation_quality_score, 2);
                     const momentumPhase = String(trade.momentum_phase || '')
                         .replaceAll('_', ' ')
                         .toLowerCase()
@@ -9433,15 +9432,8 @@ HTML_DASHBOARD = """
                         .filter(Boolean)
                         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                         .join(' ') || '-';
-                    const mas = (trade.momentum_acceleration_score === null || trade.momentum_acceleration_score === undefined) ? '-' : formatNumber(trade.momentum_acceleration_score, 2);
-                    const abs = (trade.absorption_score === null || trade.absorption_score === undefined) ? '-' : formatNumber(trade.absorption_score, 2);
-                    const conf = (trade.confidence_score === null || trade.confidence_score === undefined) ? '-' : formatNumber(trade.confidence_score, 2);
                     html += `<td data-label="Checklist">${indicators}</td>`;
                     html += `<td data-label="Phase">${momentumPhase}</td>`;
-                    html += `<td data-label="CQ">${cq}</td>`;
-                    html += `<td data-label="MAS">${mas}</td>`;
-                    html += `<td data-label="ABS">${abs}</td>`;
-                    html += `<td data-label="Conf">${conf}</td>`;
                     const pnlPct = (trade.pnl_pct === null || trade.pnl_pct === undefined) ? null : Number(trade.pnl_pct);
                     let pnlPctText = '';
                     if (pnlPct !== null && !Number.isNaN(pnlPct)) {
