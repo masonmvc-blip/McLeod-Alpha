@@ -8953,7 +8953,7 @@ HTML_DASHBOARD = """
                     const wins = Number(row.today_wins || 0);
                     const losses = Number(row.today_losses || 0);
                     const winRate = (wins / trades) * 100;
-                    return `<span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)`;
+                    return `<span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(0)}%)`;
                 };
 
                 if (!rows.length) {
@@ -8975,7 +8975,7 @@ HTML_DASHBOARD = """
                     return `<article class="indicator-performance-row">
                         <div class="indicator-performance-name">${escapeText(formatIndicatorName(row.indicator))}</div>
                         <div class="indicator-performance-stats">${todayTrades}</div>
-                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(1)}%)</div>
+                        <div class="indicator-performance-stats"><span class="indicator-performance-wins">${wins}W</span> / <span class="indicator-performance-losses">${losses}L</span> (${winRate.toFixed(0)}%)</div>
                         <div class="indicator-performance-stats indicator-performance-average ${averageTone}">${money(averageReturn)}</div>
                         <div class="indicator-performance-stats"><span class="indicator-performance-guidance ${tone}">${escapeText(guidance)}</span></div>
                     </article>`;
