@@ -23,6 +23,7 @@ from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
 from strategy.trend_lifecycle_v2 import classify_trend_lifecycle_v2
 from strategy.volume_shadow import build_volume_shadow
+from strategy.option_selection_shadow import build_option_selection_shadow
 from strategy.day_trade_spy_shadow_suite import evaluate_day_trade_spy_shadow_suite
 from execution.trend_lifecycle_shadow import record_lifecycle_shadow_snapshot
 from backtesting.signal_replay import confidence_score_engine
@@ -212,10 +213,28 @@ def _log_shadow_opportunities(
         candle_at = pd.to_datetime(getattr(last, "name", None), utc=True, errors="coerce")
         if pd.isna(candle_at):
             candle_at = pd.Timestamp.now(tz="UTC")
+        option_selection_shadows = {}
+        if _CACHED_OPTION_CHAIN:
+            underlying_price = float(getattr(last, "close", 0.0) or 0.0)
+            for direction, live_option in (
+                ("CALL", selected_option_call),
+                ("PUT", selected_option_put),
+            ):
+                option_selection_shadows[direction] = build_option_selection_shadow(
+                    _CACHED_OPTION_CHAIN,
+                    direction,
+                    underlying_price,
+                    live_option,
+                    as_of=candle_at.tz_convert(EASTERN_TZ).date(),
+                )
         watch_until = candle_at + pd.Timedelta(minutes=16)
         for option in (selected_option_call, selected_option_put):
             if isinstance(option, dict) and option.get("symbol"):
                 _MISSED_OPPORTUNITY_OPTION_WATCHLIST[str(option["symbol"])] = watch_until
+        for shadow in option_selection_shadows.values():
+            shadow_option = (shadow or {}).get("shadow_selection")
+            if isinstance(shadow_option, dict) and shadow_option.get("symbol"):
+                _MISSED_OPPORTUNITY_OPTION_WATCHLIST[str(shadow_option["symbol"])] = watch_until
         for symbol, expires_at in list(_MISSED_OPPORTUNITY_OPTION_WATCHLIST.items()):
             if candle_at > expires_at:
                 _MISSED_OPPORTUNITY_OPTION_WATCHLIST.pop(symbol, None)
@@ -318,6 +337,7 @@ def _log_shadow_opportunities(
             blocked_entry=blocked_entry,
             day_trade_spy_shadow_suites=suites,
             option_watch_quotes=option_watch_quotes,
+            option_selection_shadows=option_selection_shadows,
         )
     except Exception as exc:
         print(f"Shadow opportunity logging error: {exc}")

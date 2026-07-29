@@ -682,6 +682,7 @@ def _build_setup_record(
     prev,
     feature_payload: Dict[str, Any],
     selected_option: Any,
+    option_selection_shadow: Dict[str, Any] | None = None,
     blocked_entry: Dict[str, Any] | None = None,
     day_trade_spy_shadow_suite: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
@@ -730,6 +731,7 @@ def _build_setup_record(
         "entry_threshold": int(entry_threshold),
         "option_selected": _extract_option_symbol(selected_option),
         "option_quote_snapshot": _extract_option_snapshot(selected_option),
+        "option_selection_shadow": option_selection_shadow,
         "stage": stage,
         "cq": cq,
         "mas": mas,
@@ -820,6 +822,7 @@ def log_evaluated_setups(
     blocked_entry: Dict[str, Any] | None = None,
     day_trade_spy_shadow_suites: Dict[str, Dict[str, Any]] | None = None,
     option_watch_quotes: List[Dict[str, Any]] | None = None,
+    option_selection_shadows: Dict[str, Dict[str, Any]] | None = None,
 ) -> None:
     payload = feature_payload or {}
     market_state = classify_market_state(df)
@@ -847,6 +850,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_call,
+        option_selection_shadow=(option_selection_shadows or {}).get("CALL"),
         blocked_entry=blocked_entry,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("CALL"),
     )
@@ -887,6 +891,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_put,
+        option_selection_shadow=(option_selection_shadows or {}).get("PUT"),
         blocked_entry=blocked_entry,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("PUT"),
     )

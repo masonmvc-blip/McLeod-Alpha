@@ -46,6 +46,8 @@ def test_review_email_script_uses_repo_data_paths():
     assert "entry_quality_shadow" in source
     assert "volume_shadow" in source
     assert "## Volume — Daily Shadow Test" in source
+    assert "option_selection_shadow" in source
+    assert "## Option Selection — Spread-Aware Shadow Ranking" in source
     assert "missed_opportunities_shadow" in source
     assert "startup_guard_review" in source
     assert "cooling_period_review" in source
@@ -54,6 +56,7 @@ def test_review_email_script_uses_repo_data_paths():
     assert "day_trade_spy_shadow" in source
     assert "day_trade_spy_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "volume_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
+    assert "option_selection_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "missed_opportunities_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "market_trend_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "stop_execution_review" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
