@@ -106,13 +106,12 @@ def test_protective_stop_limit_keeps_the_intended_loss_floor():
     assert limit_price == 5.87
 
 
-def test_known_stop_replacement_skips_account_scan_and_cancels_only_after_submit(monkeypatch):
+def test_known_stop_replacement_uses_one_atomic_broker_request(monkeypatch):
     client = Mock()
     response = Mock()
     response.headers = {"Location": "/orders/replacement-stop"}
     response.raise_for_status.return_value = None
-    client.place_order.return_value = response
-    client.cancel_order.return_value.raise_for_status.return_value = None
+    client.replace_order.return_value = response
     live_engine.set_schwab_client(client, "account-number", "account-hash")
     monkeypatch.setattr(live_engine, "_audit_bot_order", lambda *_args: None)
 
@@ -127,31 +126,19 @@ def test_known_stop_replacement_skips_account_scan_and_cancels_only_after_submit
     assert order_id == "replacement-stop"
     assert stop_price == 5.25
     client.get_orders_for_account.assert_not_called()
-    assert client.place_order.call_count == 1
-    submitted_order = client.place_order.call_args[0][1]
+    client.get_order.assert_not_called()
+    client.place_order.assert_not_called()
+    client.cancel_order.assert_not_called()
+    client.replace_order.assert_called_once()
+    assert client.replace_order.call_args[0][:2] == ("account-hash", "old-stop")
+    submitted_order = client.replace_order.call_args[0][2]
     assert str(getattr(submitted_order, "_orderType", "")) == "STOP"
     assert not getattr(submitted_order, "_price", None)
     assert str(getattr(submitted_order, "_stopPrice", "")) == "5.25"
-    client.cancel_order.assert_called_once_with("old-stop", "account-hash")
 
 
 def test_same_target_known_stop_is_coalesced_without_duplicate_place(monkeypatch):
     client = Mock()
-    known = Mock()
-    known.raise_for_status.return_value = None
-    known.json.return_value = {
-        "status": "WORKING",
-        "orderType": "STOP",
-        "stopPrice": 5.25,
-        "orderLegCollection": [{
-            "instruction": "SELL_TO_CLOSE",
-            "instrument": {
-                "assetType": "OPTION",
-                "symbol": "SPY  260720C00600000",
-            },
-        }],
-    }
-    client.get_order.return_value = known
     live_engine.set_schwab_client(client, "account-number", "account-hash")
 
     order_id, stop_price = live_engine._submit_protective_stop(
@@ -164,7 +151,9 @@ def test_same_target_known_stop_is_coalesced_without_duplicate_place(monkeypatch
     )
 
     assert (order_id, stop_price) == ("working-stop", 5.25)
+    client.get_order.assert_not_called()
     client.place_order.assert_not_called()
+    client.replace_order.assert_not_called()
     client.cancel_order.assert_not_called()
 
 
@@ -184,6 +173,59 @@ def test_same_target_known_stop_is_preserved_during_broker_outage(monkeypatch):
 
     assert (order_id, stop_price) == ("last-confirmed-stop", 5.25)
     client.place_order.assert_not_called()
+
+
+def test_live_ratchet_defers_without_broker_call_during_rate_limit(monkeypatch):
+    pos = _live_position()
+    pos.opened = datetime(2026, 7, 17, 9, 59, 0)
+    pos.option_stop = 4.95
+    pos.option_initial_stop = 4.75
+    pos.protective_stop_order_id = "existing-stop"
+    live_engine.current_position = pos
+
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: pytest.fail("cooldown must suppress broker replacement"),
+    )
+    monkeypatch.setattr(live_engine, "save_position", lambda _pos: None)
+    live_engine._last_protective_stop_check_epoch = live_engine.time.time()
+    live_engine._last_protective_stop_check_ok = True
+    live_engine._last_protective_stop_submission_epoch = 0.0
+    live_engine._broker_rate_limited_until_epoch = live_engine.time.time() + 30.0
+
+    live_engine.manage_trade(
+        current_price=500.0,
+        option_mark=5.40,
+        option_bid=5.40,
+        quote_metadata={"bid": 5.40, "ask": 5.42, "quote_spread_pct": 0.37, "quote_age_seconds": 0.1},
+    )
+
+    assert pos.option_stop == 4.95
+
+
+def test_broker_reconciled_exit_can_arm_standard_post_exit_cooling(monkeypatch):
+    saved = {}
+
+    class Memory:
+        def save_setting(self, name, value, path):
+            saved.update(name=name, value=value, path=path)
+
+    monkeypatch.setattr(live_engine, "get_memory", lambda: Memory())
+
+    live_engine._arm_post_exit_cooling(
+        "BROKER_RECONCILED_EXIT",
+        "broker_reconciliation",
+    )
+
+    assert saved["name"] == "post_exit_cooling"
+    assert saved["value"]["pending"] is True
+    assert saved["value"]["exit_reason"] == "BROKER_RECONCILED_EXIT"
+    assert saved["value"]["source"] == "broker_reconciliation"
+    assert saved["path"] == live_engine.POST_EXIT_COOLING_FILE
 
 
 def test_restore_reconciles_flat_position_before_stop_submission(monkeypatch):

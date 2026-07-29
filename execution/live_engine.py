@@ -50,7 +50,7 @@ _schwab_account_number = None
 _schwab_account_hash = None
 _last_broker_sync_epoch = 0.0
 BROKER_SYNC_MIN_INTERVAL_SECONDS = float(os.getenv("BROKER_SYNC_MIN_INTERVAL_SECONDS", "2.0"))
-PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS = float(os.getenv("PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS", "1.0"))
+PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS = float(os.getenv("PROTECTIVE_STOP_CHECK_MIN_INTERVAL_SECONDS", "5.0"))
 _last_protective_stop_check_epoch = 0.0
 _last_protective_stop_check_ok = True
 _last_protective_stop_submission_epoch = 0.0
@@ -62,7 +62,7 @@ STOP_RATCHET_MAX_QUOTE_AGE_SECONDS = max(0.5, float(os.getenv("STOP_RATCHET_MAX_
 STOP_RATCHET_MAX_SPREAD_PCT = max(0.0, float(os.getenv("STOP_RATCHET_MAX_SPREAD_PCT", "12")))
 STOP_RATCHET_MIN_INTERVAL_SECONDS = max(1.0, float(os.getenv("STOP_RATCHET_MIN_INTERVAL_SECONDS", "5")))
 STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS = max(0.01, float(os.getenv("STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS", "0.10")))
-BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.25")))
+BROKER_REQUEST_MIN_INTERVAL_SECONDS = max(0.0, float(os.getenv("BROKER_REQUEST_MIN_INTERVAL_SECONDS", "0.75")))
 BROKER_RATE_LIMIT_FALLBACK_SECONDS = max(1.0, float(os.getenv("BROKER_RATE_LIMIT_FALLBACK_SECONDS", "30")))
 BROKER_RATE_LIMIT_STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "broker_rate_limit.json"
 BROKER_RECONCILIATION_SNAPSHOT_PATH = Path(__file__).resolve().parents[1] / "data" / "broker_reconciliation_snapshot.json"
@@ -131,6 +131,24 @@ def _play_execution_alert(event: str, pnl_dollars: float | None = None) -> None:
         )
     except Exception as exc:
         print(f"WARNING: Could not play local {alert_kind} alert: {exc}")
+
+
+def _arm_post_exit_cooling(exit_reason: str, source: str) -> None:
+    """Skip the next qualifying signal after every confirmed live exit."""
+    try:
+        get_memory().save_setting(
+            "post_exit_cooling",
+            {
+                "pending": True,
+                "exit_reason": str(exit_reason or ""),
+                "exited_at": datetime.now(timezone.utc).isoformat(),
+                "source": str(source or "live_engine"),
+            },
+            POST_EXIT_COOLING_FILE,
+        )
+        print("POST-EXIT COOLING: next qualifying entry signal will be skipped")
+    except Exception as exc:
+        print(f"WARNING: Could not persist post-exit cooling state: {exc}")
 
 
 def _record_broker_rate_limit(response=None):
@@ -1486,6 +1504,7 @@ def _sync_position_with_broker(current_price, force: bool = False):
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
     _play_execution_alert("exit", option_pnl_dollars)
+    _arm_post_exit_cooling("BROKER_RECONCILED_EXIT", "broker_reconciliation")
     print("✓ Cleared stale local position after broker reconciliation")
     print("✓ Protective stop failure lock cleared after broker reconciliation")
 
@@ -1597,9 +1616,8 @@ def _submit_protective_stop(
     )
 
     if existing_protective_stop:
-        known_stop = _known_protective_stop_snapshot(existing_protective_stop[0], option_symbol)
-        known_price = float((known_stop or {}).get("stop_price") or existing_protective_stop[1] or 0.0)
-        if known_stop and known_stop["active"] and abs(known_price - float(stop_price)) < 0.005:
+        known_price = float(existing_protective_stop[1] or 0.0)
+        if known_price > 0 and abs(known_price - float(stop_price)) < 0.005:
             print(
                 f"✓ Known protective stop already active: "
                 f"{existing_protective_stop[0]} @ ${known_price:.2f}"
@@ -1610,29 +1628,11 @@ def _submit_protective_stop(
                 quantity=quantity,
                 stop_price=known_price,
                 broker_order_id=existing_protective_stop[0],
-                verification="broker_confirmed",
-            )
-            return existing_protective_stop[0], known_price
-        if (
-            known_stop is None
-            and known_price > 0
-            and abs(known_price - float(stop_price)) < 0.005
-        ):
-            # During a broker outage or rate-limit cooldown, preserve the last
-            # confirmed same-price order rather than issuing a duplicate place
-            # call that cannot be verified safely.
-            record_stop_event(
-                "protective_stop_restore_coalesced",
-                option_symbol=option_symbol,
-                quantity=quantity,
-                stop_price=known_price,
-                broker_order_id=existing_protective_stop[0],
-                verification="last_confirmed_during_broker_outage",
+                verification="last_confirmed",
             )
             return existing_protective_stop[0], known_price
 
-    def _submit_stop_once(target_stop_price):
-        """Submit one STOP protective order and return its broker order ID."""
+    def _build_stop_order(target_stop_price):
         target_stop_price = normalize_option_tick(float(target_stop_price))
 
         from schwab.orders.generic import OrderBuilder
@@ -1647,10 +1647,10 @@ def _submit_protective_stop(
             .set_stop_price(str(target_stop_price))
             .add_option_leg(OptionInstruction.SELL_TO_CLOSE, option_symbol, quantity)
         )
+        return order, target_stop_price
 
-        response = _schwab_client.place_order(_schwab_account_hash, order)
+    def _accepted_order_id(response):
         response.raise_for_status()
-
         order_id = None
         if "Location" in response.headers:
             location = response.headers["Location"]
@@ -1667,16 +1667,30 @@ def _submit_protective_stop(
                     order_id = potential_id
             if order_id == _schwab_account_number:
                 order_id = None
+        return order_id
 
-        if not order_id:
-            return None, target_stop_price, order
-
+    def _submit_stop_once(target_stop_price):
+        """Submit one STOP protective order and return its broker order ID."""
+        order, target_stop_price = _build_stop_order(target_stop_price)
+        response = _schwab_client.place_order(_schwab_account_hash, order)
+        order_id = _accepted_order_id(response)
         return order_id, target_stop_price, order
+
+    def _replace_stop_once(order_id, target_stop_price):
+        """Atomically replace a known STOP in one broker request."""
+        order, target_stop_price = _build_stop_order(target_stop_price)
+        response = _schwab_client.replace_order(
+            _schwab_account_hash,
+            str(order_id),
+            order,
+        )
+        replacement_id = _accepted_order_id(response)
+        return replacement_id, target_stop_price, order
     
     try:
-        # When the in-memory position already has the broker stop ID, avoid a
-        # full-account order scan on every ratchet. We still submit the new stop
-        # before retiring that exact known order, so protection never has a gap.
+        # A known broker stop can be atomically replaced with one request. This
+        # avoids the former verify + place + cancel sequence, which exhausted
+        # Schwab's request budget during fast markets and delayed ratchets.
         active_statuses = {
             "PENDING_ACTIVATION",
             "ACCEPTED",
@@ -1688,8 +1702,12 @@ def _submit_protective_stop(
             "AWAITING_CONDITION",
         }
         if existing_protective_stop:
-            print(f"   Replacing known protective stop {existing_protective_stop[0]} without account scan")
-        elif not skip_existing_order_scan:
+            existing_id, _existing_stop = existing_protective_stop
+            print(f"   Atomically replacing known protective stop {existing_id}")
+            order_id, submitted_stop_price, order = _replace_stop_once(existing_id, stop_price)
+        else:
+            order_id = submitted_stop_price = order = None
+        if not existing_protective_stop and not skip_existing_order_scan:
             try:
                 existing_resp = _schwab_client.get_orders_for_account(_schwab_account_hash)
                 existing_resp.raise_for_status()
@@ -1743,7 +1761,11 @@ def _submit_protective_stop(
             except Exception as order_cleanup_exc:
                 print(f"WARNING: Could not pre-clean conflicting exit orders: {order_cleanup_exc}")
 
-        order_id, submitted_stop_price, order = _submit_stop_once(stop_price)
+        if existing_protective_stop and order_id is None:
+            existing_id, _existing_stop = existing_protective_stop
+            order_id, submitted_stop_price, order = _replace_stop_once(existing_id, stop_price)
+        elif not existing_protective_stop:
+            order_id, submitted_stop_price, order = _submit_stop_once(stop_price)
         
         if not order_id:
             print("WARNING: No order ID returned while submitting replacement stop")
@@ -1773,24 +1795,6 @@ def _submit_protective_stop(
             replaced_order_id=existing_protective_stop[0] if existing_protective_stop else None,
         )
 
-        # Only after the new stop is confirmed do we retire the old one.
-        if existing_protective_stop:
-            existing_id, existing_stop = existing_protective_stop
-            try:
-                if existing_id != order_id:
-                    print(
-                        f"   Canceling superseded protective stop {existing_id} "
-                        f"after new stop confirmation"
-                    )
-                    cancel_resp = _schwab_client.cancel_order(existing_id, _schwab_account_hash)
-                    cancel_resp.raise_for_status()
-                    print(f"   ✓ Superseded protective stop canceled: {existing_id}")
-            except Exception as cancel_exc:
-                print(
-                    f"   WARNING: New stop is live but old stop {existing_id} "
-                    f"could not be canceled: {cancel_exc}"
-                )
-        
         return order_id, submitted_stop_price
         
     except Exception as e:
@@ -3032,20 +3036,7 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
     _play_execution_alert("exit", option_pnl_dollars)
-    try:
-        get_memory().save_setting(
-            "post_exit_cooling",
-            {
-                "pending": True,
-                "exit_reason": reason,
-                "exited_at": datetime.now(timezone.utc).isoformat(),
-                "source": "live_engine",
-            },
-            POST_EXIT_COOLING_FILE,
-        )
-        print("POST-EXIT COOLING: next qualifying entry signal will be skipped")
-    except Exception as exc:
-        print(f"WARNING: Could not persist post-exit cooling state: {exc}")
+    _arm_post_exit_cooling(reason, "live_engine")
     
     # NOW attempt logging (failure won't affect position closure)
     try:
@@ -3258,8 +3249,6 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             float(current_position.option_entry or 0.0),
             int(decision.quantity or 0),
             stop_price_override=float(decision.stop_price or 0.0),
-            existing_stop_order_id=current_position.protective_stop_order_id or None,
-            existing_stop_price=current_position.protective_stop_price or None,
         )
         if not order_id:
             _protective_stop_failed = True
@@ -3305,15 +3294,19 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             return
         stop_improvement = float(decision.stop_price or 0.0) - float(previous_option_stop or 0.0)
         seconds_since_last_submission = time.time() - float(_last_protective_stop_submission_epoch or 0.0)
+        broker_cooldown_remaining = max(0.0, float(_broker_rate_limited_until_epoch or 0.0) - time.time())
         if (
             stop_improvement < STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS
             or seconds_since_last_submission < STOP_RATCHET_MIN_INTERVAL_SECONDS
+            or broker_cooldown_remaining > 0
         ):
             deferral_reasons = []
             if stop_improvement < STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS:
                 deferral_reasons.append("minimum_improvement")
             if seconds_since_last_submission < STOP_RATCHET_MIN_INTERVAL_SECONDS:
                 deferral_reasons.append("minimum_interval")
+            if broker_cooldown_remaining > 0:
+                deferral_reasons.append("broker_rate_limit")
             current_position.option_stop = previous_option_stop
             record_stop_event(
                 "stop_ratchet_deferred",
@@ -3326,6 +3319,7 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
                 minimum_improvement=STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS,
                 seconds_since_last_submission=seconds_since_last_submission,
                 minimum_interval_seconds=STOP_RATCHET_MIN_INTERVAL_SECONDS,
+                broker_cooldown_remaining_seconds=broker_cooldown_remaining,
                 deferral_reasons=deferral_reasons,
                 quote_metadata=quote_metadata or {},
             )
