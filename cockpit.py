@@ -8928,7 +8928,8 @@ HTML_DASHBOARD = """
                     .replaceAll("'", '&#39;');
                 const money = (value) => {
                     const amount = Number(value || 0);
-                    return `${amount < 0 ? '-' : ''}$${Math.abs(amount).toFixed(2)}`;
+                    const formatted = `$${Math.abs(amount).toFixed(2)}`;
+                    return amount < 0 ? `(${formatted})` : formatted;
                 };
                 const formatIndicatorName = (value) => String(value || '')
                     .split('_')

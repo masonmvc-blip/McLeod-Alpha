@@ -449,6 +449,7 @@ def test_indicator_performance_centers_columns_and_expands_average_pnl_header():
 
     assert source.count("<span>All Trades</span>") == 2
     assert source.count("<span>Average P&amp;L</span>") == 2
+    assert 'return amount < 0 ? `(${formatted})` : formatted;' in source
     assert ".indicator-performance-columns {\n            color: #607083;" in source
     assert "text-align: center;" in source
 
