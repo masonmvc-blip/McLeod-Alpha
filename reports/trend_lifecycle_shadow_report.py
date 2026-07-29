@@ -331,7 +331,7 @@ def build_trend_lifecycle_shadow_report(
     reconciliation_complete = bool(reconciliation.get("complete"))
     promotion_checks = {
         "canonical_reconciliation_complete": reconciliation_complete,
-        "minimum_total_sample_30": len(valid) >= 30,
+        "minimum_total_sample_50": len(valid) >= 50,
         "minimum_per_observed_phase_10": phase_minimum >= 10,
         "first_passage_coverage_80pct": (
             (len(known_passage) / len(rolling_rows)) >= 0.80 if rolling_rows else False
@@ -428,7 +428,7 @@ def render_trend_lifecycle_shadow_markdown(payload: dict[str, Any]) -> str:
         f"- Rolling sample: {(payload.get('rolling') or {}).get('valid_v2_sample_size', 0)} valid trades; "
         f"{(payload.get('rolling') or {}).get('first_passage_known_sample_size', 0)} with known first-passage outcomes.",
         f"- Decision: **{gate.get('decision', 'COLLECT_MORE_DATA')}**",
-        "- Minimum before considering a live change: 30 valid trades, 10 observations per observed "
+        "- Minimum before considering a live change: 50 valid trades, 10 observations per observed "
         "phase, at least 80% first-passage coverage, and exact broker reconciliation.",
         "- Even after the gate passes, any implementation requires a separate human-reviewed change; "
         "this shadow tracker never promotes itself.",
