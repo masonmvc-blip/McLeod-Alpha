@@ -1,6 +1,6 @@
 {
   "analysis_protocol_version": "2026-07-22.1",
-  "generated_at": "2026-07-29T00:10:05.538756+00:00",
+  "generated_at": "2026-07-29T00:15:03.284042+00:00",
   "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
   "recording_count": 799,
   "recordings": [
@@ -16270,71 +16270,95 @@
     },
     {
       "analysis_protocol_version": "2026-07-22.1",
-      "analysis_status": "pending",
-      "duration_seconds": null,
-      "evidence_quality": null,
+      "analysis_status": "coverage_incomplete",
+      "duration_seconds": 4404,
+      "evidence_quality": {
+        "ledger_reconciliation_pct": 0,
+        "option_excursion_data_pct": 0,
+        "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+        "tier": "C",
+        "trade_details_captured_pct": 86,
+        "transcript_completeness_pct": 100,
+        "underlying_market_data_pct": 0
+      },
       "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
-      "machine_record_path": null,
-      "output_bundle_path": null,
+      "machine_record_path": "data/research/daytradespy/records/2025-11-21.json",
+      "output_bundle_path": "data/research/daytradespy/output/42398",
       "post_id": 42398,
       "recording_date": "2025-11-21T11:18:28",
       "report_path": "docs/research/2025-11-21_daytradespy_trading_room_research.md",
-      "reprocess_required": false,
-      "reviewed_at": null,
+      "reprocess_required": true,
+      "reviewed_at": "2026-07-28T00:00:00+00:00",
       "source_url": "https://daytradespy.com/42398/trading-room-video-recording-november-21-2025/",
       "title": "Trading Room Video Recording \u2013 November 21, 2025",
       "transcript": {
-        "availability": "pending",
-        "completeness_pct": 0,
+        "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+        "completeness_pct": 100,
         "path": "",
         "speaker_attribution_available": false,
-        "timestamps_preserved": false
+        "timestamps_preserved": true
       }
     },
     {
       "analysis_protocol_version": "2026-07-22.1",
-      "analysis_status": "pending",
-      "duration_seconds": null,
-      "evidence_quality": null,
+      "analysis_status": "coverage_incomplete",
+      "duration_seconds": 4561,
+      "evidence_quality": {
+        "ledger_reconciliation_pct": 0,
+        "option_excursion_data_pct": 0,
+        "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+        "tier": "C",
+        "trade_details_captured_pct": 84,
+        "transcript_completeness_pct": 100,
+        "underlying_market_data_pct": 0
+      },
       "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
-      "machine_record_path": null,
-      "output_bundle_path": null,
+      "machine_record_path": "data/research/daytradespy/records/2025-11-25.json",
+      "output_bundle_path": "data/research/daytradespy/output/42428",
       "post_id": 42428,
       "recording_date": "2025-11-25T12:45:22",
       "report_path": "docs/research/2025-11-25_daytradespy_trading_room_research.md",
-      "reprocess_required": false,
-      "reviewed_at": null,
+      "reprocess_required": true,
+      "reviewed_at": "2026-07-28T00:00:00+00:00",
       "source_url": "https://daytradespy.com/42428/trading-room-video-recording-november-25-2025/",
       "title": "Trading Room Video Recording \u2013 November 25, 2025",
       "transcript": {
-        "availability": "pending",
-        "completeness_pct": 0,
+        "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+        "completeness_pct": 100,
         "path": "",
         "speaker_attribution_available": false,
-        "timestamps_preserved": false
+        "timestamps_preserved": true
       }
     },
     {
       "analysis_protocol_version": "2026-07-22.1",
-      "analysis_status": "pending",
-      "duration_seconds": null,
-      "evidence_quality": null,
+      "analysis_status": "coverage_incomplete",
+      "duration_seconds": 4760,
+      "evidence_quality": {
+        "ledger_reconciliation_pct": 0,
+        "option_excursion_data_pct": 0,
+        "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+        "tier": "C",
+        "trade_details_captured_pct": 89,
+        "transcript_completeness_pct": 100,
+        "underlying_market_data_pct": 0
+      },
       "governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE",
-      "machine_record_path": null,
-      "output_bundle_path": null,
+      "machine_record_path": "data/research/daytradespy/records/2025-11-26.json",
+      "output_bundle_path": "data/research/daytradespy/output/42441",
       "post_id": 42441,
       "recording_date": "2025-11-26T14:21:36",
       "report_path": "docs/research/2025-11-26_daytradespy_trading_room_research.md",
-      "reprocess_required": false,
-      "reviewed_at": null,
+      "reprocess_required": true,
+      "reviewed_at": "2026-07-28T00:00:00+00:00",
       "source_url": "https://daytradespy.com/42441/trading-room-video-recording-november-26-2025/",
       "title": "Trading Room Video Recording \u2013 November 26, 2025",
       "transcript": {
-        "availability": "pending",
-        "completeness_pct": 0,
+        "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+        "completeness_pct": 100,
         "path": "",
         "speaker_attribution_available": false,
-        "timestamps_preserved": false
+        "timestamps_preserved": true
       }
     },
     {
