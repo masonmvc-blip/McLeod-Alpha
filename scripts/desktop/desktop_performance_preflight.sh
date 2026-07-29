@@ -70,7 +70,6 @@ fi
 echo "\n[6] LaunchAgent Checks"
 for label in \
   com.mcleod.alpha.cio-report \
-  com.mcleod.alpha.spcx-open-assist \
   com.mcleod.alpha.preopen-health-bundle \
   com.mcleod.alpha.runtime-log-rotation \
   com.mcleod.alpha.power-guard-start \
@@ -83,6 +82,12 @@ do
     status_ok=0
   fi
 done
+
+if launchctl print "gui/$(id -u)/com.mcleod.alpha.spcx-open-assist" >/dev/null 2>&1; then
+  echo "INFO: optional Monday SPCX manual-alert agent installed"
+else
+  echo "INFO: optional Monday SPCX manual-alert agent not loaded"
+fi
 
 if [[ "$status_ok" == "1" ]]; then
   echo "\nPreflight: PASS"
