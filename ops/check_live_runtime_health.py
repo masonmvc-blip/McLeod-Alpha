@@ -20,7 +20,10 @@ sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / "config" / "cockpit.env", override=True)
 
 EASTERN = ZoneInfo("America/New_York")
-STATUS_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/") + "/api/status"
+# This monitor runs on the canonical trading Mac. Its fail-closed probe must not
+# depend on the public Cockpit route, which may be protected by Cloudflare
+# Access and legitimately redirect unauthenticated requests to a login page.
+STATUS_URL = os.getenv("COCKPIT_HEALTH_URL", "http://127.0.0.1:5001").rstrip("/") + "/api/status"
 STATE_PATH = ROOT / "data" / "live_runtime_health_state.json"
 EVENT_PATH = ROOT / "data" / "reports" / "runtime_events.jsonl"
 LATENCY_PATH = ROOT / "data" / "reports" / "latency_cycle_history.jsonl"
@@ -108,9 +111,13 @@ def main() -> int:
                 issues.append(f"{key}={actual!r}, expected {value!r}")
         if status.get("last_error"):
             issues.append(f"last_error={status['last_error']}")
-        candle_issue = _latest_candle_issue()
-        if candle_issue:
-            issues.append(candle_issue)
+        # Before the opening bell, the latest completed candle is necessarily
+        # from the prior session. Enforce candle freshness only while entries
+        # can actually be submitted.
+        if _is_entry_window():
+            candle_issue = _latest_candle_issue()
+            if candle_issue:
+                issues.append(candle_issue)
     _record(issues)
     print("live_runtime_health=" + ("PASS" if not issues else "FAIL") + ("" if not issues else " | " + " | ".join(issues)))
     return 0 if not issues else 1
