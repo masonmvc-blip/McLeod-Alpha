@@ -1,39 +1,34 @@
-# McLeod Alpha Research Report: February 12, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-02-12 Trading Room — Post 38513
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses the accessible authorized browser transcript from `00:00` through `33:19` (238 cues). The player duration is `1:10:26`, so the accessible source is incomplete and cannot establish the full session's management or outcomes. Visual review, complete transcript coverage, independent market/option quotes, broker executions, and ledger reconciliation are unavailable.
+The formal February 21 `600`-call OMG completed `5.24` to `5.58`. A separate
+16-contract February 14 `600`-call trade completed `3.08` to `4.10`, a
+reported `$1,622` net. The co-presenter reported February 21 `601` calls from
+`5.52` to `5.88`. Prior-day `603` puts were finally closed `3.80` to `5.20`.
+A late 16-contract February 21 `602`-call trade entered `3.04`, targeted
+`3.25`, and remained open.
 
-## OMG Range and Directional Thesis
+## Source and Context
 
-- The presenter placed the initial OMG upper boundary near `599.50` and discussed lower candidates near `598.49` and `598.64`. The stated model required the first five-minute candle to close outside the range, with direction selected for a stated 6% option objective.
-- The source characterized the upper OMG resistance as thick and preferred a support hold followed by movement through resistance rather than an immediate entry. Later discussion identified resistance near `600.05`, then `600.50–600.60`.
-- The presenter also discussed allowing a pullback toward the five-minute 20 EMA before considering another upside scalp. These are source-described chart conditions, not independently verified observations.
+- Post `38513`; Vimeo `1056039967`, title `TR Feb 12`, `01:10:26`.
+- Complete caption track: 1,468 cues, `00:00:00.145-01:09:49.365`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported `600` Call Trade
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 13:40-22:58 | Feb. 21 `600` calls `5.24` to `5.58`. | completed OMG |
+| 13:03-1:00:45 | Feb. 14 `600` calls `3.08` to `4.10`, 16 contracts. | completed trade |
+| 32:55-1:06:58 | Co-presenter Feb. 21 `601` calls `5.52` to reported `5.88`. | completed trade |
+| 45:01-46:07 | Prior-day `603` puts `3.80` to `5.20`. | completed carryover |
+| 1:04:51-end | Feb. 21 `602` calls `3.04`, target `3.25`. | unresolved position |
 
-- The presenter stated an OMG upside entry in February 21 `600` calls at `5.24` at `09:35`, then described a 6% target of `5.55` and a 10-contract GTC limit sell order at that target.
-- The source estimated SPY would need to reach `600.45` to meet the target. At approximately `09:52`, the presenter stated the target was `5.55` and the actual sale occurred at `5.58`.
-- These entry, target, contract-count, and sale statements are presenter-reported. The report does not treat them as independently verified fills or profit evidence.
+The source exposes both carryover selection risk and target drift: the main
+call trade was held far beyond its nominal `$200` objective and produced a
+much larger claimed gain, while a second late trade remained open. These
+outcomes cannot validate the management change without replay that includes
+the unresolved inventory.
 
-## Risk and Management Tension
-
-- The presenter reported cutting prior `609` calls after a loss, described a net loss of `$2,009` after offsetting a prior `$410` gain, and stated a desire to make some of that loss back. This is source-reported account commentary and is not audited performance data.
-- The same session's `600` call was described as already having the `$200` objective but being ridden higher. That context is important for research: a fixed-profit target can conflict with loss-recovery motivation and discretionary extension.
-
-## Reusable Research Observations
-
-1. Test `FIRST_FIVE_MINUTE_CLOSE_OUTSIDE_OMG` with independently reconstructed opening bars and explicit boundary rules.
-2. Test `TARGET_EXECUTABILITY_AT_600_45`: use historical bid/ask, spread, delta, and fill data to determine whether the stated `5.55` target and reported `5.58` sale were realistically available for 10 contracts.
-3. Test `TARGET_REACHED_VS_RIDE_HIGHER` as a precommitted policy. Distinguish fixed-dollar exits, percentage exits, and discretionary extension after a prior loss.
-4. Keep the earlier `609` call loss separate from the `600` call setup; it is context, not evidence of the new setup's quality.
-
-## Evidence Limitations
-
-- The transcript ends well before the player session ends, so later trades and management are unknown.
-- No chart images, underlying bars, option-chain quotes, broker fills, or canonical ledger confirm the reported details.
-- Policy, tariff, and inflation discussion in the source is presenter narration, not independently verified context here.
-
-## Decision
-
-No live trading behavior changes are authorized. This partial source supports research-only validation of OMG closing-range logic, option-target fill quality, and disciplined target policies under independent data.
+No independent ledger, executable paths, Greeks, MFE/MAE, fees, or visual
+review exists. `RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.

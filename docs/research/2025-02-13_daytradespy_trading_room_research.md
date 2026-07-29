@@ -1,34 +1,33 @@
-# McLeod Alpha Research Report: February 13, 2025 Trading Room
+# McLeod Alpha Research Report: 2025-02-13 Trading Room — Post 38726
 
-## Scope and Evidence
+## Executive Assessment
 
-This report uses the accessible authorized browser transcript from `00:00` through `37:07` (224 cues). The player duration is `1:14:56`; therefore later source evidence, management, and outcomes are unavailable. There is no independent chart review, option quote history, execution ledger, or broker reconciliation.
+The presenters explicitly declined the formal downside OMG after missing its
+timely entry. Three February 21 `605`-call positions later completed:
+`4.56` to `4.86`, co-presenter `4.71` to `4.91`, and `4.75` to `5.03`.
+The published `605`-call pick was reconstructed at `4.52` with a `4.79`
+target reached by 10:02.
 
-## Structure, Breakout, and Reversal Conditions
+## Source and Context
 
-- The presenter discussed pre-market support around `603.80–604` and resistance near `605.10`, then described clearing morning resistance while still preferring a pullback/bounce from the EMA before an upside entry.
-- A five-minute OMG close reportedly occurred to the downside around `09:35`, but the source explicitly rejected entering puts after the move had bounced on a large wick. The presenter said it was not the time to enter puts merely because the close condition had occurred.
-- Later comments focused on a support hold, a bounce, one-minute 20 EMA interaction, and resistance around the mid-`605` area. This is a source-reported conflict between a mechanical first-five-minute direction signal and price-action confirmation.
+- Post `38726`; Vimeo `1061038508`, title `TR Feb 13`, `01:14:56`.
+- Complete caption track: 1,658 cues, `00:00:00.000-01:14:31.165`.
+- Player remained paused at zero volume; no audio played.
+- Tier C: `TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE`.
 
-## Source-Reported `605` Call Trade
+| Time | Evidence | Classification |
+| --- | --- | --- |
+| 21:32-38:50 | Downside OMG timing was missed; presenters declined entry. | explicit no-trade |
+| 11:02-41:26 | Feb. 21 `605` calls `4.56` to `4.86`; `$290` net claimed. | completed trade |
+| 49:18-54:26 | Co-presenter `605` calls `4.71` to `4.91`. | completed trade |
+| 52:22-56:26 | Ten `605` calls `4.75` to `5.03`; `$270` net claimed. | completed trade |
+| 1:10:17-1:11:20 | Published `605` calls modeled `4.52` to target `4.79`. | modeled pick |
 
-- At `09:32`, the presenter stated a `$200` trade in February 21 `605` calls at `4.56`, consisting of 10 contracts.
-- The source then described a `4.77` limit-sale target and an approximate `605.10` underlying reference needed to reach it. The speaker called the underlying level an estimate and acknowledged resistance near `605`.
-- At the time accessible evidence ends, the presenter described the position as down approximately `$0.60` per option while emphasizing the remaining time value versus same-day exposure. No exit or final result is available in the accessible segment.
+This recording provides a useful negative example: a rule-qualified trade was
+not backfilled after the presenters recognized that discussion had caused them
+to miss the entry. The later trades instead waited for upside structure. Any
+evaluation must keep the explicit no-trade separate from subscriber reports
+from people who chose to enter the missed OMG.
 
-## Reusable Research Observations
-
-1. Test `OMG_CLOSE_REJECTED_AFTER_WICK_REVERSAL`: compare blind first-five-minute close entries with a filter that requires post-close continuation rather than immediate support rejection.
-2. Test `PULLBACK_EMA_BOUNCE_BEFORE_CALL_ENTRY` with a defined minimum retrace, reclaim, and resistance-clearance condition.
-3. Test `TIME_TO_EXPIRY_AS_RISK_SUBSTITUTION` carefully. More time may lower immediate theta exposure but does not replace a quantified price invalidation or position-risk limit.
-4. Treat the `4.56` entry and `4.77` target as unverified source claims pending quote and fill reconciliation.
-
-## Evidence Limitations
-
-- The accessible transcript is incomplete relative to the player duration; this report cannot infer final outcome, exit, or later trade decisions.
-- No independent bars, option bid/ask series, broker executions, or ledger evidence validates the source-reported values.
-- CPI/PPI, policy, and account-progress comments in the source are presenter narration only.
-
-## Decision
-
-No live trading behavior changes are authorized. The partial source supports research-only testing of post-OMG confirmation, wick-reversal avoidance, and risk controls that are explicit rather than replaced by expiry selection.
+No independent ledger, executable paths, Greeks, MFE/MAE, fees, or visual
+review exists. `RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE`.
