@@ -1,0 +1,33 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42687, "title": "Trading Room Video Recording – December 12, 2025", "publication_date": "2025-12-12", "post_publication_date": "2025-12-12", "source_url": "https://daytradespy.com/42687/trading-room-video-recording-december-12-2025/", "duration_seconds": 4371, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 1377, "first_timestamp": "00:00:00.265", "last_timestamp": "01:11:59.825", "raw_transcript_persisted": false, "coverage_note": "Complete native VTT caption track for the 01:12:51 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 85, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:22:04", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Discretionary December 19 688 puts were reported sold at 5.23 after a 4.95 entry."},
+    {"timestamp": "00:39:57", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal December 19 688-put OMG completed 5.34 to 5.66."},
+    {"timestamp": "01:11:59", "classification": "UNRESOLVED_POSITION", "claim": "Averaged December 19 690 calls remained open beyond recording end."}
+  ],
+  "claims": [
+    {"id": "DTS-20251212-P42687-C01", "timestamp": "00:39:57", "label": "FORMAL_PUT_OMG_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal December 19 688 puts were reported entered at 5.34 and sold at 5.66 after about five minutes.", "forward_outcomes": {"1m": "MIXED", "3m": "FAVORABLE", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251212-P42687-C02", "timestamp": "00:22:04", "label": "DISCRETIONARY_PUT_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "December 19 688 puts entered at 4.95 were reported sold at 5.23.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "COMPLETED", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger."},
+    {"id": "DTS-20251212-P42687-C03", "timestamp": "01:11:59", "label": "AVERAGED_690_CALLS_UNRESOLVED", "fact_classification": "POSITION_REPAIR", "status": "SOURCE_SUPPORTED", "claim": "December 19 690 calls were averaged to a stated 3.46 basis, moved sharply adverse, and remained open at recording end.", "forward_outcomes": {"1m": "ADVERSE", "3m": "ADVERSE", "5m": "ADVERSE", "10m": "ADVERSE", "15m": "ADVERSE", "remainder_session": "OPEN"}, "disconfirming_evidence_required": "Quantity-weighted broker ledger and terminal exit."},
+    {"id": "DTS-20251212-P42687-C04", "timestamp": "00:41:02", "label": "PUBLISHED_PICK_MODELED_WIN", "fact_classification": "MODELED_SIGNAL", "status": "SOURCE_SUPPORTED", "claim": "The 690-call pick was reconstructed as a rules-based 3.38 entry and 3.58 target, distinct from presenter averaged inventory.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "FAVORABLE", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "MODELED_ONLY"}, "disconfirming_evidence_required": "Attendee fills and executable option path."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251212-P42687-T01", "type": "PUT_SCALP", "setup": "December 19 688 puts", "entry_time": "00:20:18", "entry_premium": 4.95, "exit_time": "00:22:04", "exit_premium": 5.23, "stop_or_invalidation": "Completed"},
+    {"source_trade_id": "DTS-20251212-P42687-T02", "type": "OMG", "setup": "December 19 688 puts; formal downside OMG", "entry_time": "00:34:37", "entry_premium": 5.34, "exit_time": "00:39:57", "exit_premium": 5.66, "stop_or_invalidation": "Completed at target"},
+    {"source_trade_id": "DTS-20251212-P42687-T03", "type": "CALL_POSITION", "setup": "December 19 690 calls; averaged position", "entry_time": "00:21:19", "entry_premium": 3.46, "exit_time": null, "exit_premium": null, "stop_or_invalidation": "Average after added lot; open at end"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 3, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Put winners overlapped adverse averaged calls.", "Modeled pick outcome is distinct from presenter call inventory."], "unavailable_evidence": ["Unified broker ledger, quantities, exact speaker attribution, call-lot history and exit", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:34:37", "state": "PERSISTENT_DOWNTREND", "evidence": "Formal and discretionary puts completed."}, {"timestamp": "01:11:59", "state": "CALL_RECOVERY_UNRESOLVED", "evidence": "Averaged calls remained open after continued decline."}],
+  "counterfactuals": [{"timestamp": "01:11:59", "type": "TERMINAL_INVENTORY", "detail": "Include unresolved averaged calls in session outcome."}, {"timestamp": "00:41:02", "type": "ENTRY_PROVENANCE", "detail": "Separate rules-based pick price from presenter fill."}],
+  "instrumentation_gaps": ["Unified broker ledger, quantities, exact speaker attribution, call-lot history and exit", "Executable paths, Greeks, MFE, MAE, spreads, slippage, fees, and full chart review"],
+  "hypothesis_references": ["DTS-20251212-P42687-C01", "DTS-20251212-P42687-C02", "DTS-20251212-P42687-C03", "DTS-20251212-P42687-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

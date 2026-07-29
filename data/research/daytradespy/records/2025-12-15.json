@@ -1,0 +1,34 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1", "post_id": 42730, "title": "Trading Room Video Recording – December 15, 2025", "publication_date": "2025-12-15", "post_publication_date": "2025-12-15", "source_url": "https://daytradespy.com/42730/trading-room-video-recording-december-15-2025/", "duration_seconds": 4372, "reviewed_at": "2026-07-28T00:00:00+00:00", "reviewer_version": "recording-first-authorized-transcript-review.v1",
+    "transcript": {"availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT", "completeness_pct": 100, "path": "", "timestamps_preserved": true, "speaker_attribution_available": false},
+    "transcript_probe": {"source": "AUTHORIZED_VIMEO_TRANSCRIPT_FROM_MUTED_PAUSED_BROWSER_PLAYER", "cue_count": 1377, "first_timestamp": "00:00:00.000", "last_timestamp": "01:11:59.745", "raw_transcript_persisted": false, "coverage_note": "Complete native VTT caption track for the 01:12:52 asset; player remained muted, paused, and at 00:00."},
+    "visual_review": {"status": "UNAVAILABLE_EVIDENCE", "coverage_pct": 0, "chart_references": []}
+  },
+  "evidence_quality": {"transcript_completeness_pct": 100, "trade_details_captured_pct": 85, "ledger_reconciliation_pct": 0, "underlying_market_data_pct": 0, "option_excursion_data_pct": 0, "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE", "tier": "C"},
+  "timeline": [
+    {"timestamp": "00:19:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Unofficial 684-put trade was exited because the spread widened; fills were not cleanly stated."},
+    {"timestamp": "00:25:50", "classification": "PRESENTER_REPORTED_TRADE", "claim": "Formal December 19 683-put OMG completed 4.73/4.74 to 5.10."},
+    {"timestamp": "00:50:29", "classification": "PRESENTER_REPORTED_TRADE", "claim": "December 19 681-put scalp completed 5.13 to 5.25."},
+    {"timestamp": "01:11:59", "classification": "UNRESOLVED_POSITION", "claim": "Prior-session call inventory lacked a terminal exit."}
+  ],
+  "claims": [
+    {"id": "DTS-20251215-P42730-C01", "timestamp": "00:25:50", "label": "FORMAL_PUT_OMG_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "Formal December 19 683 puts were reported entered at 4.73 (second presenter 4.74) and filled at 5.10 above the 5.01 target in about three minutes.", "forward_outcomes": {"1m": "FAVORABLE", "3m": "COMPLETED", "5m": "COMPLETED", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger and executable option path."},
+    {"id": "DTS-20251215-P42730-C02", "timestamp": "00:50:29", "label": "LATER_PUT_SCALP_COMPLETED", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "December 19 681 puts were reported bought at 5.13 and sold at 5.25 after six minutes.", "forward_outcomes": {"1m": "ADVERSE", "3m": "MIXED", "5m": "FAVORABLE", "10m": "COMPLETED", "15m": "COMPLETED", "remainder_session": "COMPLETED"}, "disconfirming_evidence_required": "Broker ledger."},
+    {"id": "DTS-20251215-P42730-C03", "timestamp": "00:19:29", "label": "WIDE_SPREAD_ABORT", "fact_classification": "PRESENTER_REPORTED_TRADE", "status": "SOURCE_SUPPORTED", "claim": "An unofficial 684-put trade was exited quickly when the spread widened materially; exact fills are unavailable.", "forward_outcomes": {"1m": "CLOSED_PRICE_UNKNOWN", "3m": "CLOSED_PRICE_UNKNOWN", "5m": "CLOSED_PRICE_UNKNOWN", "10m": "CLOSED_PRICE_UNKNOWN", "15m": "CLOSED_PRICE_UNKNOWN", "remainder_session": "CLOSED_PRICE_UNKNOWN"}, "disconfirming_evidence_required": "Broker ledger and spread history."},
+    {"id": "DTS-20251215-P42730-C04", "timestamp": "01:11:59", "label": "PRIOR_CALLS_UNRESOLVED", "fact_classification": "UNRESOLVED_POSITION", "status": "SOURCE_SUPPORTED", "claim": "Calls carried from Friday remained adverse; the presenter expected some loss but gave no exit before recording end.", "forward_outcomes": {"1m": "MIXED", "3m": "MIXED", "5m": "MIXED", "10m": "MIXED", "15m": "MIXED", "remainder_session": "OPEN_OR_EXIT_UNSTATED"}, "disconfirming_evidence_required": "Unified broker ledger and terminal exit."}
+  ],
+  "reported_trades": [
+    {"source_trade_id": "DTS-20251215-P42730-T01", "type": "PUT_POSITION", "setup": "December 19 684 puts; unofficial wide-spread trade", "entry_time": "00:18:18", "entry_premium": null, "exit_time": "00:19:29", "exit_premium": null, "stop_or_invalidation": "Exited because spread widened; exact fills absent"},
+    {"source_trade_id": "DTS-20251215-P42730-T02", "type": "OMG", "setup": "December 19 683 puts; formal downside OMG", "entry_time": "00:22:46", "entry_premium": 4.73, "exit_time": "00:25:50", "exit_premium": 5.10, "stop_or_invalidation": "Completed above 5.01 target"},
+    {"source_trade_id": "DTS-20251215-P42730-T03", "type": "PUT_SCALP", "setup": "December 19 681 puts", "entry_time": "00:44:35", "entry_premium": 5.13, "exit_time": "00:50:29", "exit_premium": 5.25, "stop_or_invalidation": "Completed"}
+  ],
+  "ledger_reconciliation": {"source_reported_trades": 3, "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE", "confirmed_matches": [], "possible_matches": [], "conflicts": ["Put winners did not reconcile prior-session calls.", "Unofficial 684-put trade lacks clean fills due wide spread."], "unavailable_evidence": ["Unified broker ledger, quantities, exact speaker attribution, prior-call exit", "Executable paths, Greeks, MFE, MAE, slippage, fees, and full chart review"]},
+  "market_state_timeline": [{"timestamp": "00:22:46", "state": "EARLY_DOWNTREND", "evidence": "Formal put OMG completed quickly."}, {"timestamp": "00:44:35", "state": "CONTINUED_WEAKNESS_WITH_ROTATION", "evidence": "Later 681-put scalp completed after an adverse bounce."}],
+  "counterfactuals": [{"timestamp": "00:19:29", "type": "SPREAD_FILTER", "detail": "Replay a maximum-spread gate before entry."}, {"timestamp": "01:11:59", "type": "TERMINAL_INVENTORY", "detail": "Do not infer that downside wins offset unresolved calls."}],
+  "instrumentation_gaps": ["Unified broker ledger, quantities, exact speaker attribution, prior-call exit", "Executable paths, Greeks, MFE, MAE, slippage, fees, and full chart review"],
+  "hypothesis_references": ["DTS-20251215-P42730-C01", "DTS-20251215-P42730-C02", "DTS-20251215-P42730-C03", "DTS-20251215-P42730-C04"],
+  "expected_value_tracking": {"confidence": "LOW", "evidence_count": 3, "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES", "replay_improvement": "PENDING"},
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
