@@ -33,6 +33,7 @@ from reports.day_trade_spy_shadow_report import write_day_trade_spy_shadow_repor
 from reports.missed_opportunities_shadow_report import (
     write_missed_opportunities_shadow_report,
 )
+from reports.startup_guard_review import write_startup_guard_review
 
 
 WORKSPACE = Path(__file__).parent
@@ -605,6 +606,15 @@ def run_daily_learning(target_date: str | None = None) -> int:
         missed_opportunities_shadow_csv,
         missed_opportunities_shadow_md,
     ) = write_missed_opportunities_shadow_report(trading_date, root=WORKSPACE)
+    (
+        startup_guard_review,
+        startup_guard_json,
+        startup_guard_md,
+    ) = write_startup_guard_review(
+        trading_date,
+        root=WORKSPACE,
+        reconciliation_complete=bool(loss_attribution["reconciliation"]["complete"]),
+    )
     if not loss_attribution["reconciliation"]["complete"]:
         lessons = [{
             "priority": "high",
@@ -643,6 +653,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "entry_quality_shadow": entry_quality_shadow,
         "day_trade_spy_shadow": day_trade_spy_shadow,
         "missed_opportunities_shadow": missed_opportunities_shadow,
+        "startup_guard_review": startup_guard_review,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -656,6 +667,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
         handle.write(day_trade_spy_shadow_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(missed_opportunities_shadow_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(startup_guard_md.read_text(encoding="utf-8"))
     _write_daily_csv(day_csv, rows)
 
     (LEARNING_DIR / "latest_daily_trade_learning.json").write_text(
@@ -705,6 +718,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {missed_opportunities_shadow_json}")
     print(f"Wrote: {missed_opportunities_shadow_csv}")
     print(f"Wrote: {missed_opportunities_shadow_md}")
+    print(f"Wrote: {startup_guard_json}")
+    print(f"Wrote: {startup_guard_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;

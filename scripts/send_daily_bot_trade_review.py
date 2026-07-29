@@ -203,23 +203,6 @@ def _reconciliation_label(trading_date: str) -> str:
     return "unknown"
 
 
-def _attachments(trading_date: str, md_path: Path) -> list[Path]:
-    candidates = [
-        md_path,
-        REPORT_DIR / f"daily_trade_learning_{trading_date}.json",
-        REPORT_DIR / f"daily_trade_learning_trades_{trading_date}.csv",
-        REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.json",
-        REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.csv",
-        REPORT_DIR / f"entry_quality_shadow_{trading_date}.json",
-        REPORT_DIR / f"entry_quality_shadow_{trading_date}.csv",
-        REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.json",
-        REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.csv",
-        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.json",
-        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.csv",
-    ]
-    return [path for path in candidates if path.exists()]
-
-
 def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
     """Idempotently add all shadow worksheets to the pretty daily review."""
     lifecycle_path = REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.md"
@@ -260,12 +243,26 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             write_missed_opportunities_shadow_report(trading_date, root=ROOT)
         except Exception as exc:
             print(f"Missed opportunities shadow report warning: {exc}")
+    startup_guard_path = REPORT_DIR / f"startup_guard_review_{trading_date}.md"
+    if not startup_guard_path.exists():
+        try:
+            from reports.startup_guard_review import write_startup_guard_review
+
+            reconciliation_complete = _reconciliation_label(trading_date) == "complete"
+            write_startup_guard_review(
+                trading_date,
+                root=ROOT,
+                reconciliation_complete=reconciliation_complete,
+            )
+        except Exception as exc:
+            print(f"Startup guard review warning: {exc}")
 
     headings = (
         "## Trend Lifecycle V2 Shadow Review",
         "## Entry Quality Shadow Studies",
         "## Day Trade SPY Five-Test Shadow Review",
         "## Missed Opportunities — Shadow Review",
+        "## Startup Guard — Daily Assessment",
     )
     positions = [markdown.find(heading) for heading in headings if heading in markdown]
     if positions:
@@ -277,6 +274,7 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             entry_quality_path,
             day_trade_spy_path,
             missed_opportunities_path,
+            startup_guard_path,
         )
         if path.exists()
     ]
@@ -291,7 +289,6 @@ def _send_smtp(
     subject: str,
     text_body: str,
     html_body: str,
-    attachments: list[Path],
 ) -> None:
     username = (
         os.getenv("SMTP_USERNAME", "").strip()
@@ -319,14 +316,6 @@ def _send_smtp(
     message["To"] = recipient
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
-
-    for path in attachments:
-        message.add_attachment(
-            path.read_bytes(),
-            maintype="application",
-            subtype="octet-stream",
-            filename=path.name,
-        )
 
     with smtplib.SMTP(host, port, timeout=20) as smtp:
         smtp.starttls()
@@ -388,7 +377,6 @@ def send_review(
         subject=subject,
         text_body=text_body,
         html_body=html_body,
-        attachments=_attachments(trading_date, md_path),
     )
 
     sent_at = datetime.now(EASTERN_TZ).isoformat(timespec="seconds")
@@ -402,13 +390,15 @@ def send_review(
             "last_artifact_sha256": digest,
             "reconciliation": reconciliation,
             "last_html_path": str(html_path),
+            "attachments_sent": 0,
         },
     )
     DELIVERY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with DELIVERY_LOG_PATH.open("a", encoding="utf-8") as log:
         log.write(
             f"{sent_at} | send_success | date={trading_date}"
-            f" | recipient={to_email} | reconciliation={reconciliation}\n"
+            f" | recipient={to_email} | reconciliation={reconciliation}"
+            " | attachments=0\n"
         )
     print(f"Daily bot trade review emailed for {trading_date} to {to_email}")
     return html_path

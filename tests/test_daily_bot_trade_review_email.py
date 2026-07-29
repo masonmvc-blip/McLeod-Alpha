@@ -45,6 +45,7 @@ def test_review_email_script_uses_repo_data_paths():
     assert "last_artifact_sha256" in source
     assert "entry_quality_shadow" in source
     assert "missed_opportunities_shadow" in source
+    assert "startup_guard_review" in source
     assert "day_trade_spy_shadow" in source
     assert "day_trade_spy_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "missed_opportunities_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
@@ -71,6 +72,7 @@ def test_smtp_uses_working_email_credentials(monkeypatch):
 
         def send_message(self, message):
             captured["recipient"] = message["To"]
+            captured["attachments"] = list(message.iter_attachments())
 
     for key in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM"):
         monkeypatch.delenv(key, raising=False)
@@ -83,10 +85,10 @@ def test_smtp_uses_working_email_credentials(monkeypatch):
         subject="Test",
         text_body="Text",
         html_body="<p>HTML</p>",
-        attachments=[],
     )
 
     assert captured["host"] == "smtp.gmail.com"
     assert captured["username"] == "sender@gmail.com"
     assert captured["password"] == "abcdefghijklmnop"
     assert captured["recipient"] == "recipient@example.com"
+    assert captured["attachments"] == []
