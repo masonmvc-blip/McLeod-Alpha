@@ -7525,7 +7525,7 @@ HTML_DASHBOARD = """
                 <div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>Today's Trades</span>
-                    <span>W / L (Win %)</span>
+                    <span>All Trades</span>
                     <span>Average P&amp;L</span>
                     <span>Guidance</span>
                 </div>
@@ -8916,7 +8916,7 @@ HTML_DASHBOARD = """
                 const columns = `<div class="indicator-performance-columns" aria-hidden="true">
                     <span>Indicator</span>
                     <span>Today's Trades</span>
-                    <span>W / L (Win %)</span>
+                    <span>All Trades</span>
                     <span>Average P&amp;L</span>
                     <span>Guidance</span>
                 </div>`;

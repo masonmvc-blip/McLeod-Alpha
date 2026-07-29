@@ -447,6 +447,7 @@ def test_indicator_performance_renders_todays_trade_outcomes_and_neutral_case():
 def test_indicator_performance_centers_columns_and_expands_average_pnl_header():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
+    assert source.count("<span>All Trades</span>") == 2
     assert source.count("<span>Average P&amp;L</span>") == 2
     assert ".indicator-performance-columns {\n            color: #607083;" in source
     assert "text-align: center;" in source
