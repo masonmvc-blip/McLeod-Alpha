@@ -2833,6 +2833,28 @@ def toggle_entry_pause_command():
     return payload
 
 
+def _entry_context_from_position_payload(position_payload):
+    """Extract immutable entry-time context from the persisted open position."""
+    payload = position_payload if isinstance(position_payload, dict) else {}
+    feature_payload = payload.get("feature_payload") or {}
+    if isinstance(feature_payload, str):
+        try:
+            feature_payload = json.loads(feature_payload)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            feature_payload = {}
+    feature_payload = feature_payload if isinstance(feature_payload, dict) else {}
+    checklist = feature_payload.get("checklist") or {}
+    return {
+        "entry_regime": str(feature_payload.get("regime") or "UNKNOWN").upper(),
+        "entry_direction": str(payload.get("direction") or feature_payload.get("direction") or "").upper() or None,
+        "entry_time": payload.get("entry_time") or feature_payload.get("captured_at"),
+        "entry_candle_time": feature_payload.get("captured_at"),
+        "entry_call_score": feature_payload.get("call_score", checklist.get("call_score")),
+        "entry_put_score": feature_payload.get("put_score", checklist.get("put_score")),
+        "entry_phase": feature_payload.get("momentum_phase"),
+    }
+
+
 # ============================================================================
 # Status Monitoring
 # ============================================================================
@@ -5044,6 +5066,7 @@ def api_position_status():
             "has_open_position": True,
             "direction": str(payload.get("direction") or "").upper() or None,
             "option_symbol": str(payload.get("option_symbol") or "") or None,
+            **_entry_context_from_position_payload(payload),
             "observed_at": datetime.now(timezone.utc).isoformat(),
         })
     except (OSError, json.JSONDecodeError):
@@ -7447,7 +7470,7 @@ HTML_DASHBOARD = """
                 <div class="status-value" id="callIndicators">Loading...</div>
             </div>
             <div class="status-card position-secondary-card" id="trendCard">
-                <h3>Trend</h3>
+                <h3 id="trendTitle">Trend</h3>
                 <div class="status-value" id="trendStatus">Loading...</div>
             </div>
             <div class="status-card" id="currentPositionCard">
@@ -7470,7 +7493,7 @@ HTML_DASHBOARD = """
                     <div class="position-stat-column" id="currentMarketContext">
                         <div class="position-stat"><div class="position-stat-label">Call Phase</div><div class="position-stat-value" id="currentCallPhase">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Put Phase</div><div class="position-stat-value" id="currentPutPhase">--</div></div>
-                        <div class="position-stat"><div class="position-stat-label">Market Trend</div><div class="position-stat-value" id="currentMarketTrend">--</div></div>
+                        <div class="position-stat"><div class="position-stat-label" id="currentMarketTrendLabel">Entry Regime</div><div class="position-stat-value" id="currentMarketTrend">--</div></div>
                         <div class="position-stat"><div class="position-stat-label">Candle Trend</div><div class="position-stat-value" id="currentCandleTrend">--</div></div>
                     </div>
                 </div>
@@ -7564,6 +7587,7 @@ HTML_DASHBOARD = """
         const INDICATOR_PERFORMANCE_REFRESH_INTERVAL_MS = 30000;
         const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 250;
         const STATUS_REFRESH_HIDDEN_INTERVAL_MS = 8000;
+        const POSITION_CONTEXT_REFRESH_INTERVAL_MS = 250;
         const DASHBOARD_POLL_LEADER_KEY = 'mcleodAlphaDashboardPollLeader';
         const DASHBOARD_POLL_LEASE_MS = 5000;
         let isPollingLeader = false;
@@ -7576,6 +7600,9 @@ HTML_DASHBOARD = """
         let bellBroadcastPrimed = false;
         let entryPauseDialogVisible = false;
         let exitStatusPollTimer = null;
+        let fastPositionContext = null;
+        let positionContextRefreshInterval = null;
+        let positionContextRefreshInFlight = false;
 
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
@@ -7682,6 +7709,103 @@ HTML_DASHBOARD = """
                     maybePlayMarketSessionBells(null);
                 }
             }, 250);
+        }
+
+        function trendDescriptor(rawValue, entryMode = false) {
+            const normalized = String(rawValue || 'UNKNOWN').toUpperCase();
+            if (normalized === 'BULL_TREND') {
+                return {
+                    normalized,
+                    text: entryMode ? '🐂 BULL ENTRY 🐂' : '🐂 Bull Market 🐂',
+                    shortText: 'Bull',
+                    candleText: 'Bull Candles',
+                    tone: 'trend-tone-bullish',
+                };
+            }
+            if (normalized === 'BEAR_TREND') {
+                return {
+                    normalized,
+                    text: entryMode ? '🐻 BEAR ENTRY 🐻' : '🐻 Bear Market 🐻',
+                    shortText: 'Bear',
+                    candleText: 'Bear Candles',
+                    tone: 'trend-tone-bearish',
+                };
+            }
+            return {
+                normalized: 'NEUTRAL',
+                text: entryMode ? 'Entry Regime Unknown' : 'Neutral',
+                shortText: 'Neutral',
+                candleText: 'Neutral',
+                tone: 'trend-tone-neutral',
+            };
+        }
+
+        function renderTrendBox(status, positionContext = null) {
+            const trendTitleEl = document.getElementById('trendTitle');
+            const trendStatusEl = document.getElementById('trendStatus');
+            if (!trendStatusEl) {
+                return;
+            }
+
+            const current = status || {};
+            const observedAtMs = Date.parse(String((positionContext || {}).observed_at || ''));
+            const fastIsFresh = !!positionContext
+                && Number.isFinite(observedAtMs)
+                && (Date.now() - observedAtMs) <= 2000;
+            const fast = fastIsFresh ? positionContext : {};
+            const hasOpenPosition = fastIsFresh
+                ? !!fast.has_open_position
+                : !!current.has_open_position;
+            const entryRegimeRaw = String(
+                fast.entry_regime || current.entry_regime || 'UNKNOWN',
+            ).toUpperCase();
+            const entryRegimeKnown = ['BULL_TREND', 'BEAR_TREND'].includes(entryRegimeRaw);
+            const session = trendDescriptor(current.market_trend || current.trend);
+            const liveCandles = trendDescriptor(current.continuation_regime);
+
+            if (hasOpenPosition && entryRegimeKnown) {
+                const entry = trendDescriptor(entryRegimeRaw, true);
+                if (trendTitleEl) {
+                    trendTitleEl.textContent = 'Entry Regime';
+                }
+                trendStatusEl.innerHTML = [
+                    `<span class="${entry.tone}">${entry.text}</span>`,
+                    `<span class="${liveCandles.tone}" style="font-size:11px;font-weight:600;opacity:0.9;">🕯️ Live: ${liveCandles.candleText}</span>`,
+                    `<span class="${session.tone}" style="font-size:10px;font-weight:500;opacity:0.8;">Session: ${session.shortText}</span>`,
+                ].join('<br>');
+                return;
+            }
+
+            if (trendTitleEl) {
+                trendTitleEl.textContent = 'Trend';
+            }
+            trendStatusEl.innerHTML = `<span class="${session.tone}">${session.text}</span><br><span class="${liveCandles.tone}" style="font-size:11px;font-weight:500;opacity:0.85;">🕯️ ${liveCandles.candleText} 🕯️</span>`;
+        }
+
+        async function refreshPositionContext() {
+            if (!isDashboardVisible() || !isPollingLeader || positionContextRefreshInFlight) {
+                return;
+            }
+            positionContextRefreshInFlight = true;
+            try {
+                const response = await fetch('/api/position-status', { cache: 'no-store' });
+                const context = await response.json();
+                fastPositionContext = context;
+                renderTrendBox(lastStatusSnapshot || {}, context);
+            } catch (_) {
+                // The full status refresh remains the fallback.
+            } finally {
+                positionContextRefreshInFlight = false;
+            }
+        }
+
+        function startPositionContextRefresh() {
+            clearInterval(positionContextRefreshInterval);
+            positionContextRefreshInterval = setInterval(
+                refreshPositionContext,
+                POSITION_CONTEXT_REFRESH_INTERVAL_MS,
+            );
+            refreshPositionContext();
         }
 
         function setTitleBellMode(enabled) {
@@ -8510,7 +8634,7 @@ HTML_DASHBOARD = """
 
                 const trendStatusEl = document.getElementById('trendStatus');
                 if (trendStatusEl) {
-                    trendStatusEl.innerHTML = `<span class="${trendToneClass}">${escapeHtml(trendText)}</span><br><span class="${candleTrendToneClass}" style="font-size:11px;font-weight:500;opacity:0.85;">🕯️ ${escapeHtml(candleTrendLabel)} 🕯️</span>`;
+                    renderTrendBox(status, fastPositionContext);
                 }
 
                 function formatIndicatorCardText(value) {
@@ -8599,6 +8723,7 @@ HTML_DASHBOARD = """
                 const callPhaseEl = document.getElementById('currentCallPhase');
                 const putPhaseEl = document.getElementById('currentPutPhase');
                 const marketTrendEl = document.getElementById('currentMarketTrend');
+                const marketTrendLabelEl = document.getElementById('currentMarketTrendLabel');
                 const candleTrendEl = document.getElementById('currentCandleTrend');
                 const tradePnlDollars = status.current_trade_pnl_dollars;
                 const tradePnlPct = status.current_trade_pnl_pct;
@@ -8682,9 +8807,15 @@ HTML_DASHBOARD = """
                         : '--';
                 }
                 if (marketTrendEl) {
+                    const entryRegime = trendDescriptor(
+                        status.entry_regime || (fastPositionContext || {}).entry_regime,
+                    );
                     marketTrendEl.textContent = status.has_open_position
-                        ? trendText
+                        ? entryRegime.shortText
                         : '--';
+                }
+                if (marketTrendLabelEl) {
+                    marketTrendLabelEl.textContent = 'Entry Regime';
                 }
                 if (candleTrendEl) {
                     candleTrendEl.textContent = status.has_open_position
@@ -9222,6 +9353,7 @@ HTML_DASHBOARD = """
             becomeLeader(true);
             startLeaderHeartbeat();
             startMarketBellClock();
+            startPositionContextRefresh();
             refreshPollingSchedule();
             refreshStatus();
             refreshLogs();
@@ -9236,6 +9368,7 @@ HTML_DASHBOARD = """
                 releaseLeaderLease();
             }
             refreshPollingSchedule();
+            startPositionContextRefresh();
 
             if (!isDashboardVisible()) {
                 return;
@@ -9262,6 +9395,7 @@ HTML_DASHBOARD = """
 
         window.addEventListener('beforeunload', () => {
             clearInterval(marketBellClockInterval);
+            clearInterval(positionContextRefreshInterval);
             releaseLeaderLease();
         });
     </script>

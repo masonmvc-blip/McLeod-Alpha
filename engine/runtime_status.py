@@ -221,6 +221,11 @@ def _build_runtime_status():
         "continuation_indicators_total": 5,
         "entry_call_indicators": None,
         "entry_put_indicators": None,
+        "entry_regime": None,
+        "entry_direction": None,
+        "entry_time": None,
+        "entry_candle_time": None,
+        "entry_phase": None,
         "continuation_last_test_at": None,
         "continuation_regime": "UNKNOWN",
         "call_momentum_strength": None,
@@ -437,6 +442,7 @@ def _build_runtime_status():
                     fallback_direction=pos_data.get("direction"),
                 )
                 status["has_open_position"] = True
+                status.update(_entry_context_from_position_payload(pos_data))
 
                 option_symbol = str(pos_data.get("option_symbol") or "").strip()
                 try:
@@ -882,4 +888,3 @@ def _build_runtime_status():
         pass
     
     return status
-

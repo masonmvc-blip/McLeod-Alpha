@@ -185,7 +185,7 @@ def test_current_position_uses_in_position_titles_and_live_indicator_deltas():
     assert "formatIndicatorDelta(putPassed, entryPutCount)" in source
     assert '>Call Phase</div>' in source
     assert '>Put Phase</div>' in source
-    assert '>Market Trend</div>' in source
+    assert '>Entry Regime</div>' in source
     assert '>Candle Trend</div>' in source
     assert 'id="currentCallPhase"' in source
     assert 'id="currentPutPhase"' in source
@@ -226,7 +226,7 @@ def test_flat_position_hides_current_position_and_uses_three_card_indicator_row(
     assert '.trade-entry-banner .banner-title {' in source
     assert 'font-size: 18px;' in source
     assert 'font-size: 17px;' in source
-    assert '<h3>Trend</h3>' in source
+    assert '<h3 id="trendTitle">Trend</h3>' in source
     assert 'id="putIndicatorsCard"' in source
     assert '#statusGrid.position-flat #callIndicatorsCard,' in source
     assert '#statusGrid.position-flat #trendCard,' in source
@@ -336,8 +336,8 @@ def test_indicator_cards_show_current_trend_without_direction_requirement_copy()
     assert "#trendStatus .trend-tone-bearish" in source
     assert "#trendStatus .trend-tone-bullish" in source
     assert 'id="trendStatus"' in source
-    assert 'class="${candleTrendToneClass}"' in source
-    assert "🕯️ ${escapeHtml(candleTrendLabel)} 🕯️" in source
+    assert 'class="${liveCandles.tone}"' in source
+    assert "🕯️ ${liveCandles.candleText} 🕯️" in source
     assert "Candle: ${escapeHtml(candleTrendLabel)}" not in source
     assert "formatIndicatorCardText(candleTrendLabel)" in source
     assert "Market Trend:" not in source
@@ -418,6 +418,43 @@ def test_visible_dashboard_requests_fresh_indicator_status_quarter_secondly():
     assert "const STATUS_REFRESH_VISIBLE_INTERVAL_MS = 250;" in source
     assert "const statusUrl = forceRefresh || isDashboardVisible()" in source
     assert "? '/api/status?fresh=1'" in source
+
+
+def test_trend_box_promotes_entry_regime_and_keeps_live_context():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert "const POSITION_CONTEXT_REFRESH_INTERVAL_MS = 250;" in source
+    assert "fetch('/api/position-status', { cache: 'no-store' })" in source
+    assert "trendTitleEl.textContent = 'Entry Regime';" in source
+    assert "'🐂 BULL ENTRY 🐂'" in source
+    assert "'🐻 BEAR ENTRY 🐻'" in source
+    assert "🕯️ Live: ${liveCandles.candleText}" in source
+    assert "Session: ${session.shortText}" in source
+    assert "renderTrendBox(status, fastPositionContext);" in source
+
+
+def test_position_payload_exposes_immutable_entry_regime_context():
+    context = cockpit._entry_context_from_position_payload({
+        "direction": "CALL",
+        "entry_time": "2026-07-29T14:42:05-04:00",
+        "feature_payload": {
+            "regime": "BULL_TREND",
+            "call_score": 7,
+            "put_score": 0,
+            "momentum_phase": "EARLY_CONTINUATION",
+            "captured_at": "2026-07-29T14:42:03-04:00",
+        },
+    })
+
+    assert context == {
+        "entry_regime": "BULL_TREND",
+        "entry_direction": "CALL",
+        "entry_time": "2026-07-29T14:42:05-04:00",
+        "entry_candle_time": "2026-07-29T14:42:03-04:00",
+        "entry_call_score": 7,
+        "entry_put_score": 0,
+        "entry_phase": "EARLY_CONTINUATION",
+    }
 
 
 def test_indicator_performance_refreshes_when_closed_trade_signature_changes():

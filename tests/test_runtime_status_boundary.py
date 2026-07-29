@@ -82,3 +82,11 @@ def test_runtime_status_exposes_entry_time_indicator_baselines():
     assert '"entry_call_indicators": None' in source_text
     assert '"entry_put_indicators": None' in source_text
     assert 'status["entry_call_indicators"] = feature_payload.get("call_score"' in source_text
+
+
+def test_runtime_status_exposes_entry_regime_from_open_position():
+    source_text = inspect.getsource(runtime_status._build_runtime_status)
+
+    assert '"entry_regime": None' in source_text
+    assert '"entry_candle_time": None' in source_text
+    assert "status.update(_entry_context_from_position_payload(pos_data))" in source_text
