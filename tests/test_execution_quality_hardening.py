@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import execution.live_engine as live_engine
 import phase3_monitor
@@ -131,6 +132,41 @@ def test_entry_miss_reprices_once_with_hard_cap_instead_of_market(monkeypatch):
     assert metrics["final_limit_price"] == 6.86
     assert metrics["filled_via"] == "repriced_limit"
     assert live_engine.current_position.option_entry == 6.85
+
+
+def test_entry_timeout_cancels_exact_order_without_broad_account_scan(monkeypatch):
+    working = Mock()
+    working.raise_for_status = Mock()
+    working.json.return_value = {"status": "WORKING"}
+    canceled = Mock()
+    canceled.raise_for_status = Mock()
+    canceled.json.return_value = {"status": "CANCELED"}
+    cancel_response = Mock()
+    cancel_response.raise_for_status = Mock()
+    client = Mock()
+    client.get_order.side_effect = [working, canceled]
+    client.cancel_order.return_value = cancel_response
+
+    monkeypatch.setattr(live_engine, "_schwab_client", client)
+    monkeypatch.setattr(live_engine, "_schwab_account_hash", "account")
+    monkeypatch.setattr(live_engine.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("confirmed cancellation must not trigger an account scan")
+        ),
+    )
+
+    filled, fill_price = live_engine._wait_for_fill(
+        "entry-order",
+        "SPY TEST",
+        6.65,
+        max_wait_seconds=0,
+    )
+
+    assert (filled, fill_price) == (False, None)
+    client.cancel_order.assert_called_once_with("entry-order", "account")
 
 
 def test_daily_stop_review_measures_entry_and_exit_execution_drag():

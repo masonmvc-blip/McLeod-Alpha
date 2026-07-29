@@ -2811,30 +2811,15 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
             # Continue trying
             time.sleep(check_interval)
     
-    # TIMEOUT: Order didn't fill via polling. Check positions to confirm.
+    # TIMEOUT: Resolve the exact order first. A broad positions/orders snapshot
+    # previously added about nine seconds to a subsecond entry timeout before
+    # the bot could cancel and reprice.
     print(f"\n⏳ ORDER POLLING TIMEOUT after {max_wait_seconds}s")
-    print(f"   Checking Schwab positions to detect fill...")
-    
-    try:
-        positions, orders, status_code, error_text = get_schwab_positions()
-        
-        if positions is not None:
-            # Check if the option position now exists on Schwab
-            for pos in positions:
-                if pos.get("instrument", {}).get("assetType") == "OPTION":
-                    symbol = pos.get("instrument", {}).get("symbol", "")
-                    if option_symbol in symbol or symbol in option_symbol:
-                        qty = pos.get("longQuantity", 0)
-                        if qty > 0:
-                            print(f"✓ POSITION DETECTED on Schwab: {symbol} qty {qty}")
-                            print(f"   Order filled but polling failed. Adopting broker position.")
-                            # Return success - order filled even though polling failed
-                            return True, pos.get("averagePrice", 0)
-    except Exception as e:
-        print(f"WARNING: Error reconciling positions: {e}")
+    print("   Resolving exact order status before any account-wide reconciliation...")
 
-    # If still not filled, proactively cancel working order so it cannot fill later
-    # outside bot control (which would leave a position without automated protection).
+    # Proactively cancel a working order so it cannot fill later outside bot
+    # control. Confirm the exact order after cancellation to catch a fill race.
+    needs_position_reconciliation = False
     try:
         latest = _schwab_client.get_order(order_id, _schwab_account_hash)
         latest.raise_for_status()
@@ -2851,13 +2836,43 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
             "AWAITING_CONDITION",
         }
 
+        if latest_status == "FILLED":
+            fill_price = _extract_execution_price(latest_data)
+            if fill_price is None:
+                fill_price = float(limit_price or 0.0) or None
+            print(f"✓ ORDER FILLED during timeout resolution: {option_symbol} at {fill_price}")
+            return True, fill_price
+
         if latest_status in active_statuses:
             print(f"   Canceling timed-out entry order {order_id} (status {latest_status}) to prevent orphan fills")
             cancel_resp = _schwab_client.cancel_order(order_id, _schwab_account_hash)
             cancel_resp.raise_for_status()
             time.sleep(max(ORDER_CHECK_INTERVAL_SECONDS, 0.15))
 
-            # One final reconciliation in case a fill raced our cancel.
+            final = _schwab_client.get_order(order_id, _schwab_account_hash)
+            final.raise_for_status()
+            final_data = final.json() or {}
+            final_status = str(final_data.get("status") or "").upper()
+            if final_status == "FILLED":
+                fill_price = _extract_execution_price(final_data)
+                if fill_price is None:
+                    fill_price = float(limit_price or 0.0) or None
+                print(f"✓ ORDER FILLED during timeout/cancel race: {option_symbol} at {fill_price}")
+                return True, fill_price
+            needs_position_reconciliation = final_status not in {
+                "CANCELED",
+                "CANCELLED",
+                "REJECTED",
+                "EXPIRED",
+            }
+        elif latest_status not in {"CANCELED", "CANCELLED", "REJECTED", "EXPIRED"}:
+            needs_position_reconciliation = True
+    except Exception as e:
+        print(f"WARNING: Timed-out entry cancel/reconcile failed: {e}")
+        needs_position_reconciliation = True
+
+    if needs_position_reconciliation:
+        try:
             positions, _, _, _ = get_schwab_positions()
             if positions is not None:
                 for pos in positions:
@@ -2869,9 +2884,9 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
                         print(f"✓ POSITION DETECTED after timeout/cancel race: {symbol} qty {qty}")
                         print("   Treating as filled so protective stop can still be placed.")
                         return True, pos.get("averagePrice", 0)
-    except Exception as e:
-        print(f"WARNING: Timed-out entry cancel/reconcile failed: {e}")
-    
+        except Exception as e:
+            print(f"WARNING: Final position reconciliation failed: {e}")
+
     print(f"✗ ORDER TIMEOUT: Did not fill within {max_wait_seconds} seconds")
     print(f"   No position found on Schwab")
     return False, None

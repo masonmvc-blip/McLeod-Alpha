@@ -107,10 +107,10 @@ def test_entry_runtime_guard_owns_quantity_and_lifecycle_locks():
     assert protected_lock.reason == "protective_stop_failed_lock"
 
 
-def test_live_entry_contract_cap_is_seven_for_planning_and_submission(monkeypatch):
+def test_live_entry_contract_cap_is_eight_for_planning_and_submission(monkeypatch):
     _stop, _target, quantity = build_entry_risk_plan("CALL", 500.0)
-    assert MAX_OPEN_CONTRACTS == 7
-    assert quantity == 7
+    assert MAX_OPEN_CONTRACTS == 8
+    assert quantity == 8
 
     monkeypatch.setattr(live_engine, "_schwab_client", object())
     monkeypatch.setattr(live_engine, "_schwab_account_hash", "test-account")

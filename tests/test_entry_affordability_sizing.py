@@ -3,11 +3,11 @@ from unittest.mock import Mock
 import execution.live_engine as live_engine
 
 
-def test_affordability_reduces_seven_contract_request_to_five():
+def test_affordability_reduces_eight_contract_request_to_five():
     assert live_engine._max_affordable_option_contracts(
         available_funds=4006.61,
         option_price=6.83,
-        requested_quantity=7,
+        requested_quantity=8,
     ) == 5
 
 
@@ -15,7 +15,7 @@ def test_affordability_never_exceeds_configured_contract_cap():
     assert live_engine._max_affordable_option_contracts(
         available_funds=100000.0,
         option_price=1.0,
-        requested_quantity=7,
+        requested_quantity=8,
     ) == live_engine.MAX_OPEN_CONTRACTS
 
 
@@ -23,7 +23,7 @@ def test_affordability_blocks_when_one_contract_cannot_be_funded():
     assert live_engine._max_affordable_option_contracts(
         available_funds=600.0,
         option_price=6.83,
-        requested_quantity=7,
+        requested_quantity=8,
     ) == 0
 
 
