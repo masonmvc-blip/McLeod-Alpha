@@ -63,14 +63,56 @@ def _broker_symbols(positions: list[dict[str, Any]] | None) -> list[str]:
     return sorted(symbols)
 
 
-def _smtp_ok() -> bool:
-    return all(os.getenv(key, "").strip() for key in ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"))
+def _email_config() -> dict[str, str]:
+    username = os.getenv("SMTP_USERNAME", "").strip() or os.getenv("EMAIL_ADDRESS", "").strip()
+    password = (
+        os.getenv("SMTP_PASSWORD", "").strip()
+        or os.getenv("EMAIL_APP_PASSWORD", "").replace(" ", "").strip()
+    )
+    host = os.getenv("SMTP_HOST", "").strip() or (
+        "smtp.gmail.com" if username.lower().endswith("@gmail.com") else ""
+    )
+    sender = os.getenv("SMTP_FROM", "").strip() or os.getenv("EMAIL_ADDRESS", "").strip() or username
+    recipient = (
+        os.getenv("DAILY_BOT_REVIEW_TO_EMAIL", "").strip()
+        or os.getenv("DAILY_TRADE_LOG_TO_EMAIL", "").strip()
+        or os.getenv("DAILY_PNL_TO_EMAIL", "").strip()
+        or os.getenv("EMAIL_TO", "").strip()
+    )
+    return {
+        "host": host,
+        "username": username,
+        "password": password,
+        "sender": sender,
+        "recipient": recipient,
+    }
 
 
-def _sms_ok() -> bool:
+def _email_ok() -> bool:
+    return all(_email_config().values())
+
+
+def _sms_status() -> tuple[bool, str]:
     enabled = os.getenv("ENABLE_TRADE_SMS_ALERTS", "false").strip().lower() in {"1", "true", "yes", "on"}
+    if not enabled:
+        return True, "optional SMS alerts disabled"
+
     transport = os.getenv("TRADE_ALERT_TRANSPORT", "email_sms").strip().lower()
-    return enabled and transport in {"email_sms", "outlook_sms"} and bool(os.getenv("TRADE_ALERT_TO_GATEWAY", "").strip())
+    gateway_ok = bool(os.getenv("TRADE_ALERT_TO_GATEWAY", "").strip())
+    email_sms_ok = transport == "email_sms" and gateway_ok and _email_ok()
+    outlook_sms_ok = transport == "outlook_sms" and gateway_ok
+    twilio_ok = transport == "twilio" and all(
+        os.getenv(key, "").strip()
+        for key in (
+            "TWILIO_ACCOUNT_SID",
+            "TWILIO_AUTH_TOKEN",
+            "TWILIO_FROM_NUMBER",
+            "TRADE_ALERT_TO_NUMBER",
+        )
+    )
+    if email_sms_ok or outlook_sms_ok or twilio_ok:
+        return True, f"enabled {transport} transport configured"
+    return False, f"enabled {transport} transport configuration incomplete"
 
 
 def build_morning_readiness(
@@ -116,8 +158,19 @@ def build_morning_readiness(
         "entry admission is active" if not entries_paused else f"entries are paused: {pause_reason} (updated {pause_updated_at}); resume entries before trading",
     )
     add("Scheduler healthy", scheduler_ok, f"daily_email_status={email_task.get('status', 'missing')}")
-    add("SMTP healthy", _smtp_ok(), "SMTP credentials configured" if _smtp_ok() else "SMTP configuration incomplete")
-    add("SMS healthy", _sms_ok(), "approved SMS gateway configured" if _sms_ok() else "SMS gateway disabled or incomplete")
+    email_ok = _email_ok()
+    email_config = _email_config()
+    add(
+        "Review email configured",
+        email_ok,
+        (
+            f"transport={email_config['host']} recipient={email_config['recipient']}"
+            if email_ok
+            else "unified daily-review email configuration incomplete"
+        ),
+    )
+    sms_ok, sms_detail = _sms_status()
+    add("SMS policy satisfied", sms_ok, sms_detail)
     add("Broker/local position consistency", broker == local, f"broker={broker} local={local}")
     add("Broker/trade ledger consistency", broker == ledger, f"broker={broker} ledger={ledger}")
     probe = reports_dir / ".morning_readiness_probe"

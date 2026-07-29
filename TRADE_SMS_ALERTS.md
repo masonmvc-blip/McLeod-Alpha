@@ -8,7 +8,7 @@ This project can send you a text message on every option trade entry and exit.
 
 ```bash
 ENABLE_TRADE_SMS_ALERTS=true
-TRADE_ALERT_TRANSPORT=mailapp_sms
+TRADE_ALERT_TRANSPORT=outlook_sms
 TRADE_ALERT_TO_GATEWAY=5551234567@vtext.com
 ```
 

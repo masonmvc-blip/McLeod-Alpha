@@ -238,7 +238,7 @@ def _send_sms(body: str) -> bool:
         print("SMS alert skipped: Twilio vars missing or failed")
         return False
 
-    # auto: try Outlook gateway, then SMTP gateway, then Twilio fallback.
+    # auto: try Outlook, then SMTP gateway, then Twilio fallback.
     if _send_via_outlook_sms(body):
         return True
     if _send_via_email_sms(body):

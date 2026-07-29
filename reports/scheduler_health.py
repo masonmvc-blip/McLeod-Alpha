@@ -143,7 +143,10 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
     return json_path, html_path
 
 
-def maybe_generate_scheduler_health_dashboard(now_ct: datetime | None = None) -> None:
+def maybe_generate_scheduler_health_dashboard(
+    now_ct: datetime | None = None,
+    reports_dir: Path = REPORTS_DIR,
+) -> None:
     global _LAST_REFRESH_MINUTE
     now = now_ct or datetime.now(CENTRAL_TZ)
     now = now.replace(tzinfo=CENTRAL_TZ) if now.tzinfo is None else now.astimezone(CENTRAL_TZ)
@@ -155,4 +158,4 @@ def maybe_generate_scheduler_health_dashboard(now_ct: datetime | None = None) ->
     state = _load_json(EMAIL_STATE_PATH)
     email_status = "healthy" if state.get("last_sent_date") == now.date().isoformat() else "missed"
     _maybe_alert_missed_daily_email(now, target, email_status)
-    build_scheduler_health_dashboard(now)
+    build_scheduler_health_dashboard(now, reports_dir)

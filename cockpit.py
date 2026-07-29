@@ -366,14 +366,14 @@ def _bot_stop_alert_recipient():
 
 def _send_bot_stop_email(subject: str, body: str):
     to_email = _bot_stop_alert_recipient()
-    transport = os.getenv("COCKPIT_ALERT_TRANSPORT", "auto").strip().lower()
+    transport = os.getenv("COCKPIT_ALERT_TRANSPORT", "outlook").strip().lower()
 
-    def _send_via_mailapp() -> bool:
+    def _send_via_outlook() -> bool:
         def esc(text: str) -> str:
             return text.replace("\\", "\\\\").replace('"', '\\"')
 
         applescript = f'''
-tell application "Mail"
+tell application "Microsoft Outlook"
     set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
     tell newMessage
         make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
@@ -393,10 +393,10 @@ end tell
             if result.returncode == 0:
                 return True
             err = (result.stderr or "").strip() or (result.stdout or "").strip()
-            print(f"Cockpit stop email failed (Mail.app): {err}")
+            print(f"Cockpit stop email failed (Outlook): {err}")
             return False
         except Exception as exc:
-            print(f"Cockpit stop email failed (Mail.app): {exc}")
+            print(f"Cockpit stop email failed (Outlook): {exc}")
             return False
 
     def _send_via_smtp() -> bool:
@@ -432,9 +432,7 @@ end tell
 
     if transport == "smtp":
         return _send_via_smtp()
-    if transport == "mailapp":
-        return _send_via_mailapp()
-    return _send_via_mailapp() or _send_via_smtp()
+    return _send_via_outlook()
 
 
 def _bot_stop_email_body(reason: str, status: dict) -> str:

@@ -37,8 +37,8 @@ def test_missed_email_watchdog_sends_one_alert_after_thirty_minutes(tmp_path, mo
     )
 
     now_ct = datetime(2026, 7, 21, 15, 31, tzinfo=ZoneInfo("America/Chicago"))
-    health.maybe_generate_scheduler_health_dashboard(now_ct)
-    health.maybe_generate_scheduler_health_dashboard(now_ct.replace(minute=17))
+    health.maybe_generate_scheduler_health_dashboard(now_ct, tmp_path)
+    health.maybe_generate_scheduler_health_dashboard(now_ct.replace(minute=17), tmp_path)
 
     assert len(alerts) == 1
     assert alerts[0][0] == "DAILY BOT TRADE REVIEW EMAIL MISSED"

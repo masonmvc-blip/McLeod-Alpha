@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import math
 from collections import Counter
@@ -63,7 +64,12 @@ def _percentile(values: List[float], pct: float) -> Optional[float]:
 
 def _load_events(input_path: Path) -> List[Dict[str, Any]]:
     events: List[Dict[str, Any]] = []
-    for line in get_memory().read_report_text(input_path, encoding="utf-8").splitlines():
+    rotated_paths = sorted(
+        (Path(path) for path in glob.glob(f"{input_path}.*")),
+        key=lambda path: path.stat().st_mtime,
+    )
+    for path in [*rotated_paths, input_path]:
+        for line in get_memory().read_report_text(path, encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
                 continue
