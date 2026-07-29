@@ -370,7 +370,14 @@ def send_review(
     _load_dotenv()
     md_path, html_path = _review_paths(trading_date)
     if not md_path.exists():
-        raise FileNotFoundError(f"Review artifact not found: {md_path}")
+        generated_review = REPORT_DIR / f"daily_trade_learning_{trading_date}.md"
+        if not generated_review.exists():
+            raise FileNotFoundError(f"Review artifact not found: {md_path}")
+        LEARNING_DIR.mkdir(parents=True, exist_ok=True)
+        md_path.write_text(
+            generated_review.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
 
     markdown = _merge_shadow_studies(
         md_path.read_text(encoding="utf-8"),
