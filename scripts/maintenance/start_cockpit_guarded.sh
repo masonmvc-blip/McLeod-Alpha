@@ -211,7 +211,7 @@ if [[ "$RUN_BACKGROUND" == "1" ]]; then
   nohup "$PYTHON_BIN" "$ROOT/cockpit.py" > "$ROOT/cockpit_stdout.log" 2>&1 &
   cockpit_pid=$!
   for _ in $(seq 1 30); do
-    listener_pid="$(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null | head -n 1)"
+    listener_pid="$(lsof -nP -iTCP:5001 -sTCP:LISTEN -t 2>/dev/null | head -n 1 || true)"
     if [[ -n "$listener_pid" ]]; then
       cockpit_pid="$listener_pid"
       break

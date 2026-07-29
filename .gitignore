@@ -33,6 +33,7 @@ ENV/
 *.log
 logs/
 *.pid
+.*_pid
 .bot_pid
 artifacts/test_reports/
 

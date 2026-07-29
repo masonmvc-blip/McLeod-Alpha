@@ -59,13 +59,13 @@ PLIST
 # Power guard start/stop for market window.
 POWER_START_RUNNER="$LOCAL_RUNNER_DIR/power_guard_start.sh"
 POWER_STOP_RUNNER="$LOCAL_RUNNER_DIR/power_guard_stop.sh"
-write_runner "$POWER_START_RUNNER" "'$ROOT_DIR/scripts/desktop/start_power_guard.sh'"
+write_runner "$POWER_START_RUNNER" "exec '$ROOT_DIR/scripts/desktop/start_power_guard.sh' --foreground"
 write_runner "$POWER_STOP_RUNNER" "'$ROOT_DIR/scripts/desktop/stop_power_guard.sh'"
 
 install_agent \
   "com.mcleod.alpha.power-guard-start" \
   "$POWER_START_RUNNER" \
-  "<key>StartCalendarInterval</key><array><dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict><dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict><dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict><dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict><dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict></array>" \
+  "<key>StartCalendarInterval</key><array><dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict><dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict><dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict><dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict><dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>10</integer></dict></array>" \
   "$ROOT_DIR/logs/power_guard_start_launchd.log"
 
 install_agent \
