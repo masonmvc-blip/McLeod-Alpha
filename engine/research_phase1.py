@@ -55,7 +55,7 @@ SECURITY_TYPE_BY_TICKER = {
     "RKLB": "operating_company",
     "VBNK": "bank",
     "ARTV": "biotechnology",
-    "SPCX": "etf_fund",
+    "SPCX": "operating_company",
 }
 
 COVERAGE_TARGETS = {
@@ -171,21 +171,18 @@ TICKER_REQUIRED_FIELDS = {
         "management_stated_dilution_disclosures",
     ],
     "SPCX": [
-        "fund_strategy",
-        "fund_type",
-        "expense_ratio",
-        "net_assets",
-        "assets_under_management",
-        "fund_inception_date",
-        "number_of_holdings",
-        "top_ten_holdings",
-        "top_ten_concentration",
-        "benchmark",
-        "average_daily_volume",
-        "portfolio_turnover",
-        "distribution_yield",
-        "fund_sponsor",
-        "advisor",
+        "revenue",
+        "gross_profit",
+        "gross_margin",
+        "operating_income",
+        "net_income",
+        "cash",
+        "debt",
+        "free_cash_flow",
+        "capital_expenditures",
+        "share_count",
+        "backlog",
+        "guidance",
     ],
 }
 
@@ -218,15 +215,12 @@ TICKER_OPTIONAL_FIELDS = {
     ],
     "ARTV": ["warrants", "atm_facilities", "shelf_registrations", "indications"],
     "SPCX": [
-        "complete_holdings_list",
-        "sector_exposure",
-        "geographic_exposure",
-        "market_cap_exposure",
-        "historical_returns",
-        "historical_volatility",
-        "maximum_drawdown",
-        "liquidity_metrics",
-        "overlap_with_existing_holdings",
+        "launch_services_revenue",
+        "starlink_revenue",
+        "launch_cadence",
+        "contracted_backlog",
+        "research_and_development_expense",
+        "stock_based_compensation",
     ],
 }
 
@@ -249,9 +243,7 @@ OFFICIAL_SOURCE_URLS = {
         "official_pipeline_page": "https://www.artivabio.com/nk-cell-therapy-pipeline/",
     },
     "SPCX": {
-        "official_fund_sponsor_page": "https://www.defianceetfs.com/spcx/",
-        "official_etf_fact_sheet": "https://www.defianceetfs.com/spcx/",
-        "official_fund_holdings": "https://www.defianceetfs.com/spcx/",
+        "official_ir_page": "https://ir.spacex.com/",
     },
 }
 
@@ -1348,7 +1340,7 @@ def _expected_identity_terms(ticker: str) -> List[str]:
         "RKLB": ["rocket lab", "rklb", "electron", "neutron"],
         "VBNK": ["versabank"],
         "ARTV": ["artiva"],
-        "SPCX": ["defiance", "spcx", "exchange-traded fund", "etf"],
+        "SPCX": ["space exploration technologies", "spacex"],
     }.get(str(ticker or "").upper(), [str(ticker or "")])
 
 
@@ -4132,7 +4124,6 @@ class ResearchParser:
 
         # Post-process: explicit N/A tagging for truly non-applicable fields.
         known_na = {
-            "SPCX": ["buybacks", "arr", "subscription_revenue", "customer_count", "retention"],
             "VBNK": ["arr", "subscription_revenue", "search_revenue", "advertising_revenue"],
         }
         for field in known_na.get(ticker, []):

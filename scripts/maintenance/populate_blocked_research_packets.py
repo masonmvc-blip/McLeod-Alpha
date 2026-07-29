@@ -30,10 +30,10 @@ REVIEW_DIR = DATA_DIR / "research" / "review"
 VALIDATION_PATH = DATA_DIR / "research" / "review" / "blocked_holdings_validation_2026-07-18.json"
 
 TARGETS = ["CRWD", "NBIS", "OPRA", "VBNK", "ARTV", "SPCX"]
-OPCO = {"CRWD", "NBIS", "OPRA"}
+OPCO = {"CRWD", "NBIS", "OPRA", "SPCX"}
 BANK = {"VBNK"}
 BIOTECH = {"ARTV"}
-FUND = {"SPCX"}
+FUND = {"SPCK"}
 
 BENCHMARK_RETURN = 8.0
 

@@ -3,6 +3,8 @@ from decimal import Decimal
 
 import pytest
 
+from engine import research_phase1
+from engine.data_sources import sec_source
 from scripts import spcx_daily_accumulator as accumulator
 
 
@@ -41,6 +43,15 @@ def test_parse_quote_rejects_legacy_spcx_identity():
     }
     with pytest.raises(RuntimeError, match="identity guard failed"):
         accumulator.parse_quote(payload)
+
+
+def test_research_identity_maps_spcx_to_spacex_operating_company():
+    assert research_phase1.SECURITY_TYPE_BY_TICKER["SPCX"] == "operating_company"
+    assert sec_source.TICKER_TO_CIK["SPCX"] == "0001181412"
+    assert "spacex" in research_phase1._expected_identity_terms("SPCX")
+    assert research_phase1.OFFICIAL_SOURCE_URLS["SPCX"] == {
+        "official_ir_page": "https://ir.spacex.com/"
+    }
 
 
 def test_duplicate_guard_detects_todays_spcx_buy():
