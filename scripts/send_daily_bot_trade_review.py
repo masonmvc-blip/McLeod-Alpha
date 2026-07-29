@@ -9,16 +9,24 @@ import html
 import json
 import os
 import re
+import shutil
 import smtplib
+import subprocess
+import sys
+from base64 import b64encode
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import formataddr, parseaddr
 from pathlib import Path
 from typing import Any
+from urllib.request import urlopen
+from xml.sax.saxutils import escape as xml_escape
 from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 LEARNING_DIR = ROOT / "data" / "learning"
 REPORT_DIR = ROOT / "reports" / "daily_trade_learning"
 ATTRIBUTION_DIR = ROOT / "reports" / "daily_loss_attribution"
@@ -26,6 +34,17 @@ STATE_PATH = ROOT / "data" / "daily_bot_trade_review_email_state.json"
 DELIVERY_LOG_PATH = LEARNING_DIR / "daily_bot_trade_review_email.log"
 EASTERN_TZ = ZoneInfo("America/New_York")
 SENDER_DISPLAY_NAME = "McLeod Alpha Daily Review"
+TODAY_TRADES_IMAGE_CID = "mcleod-alpha-todays-trades"
+EMAIL_HIDDEN_SECTIONS = {
+    "## Core Performance",
+    "## Biggest Losses (Top 5)",
+    "## Biggest Wins (Top 5)",
+    "## Actionable Lessons",
+    "## Scale Decision (Next Session)",
+    "## Model Learning Jobs",
+    "## Trend Lifecycle V2 Shadow Review",
+    "## Entry Quality Shadow Studies",
+}
 
 
 def _load_dotenv() -> None:
@@ -259,11 +278,229 @@ def _summary_html(summary: dict[str, Any]) -> str:
 """
 
 
+def _strike_from_symbol(symbol: Any) -> str:
+    match = re.search(r"[CP]0*(\d{3,8})$", str(symbol or "").replace(" ", ""))
+    if not match:
+        return "—"
+    try:
+        return f"{int(match.group(1)) / 1000:g}"
+    except ValueError:
+        return "—"
+
+
+def _metric(value: Any) -> str:
+    if isinstance(value, dict):
+        value = value.get("score")
+    try:
+        return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _snapshot_trade_rows(trading_date: str) -> list[dict[str, str]]:
+    """Load the same canonical completed-trade objects used by the Cockpit."""
+    from engine.memory import get_memory
+
+    trades: list[dict[str, Any]] = []
+    try:
+        with urlopen(
+            f"http://127.0.0.1:5001/api/today-trades?date={trading_date}",
+            timeout=8,
+        ) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if str(payload.get("trading_date") or "") == trading_date:
+            trades = [
+                row for row in (payload.get("trades") or [])
+                if isinstance(row, dict)
+            ]
+    except Exception:
+        trades = []
+    if not trades:
+        trades = get_memory().load_completed_trades_for_date(trading_date)
+    rows: list[dict[str, str]] = []
+    for trade in sorted(trades, key=lambda row: str(row.get("entry_time") or "")):
+        entry = str(trade.get("entry_time") or "")
+        exit_at = str(trade.get("exit_time") or "")
+        try:
+            entry_label = datetime.fromisoformat(entry.replace("Z", "+00:00")).astimezone(
+                EASTERN_TZ
+            ).strftime("%-I:%M")
+            exit_label = datetime.fromisoformat(exit_at.replace("Z", "+00:00")).astimezone(
+                EASTERN_TZ
+            ).strftime("%-I:%M")
+            time_label = f"{entry_label} – {exit_label}"
+        except ValueError:
+            time_label = "—"
+        direction = str(trade.get("direction") or "").upper()
+        strike = trade.get("strike_price")
+        strike_label = (
+            f"{float(strike):g}"
+            if strike is not None
+            else _strike_from_symbol(trade.get("option_symbol"))
+        )
+        phase = str(
+            trade.get("momentum_phase")
+            or trade.get("trend_stage")
+            or "UNKNOWN"
+        ).replace("_", " ").title()
+        pnl = float(trade.get("pnl") or trade.get("option_pnl_dollars") or 0.0)
+        option_entry = float(trade.get("option_entry") or trade.get("entry_price") or 0.0)
+        option_exit = float(trade.get("option_exit") or trade.get("exit_price") or 0.0)
+        recorded_pnl_pct = trade.get("pnl_pct")
+        pnl_pct = (
+            float(recorded_pnl_pct)
+            if recorded_pnl_pct not in (None, "")
+            else ((option_exit - option_entry) / option_entry) * 100.0 if option_entry else 0.0
+        )
+        feature = trade.get("feature_snapshot") or {}
+        if isinstance(feature, dict):
+            feature = feature.get("all_features") or feature
+        feature = feature if isinstance(feature, dict) else {}
+        checklist = feature.get("checklist") or {}
+        passed = (
+            trade.get("indicator_count")
+            or trade.get("entry_gate_score")
+            or checklist.get("passed")
+            or feature.get("entry_score")
+            or "—"
+        )
+        total = trade.get("indicator_total") or checklist.get("total") or 5
+        rows.append({
+            "time": time_label,
+            "option": f"{strike_label} {direction}",
+            "contracts": str(
+                int(float(trade.get("contracts") or trade.get("option_quantity") or 0))
+            ),
+            "entry": _currency(option_entry),
+            "exit": _currency(option_exit),
+            "checklist": f"{passed} / {total}",
+            "phase": phase,
+            "cq": _metric(
+                trade.get("continuation_quality_score")
+                or feature.get("continuation_quality")
+            ),
+            "mas": _metric(
+                trade.get("momentum_acceleration_score")
+                or feature.get("momentum_acceleration")
+            ),
+            "abs": _metric(
+                trade.get("absorption_score")
+                or feature.get("absorption_score")
+            ),
+            "conf": _metric(
+                trade.get("confidence_score")
+                or feature.get("confidence_score")
+            ),
+            "pnl": f"{_currency(pnl)} · {pnl_pct:+.1f}%",
+            "exit_reason": (
+                "Mason"
+                if str(trade.get("manual_label") or "").strip() == "Mason"
+                else str(trade.get("exit_reason") or "—").replace("_", " ").title()
+            ),
+            "positive": pnl >= 0,
+        })
+    return rows
+
+
+def _today_trades_svg(trading_date: str, rows: list[dict[str, str]]) -> str:
+    columns = [
+        ("Time", "time", 145),
+        ("Option", "option", 115),
+        ("#", "contracts", 42),
+        ("Entry", "entry", 76),
+        ("Exit", "exit", 76),
+        ("Checklist", "checklist", 85),
+        ("Phase", "phase", 165),
+        ("CQ", "cq", 58),
+        ("MAS", "mas", 58),
+        ("ABS", "abs", 58),
+        ("CONF", "conf", 64),
+        ("P&L", "pnl", 130),
+        ("Exit", "exit_reason", 130),
+    ]
+    width = sum(column[2] for column in columns) + 40
+    header_height = 96
+    row_height = 52
+    height = header_height + 42 + max(1, len(rows)) * row_height + 24
+    x_positions = []
+    cursor = 20
+    for _, _, column_width in columns:
+        x_positions.append(cursor)
+        cursor += column_width
+    header_cells = "".join(
+        f"<text x='{x_positions[index] + column_width / 2:.1f}' y='122' "
+        "text-anchor='middle' font-size='14' font-weight='700' fill='#617087'>"
+        f"{xml_escape(label)}</text>"
+        for index, (label, _, column_width) in enumerate(columns)
+    )
+    rendered_rows = []
+    for row_index, row in enumerate(rows):
+        top = 138 + row_index * row_height
+        fill = "#ffffff" if row_index % 2 == 0 else "#f8fafc"
+        cells = []
+        for column_index, (_, key, column_width) in enumerate(columns):
+            color = "#159447" if key == "pnl" and row["positive"] else (
+                "#d9364f" if key == "pnl" else "#334155"
+            )
+            weight = "700" if key in {"option", "pnl"} else "500"
+            cells.append(
+                f"<text x='{x_positions[column_index] + column_width / 2:.1f}' "
+                f"y='{top + 32}' text-anchor='middle' font-size='14' "
+                f"font-weight='{weight}' fill='{color}'>"
+                f"{xml_escape(str(row.get(key) or '—'))}</text>"
+            )
+        rendered_rows.append(
+            f"<rect x='20' y='{top}' width='{width - 40}' height='{row_height}' "
+            f"fill='{fill}' stroke='#e6ebf2'/>" + "".join(cells)
+        )
+    if not rows:
+        rendered_rows.append(
+            f"<text x='{width / 2:.1f}' y='176' text-anchor='middle' "
+            "font-size='16' fill='#64748b'>No completed trades</text>"
+        )
+    return f"""<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' viewBox='0 0 {width} {height}'>
+  <rect width='{width}' height='{height}' rx='18' fill='#ffffff'/>
+  <rect x='1' y='1' width='{width - 2}' height='{height - 2}' rx='17' fill='none' stroke='#d7e2f0' stroke-width='2'/>
+  <text x='{width / 2:.1f}' y='42' text-anchor='middle' font-size='25' font-weight='800' fill='#173763'>Today's Trades</text>
+  <text x='{width / 2:.1f}' y='68' text-anchor='middle' font-size='14' fill='#64748b'>Broker-reconciled completed trades</text>
+  <rect x='20' y='92' width='{width - 40}' height='46' rx='8' fill='#edf3fb'/>
+  {header_cells}
+  {''.join(rendered_rows)}
+</svg>"""
+
+
+def _write_today_trades_snapshot(trading_date: str) -> Path:
+    """Render an email-safe PNG of the Cockpit Today's Trades table."""
+    output_dir = LEARNING_DIR / "email_images"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    svg_path = output_dir / f"todays-trades-{trading_date}.svg"
+    png_path = output_dir / f"todays-trades-{trading_date}.png"
+    rows = _snapshot_trade_rows(trading_date)
+    svg_path.write_text(_today_trades_svg(trading_date, rows), encoding="utf-8")
+    renderer = shutil.which("sips")
+    if not renderer:
+        raise RuntimeError("Today's Trades image renderer is unavailable")
+    completed = subprocess.run(
+        [renderer, "-s", "format", "png", str(svg_path), "--out", str(png_path)],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    if completed.returncode != 0 or not png_path.exists():
+        raise RuntimeError(
+            "Today's Trades image render failed: "
+            + (completed.stderr.strip() or completed.stdout.strip())
+        )
+    return png_path
+
+
 def markdown_to_email_html(
     markdown: str,
     trading_date: str,
     *,
     summary: dict[str, Any] | None = None,
+    trades_image_src: str | None = None,
 ) -> str:
     """Render the review's constrained Markdown into email-safe HTML."""
     blocks: list[str] = []
@@ -342,6 +579,14 @@ def markdown_to_email_html(
 
     content = "\n".join(blocks)
     summary_card = _summary_html(summary) if summary else ""
+    trades_image = (
+        "<div style=\"margin:0 0 22px;\">"
+        f"<img src=\"{html.escape(trades_image_src, quote=True)}\" "
+        "alt=\"Today's Trades\" width=\"100%\" "
+        "style=\"display:block;width:100%;height:auto;border:0;border-radius:12px;\">"
+        "</div>"
+        if trades_image_src else ""
+    )
     return f"""<!doctype html>
 <html>
 <head>
@@ -372,6 +617,7 @@ def markdown_to_email_html(
             .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:9px 12px;border-radius:4px; }}
           </style>
           {summary_card}
+          {trades_image}
           {content}
         </td></tr>
         <tr><td style="padding:20px 34px;background:#edf3fb;color:#5a6780;font-size:12px;line-height:1.5;">
@@ -446,18 +692,25 @@ def _reconciliation_label(trading_date: str) -> str:
 
 
 def _email_markdown(markdown: str) -> str:
-    """Remove generator metadata and the redundant core performance table."""
+    """Apply the lean email view without deleting any underlying learning data."""
     lines = markdown.splitlines()
     cleaned: list[str] = []
-    skipping_core_performance = False
+    skipped_heading_level: int | None = None
     for raw in lines:
         line = raw.strip()
-        if line == "## Core Performance":
-            skipping_core_performance = True
+        heading_match = re.match(r"^(#{1,6})\s+", line)
+        heading_level = len(heading_match.group(1)) if heading_match else None
+        hide_heading = (
+            line in EMAIL_HIDDEN_SECTIONS
+            or line.startswith("### Evidence Gate")
+            or line == "### Locked Evidence Gates"
+        )
+        if hide_heading:
+            skipped_heading_level = heading_level
             continue
-        if skipping_core_performance:
-            if line.startswith("## "):
-                skipping_core_performance = False
+        if skipped_heading_level is not None:
+            if heading_level is not None and heading_level <= skipped_heading_level:
+                skipped_heading_level = None
             else:
                 continue
         if line == "# Daily Trade Learning Report":
@@ -613,6 +866,8 @@ def _send_smtp(
     subject: str,
     text_body: str,
     html_body: str,
+    inline_image_path: Path | None = None,
+    inline_image_cid: str = TODAY_TRADES_IMAGE_CID,
 ) -> None:
     username = (
         os.getenv("SMTP_USERNAME", "").strip()
@@ -641,6 +896,15 @@ def _send_smtp(
     message["To"] = recipient
     message.set_content(text_body)
     message.add_alternative(html_body, subtype="html")
+    if inline_image_path is not None:
+        html_part = message.get_payload()[-1]
+        html_part.add_related(
+            inline_image_path.read_bytes(),
+            maintype="image",
+            subtype="png",
+            cid=f"<{inline_image_cid}>",
+            disposition="inline",
+        )
 
     with smtplib.SMTP(host, port, timeout=20) as smtp:
         smtp.starttls()
@@ -674,24 +938,40 @@ def send_review(
     md_path.write_text(markdown, encoding="utf-8")
     email_markdown = _normalize_dollar_markdown(_email_markdown(markdown))
     email_summary = _build_email_summary(trading_date)
+    if not dry_run:
+        reconciliation_data = _reconciliation(trading_date)
+        if not _reconciliation_is_sendable(reconciliation_data):
+            raise RuntimeError(
+                "Daily review email withheld: exact broker trade-count/P&L parity "
+                "and zero pending outbox entries are required"
+            )
+
+    trades_image_path = _write_today_trades_snapshot(trading_date)
+    preview_image_src = (
+        "data:image/png;base64,"
+        + b64encode(trades_image_path.read_bytes()).decode("ascii")
+    )
+    preview_html = markdown_to_email_html(
+        email_markdown,
+        trading_date,
+        summary=email_summary,
+        trades_image_src=preview_image_src,
+    )
+    html_path.write_text(preview_html, encoding="utf-8")
+    if dry_run:
+        return html_path
+
     html_body = markdown_to_email_html(
         email_markdown,
         trading_date,
         summary=email_summary,
+        trades_image_src=f"cid:{TODAY_TRADES_IMAGE_CID}",
     )
-    html_path.write_text(html_body, encoding="utf-8")
-    if dry_run:
-        return html_path
-
-    reconciliation_data = _reconciliation(trading_date)
-    if not _reconciliation_is_sendable(reconciliation_data):
-        raise RuntimeError(
-            "Daily review email withheld: exact broker trade-count/P&L parity "
-            "and zero pending outbox entries are required"
-        )
 
     state = _load_json(STATE_PATH)
-    digest = hashlib.sha256(email_markdown.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(
+        email_markdown.encode("utf-8") + trades_image_path.read_bytes()
+    ).hexdigest()
     if (
         not force
         and state.get("last_sent_date") == trading_date
@@ -723,6 +1003,7 @@ def send_review(
         subject=subject,
         text_body=text_body,
         html_body=html_body,
+        inline_image_path=trades_image_path,
     )
 
     sent_at = datetime.now(EASTERN_TZ).isoformat(timespec="seconds")
@@ -737,6 +1018,7 @@ def send_review(
             "reconciliation": reconciliation,
             "last_html_path": str(html_path),
             "attachments_sent": 0,
+            "inline_images_sent": 1,
         },
     )
     DELIVERY_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -744,7 +1026,7 @@ def send_review(
         log.write(
             f"{sent_at} | send_success | date={trading_date}"
             f" | recipient={to_email} | reconciliation={reconciliation}"
-            " | attachments=0\n"
+            " | attachments=0 | inline_images=1\n"
         )
     print(f"Daily bot trade review emailed for {trading_date} to {to_email}")
     return html_path
