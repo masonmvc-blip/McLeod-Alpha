@@ -24,4 +24,17 @@ if [[ -z "${PYTHON_BIN}" ]]; then
 fi
 
 export PYTHONPATH="${WORKSPACE_DIR}:${PYTHONPATH:-}"
-exec "${PYTHON_BIN}" "run_daily_trade_learning.py" "$@"
+"${PYTHON_BIN}" "run_daily_trade_learning.py" "$@"
+
+TRADING_DATE="$("${PYTHON_BIN}" - <<'PY'
+from datetime import datetime
+from zoneinfo import ZoneInfo
+print(datetime.now(ZoneInfo("America/New_York")).date().isoformat())
+PY
+)"
+REVIEW_ARTIFACT="${WORKSPACE_DIR}/data/learning/mcleod-alpha-trade-review-${TRADING_DATE}.md"
+if [[ -f "${REVIEW_ARTIFACT}" ]]; then
+  "${PYTHON_BIN}" "scripts/send_daily_bot_trade_review.py" --date "${TRADING_DATE}"
+else
+  echo "Daily bot review email deferred; artifact not yet available: ${REVIEW_ARTIFACT}"
+fi

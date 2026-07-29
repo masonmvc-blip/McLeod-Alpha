@@ -71,12 +71,49 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
             blocks.append("</ul>")
             list_open = False
 
-    for raw in markdown.splitlines():
+    lines = markdown.splitlines()
+    index = 0
+    while index < len(lines):
+        raw = lines[index]
         line = raw.strip()
+        if (
+            line.startswith("|")
+            and index + 1 < len(lines)
+            and re.match(r"^\|\s*:?-{3,}", lines[index + 1].strip())
+        ):
+            close_list()
+            headers = [cell.strip() for cell in line.strip("|").split("|")]
+            index += 2
+            rows: list[list[str]] = []
+            while index < len(lines) and lines[index].strip().startswith("|"):
+                rows.append([
+                    cell.strip() for cell in lines[index].strip().strip("|").split("|")
+                ])
+                index += 1
+            head = "".join(
+                f"<th style=\"padding:8px 9px;text-align:left;border-bottom:2px solid #cbd8ea;"
+                f"font-size:12px;color:#24487f;\">{_inline(cell)}</th>"
+                for cell in headers
+            )
+            body = "".join(
+                "<tr>" + "".join(
+                    f"<td style=\"padding:8px 9px;border-bottom:1px solid #e5ebf4;"
+                    f"font-size:12px;color:#3d4960;\">{_inline(cell)}</td>"
+                    for cell in row
+                ) + "</tr>"
+                for row in rows
+            )
+            blocks.append(
+                "<div style=\"overflow-x:auto;margin:12px 0 20px;\">"
+                "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
+                "style=\"width:100%;border-collapse:collapse;background:#f9fbfe;"
+                "border:1px solid #dce5f2;border-radius:8px;\">"
+                f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
+            )
+            continue
         if not line:
             close_list()
-            continue
-        if line.startswith("# "):
+        elif line.startswith("# "):
             close_list()
             blocks.append(f"<h1>{_inline(line[2:])}</h1>")
         elif line.startswith("## "):
@@ -96,6 +133,7 @@ def markdown_to_email_html(markdown: str, trading_date: str) -> str:
         else:
             close_list()
             blocks.append(f"<p>{_inline(line)}</p>")
+        index += 1
     close_list()
 
     content = "\n".join(blocks)
@@ -170,8 +208,29 @@ def _attachments(trading_date: str, md_path: Path) -> list[Path]:
         md_path,
         REPORT_DIR / f"daily_trade_learning_{trading_date}.json",
         REPORT_DIR / f"daily_trade_learning_trades_{trading_date}.csv",
+        REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.json",
+        REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.csv",
     ]
     return [path for path in candidates if path.exists()]
+
+
+def _merge_lifecycle_shadow(markdown: str, trading_date: str) -> str:
+    """Idempotently add the shadow worksheet to the pretty daily review."""
+    shadow_path = REPORT_DIR / f"trend_lifecycle_shadow_{trading_date}.md"
+    if not shadow_path.exists():
+        try:
+            from reports.trend_lifecycle_shadow_report import (
+                write_trend_lifecycle_shadow_report,
+            )
+            write_trend_lifecycle_shadow_report(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Trend lifecycle shadow report warning: {exc}")
+    if not shadow_path.exists():
+        return markdown
+    heading = "## Trend Lifecycle V2 Shadow Review"
+    if heading in markdown:
+        markdown = markdown.split(heading, 1)[0].rstrip()
+    return markdown.rstrip() + "\n\n" + shadow_path.read_text(encoding="utf-8").lstrip()
 
 
 def _send_smtp(
@@ -235,7 +294,11 @@ def send_review(
     if not md_path.exists():
         raise FileNotFoundError(f"Review artifact not found: {md_path}")
 
-    markdown = md_path.read_text(encoding="utf-8")
+    markdown = _merge_lifecycle_shadow(
+        md_path.read_text(encoding="utf-8"),
+        trading_date,
+    )
+    md_path.write_text(markdown, encoding="utf-8")
     html_body = markdown_to_email_html(markdown, trading_date)
     html_path.write_text(html_body, encoding="utf-8")
     if dry_run:

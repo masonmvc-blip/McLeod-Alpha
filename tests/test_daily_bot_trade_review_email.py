@@ -26,6 +26,19 @@ def test_markdown_to_email_html_renders_review_sections():
     assert "No live sizing" in rendered
 
 
+def test_markdown_to_email_html_renders_tables_as_styled_html():
+    rendered = markdown_to_email_html(
+        "| Phase | Trades | P&L |\n"
+        "| --- | ---: | ---: |\n"
+        "| INITIATION | 2 | $10.00 |\n",
+        "2026-07-28",
+    )
+    assert "<table" in rendered
+    assert "<th" in rendered
+    assert "INITIATION" in rendered
+    assert "| ---" not in rendered
+
+
 def test_review_email_script_uses_repo_data_paths():
     source = Path("scripts/send_daily_bot_trade_review.py").read_text(encoding="utf-8")
     assert 'ROOT / "data" / "learning"' in source

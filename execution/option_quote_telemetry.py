@@ -85,6 +85,9 @@ def build_option_management_cycle(
         "quote_age_seconds": metadata.get("quote_age_seconds"),
         "quote_source": metadata.get("quote_source"),
         "option_stop": _positive_number(getattr(position, "option_stop", None)),
+        "option_initial_stop": _positive_number(
+            getattr(position, "option_initial_stop", None)
+        ),
         "option_high_since_entry": high,
         "option_low_since_entry": low,
         "option_trailing_high_bid": _positive_number(

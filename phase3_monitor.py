@@ -19,6 +19,8 @@ from spy_bot_reviewer import SpyBotReviewer
 from strategy.live_candle_builder import LiveMinuteCandleBuilder
 from strategy.monitor_cycle import plan_signal_cycle
 from strategy.signals import build_feature_snapshot
+from strategy.trend_lifecycle_v2 import classify_trend_lifecycle_v2
+from execution.trend_lifecycle_shadow import record_lifecycle_shadow_snapshot
 from backtesting.signal_replay import confidence_score_engine
 
 import os
@@ -1052,6 +1054,7 @@ def score_closed_candle_frame(candles):
             "trend_age_minutes": lifecycle.get("trend_age_minutes"),
             "continuation_legs": lifecycle.get("continuation_legs"),
             "acceleration": acceleration.get("score"),
+            "lifecycle_v2_shadow": classify_trend_lifecycle_v2(indicators, direction),
         }
 
     return {
@@ -1261,6 +1264,7 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
         lifecycle,
         stage,
     )
+    lifecycle_v2_shadow = classify_trend_lifecycle_v2(frame, direction)
 
     return json.dumps({
         "captured_at": datetime.now(EASTERN_TZ).isoformat(),
@@ -1286,6 +1290,7 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
         "absorption_score": absorption.get("score"),
         "confidence_score": confidence.get("score"),
         "trend_lifecycle": lifecycle,
+        "trend_lifecycle_v2_shadow": lifecycle_v2_shadow,
         "continuation_quality": continuation_quality,
         "momentum_acceleration": momentum_acceleration,
         "trend_efficiency": trend_efficiency,
@@ -1538,6 +1543,19 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         call_reasons,
         put_reasons,
         vol.get("trend"),
+    )
+    lifecycle_v2_shadow = classify_trend_lifecycle_v2(
+        completed_candles,
+        entry_decision.get("direction"),
+    )
+    record_lifecycle_shadow_snapshot(
+        candle_time=last.name,
+        lifecycle=lifecycle_v2_shadow,
+        regime=regime,
+        call_score=call_score,
+        put_score=put_score,
+        candidate_direction=entry_decision.get("direction"),
+        candle_source=LAST_CANDLE_SOURCE,
     )
 
     if not _is_entry_window_now():
