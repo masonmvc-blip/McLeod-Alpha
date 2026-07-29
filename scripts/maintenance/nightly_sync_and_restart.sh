@@ -62,7 +62,7 @@ echo "git_pull=complete"
 for ((attempt=1; attempt<=MAX_RESTART_ATTEMPTS; attempt++)); do
   echo "restart_attempt=$attempt/$MAX_RESTART_ATTEMPTS"
   "$ROOT/ops/stack_stop.sh"
-  "$ROOT/ops/stack_start.sh"
+  MCLEOD_RESUME_AFTER_PLANNED_RESTART=1 "$ROOT/ops/stack_start.sh"
 
   for ((check=1; check<=HEALTH_CHECK_ATTEMPTS; check++)); do
     if is_stack_healthy; then

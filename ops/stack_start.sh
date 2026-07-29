@@ -57,9 +57,13 @@ start_cockpit() {
 }
 
 start_bot_via_api() {
-  if [[ -f "$MANUAL_STOP_MARKER" ]]; then
+  local resume_planned_restart="${MCLEOD_RESUME_AFTER_PLANNED_RESTART:-0}"
+  if [[ -f "$MANUAL_STOP_MARKER" && "$resume_planned_restart" != "1" ]]; then
     echo "Bot start skipped: operator stop is active. Use Cockpit Start Bot to resume trading."
     return 0
+  fi
+  if [[ -f "$MANUAL_STOP_MARKER" ]]; then
+    echo "Clearing planned-restart stop marker through guarded direct start..."
   fi
 
   bot_pid=""
@@ -78,7 +82,7 @@ import json
 import urllib.request
 
 req = urllib.request.Request(
-    "http://127.0.0.1:5001/api/start",
+    "http://127.0.0.1:5001/api/start-direct",
     data=b"{}",
     headers={"Content-Type": "application/json"},
     method="POST",
