@@ -13,7 +13,7 @@ from reports.daily_strategy_effectiveness import maybe_generate_daily_strategy_e
 from reports.morning_readiness import maybe_generate_morning_readiness
 from reports.scheduler_health import maybe_generate_scheduler_health_dashboard
 from engine.brain import Brain, LIVE_ENTRY_MIN_SCORE, classify_entry_regime as market_regime
-from engine.brain.candidate_controls import candidate_entry_block_reason, load_candidate_controls
+from engine.brain.candidate_controls import candidate_entry_block_reasons, load_candidate_controls
 from execution.accepted_breakout_observer import observe_candidate, record_candidate_observation
 from execution.day_trade_spy_shadow import record_day_trade_spy_shadow
 from engine.memory import get_memory
@@ -137,13 +137,13 @@ def _publish_indicator_scores(last, regime, call_score, put_score, call_reasons,
     })
 
 
-def _candidate_control_block_reason(feature_payload, option):
-    """Evaluate opt-in research controls after selecting an executable contract."""
+def _candidate_control_block_reasons(feature_payload, option):
+    """Evaluate every opt-in control while preserving configured precedence."""
     try:
         features = json.loads(feature_payload) if isinstance(feature_payload, str) else feature_payload
     except (TypeError, json.JSONDecodeError):
-        return None
-    return candidate_entry_block_reason(features or {}, option, load_candidate_controls())
+        return []
+    return candidate_entry_block_reasons(features or {}, option, load_candidate_controls())
 
 
 def _prior_shadow_attempts(candle_time, direction):
@@ -1561,6 +1561,17 @@ def open_trade(*args, **kwargs):
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
             "block_reason": "entry_paused",
+            "gate_evaluations": [{
+                "code": "ENTRY_PAUSED",
+                "status": "failed",
+                "reason": "entry_paused",
+                "source": "cockpit_control",
+            }],
+            "downstream_gates_not_evaluated": [
+                "COOLING_PERIOD",
+                "STARTUP_GUARD",
+                "EXECUTION_PREFLIGHT",
+            ],
         }
         return False
 
@@ -1571,6 +1582,21 @@ def open_trade(*args, **kwargs):
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
             "block_reason": "Cooling Period",
+            "gate_evaluations": [
+                {
+                    "code": "ENTRY_PAUSED",
+                    "status": "passed",
+                    "reason": None,
+                    "source": "cockpit_control",
+                },
+                {
+                    "code": "COOLING_PERIOD",
+                    "status": "failed",
+                    "reason": "Cooling Period",
+                    "source": "post_exit_cooling",
+                },
+            ],
+            "downstream_gates_not_evaluated": ["STARTUP_GUARD", "EXECUTION_PREFLIGHT"],
         }
         return False
 
@@ -1586,6 +1612,27 @@ def open_trade(*args, **kwargs):
             "opened": False,
             "open_trade_ms": _elapsed_ms(start_ms),
             "block_reason": startup_admission.reason,
+            "gate_evaluations": [
+                {
+                    "code": "ENTRY_PAUSED",
+                    "status": "passed",
+                    "reason": None,
+                    "source": "cockpit_control",
+                },
+                {
+                    "code": "COOLING_PERIOD",
+                    "status": "passed",
+                    "reason": None,
+                    "source": "post_exit_cooling",
+                },
+                {
+                    "code": "STARTUP_GUARD",
+                    "status": "failed",
+                    "reason": startup_admission.reason,
+                    "source": "startup_guard",
+                },
+            ],
+            "downstream_gates_not_evaluated": ["EXECUTION_PREFLIGHT"],
             "precheck_ms": None,
             "quote_compute_ms": None,
             "submit_order_ms": None,
@@ -1610,6 +1657,33 @@ def open_trade(*args, **kwargs):
         "opened": opened,
         "open_trade_ms": float(engine_metrics.get("total_open_trade_ms") or _elapsed_ms(start_ms)),
         "block_reason": engine_metrics.get("block_reason") or (None if opened else "engine_block_or_reject"),
+        "gate_evaluations": [
+            {
+                "code": "ENTRY_PAUSED",
+                "status": "passed",
+                "reason": None,
+                "source": "cockpit_control",
+            },
+            {
+                "code": "COOLING_PERIOD",
+                "status": "passed",
+                "reason": None,
+                "source": "post_exit_cooling",
+            },
+            {
+                "code": "STARTUP_GUARD",
+                "status": "passed",
+                "reason": None,
+                "source": "startup_guard",
+            },
+            {
+                "code": "EXECUTION_PREFLIGHT",
+                "status": "passed" if opened else "failed",
+                "reason": engine_metrics.get("block_reason") or (None if opened else "engine_block_or_reject"),
+                "source": "live_engine",
+            },
+        ],
+        "downstream_gates_not_evaluated": [],
         "precheck_ms": engine_metrics.get("precheck_ms"),
         "quote_compute_ms": engine_metrics.get("quote_compute_ms"),
         "submit_order_ms": engine_metrics.get("submit_order_ms"),
@@ -1704,7 +1778,29 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
     )
 
     if not _is_entry_window_now():
-        _record_shadow_pair(completed_candles, event_phase="outside_entry_window")
+        candidate_direction = entry_decision.get("direction")
+        _log_shadow_opportunities(
+            last=last, prev=prev, completed_candles=completed_candles, regime=regime,
+            call_score=call_score, call_reasons=call_reasons, put_score=put_score,
+            put_reasons=put_reasons, entered_call=False, entered_put=False,
+            blocked_entry={
+                "direction": candidate_direction,
+                "reason": "No new entries at or after 3:45 PM ET",
+                "source": "entry_window",
+                "gate_evaluations": [{
+                    "code": "ENTRY_WINDOW_CLOSED",
+                    "status": "failed",
+                    "reason": "No new entries at or after 3:45 PM ET",
+                    "source": "entry_window",
+                }],
+                "downstream_gates_not_evaluated": [
+                    "CONTINUATION_FORECAST",
+                    "OPTION_SELECTION",
+                    "CANDIDATE_CONTROLS",
+                    "EXECUTION_PREFLIGHT",
+                ],
+            } if candidate_direction in {"CALL", "PUT"} else None,
+        )
         return {
             "attempted": False,
             "opened": False,
@@ -1751,6 +1847,22 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             last=last, prev=prev, completed_candles=completed_candles, regime=regime,
             call_score=call_score, call_reasons=call_reasons, put_score=put_score,
             put_reasons=put_reasons, entered_call=False, entered_put=False,
+            blocked_entry={
+                "direction": candidate_direction,
+                "reason": forecast_reason,
+                "source": "continuation_forecast",
+                "gate_evaluations": [{
+                    "code": "CONTINUATION_FORECAST",
+                    "status": "failed",
+                    "reason": forecast_reason,
+                    "source": "continuation_forecast",
+                }],
+                "downstream_gates_not_evaluated": [
+                    "OPTION_SELECTION",
+                    "CANDIDATE_CONTROLS",
+                    "EXECUTION_PREFLIGHT",
+                ],
+            },
         )
         return {
             "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
@@ -1803,7 +1915,9 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data["day_trade_spy_shadow_suite"] = shadow_suite
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
-        candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)
+        control_block_reasons = _candidate_control_block_reasons(feature_payload, option)
+        control_block_reason = control_block_reasons[0] if control_block_reasons else None
+        candidate_block_reason = option_block_reason or control_block_reason
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
             _log_shadow_opportunities(
@@ -1811,7 +1925,29 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
                 call_score=call_score, call_reasons=call_reasons, put_score=put_score,
                 put_reasons=put_reasons, entered_call=False, entered_put=False,
                 feature_payload=feature_payload, selected_option_call=option,
-                blocked_entry={"direction": "CALL", "reason": candidate_block_reason},
+                blocked_entry={
+                    "direction": "CALL",
+                    "reason": candidate_block_reason,
+                    "source": "candidate_admission",
+                    "gate_evaluations": [
+                        {
+                            "code": "OPTION_SELECTION",
+                            "status": "failed" if option_block_reason else "passed",
+                            "reason": option_block_reason,
+                            "source": "option_selector",
+                        },
+                        *[
+                            {
+                                "code": str(reason or "CANDIDATE_CONTROLS").upper(),
+                                "status": "failed" if reason else "passed",
+                                "reason": reason,
+                                "source": "candidate_controls",
+                            }
+                            for reason in (control_block_reasons or [None])
+                        ],
+                    ],
+                    "downstream_gates_not_evaluated": ["EXECUTION_PREFLIGHT"],
+                },
             )
             return {
                 "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
@@ -1835,6 +1971,9 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             blocked_entry = {
                 "direction": "CALL",
                 "reason": LAST_ENTRY_EXECUTION_METRICS["block_reason"],
+                "source": "open_trade",
+                "gate_evaluations": LAST_ENTRY_EXECUTION_METRICS.get("gate_evaluations") or [],
+                "downstream_gates_not_evaluated": LAST_ENTRY_EXECUTION_METRICS.get("downstream_gates_not_evaluated") or [],
                 "intended_trade": {
                     "underlying_entry": entry, "underlying_stop": stop, "underlying_target": target,
                     "quantity": quantity, "reason": trade_plan["reason"],
@@ -1929,7 +2068,9 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
         feature_payload_data["day_trade_spy_shadow_suite"] = shadow_suite
         record_candidate_observation(observation, feature_payload=feature_payload_data, option=option)
         feature_payload = json.dumps(feature_payload_data, default=str)
-        candidate_block_reason = option_block_reason or _candidate_control_block_reason(feature_payload, option)
+        control_block_reasons = _candidate_control_block_reasons(feature_payload, option)
+        control_block_reason = control_block_reasons[0] if control_block_reasons else None
+        candidate_block_reason = option_block_reason or control_block_reason
         if candidate_block_reason:
             print(f"ENTRY BLOCKED: {candidate_block_reason}")
             _log_shadow_opportunities(
@@ -1937,7 +2078,29 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
                 call_score=call_score, call_reasons=call_reasons, put_score=put_score,
                 put_reasons=put_reasons, entered_call=False, entered_put=False,
                 feature_payload=feature_payload, selected_option_put=option,
-                blocked_entry={"direction": "PUT", "reason": candidate_block_reason},
+                blocked_entry={
+                    "direction": "PUT",
+                    "reason": candidate_block_reason,
+                    "source": "candidate_admission",
+                    "gate_evaluations": [
+                        {
+                            "code": "OPTION_SELECTION",
+                            "status": "failed" if option_block_reason else "passed",
+                            "reason": option_block_reason,
+                            "source": "option_selector",
+                        },
+                        *[
+                            {
+                                "code": str(reason or "CANDIDATE_CONTROLS").upper(),
+                                "status": "failed" if reason else "passed",
+                                "reason": reason,
+                                "source": "candidate_controls",
+                            }
+                            for reason in (control_block_reasons or [None])
+                        ],
+                    ],
+                    "downstream_gates_not_evaluated": ["EXECUTION_PREFLIGHT"],
+                },
             )
             return {
                 "attempted": False, "opened": False, "entry_eval_ms": _elapsed_ms(cycle_entry_start_ms),
@@ -1961,6 +2124,9 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             blocked_entry = {
                 "direction": "PUT",
                 "reason": LAST_ENTRY_EXECUTION_METRICS["block_reason"],
+                "source": "open_trade",
+                "gate_evaluations": LAST_ENTRY_EXECUTION_METRICS.get("gate_evaluations") or [],
+                "downstream_gates_not_evaluated": LAST_ENTRY_EXECUTION_METRICS.get("downstream_gates_not_evaluated") or [],
                 "intended_trade": {
                     "underlying_entry": entry, "underlying_stop": stop, "underlying_target": target,
                     "quantity": quantity, "reason": trade_plan["reason"],

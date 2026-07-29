@@ -1,4 +1,9 @@
-from engine.brain.candidate_controls import CandidateControls, candidate_entry_block_reason, candidate_quantity
+from engine.brain.candidate_controls import (
+    CandidateControls,
+    candidate_entry_block_reason,
+    candidate_entry_block_reasons,
+    candidate_quantity,
+)
 
 
 def _features(**overrides):
@@ -23,6 +28,38 @@ def test_enabled_controls_reject_the_intended_research_conditions():
     controls = CandidateControls(enabled=True, block_low_confidence_established=True, require_structural_room=True)
     assert candidate_entry_block_reason(_features(momentum_phase="ESTABLISHED", confidence_score=3.0), None, controls) == "candidate_low_confidence_established"
     assert candidate_entry_block_reason(_features(support_resistance={"distance_to_resistance_pct": 0.0}), None, CandidateControls(enabled=True, require_structural_room=True)) == "candidate_insufficient_structural_room"
+
+
+def test_enabled_controls_capture_all_simultaneous_failures_in_precedence_order():
+    controls = CandidateControls(
+        enabled=True,
+        block_low_confidence_established=True,
+        require_structural_room=True,
+        require_cost_efficiency=True,
+    )
+    reasons = candidate_entry_block_reasons(
+        _features(
+            momentum_phase="ESTABLISHED",
+            confidence_score=3.0,
+            support_resistance={"distance_to_resistance_pct": 0.0},
+        ),
+        {"mark": 1.0, "bid": 0.90, "ask": 1.10},
+        controls,
+    )
+    assert reasons == [
+        "candidate_low_confidence_established",
+        "candidate_insufficient_structural_room",
+        "candidate_transaction_cost",
+    ]
+    assert candidate_entry_block_reason(
+        _features(
+            momentum_phase="ESTABLISHED",
+            confidence_score=3.0,
+            support_resistance={"distance_to_resistance_pct": 0.0},
+        ),
+        {"mark": 1.0, "bid": 0.90, "ask": 1.10},
+        controls,
+    ) == reasons[0]
 
 
 def test_dollar_risk_candidate_caps_quantity_without_exceeding_baseline():

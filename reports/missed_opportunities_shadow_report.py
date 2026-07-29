@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 EASTERN_TZ = ZoneInfo("America/New_York")
-SCHEMA_VERSION = "missed-opportunities-shadow.v1"
+SCHEMA_VERSION = "missed-opportunities-shadow.v2"
 FRESH_START_DATE = "2026-07-29"
 FORWARD_WINDOW_MINUTES = 15
 TARGET_RETURN_PCT = 6.0
@@ -112,6 +112,24 @@ def _quote_snapshot(event: dict[str, Any]) -> dict[str, Any]:
     return snapshot if isinstance(snapshot, dict) else {}
 
 
+def _event_blockers(event: dict[str, Any]) -> list[dict[str, Any]]:
+    blockers = [
+        dict(row)
+        for row in (event.get("blockers") or [])
+        if isinstance(row, dict) and str(row.get("status") or "failed") == "failed"
+    ]
+    if blockers:
+        return blockers
+    reason = str(event.get("rejection_reason") or "UNKNOWN").strip()
+    return [{
+        "code": str((event.get("primary_blocker") or {}).get("code") or reason),
+        "reason": reason,
+        "status": "failed",
+        "primary": True,
+        "source": "legacy_single_reason",
+    }]
+
+
 def _quote_timelines(
     events: list[dict[str, Any]],
 ) -> dict[str, list[tuple[datetime, float]]]:
@@ -171,11 +189,18 @@ def evaluate_rejected_candidates(
         symbol = str(snapshot.get("symbol") or event.get("option_selected") or "").strip()
         entry_ask = _number(snapshot.get("ask"))
         reason = str(event.get("rejection_reason") or "UNKNOWN")
+        blockers = _event_blockers(event)
         base = {
             "event_id": event.get("event_id"),
             "candidate_time_et": at.isoformat() if at else event.get("candle_time_et"),
             "direction": str(event.get("direction") or "UNKNOWN").upper(),
             "rejection_reason": reason,
+            "primary_blocker": event.get("primary_blocker"),
+            "blockers": blockers,
+            "blocker_codes": [
+                str(row.get("code") or "UNKNOWN") for row in blockers
+            ],
+            "gate_evaluations": list(event.get("gate_evaluations") or []),
             "discovery_type": _classify_rejection(event),
             "market_regime": str(event.get("market_regime") or "UNKNOWN"),
             "phase": _phase_label(event.get("stage")),
@@ -349,6 +374,62 @@ def _pattern_summary(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _blocker_summary(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    reasons: dict[str, str] = {}
+    for row in episodes:
+        seen: set[str] = set()
+        blockers = row.get("blockers") or [{
+            "code": row.get("rejection_reason") or "UNKNOWN",
+            "reason": row.get("rejection_reason") or "UNKNOWN",
+        }]
+        for blocker in blockers:
+            if not isinstance(blocker, dict):
+                continue
+            code = str(blocker.get("code") or "UNKNOWN")
+            if code in seen:
+                continue
+            seen.add(code)
+            reasons.setdefault(code, str(blocker.get("reason") or code))
+            grouped[code].append(row)
+
+    output: list[dict[str, Any]] = []
+    for code, members in grouped.items():
+        missed = sum(row.get("classification") == "MISSED_PROFITABLE_OPPORTUNITY" for row in members)
+        protected = sum(row.get("classification") == "LOSS_CORRECTLY_AVOIDED" for row in members)
+        sole = sum(len(set(row.get("blocker_codes") or [])) == 1 for row in members)
+        sample = len(members)
+        output.append({
+            "blocker_code": code,
+            "example_reason": reasons.get(code),
+            "canonical_episodes": sample,
+            "sole_blocker_episodes": sole,
+            "missed_profitable": missed,
+            "losses_avoided": protected,
+            "miss_rate": round(missed / sample, 4) if sample else None,
+            "interpretation": (
+                "CO_OCCURRENCE_NOT_CAUSAL_CREDIT"
+                if sole < sample
+                else "SOLE_BLOCKER_OBSERVATIONS"
+            ),
+            "research_status": (
+                "ELIGIBLE_FOR_HUMAN_REVIEW"
+                if sample >= MINIMUM_PATTERN_SAMPLE
+                else "COLLECT_MORE_DATA"
+            ),
+            "automatic_live_change_allowed": False,
+        })
+    return sorted(
+        output,
+        key=lambda row: (
+            -row["missed_profitable"],
+            -row["losses_avoided"],
+            -row["canonical_episodes"],
+            row["blocker_code"],
+        ),
+    )
+
+
 def build_missed_opportunities_payload(
     events: list[dict[str, Any]],
     *,
@@ -375,6 +456,7 @@ def build_missed_opportunities_payload(
     )
     rolling_episodes = list(historical_episodes or []) + episodes
     rolling_patterns = _pattern_summary(rolling_episodes)
+    rolling_blockers = _blocker_summary(rolling_episodes)
     return {
         "schema_version": SCHEMA_VERSION,
         "trading_date": trading_date,
@@ -392,6 +474,11 @@ def build_missed_opportunities_payload(
             "initial_stop_return_pct": INITIAL_STOP_RETURN_PCT,
             "forward_window_minutes": FORWARD_WINDOW_MINUTES,
             "proxy_estimates_can_create_missed_label": False,
+            "blocker_attribution": (
+                "Every failed evaluated gate is counted. Multi-blocker outcomes are "
+                "co-occurrences, not causal credit to each blocker."
+            ),
+            "not_evaluated_gate_treatment": "Never counted as passed or failed.",
         },
         "summary": {
             "rejected_candidates": len(evaluated),
@@ -417,6 +504,8 @@ def build_missed_opportunities_payload(
         "losses_correctly_avoided": protected,
         "today_pattern_summary": _pattern_summary(episodes),
         "pattern_summary": rolling_patterns,
+        "today_blocker_summary": _blocker_summary(episodes),
+        "blocker_summary": rolling_blockers,
         "rolling_canonical_episodes": len(rolling_episodes),
         "evidence_gaps": [
             {
@@ -538,6 +627,29 @@ def render_missed_opportunities_markdown(payload: dict[str, Any]) -> str:
                 f"| {_moneyless_percent(row.get('median_mfe_pct'))} "
                 f"| {row.get('research_status')} |"
             )
+    lines.extend([
+        "",
+        "### Blocker Usefulness",
+        "",
+        "- Every failed evaluated gate is included. Gates stopped by an earlier hard block remain `not_evaluated` and are never treated as passes.",
+        "- When blockers overlap, the result is co-occurrence evidence—not causal credit to every blocker.",
+        "",
+        "| Blocker | Episodes | Sole Blocker | Missed | Protected | Miss Rate | Interpretation | Status |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |",
+    ])
+    blockers = payload.get("blocker_summary") or []
+    if not blockers:
+        lines.append("| — | 0 | 0 | 0 | 0 | N/A | No decisive blocker evidence yet | COLLECT_MORE_DATA |")
+    else:
+        for row in blockers:
+            miss_rate = row.get("miss_rate")
+            lines.append(
+                f"| {row.get('blocker_code')} | {row.get('canonical_episodes')} "
+                f"| {row.get('sole_blocker_episodes')} | {row.get('missed_profitable')} "
+                f"| {row.get('losses_avoided')} "
+                f"| {f'{miss_rate:.1%}' if miss_rate is not None else 'N/A'} "
+                f"| {row.get('interpretation')} | {row.get('research_status')} |"
+            )
     gate = payload.get("gate") or {}
     lines.extend([
         "",
@@ -599,6 +711,7 @@ def write_missed_opportunities_shadow_report(
         "discovery_type",
         "classification",
         "rejection_reason",
+        "blocker_codes",
         "market_regime",
         "phase",
         "checklist_score",

@@ -99,6 +99,41 @@ def test_logger_preserves_blocked_candidate_plan(tmp_path, monkeypatch):
     assert call_record["intended_trade"]["option_mark"] == 4.25
 
 
+def test_logger_records_every_failed_gate_and_not_evaluated_state(tmp_path, monkeypatch):
+    monkeypatch.setattr("execution.opportunity_logger.OPPORTUNITY_LOG_DIR", tmp_path)
+    frame = _sample_df()
+
+    log_evaluated_setups(
+        last=frame.iloc[-1], prev=frame.iloc[-2], df=frame, regime="NO_TRADE",
+        call_score=3, call_reasons=[], put_score=2, put_reasons=[],
+        entry_threshold=5, allow_entry=True, in_position=False, in_market_hours=True,
+        entered_call=False, entered_put=False, feature_payload={},
+        blocked_entry={
+            "direction": "CALL",
+            "reason": "continuation_forecast_low_probability",
+            "gate_evaluations": [{
+                "code": "CONTINUATION_FORECAST",
+                "status": "failed",
+                "reason": "continuation_forecast_low_probability",
+                "source": "continuation_forecast",
+            }],
+            "downstream_gates_not_evaluated": ["OPTION_SELECTION"],
+        },
+    )
+
+    records = [json.loads(line) for line in (tmp_path / "opportunity_setups_2026-07-17.jsonl").read_text().splitlines()]
+    call_record = next(record for record in records if record["direction"] == "CALL")
+    assert set(call_record["blocker_codes"]) == {
+        "REGIME_MATCH",
+        "SCORE_THRESHOLD",
+        "CONTINUATION_FORECAST",
+    }
+    states = {row["code"]: row["status"] for row in call_record["gate_evaluations"]}
+    assert states["OPTION_SELECTION"] == "not_evaluated"
+    assert call_record["primary_blocker"]["reason"] == "continuation_forecast_low_probability"
+    assert call_record["blocker_capture"]["live_admission_changed"] is False
+
+
 def test_directional_shadow_metrics_override_direct_candidate_payload():
     payload = {
         "trend_stage": {"label": "ESTABLISHED"},

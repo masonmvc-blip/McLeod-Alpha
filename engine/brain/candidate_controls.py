@@ -45,9 +45,17 @@ def load_candidate_controls(path: Path | str = DEFAULT_CONFIG_PATH) -> Candidate
 def candidate_entry_block_reason(
     features: dict[str, Any], option: dict[str, Any] | None, controls: CandidateControls,
 ) -> str | None:
-    """Return an enabled research-candidate rejection, or ``None`` for baseline admission."""
+    """Return the first enabled rejection, preserving live admission precedence."""
+    reasons = candidate_entry_block_reasons(features, option, controls)
+    return reasons[0] if reasons else None
+
+
+def candidate_entry_block_reasons(
+    features: dict[str, Any], option: dict[str, Any] | None, controls: CandidateControls,
+) -> list[str]:
+    """Return every simultaneously failing enabled candidate control."""
     if not controls.enabled:
-        return None
+        return []
 
     phase = str(features.get("momentum_phase") or "").upper()
     confidence = float(features.get("confidence_score") or 0.0)
@@ -61,19 +69,20 @@ def candidate_entry_block_reason(
     else:
         room = float(structure.get("distance_to_support_pct") or 0.0)
 
+    reasons: list[str] = []
     if controls.block_low_confidence_established and phase == "ESTABLISHED" and confidence < controls.established_min_confidence:
-        return "candidate_low_confidence_established"
+        reasons.append("candidate_low_confidence_established")
     if controls.block_extended_no_pullback and extension > controls.max_extension_without_pullback_pct and pullback_candles == 0:
-        return "candidate_extended_without_pullback"
+        reasons.append("candidate_extended_without_pullback")
     if controls.require_structural_room and room < controls.minimum_structural_room_pct:
-        return "candidate_insufficient_structural_room"
+        reasons.append("candidate_insufficient_structural_room")
     if controls.require_cost_efficiency and option:
         mark = float(option.get("mark") or 0.0)
         spread = float(option.get("ask") or 0.0) - float(option.get("bid") or 0.0)
         spread_pct = (spread / mark * 100.0) if mark > 0 else float("inf")
         if spread_pct > controls.max_option_spread_pct:
-            return "candidate_transaction_cost"
-    return None
+            reasons.append("candidate_transaction_cost")
+    return reasons
 
 
 def candidate_quantity(*, entry_price: float, stop_price: float, baseline_quantity: int, controls: CandidateControls) -> int:

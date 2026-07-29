@@ -40,6 +40,175 @@ _NEGATIVE_REASON_KEYS = {
 }
 
 
+def _blocker_code(reason: Any) -> str:
+    text = str(reason or "unknown").strip().lower()
+    known = (
+        ("entry_paused", "ENTRY_PAUSED"),
+        ("cooling", "COOLING_PERIOD"),
+        ("startup", "STARTUP_GUARD"),
+        ("already in trade", "ALREADY_IN_TRADE"),
+        ("market closed", "MARKET_CLOSED"),
+        ("no new entries", "ENTRY_WINDOW_CLOSED"),
+        ("regime mismatch", "REGIME_MISMATCH"),
+        ("score below threshold", "SCORE_BELOW_THRESHOLD"),
+        ("continuation_forecast", "CONTINUATION_FORECAST"),
+        ("candidate_low_confidence", "LOW_CONFIDENCE"),
+        ("candidate_extended", "EXTENDED_WITHOUT_PULLBACK"),
+        ("candidate_insufficient_structural_room", "INSUFFICIENT_STRUCTURAL_ROOM"),
+        ("candidate_transaction_cost", "TRANSACTION_COST"),
+        ("too few contracts", "OPTION_LIQUIDITY"),
+        ("quote_guard", "QUOTE_GUARD"),
+        ("buying_power", "BUYING_POWER"),
+        ("broker exposure", "BROKER_EXPOSURE"),
+        ("protective stop", "PROTECTIVE_STOP_LOCK"),
+        ("entry pending", "ENTRY_PENDING"),
+        ("rate limit", "RATE_LIMIT"),
+    )
+    for marker, code in known:
+        if marker in text:
+            return code
+    normalized = "".join(character if character.isalnum() else "_" for character in text.upper())
+    return "_".join(part for part in normalized.split("_") if part)[:80] or "UNKNOWN"
+
+
+def _gate(
+    code: str,
+    *,
+    status: str,
+    reason: str | None = None,
+    observed: Any = None,
+    required: Any = None,
+    source: str = "opportunity_logger",
+) -> Dict[str, Any]:
+    return {
+        "code": code,
+        "status": status,
+        "reason": reason,
+        "observed": observed,
+        "required": required,
+        "source": source,
+    }
+
+
+def _attach_blocker_inventory(
+    record: Dict[str, Any],
+    *,
+    direction: str,
+    entered: bool,
+    allow_entry: bool,
+    in_position: bool,
+    in_market_hours: bool,
+    regime: str,
+    score: int,
+    entry_threshold: int,
+    blocked_entry: Dict[str, Any] | None,
+) -> None:
+    required_regime = "BULL_TREND" if direction == "CALL" else "BEAR_TREND"
+    gates = [
+        _gate(
+            "STARTUP_STALE_CANDLE_GUARD",
+            status="passed" if allow_entry else "failed",
+            reason=None if allow_entry else "Startup stale candle guard",
+            observed=bool(allow_entry),
+            required=True,
+        ),
+        _gate(
+            "ALREADY_IN_TRADE",
+            status="failed" if in_position else "passed",
+            reason="Already in trade" if in_position else None,
+            observed=bool(in_position),
+            required=False,
+        ),
+        _gate(
+            "MARKET_HOURS",
+            status="passed" if in_market_hours else "failed",
+            reason=None if in_market_hours else "Market closed",
+            observed=bool(in_market_hours),
+            required=True,
+        ),
+        _gate(
+            "REGIME_MATCH",
+            status="passed" if regime == required_regime else "failed",
+            reason=None if regime == required_regime else f"Regime mismatch ({regime})",
+            observed=regime,
+            required=required_regime,
+        ),
+        _gate(
+            "SCORE_THRESHOLD",
+            status="passed" if score >= entry_threshold else "failed",
+            reason=None if score >= entry_threshold else f"{direction} score below threshold by {entry_threshold - score}",
+            observed=score,
+            required=entry_threshold,
+        ),
+    ]
+    if blocked_entry:
+        for supplied in blocked_entry.get("gate_evaluations") or []:
+            if not isinstance(supplied, dict):
+                continue
+            code = str(supplied.get("code") or _blocker_code(supplied.get("reason")))
+            replacement = dict(supplied)
+            replacement["code"] = code
+            existing = next((index for index, gate in enumerate(gates) if gate["code"] == code), None)
+            if existing is None:
+                gates.append(replacement)
+            else:
+                gates[existing] = replacement
+
+        primary_reason = _safe_str(blocked_entry.get("reason"))
+        if primary_reason and not any(
+            gate.get("status") == "failed" and gate.get("reason") == primary_reason
+            for gate in gates
+        ):
+            gates.append(_gate(
+                _blocker_code(primary_reason),
+                status="failed",
+                reason=primary_reason,
+                source=str(blocked_entry.get("source") or "live_admission"),
+            ))
+
+        for code in blocked_entry.get("downstream_gates_not_evaluated") or []:
+            normalized = str(code or "").strip()
+            if normalized and not any(gate.get("code") == normalized for gate in gates):
+                gates.append(_gate(
+                    normalized,
+                    status="not_evaluated",
+                    reason="Earlier hard block stopped live evaluation",
+                    source="live_admission",
+                ))
+
+    blockers = [dict(gate) for gate in gates if gate.get("status") == "failed"]
+    primary_reason = _safe_str((blocked_entry or {}).get("reason")) or _safe_str(record.get("rejection_reason"))
+    primary_match = next(
+        (blocker for blocker in blockers if primary_reason and blocker.get("reason") == primary_reason),
+        None,
+    )
+    primary_code = (
+        str(primary_match.get("code"))
+        if primary_match
+        else _blocker_code(primary_reason) if primary_reason else None
+    )
+    for blocker in blockers:
+        blocker["primary"] = bool(
+            (primary_reason and blocker.get("reason") == primary_reason)
+            or (primary_code and blocker.get("code") == primary_code)
+        )
+    record["primary_blocker"] = (
+        {"code": primary_code, "reason": primary_reason}
+        if not entered and primary_reason
+        else None
+    )
+    record["blockers"] = blockers
+    record["blocker_codes"] = list(dict.fromkeys(str(row["code"]) for row in blockers))
+    record["gate_evaluations"] = gates
+    record["blocker_capture"] = {
+        "schema_version": "entry-blockers.v1",
+        "all_failed_evaluated_gates_recorded": True,
+        "not_evaluated_is_not_passed": True,
+        "primary_reason_preserved": True,
+        "live_admission_changed": False,
+    }
+
+
 def _safe_float(value: Any) -> float | None:
     try:
         if value is None:
@@ -496,6 +665,7 @@ def _build_setup_record(
     prev,
     feature_payload: Dict[str, Any],
     selected_option: Any,
+    blocked_entry: Dict[str, Any] | None = None,
     day_trade_spy_shadow_suite: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     positives, penalties = _extract_positives_and_penalties(reasons)
@@ -566,6 +736,18 @@ def _build_setup_record(
     record.update(_adx_metrics(df=df))
     record.update(_candle_structure(last=last, prev=prev, df=df))
     record.update(_candle_research_metrics(last=last, prev=prev, df=df))
+    _attach_blocker_inventory(
+        record,
+        direction=direction,
+        entered=entered,
+        allow_entry=allow_entry,
+        in_position=in_position,
+        in_market_hours=in_market_hours,
+        regime=regime,
+        score=score,
+        entry_threshold=entry_threshold,
+        blocked_entry=blocked_entry if blocked_entry and blocked_entry.get("direction") == direction else None,
+    )
 
     return record
 
@@ -619,6 +801,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_call,
+        blocked_entry=blocked_entry,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("CALL"),
     )
     call_record["option_watch_quotes"] = list(option_watch_quotes or [])
@@ -658,6 +841,7 @@ def log_evaluated_setups(
         prev=prev,
         feature_payload=payload,
         selected_option=selected_option_put,
+        blocked_entry=blocked_entry,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("PUT"),
     )
     put_record["option_watch_quotes"] = list(option_watch_quotes or [])

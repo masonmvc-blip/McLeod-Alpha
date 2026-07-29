@@ -146,3 +146,24 @@ def test_payload_and_markdown_separate_missed_from_protected():
     assert payload["automatic_live_change_allowed"] is False
     assert "Canonical Missed Opportunities" in markdown
     assert "Losses Correctly Avoided" in markdown
+
+
+def test_payload_attributes_outcomes_to_all_blockers_without_claiming_causation():
+    first = _event(0, bid=1.00, ask=1.00)
+    first["blockers"] = [
+        {"code": "REGIME_MATCH", "status": "failed", "reason": "Regime mismatch"},
+        {"code": "SCORE_THRESHOLD", "status": "failed", "reason": "Score below threshold"},
+    ]
+    first["blocker_codes"] = ["REGIME_MATCH", "SCORE_THRESHOLD"]
+    payload = build_missed_opportunities_payload(
+        [first, _event(1, bid=1.07, ask=1.09)],
+        trading_date="2026-07-29",
+        reconciliation={"complete": True},
+    )
+
+    by_code = {row["blocker_code"]: row for row in payload["blocker_summary"]}
+    assert by_code["REGIME_MATCH"]["missed_profitable"] == 1
+    assert by_code["SCORE_THRESHOLD"]["missed_profitable"] == 1
+    assert by_code["REGIME_MATCH"]["sole_blocker_episodes"] == 0
+    assert by_code["REGIME_MATCH"]["interpretation"] == "CO_OCCURRENCE_NOT_CAUSAL_CREDIT"
+    assert "Blocker Usefulness" in render_missed_opportunities_markdown(payload)
