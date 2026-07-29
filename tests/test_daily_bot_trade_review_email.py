@@ -245,8 +245,10 @@ def test_summary_card_appears_before_detailed_sections():
     assert "padding:0 10px 18px" in rendered
     assert "padding:0 28px 28px" in rendered
     assert "<img" not in rendered
-    assert "table-layout:fixed" in rendered
-    assert rendered.count('width="11.111%"') >= 9
+    assert "table-layout:auto" in rendered
+    assert 'width="11.111%"' not in rendered
+    assert "padding:8px 7px" in rendered
+    assert "padding:9px 7px" in rendered
 
 
 def test_today_trades_snapshot_omits_diagnostic_columns():
@@ -355,8 +357,9 @@ def test_cockpit_hides_entry_diagnostics_but_keeps_their_telemetry():
     assert "trade['absorption_score']" in source
     assert "trade['confidence_score']" in source
     assert ".trades-table {" in source
-    assert "table-layout: fixed;" in source
-    assert "width: 11.111%;" in source
+    assert "table-layout: auto;" in source
+    assert "width: 11.111%;" not in source
+    assert "padding: 6px 10px;" in source
 
 
 def test_smtp_uses_working_email_credentials(monkeypatch, tmp_path):
