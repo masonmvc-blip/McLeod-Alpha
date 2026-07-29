@@ -1,0 +1,146 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38183,
+    "title": "Trading Room Video Recording \u2013 January 21, 2025",
+    "publication_date": "2025-01-21",
+    "post_publication_date": "2025-01-21",
+    "source_url": "https://daytradespy.com/38183/trading-room-video-recording-january-21-2025/",
+    "duration_seconds": 4144,
+    "reviewed_at": "2026-07-24T18:27:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-21_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "This report is based on a complete authorized Vimeo transcript review from `00:00` through `01:08:09`. It preserves the presenter\u2019s stated range, option selection, target, stop, and overnight-management logic. No underlying chart data, option-chain history, broker fills, or ledger mapping was independently reviewed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250121-P38183-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "This report is based on a complete authorized Vimeo transcript review from `00:00` through `01:08:09`. It preserves the presenter\u2019s stated range, option selection, target, stop, and overnight-management logic. No underlying chart data, option-chain history, broker fills, or ledger mapping was independently reviewed.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250121-P38183-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "This report is based on a complete authorized Vimeo transcript review from `00:00` through `01:08:09`. It preserves the presenter\u2019s stated range, option selection, target, stop, and overnight-management logic. No underlying chart data, option-chain history, broker fills, or ledger mapping was independently reviewed.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 1,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "This report is based on a complete authorized Vimeo transcript review from `00:00` through `01:08:09`. It preserves the presenter\u2019s stated range, option selection, target, stop, and overnight-management logic. No underlying chart data, option-chain history, broker fills, or ledger mapping was independently reviewed."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `MARGINAL_RANGE_CLOSE` by measuring whether small close-through distances, such as the reported `683` versus `680`, have different follow-through than decisive breaks."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Maintain `FIXED_DOLLAR_TARGET` and `PERCENT_TARGET` as distinct labels. The reported `3.93` and `3.90` values arise from different target formulations."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `STOP_OR_OVERNIGHT_FALLBACK` with actual bid/ask data, expiry, adverse excursion, and gap exposure. A 40% stop and overnight hold are materially different risk outcomes."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Record the initial breakeven liquidation separately from any later `601` call setup; otherwise legacy position management contaminates setup results."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250121-P38183-C01"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 1,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

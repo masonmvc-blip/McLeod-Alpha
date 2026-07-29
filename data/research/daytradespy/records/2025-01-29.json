@@ -1,0 +1,192 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38307,
+    "title": "Trading Room Video Recording \u2013 January 29, 2025",
+    "publication_date": "2025-01-29",
+    "post_publication_date": "2025-01-29",
+    "source_url": "https://daytradespy.com/38307/trading-room-video-recording-january-29-2025/",
+    "duration_seconds": 4204,
+    "reviewed_at": "2026-07-24T19:20:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-29_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The room framed the day around an expected unchanged Federal Reserve decision and described pre-market support around `603` after a drop, while acknowledging the bounce could be a dead-cat bounce."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The presenter used `604` as nearby OMG resistance, partly because of its round-number/strike relevance. The source again described the one- and five-minute 10/20 moving-average cross as the trigger context."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The setup therefore combines macro event risk, nearby structural resistance, and a short-term moving-average signal. It does not establish that any one component was independently predictive."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250129-P38307-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The room framed the day around an expected unchanged Federal Reserve decision and described pre-market support around `603` after a drop, while acknowledging the bounce could be a dead-cat bounce.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250129-P38307-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The presenter used `604` as nearby OMG resistance, partly because of its round-number/strike relevance. The source again described the one- and five-minute 10/20 moving-average cross as the trigger context.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250129-P38307-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The setup therefore combines macro event risk, nearby structural resistance, and a short-term moving-average signal. It does not establish that any one component was independently predictive.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250129-P38307-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The presenter used `604` as nearby OMG resistance, partly because of its round-number/strike relevance. The source again described the one- and five-minute 10/20 moving-average cross as the trigger context.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 1,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The room framed the day around an expected unchanged Federal Reserve decision and described pre-market support around `603` after a drop, while acknowledging the bounce could be a dead-cat bounce."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `DAILY_TARGET_EXCEPTION` by comparing outcomes after a target is reached with and without the stated \"on a roll\" override."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `ROUND_NUMBER_RESISTANCE_WITH_EMA_TRIGGER` using independent market data, with macro-event windows treated as a separate condition."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Preserve `SOURCE_REPORTED_SIX_PERCENT_RESULT` separately from verified trades; this recording does not identify enough execution fields to score it."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `TIME_TO_EXPIRY_HOLD` with theta, event schedule, gap risk, stop definition, and exit trigger rather than treating remaining time alone as risk control."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250129-P38307-C01",
+    "DTS-20250129-P38307-C02",
+    "DTS-20250129-P38307-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

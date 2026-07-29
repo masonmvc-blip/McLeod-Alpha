@@ -1,0 +1,273 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39133,
+    "title": "Trading Room Video Recording \u2013 March 28, 2025",
+    "publication_date": "2025-03-28",
+    "post_publication_date": "2025-03-28",
+    "source_url": "https://daytradespy.com/39133/trading-room-video-recording-march-28-2025/",
+    "duration_seconds": 4285,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-28_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1513,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:02",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 60,
+    "transcript_completeness_pct": 99,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:09:43-00:10:14",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Speaker stated holding 23 calls at caption-rendered 5.11. Research interpretation: Existing position; strike, expiry, exact entry, and outcome unknown."
+    },
+    {
+      "timestamp": "00:23:22-00:25:35",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Participant reported April 4 566 puts from 6.82 to 7.07. Research interpretation: Source-reported participant scalp; size and attribution unavailable."
+    },
+    {
+      "timestamp": "00:32:12-00:35:37",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Participant reported 563 puts at 6.00 and a 6.16 sale after three minutes; nearby captions cite 562 and 564 strikes. Research interpretation: Unlinked order sequence; strike identity is unresolved."
+    },
+    {
+      "timestamp": "00:45:24-00:46:52",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Named John reported April 4 563 puts from 6.51 to 6.79. Research interpretation: Source-only claim; stated 8 cents conflicts with price arithmetic."
+    },
+    {
+      "timestamp": "00:53:31-00:54:10",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Speaker described prior Wednesday 575 calls from 7.10 to 5.90 after failure to rebound through stated SPY 574. Research interpretation: Historical loss claim, not a March 28 entry."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250328-P39133-C01",
+      "timestamp": "00:09:43-00:10:14",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Speaker stated holding 23 calls at caption-rendered 5.11. Research interpretation: Existing position; strike, expiry, exact entry, and outcome unknown.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250328-P39133-C02",
+      "timestamp": "00:23:22-00:25:35",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Participant reported April 4 566 puts from 6.82 to 7.07. Research interpretation: Source-reported participant scalp; size and attribution unavailable.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250328-P39133-C03",
+      "timestamp": "00:32:12-00:35:37",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Participant reported 563 puts at 6.00 and a 6.16 sale after three minutes; nearby captions cite 562 and 564 strikes. Research interpretation: Unlinked order sequence; strike identity is unresolved.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250328-P39133-C04",
+      "timestamp": "00:45:24-00:46:52",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Named John reported April 4 563 puts from 6.51 to 6.79. Research interpretation: Source-only claim; stated 8 cents conflicts with price arithmetic.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250328-P39133-C05",
+      "timestamp": "00:53:31-00:54:10",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Speaker described prior Wednesday 575 calls from 7.10 to 5.90 after failure to rebound through stated SPY 574. Research interpretation: Historical loss claim, not a March 28 entry.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250328-P39133-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Speaker stated holding 23 calls at caption-rendered 5.11. Research interpretation: Existing position; strike, expiry, exact entry, and outcome unknown.",
+      "entry_time": "00:09:43-00:10:14",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250328-P39133-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Participant reported April 4 566 puts from 6.82 to 7.07. Research interpretation: Source-reported participant scalp; size and attribution unavailable.",
+      "entry_time": "00:23:22-00:25:35",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250328-P39133-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Participant reported 563 puts at 6.00 and a 6.16 sale after three minutes; nearby captions cite 562 and 564 strikes. Research interpretation: Unlinked order sequence; strike identity is unresolved.",
+      "entry_time": "00:32:12-00:35:37",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250328-P39133-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Named John reported April 4 563 puts from 6.51 to 6.79. Research interpretation: Source-only claim; stated 8 cents conflicts with price arithmetic.",
+      "entry_time": "00:45:24-00:46:52",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250328-P39133-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Speaker described prior Wednesday 575 calls from 7.10 to 5.90 after failure to rebound through stated SPY 574. Research interpretation: Historical loss claim, not a March 28 entry.",
+      "entry_time": "00:53:31-00:54:10",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Speaker stated holding 23 calls at caption-rendered 5.11. Research interpretation: Existing position; strike, expiry, exact entry, and outcome unknown."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test support and downside-momentum labels only with timestamped bar data,"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Separate service picks, participant reports, and named presenter positions"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test rebound-failure context only after independently reconstructing the"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250328-P39133-C01",
+    "DTS-20250328-P39133-C02",
+    "DTS-20250328-P39133-C03",
+    "DTS-20250328-P39133-C04",
+    "DTS-20250328-P39133-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

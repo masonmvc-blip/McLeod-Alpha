@@ -1,0 +1,197 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38172,
+    "title": "Trading Room Video Recording \u2013 January 17, 2025",
+    "publication_date": "2025-01-17",
+    "post_publication_date": "2025-01-17",
+    "source_url": "https://daytradespy.com/38172/trading-room-video-recording-january-17-2025/",
+    "duration_seconds": 4733,
+    "reviewed_at": "2026-07-24T18:22:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-17_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The session later discussed `597` calls, including a source-reported market around `4.18\u20134.20` near the end of the recording. The presenter sought breakeven because they would not remain available to monitor the position."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The stated contingency was to hold the calls through the long weekend and revisit them Tuesday if breakeven was not reached. This was discretionary exposure management, not a defined stop or scheduled risk reduction."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "A post-close transcript cue states the target/breakeven was reached near `4.54`. The sequence is a source claim only; it does not establish whether an executable order filled, at what price, or before market close."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250117-P38172-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The session later discussed `597` calls, including a source-reported market around `4.18\u20134.20` near the end of the recording. The presenter sought breakeven because they would not remain available to monitor the position.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250117-P38172-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The stated contingency was to hold the calls through the long weekend and revisit them Tuesday if breakeven was not reached. This was discretionary exposure management, not a defined stop or scheduled risk reduction.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250117-P38172-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "A post-close transcript cue states the target/breakeven was reached near `4.54`. The sequence is a source claim only; it does not establish whether an executable order filled, at what price, or before market close.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250117-P38172-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The session later discussed `597` calls, including a source-reported market around `4.18\u20134.20` near the end of the recording. The presenter sought breakeven because they would not remain available to monitor the position.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250117-P38172-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The stated contingency was to hold the calls through the long weekend and revisit them Tuesday if breakeven was not reached. This was discretionary exposure management, not a defined stop or scheduled risk reduction.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250117-P38172-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "A post-close transcript cue states the target/breakeven was reached near `4.54`. The sequence is a source claim only; it does not establish whether an executable order filled, at what price, or before market close.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The session later discussed `597` calls, including a source-reported market around `4.18\u20134.20` near the end of the recording. The presenter sought breakeven because they would not remain available to monitor the position."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "EVIDENCE_COMPLETION",
+      "detail": "Retain the report as research-only until independent replay evidence is available."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250117-P38172-C01",
+    "DTS-20250117-P38172-C02",
+    "DTS-20250117-P38172-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

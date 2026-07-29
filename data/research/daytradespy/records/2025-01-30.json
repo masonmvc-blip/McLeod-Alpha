@@ -1,0 +1,202 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38333,
+    "title": "Trading Room Video Recording \u2013 January 30, 2025",
+    "publication_date": "2025-01-30",
+    "post_publication_date": "2025-01-30",
+    "source_url": "https://daytradespy.com/38333/trading-room-video-recording-january-30-2025/",
+    "duration_seconds": 4251,
+    "reviewed_at": "2026-07-24T19:30:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-30_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Before entering, the presenter said the preferred path was a pullback to support followed by a bounce. Moments later, the source questioned whether to enter while price was already pushing upward, showing uncertainty between waiting for a retracement confirmation and pursuing momentum."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The transcript then reports a fill in eight February 7 `604` calls at `5.78` at `09:32`. The source calculated a `$200` objective divided across eight contracts and stated a `$6.00` sell limit target."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The target discussion also referenced `604.90` as a relevant underlying/structural level and entertained splitting the position into multiple trades. The recording does not confirm the order\u2019s fill, exit, or final P&L."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250130-P38333-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Before entering, the presenter said the preferred path was a pullback to support followed by a bounce. Moments later, the source questioned whether to enter while price was already pushing upward, showing uncertainty between waiting for a retracement confirmation and pursuing momentum.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250130-P38333-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The transcript then reports a fill in eight February 7 `604` calls at `5.78` at `09:32`. The source calculated a `$200` objective divided across eight contracts and stated a `$6.00` sell limit target.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250130-P38333-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The target discussion also referenced `604.90` as a relevant underlying/structural level and entertained splitting the position into multiple trades. The recording does not confirm the order\u2019s fill, exit, or final P&L.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250130-P38333-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The transcript then reports a fill in eight February 7 `604` calls at `5.78` at `09:32`. The source calculated a `$200` objective divided across eight contracts and stated a `$6.00` sell limit target.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250130-P38333-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The target discussion also referenced `604.90` as a relevant underlying/structural level and entertained splitting the position into multiple trades. The recording does not confirm the order\u2019s fill, exit, or final P&L.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 2,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Before entering, the presenter said the preferred path was a pullback to support followed by a bounce. Moments later, the source questioned whether to enter while price was already pushing upward, showing uncertainty between waiting for a retracement confirmation and pursuing momentum."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `BOUNCE_WAIT_VS_MOMENTUM_CHASE`: distinguish a support-bounce entry from an entry made while price is already advancing, then compare adverse excursion and fill quality."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `PRE_PCE_OPTION_EXPOSURE` with implied volatility, event schedule, expiry, and overnight-risk controls. Remaining time to February 7 is not itself an event-risk mitigation rule."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Track `FIXED_DOLLAR_TARGET_EIGHT_CONTRACTS` using actual bid/ask, commissions, fill probability, and partial-exit behavior. The reported `5.78` to `6.00` path remains unverified."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Keep the `603.05` support, `605` resistance, and option-order evidence as separate fields; structural levels and option execution are not interchangeable evidence."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250130-P38333-C01",
+    "DTS-20250130-P38333-C02",
+    "DTS-20250130-P38333-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

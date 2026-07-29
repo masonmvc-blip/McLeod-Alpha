@@ -1,0 +1,130 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38361,
+    "title": "Trading Room Video Recording \u2013 January 31, 2025",
+    "publication_date": "2025-01-31",
+    "post_publication_date": "2025-01-31",
+    "source_url": "https://daytradespy.com/38361/trading-room-video-recording-january-31-2025/",
+    "duration_seconds": 4237,
+    "reviewed_at": "2026-07-24T19:40:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-31_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "This report is based on the 181 transcript cues made available by the authorized Vimeo recording, from `00:00` through `53:27`. The recording\u2019s player duration exceeds the available transcript coverage, so findings are limited to accessible source text. Charts, fills, quotes, and ledger evidence were not independently reviewed."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250131-P38361-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "This report is based on the 181 transcript cues made available by the authorized Vimeo recording, from `00:00` through `53:27`. The recording\u2019s player duration exceeds the available transcript coverage, so findings are limited to accessible source text. Charts, fills, quotes, and ledger evidence were not independently reviewed.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [],
+  "ledger_reconciliation": {
+    "source_reported_trades": 0,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "This report is based on the 181 transcript cues made available by the authorized Vimeo recording, from `00:00` through `53:27`. The recording\u2019s player duration exceeds the available transcript coverage, so findings are limited to accessible source text. Charts, fills, quotes, and ledger evidence were not independently reviewed."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `CLOSE_ABOVE_LEVEL_WITH_RUNWAY`: require both the close beyond `608` and measured distance to the `608.90\u2013609.74` resistance area."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Track `STRUCTURE_RELEVANCE_REVISED`: the source removed previously used pivots/close references when it judged them no longer relevant, a discretionary behavior that must be converted into objective rules before testing."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Treat `EARNINGS_GAP_CAUTION` as an event-risk research topic, not a live trading instruction. Test next-expiry versus longer-expiry exposure using independently verified earnings dates and option data."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250131-P38361-C01"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 1,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

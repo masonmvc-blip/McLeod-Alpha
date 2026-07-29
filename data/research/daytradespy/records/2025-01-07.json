@@ -1,0 +1,212 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38025,
+    "title": "Trading Room Video Recording \u2013 January 7, 2025",
+    "publication_date": "2025-01-07",
+    "post_publication_date": "2025-01-07",
+    "source_url": "https://daytradespy.com/38025/trading-room-video-recording-january-7-2025/",
+    "duration_seconds": 4314,
+    "reviewed_at": "2026-07-24T18:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-07_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The presenter reported buying January 10 `597` calls at `3.77` shortly after `09:31`, with a near-term scalp reference around `3.90` and a stated underlying target near `597.85`. A trailing stop was considered only if the move developed into a stronger run. These are source-reported details, not independently confirmed executions."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The room described a default policy of ending participation after the daily target, specifically identifying FOMO-driven continuation after a target as a difficult behavioral error. That advice conflicts with the later willingness to continue managing and potentially repair the position; the tension should be retained rather than resolved by assumption."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "When the call position deteriorated, the source explained repair as adding contracts at a lower premium to reduce average cost, then selling the combined position at profit, breakeven, or reduced loss. The transcript gave a numerical averaging example but did not establish that the repair was executed or successful."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250107-P38025-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The presenter reported buying January 10 `597` calls at `3.77` shortly after `09:31`, with a near-term scalp reference around `3.90` and a stated underlying target near `597.85`. A trailing stop was considered only if the move developed into a stronger run. These are source-reported details, not independently confirmed executions.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250107-P38025-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The room described a default policy of ending participation after the daily target, specifically identifying FOMO-driven continuation after a target as a difficult behavioral error. That advice conflicts with the later willingness to continue managing and potentially repair the position; the tension should be retained rather than resolved by assumption.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250107-P38025-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "When the call position deteriorated, the source explained repair as adding contracts at a lower premium to reduce average cost, then selling the combined position at profit, breakeven, or reduced loss. The transcript gave a numerical averaging example but did not establish that the repair was executed or successful.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250107-P38025-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The presenter reported buying January 10 `597` calls at `3.77` shortly after `09:31`, with a near-term scalp reference around `3.90` and a stated underlying target near `597.85`. A trailing stop was considered only if the move developed into a stronger run. These are source-reported details, not independently confirmed executions.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250107-P38025-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The room described a default policy of ending participation after the daily target, specifically identifying FOMO-driven continuation after a target as a difficult behavioral error. That advice conflicts with the later willingness to continue managing and potentially repair the position; the tension should be retained rather than resolved by assumption.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250107-P38025-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "When the call position deteriorated, the source explained repair as adding contracts at a lower premium to reduce average cost, then selling the combined position at profit, breakeven, or reduced loss. The transcript gave a numerical averaging example but did not establish that the repair was executed or successful.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The presenter reported buying January 10 `597` calls at `3.77` shortly after `09:31`, with a near-term scalp reference around `3.90` and a stated underlying target near `597.85`. A trailing stop was considered only if the move developed into a stronger run. These are source-reported details, not independently confirmed executions."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `PREMARKET_BODY_BOUNDARY` against strike-only and EMA-only opening boundaries. The transcript supports using several structural references, not a single line."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `FIVE_MINUTE_CONFIRMATION` versus aggressive one-minute admission, controlling for distance to the next strike and structural resistance."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Treat `AVERAGING_REPAIR` as a high-risk observational label. Any replay must record initial cost, added size, average cost, remaining time, bid/ask, underlying reclaim, maximum adverse excursion, and the alternative stop outcome."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Add `DAILY_TARGET_BREACH` and `TIME_TO_EXPIRY` as separate behavioral and execution-risk fields. The source discussed both but did not provide evidence that either improves expected value."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250107-P38025-C01",
+    "DTS-20250107-P38025-C02",
+    "DTS-20250107-P38025-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

@@ -1,0 +1,273 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39011,
+    "title": "Trading Room Video Recording \u2013 March 21, 2025",
+    "publication_date": "2025-03-21",
+    "post_publication_date": "2025-03-21",
+    "source_url": "https://daytradespy.com/39011/trading-room-video-recording-march-21-2025/",
+    "duration_seconds": 5001,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-21_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT",
+      "completeness_pct": 98,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1810,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:21:15",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_PARTIAL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 65,
+    "transcript_completeness_pct": 98,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:16:13-00:16:27",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source stated a 4.82 fill on 563 calls at 09:37. Research interpretation: Reported call entry; expiry, size, and exit absent."
+    },
+    {
+      "timestamp": "00:20:56-00:22:57",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source called the session a no-OMG-trade day and separately described a March 28 563-call \"2.40 trade\" at 4.98, with 5.25 target and 5.16 high. Research interpretation: No completed exit stated; the no-OMG statement is distinct from personal/service positions."
+    },
+    {
+      "timestamp": "00:36:18-00:36:27",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source said 563 calls bought at 4.82 reached 5.16 and pulled back while still held. Research interpretation: Unclosed, source-reported position."
+    },
+    {
+      "timestamp": "00:46:12-00:49:35",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source discussed a high-volatility end-of-day stop approach, queued March 28 559 puts at 6.26 with 6.60 target, and separately reported a prior-day 570-call sequence from 5.16 to 5.40. Research interpretation: The put target is not an exit; 570-call price roles are not explicit in captions."
+    },
+    {
+      "timestamp": "01:14:11-01:20:58",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source stated 5.25 target or end-of-day fallback for the 2.40 trade and intended to hold puts at least through day end, potentially through Monday. Research interpretation: No realized close is reported before the uncued recording tail."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250321-P39011-C01",
+      "timestamp": "00:16:13-00:16:27",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source stated a 4.82 fill on 563 calls at 09:37. Research interpretation: Reported call entry; expiry, size, and exit absent.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250321-P39011-C02",
+      "timestamp": "00:20:56-00:22:57",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source called the session a no-OMG-trade day and separately described a March 28 563-call \"2.40 trade\" at 4.98, with 5.25 target and 5.16 high. Research interpretation: No completed exit stated; the no-OMG statement is distinct from personal/service positions.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250321-P39011-C03",
+      "timestamp": "00:36:18-00:36:27",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source said 563 calls bought at 4.82 reached 5.16 and pulled back while still held. Research interpretation: Unclosed, source-reported position.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250321-P39011-C04",
+      "timestamp": "00:46:12-00:49:35",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source discussed a high-volatility end-of-day stop approach, queued March 28 559 puts at 6.26 with 6.60 target, and separately reported a prior-day 570-call sequence from 5.16 to 5.40. Research interpretation: The put target is not an exit; 570-call price roles are not explicit in captions.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250321-P39011-C05",
+      "timestamp": "01:14:11-01:20:58",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source stated 5.25 target or end-of-day fallback for the 2.40 trade and intended to hold puts at least through day end, potentially through Monday. Research interpretation: No realized close is reported before the uncued recording tail.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250321-P39011-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source stated a 4.82 fill on 563 calls at 09:37. Research interpretation: Reported call entry; expiry, size, and exit absent.",
+      "entry_time": "00:16:13-00:16:27",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250321-P39011-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source called the session a no-OMG-trade day and separately described a March 28 563-call \"2.40 trade\" at 4.98, with 5.25 target and 5.16 high. Research interpretation: No completed exit stated; the no-OMG statement is distinct from personal/service positions.",
+      "entry_time": "00:20:56-00:22:57",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250321-P39011-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source said 563 calls bought at 4.82 reached 5.16 and pulled back while still held. Research interpretation: Unclosed, source-reported position.",
+      "entry_time": "00:36:18-00:36:27",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250321-P39011-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source discussed a high-volatility end-of-day stop approach, queued March 28 559 puts at 6.26 with 6.60 target, and separately reported a prior-day 570-call sequence from 5.16 to 5.40. Research interpretation: The put target is not an exit; 570-call price roles are not explicit in captions.",
+      "entry_time": "00:46:12-00:49:35",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250321-P39011-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source stated 5.25 target or end-of-day fallback for the 2.40 trade and intended to hold puts at least through day end, potentially through Monday. Research interpretation: No realized close is reported before the uncued recording tail.",
+      "entry_time": "01:14:11-01:20:58",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Source stated a 4.82 fill on 563 calls at 09:37. Research interpretation: Reported call entry; expiry, size, and exit absent."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether a deterministic no-OMG filter adds value after separating it"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Compare documented end-of-day exits with fixed percentage stops under"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test downside-break gates and fixed targets only with timestamped underlying"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250321-P39011-C01",
+    "DTS-20250321-P39011-C02",
+    "DTS-20250321-P39011-C03",
+    "DTS-20250321-P39011-C04",
+    "DTS-20250321-P39011-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

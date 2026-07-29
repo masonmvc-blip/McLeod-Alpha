@@ -15,14 +15,15 @@ Audit date: 2026-07-28.
   post-level resolution.
 - `docs/research` contains 227 canonical dated 2025 daily-report filenames, plus four
   post-qualified March 17, June 27, October 7, and October 14 lineage-resolution reports.
-- `data/research/daytradespy/records` contains 193 tracked machine records, including
-  post-qualified filenames required to avoid silent duplicate-date
-  overwrite.
+- `data/research/daytradespy/records` contains 233 v2 files covering all 230
+  archive post IDs. Three legacy duplicate-named inputs for August 18-20 remain
+  preserved, while the registry points to exactly one validated record per
+  post.
 - The registry contains 230 post-level reviews with evidence metadata: 221 Tier C
   transcript-based reviews and 9 Tier E access/content/duplicate gaps. No
   archive posts remain pending.
-- Registry `pending` status is not equivalent to a missing Markdown report.
-  Several January-March reports predate complete machine-record backfill.
+- Every registry entry has an existing machine-record path whose post ID,
+  source URL, report path, schema, and research-only governance validate.
 - Reports dated May 6, May 7, and June 12 are evidence-gap placeholders, not substantive
   recording reviews.
 - May 8, May 9, May 12-23, May 27-30, June 2, 3, 5, 9-11, 16-18, 23-27,
@@ -71,10 +72,12 @@ Audit date: 2026-07-28.
    order.
 4. Resolve duplicate/reposted posts by post ID so one dated filename does not
    silently represent two different assets.
-5. Backfill machine records and improve weaker January-March reports only after
-   the missing daily recording backlog is exhausted.
-6. Produce monthly and cross-year synthesis after daily source coverage is
-   complete.
+5. Backfill machine records after the missing daily recording backlog is
+   exhausted. All 40 missing January-March record sources are now backfilled
+   from their existing substantive reports without inventing normalized trade
+   lifecycle fields.
+6. Produce monthly and cross-year synthesis after daily source coverage and
+   machine validation are complete.
 
 ## Definition of Done for One Recording
 
@@ -112,8 +115,9 @@ for that batch. Do not alter live trading behavior.
 All 230 archive posts are resolved at the post level. The 221 substantive
 Tier C reviews represent the available distinct recording evidence; the nine
 Tier E reviews preserve inaccessible, missing, or exact-duplicate posts
-without fabricating or double-counting evidence. Machine-record existence and
-schema validation remain the next completion gate before synthesis.
+without fabricating or double-counting evidence. All 230 registry-linked
+machine records exist and pass the active v2 validator. Cross-year synthesis
+is the remaining completion gate.
 
 ## Governance
 

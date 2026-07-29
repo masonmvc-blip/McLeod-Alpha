@@ -1,0 +1,207 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38087,
+    "title": "Trading Room Video Recording \u2013 January 13, 2025",
+    "publication_date": "2025-01-14",
+    "post_publication_date": "2025-01-14",
+    "source_url": "https://daytradespy.com/38087/trading-room-video-recording-january-13-2025/",
+    "duration_seconds": 4151,
+    "reviewed_at": "2026-07-24T18:08:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-14_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "00:00",
+      "last_timestamp": "01:09:11",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:07:52",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter acknowledged holding calls and dissatisfaction with that position. Research interpretation: Position commentary only; no entry, exit, price, size, or realized outcome was retained."
+    },
+    {
+      "timestamp": "00:10:26",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter described the OMG direction gate as the first five-minute close outside support/resistance lines. Research interpretation: Candidate directional gate requiring a fixed definition and replay; not a validated signal."
+    },
+    {
+      "timestamp": "00:10:50",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter stated a wait condition until nearby resistance was cleared before participation. Research interpretation: Candidate no-trade/confirmation gate; no forward outcome data is available."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250114-P38087-C01",
+      "timestamp": "00:07:52",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter acknowledged holding calls and dissatisfaction with that position. Research interpretation: Position commentary only; no entry, exit, price, size, or realized outcome was retained.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250114-P38087-C02",
+      "timestamp": "00:10:26",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter described the OMG direction gate as the first five-minute close outside support/resistance lines. Research interpretation: Candidate directional gate requiring a fixed definition and replay; not a validated signal.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250114-P38087-C03",
+      "timestamp": "00:10:50",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter stated a wait condition until nearby resistance was cleared before participation. Research interpretation: Candidate no-trade/confirmation gate; no forward outcome data is available.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250114-P38087-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter acknowledged holding calls and dissatisfaction with that position. Research interpretation: Position commentary only; no entry, exit, price, size, or realized outcome was retained.",
+      "entry_time": "00:07:52",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250114-P38087-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter described the OMG direction gate as the first five-minute close outside support/resistance lines. Research interpretation: Candidate directional gate requiring a fixed definition and replay; not a validated signal.",
+      "entry_time": "00:10:26",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250114-P38087-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter stated a wait condition until nearby resistance was cleared before participation. Research interpretation: Candidate no-trade/confirmation gate; no forward outcome data is available.",
+      "entry_time": "00:10:50",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Presenter acknowledged holding calls and dissatisfaction with that position. Research interpretation: Position commentary only; no entry, exit, price, size, or realized outcome was retained."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether the first five-minute close beyond a pre-defined support or"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether requiring a resistance-clearance confirmation reduces premature"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Keep any open-position commentary separate from intraday setup labels until"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250114-P38087-C01",
+    "DTS-20250114-P38087-C02",
+    "DTS-20250114-P38087-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

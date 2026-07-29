@@ -1,0 +1,212 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38027,
+    "title": "Trading Room Video Recording \u2013 January 6, 2025",
+    "publication_date": "2025-01-06",
+    "post_publication_date": "2025-01-06",
+    "source_url": "https://daytradespy.com/38027/trading-room-video-recording-january-6-2025/",
+    "duration_seconds": 4256,
+    "reviewed_at": "2026-07-24T17:54:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-06_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The presenter said that lower call-side volatility and warmer put-side volatility required caution on puts. For an upside scalp, the stated preference was the at-the-money January 10 `596` calls because volume was higher there than in adjacent strikes."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The transcript records a source-reported fill at `4.25` for the `596` calls and a stated `4.25` target. The rationale was a one-minute push through the 20 EMA combined with return strength toward the marked resistance. The transcript does not independently establish the order, quote, size, or result."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Later reversal discussion used the same structural logic in the opposite direction: resistance near `597` could create room for puts, but the room emphasized waiting for a red candle and pressure confirmation rather than anticipating a decline at the level."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250106-P38027-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The presenter said that lower call-side volatility and warmer put-side volatility required caution on puts. For an upside scalp, the stated preference was the at-the-money January 10 `596` calls because volume was higher there than in adjacent strikes.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250106-P38027-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The transcript records a source-reported fill at `4.25` for the `596` calls and a stated `4.25` target. The rationale was a one-minute push through the 20 EMA combined with return strength toward the marked resistance. The transcript does not independently establish the order, quote, size, or result.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250106-P38027-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Later reversal discussion used the same structural logic in the opposite direction: resistance near `597` could create room for puts, but the room emphasized waiting for a red candle and pressure confirmation rather than anticipating a decline at the level.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250106-P38027-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The presenter said that lower call-side volatility and warmer put-side volatility required caution on puts. For an upside scalp, the stated preference was the at-the-money January 10 `596` calls because volume was higher there than in adjacent strikes.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250106-P38027-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The transcript records a source-reported fill at `4.25` for the `596` calls and a stated `4.25` target. The rationale was a one-minute push through the 20 EMA combined with return strength toward the marked resistance. The transcript does not independently establish the order, quote, size, or result.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250106-P38027-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Later reversal discussion used the same structural logic in the opposite direction: resistance near `597` could create room for puts, but the room emphasized waiting for a red candle and pressure confirmation rather than anticipating a decline at the level.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The presenter said that lower call-side volatility and warmer put-side volatility required caution on puts. For an upside scalp, the stated preference was the at-the-money January 10 `596` calls because volume was higher there than in adjacent strikes."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `OPENING_RANGE_CLOSE_THROUGH` with the pre-market range width, first five-minute close, resistance proximity, and subsequent retest. A range boundary alone was explicitly insufficient in the source discussion."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `EMA_STRENGTH_CONFIRMATION` as a sequence: one-minute interaction with the 20 EMA, five-minute agreement, and room to resistance. Do not evaluate an EMA condition as a standalone entry trigger."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Preserve `OPTION_LIQUIDITY_SELECTION` fields: strike, expiry, volume, delta, spread, and premium. The source selected the `596` calls for stated volume, not direction alone."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Separate `TARGET_HOLD_OVERNIGHT` from `STOP_DEFINED`. The transcript shows a target, a wide stop, and a discretionary overnight hold coexisting; replay must measure their distinct impact on option excursion and realized risk."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250106-P38027-C01",
+    "DTS-20250106-P38027-C02",
+    "DTS-20250106-P38027-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

@@ -1,0 +1,278 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38811,
+    "title": "Trading Room Video Recording \u2013 March 6, 2025",
+    "publication_date": "2025-03-06",
+    "post_publication_date": "2025-03-06",
+    "source_url": "https://daytradespy.com/38811/trading-room-video-recording-march-6-2025/",
+    "duration_seconds": 4352,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-06_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "PARTIAL_AUTHORIZED_BROWSER_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1582,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:55",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as PARTIAL_AUTHORIZED_BROWSER_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "PARTIAL_AUTHORIZED_TRANSCRIPT",
+    "tier": "C",
+    "trade_details_captured_pct": 75,
+    "transcript_completeness_pct": 99,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:21:58",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter said the pick of the day had filled. Research interpretation: Instrument, quantity, price, and outcome were not captured."
+    },
+    {
+      "timestamp": "00:41:18-00:42:53",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter reported March 14 575 calls at 9.16; captions later state six contracts, 9.00 to 9.71, and $420 after commission. Research interpretation: Reported call trade with incompatible entry prices; no reconciliation."
+    },
+    {
+      "timestamp": "00:53:21-00:54:49",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter proposed and reported a March 14 578-call fill at 8.69. Research interpretation: Reported entry only; size unavailable."
+    },
+    {
+      "timestamp": "00:55:48-00:58:50",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Captions reported a two-minute scalp from 9.34 to 9.00 while claiming 31 cents, and later a 21-cent scalp at resistance. Research interpretation: Instrument and linkage are ambiguous; do not aggregate with the 8.69 entry."
+    },
+    {
+      "timestamp": "00:56:38-01:00:11",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter identified 578.35 as resistance, described taking profit as price bucked there, and suggested a scalp may tolerate about a 20-cent option decline. Research interpretation: Candidate exit/risk observations, not validated rules."
+    },
+    {
+      "timestamp": "01:05:38-01:06:48",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter corrected the pick from 580 to March 14 578 calls, discussed a 4.49 target and a retrospective 573-put signal. Research interpretation: Retrospective/hypothetical commentary, not a documented fill."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250306-P38811-C01",
+      "timestamp": "00:21:58",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter said the pick of the day had filled. Research interpretation: Instrument, quantity, price, and outcome were not captured.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250306-P38811-C02",
+      "timestamp": "00:41:18-00:42:53",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter reported March 14 575 calls at 9.16; captions later state six contracts, 9.00 to 9.71, and $420 after commission. Research interpretation: Reported call trade with incompatible entry prices; no reconciliation.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250306-P38811-C03",
+      "timestamp": "00:53:21-00:54:49",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter proposed and reported a March 14 578-call fill at 8.69. Research interpretation: Reported entry only; size unavailable.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250306-P38811-C04",
+      "timestamp": "00:55:48-00:58:50",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Captions reported a two-minute scalp from 9.34 to 9.00 while claiming 31 cents, and later a 21-cent scalp at resistance. Research interpretation: Instrument and linkage are ambiguous; do not aggregate with the 8.69 entry.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250306-P38811-C05",
+      "timestamp": "00:56:38-01:00:11",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter identified 578.35 as resistance, described taking profit as price bucked there, and suggested a scalp may tolerate about a 20-cent option decline. Research interpretation: Candidate exit/risk observations, not validated rules.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250306-P38811-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter reported March 14 575 calls at 9.16; captions later state six contracts, 9.00 to 9.71, and $420 after commission. Research interpretation: Reported call trade with incompatible entry prices; no reconciliation.",
+      "entry_time": "00:41:18-00:42:53",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250306-P38811-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter proposed and reported a March 14 578-call fill at 8.69. Research interpretation: Reported entry only; size unavailable.",
+      "entry_time": "00:53:21-00:54:49",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250306-P38811-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Captions reported a two-minute scalp from 9.34 to 9.00 while claiming 31 cents, and later a 21-cent scalp at resistance. Research interpretation: Instrument and linkage are ambiguous; do not aggregate with the 8.69 entry.",
+      "entry_time": "00:55:48-00:58:50",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250306-P38811-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter identified 578.35 as resistance, described taking profit as price bucked there, and suggested a scalp may tolerate about a 20-cent option decline. Research interpretation: Candidate exit/risk observations, not validated rules.",
+      "entry_time": "00:56:38-01:00:11",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250306-P38811-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter corrected the pick from 580 to March 14 578 calls, discussed a 4.49 target and a retrospective 573-put signal. Research interpretation: Retrospective/hypothetical commentary, not a documented fill.",
+      "entry_time": "01:05:38-01:06:48",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Presenter said the pick of the day had filled. Research interpretation: Instrument, quantity, price, and outcome were not captured."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether a close/hold above a predefined level such as 578 improves"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether resistance-proximate profit taking reduces reversal exposure"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test a predefined maximum option-premium adverse move only after defining the"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250306-P38811-C01",
+    "DTS-20250306-P38811-C02",
+    "DTS-20250306-P38811-C03",
+    "DTS-20250306-P38811-C04",
+    "DTS-20250306-P38811-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

@@ -1,0 +1,293 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38766,
+    "title": "Trading Room Video Recording \u2013 March 4, 2025",
+    "publication_date": "2025-03-04",
+    "post_publication_date": "2025-03-04",
+    "source_url": "https://daytradespy.com/38766/trading-room-video-recording-march-4-2025/",
+    "duration_seconds": 4263,
+    "reviewed_at": "2026-07-23T14:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-04_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1486,
+      "first_timestamp": "00:00",
+      "last_timestamp": "01:11:03",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:13:58-00:16:57",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter identified a downside condition around the 579 area, stated an intent to buy ten March 7 579 puts after a one-minute candle turned red, then reported a 5.94 fill and a 6.30 limit target. Research interpretation: Conditional downside-continuation entry and a stated target; no independently measured trigger or fill."
+    },
+    {
+      "timestamp": "00:20:21-00:21:06",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter reported the 579-put limit filled at 6.41 at 09:41, versus 5.94 at 09:37, and described 7.9%. Research interpretation: Source-reported completed put scalp; outcome is unreconciled."
+    },
+    {
+      "timestamp": "00:21:04-00:22:48",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter described an earlier March 7 575-put position, reported entry at 4.78 near 09:35, exit at 5.00 near 09:43, and $254 after commission for 12 contracts. Research interpretation: Source-reported completed put scalp; source math and actual execution cannot be verified."
+    },
+    {
+      "timestamp": "00:34:42-00:39:05",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter reported re-entering March 7 575 puts at 5.58 near 09:56 and exiting at 5.84; he described a 26-cent gain on ten contracts, $250 after commission. Research interpretation: Source-reported completed put scalp; no option marks, stop, or independent time-and-sales evidence."
+    },
+    {
+      "timestamp": "00:44:10-00:45:23",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Presenter said March 7 598 calls from the prior day would be held through an evening speech rather than sold at approximately 40-50 cents. Research interpretation: Overnight-hold commentary, not a completed trade result; it conflicts with a same-day-risk-limited interpretation."
+    },
+    {
+      "timestamp": "00:56:05-01:00:28",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Co-host described a very extended downside trend, missed a put trade by trying to anticipate a support bounce, and said adaptation to failed support should have been quicker. Research interpretation: Candidate post-hoc decision-gate observation; it needs replay with a fixed definition of support failure and timing."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250304-P38766-C01",
+      "timestamp": "00:13:58-00:16:57",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter identified a downside condition around the 579 area, stated an intent to buy ten March 7 579 puts after a one-minute candle turned red, then reported a 5.94 fill and a 6.30 limit target. Research interpretation: Conditional downside-continuation entry and a stated target; no independently measured trigger or fill.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250304-P38766-C02",
+      "timestamp": "00:20:21-00:21:06",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter reported the 579-put limit filled at 6.41 at 09:41, versus 5.94 at 09:37, and described 7.9%. Research interpretation: Source-reported completed put scalp; outcome is unreconciled.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250304-P38766-C03",
+      "timestamp": "00:21:04-00:22:48",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter described an earlier March 7 575-put position, reported entry at 4.78 near 09:35, exit at 5.00 near 09:43, and $254 after commission for 12 contracts. Research interpretation: Source-reported completed put scalp; source math and actual execution cannot be verified.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250304-P38766-C04",
+      "timestamp": "00:34:42-00:39:05",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter reported re-entering March 7 575 puts at 5.58 near 09:56 and exiting at 5.84; he described a 26-cent gain on ten contracts, $250 after commission. Research interpretation: Source-reported completed put scalp; no option marks, stop, or independent time-and-sales evidence.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250304-P38766-C05",
+      "timestamp": "00:44:10-00:45:23",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Presenter said March 7 598 calls from the prior day would be held through an evening speech rather than sold at approximately 40-50 cents. Research interpretation: Overnight-hold commentary, not a completed trade result; it conflicts with a same-day-risk-limited interpretation.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250304-P38766-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter identified a downside condition around the 579 area, stated an intent to buy ten March 7 579 puts after a one-minute candle turned red, then reported a 5.94 fill and a 6.30 limit target. Research interpretation: Conditional downside-continuation entry and a stated target; no independently measured trigger or fill.",
+      "entry_time": "00:13:58-00:16:57",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250304-P38766-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter reported the 579-put limit filled at 6.41 at 09:41, versus 5.94 at 09:37, and described 7.9%. Research interpretation: Source-reported completed put scalp; outcome is unreconciled.",
+      "entry_time": "00:20:21-00:21:06",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250304-P38766-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter described an earlier March 7 575-put position, reported entry at 4.78 near 09:35, exit at 5.00 near 09:43, and $254 after commission for 12 contracts. Research interpretation: Source-reported completed put scalp; source math and actual execution cannot be verified.",
+      "entry_time": "00:21:04-00:22:48",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250304-P38766-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter reported re-entering March 7 575 puts at 5.58 near 09:56 and exiting at 5.84; he described a 26-cent gain on ten contracts, $250 after commission. Research interpretation: Source-reported completed put scalp; no option marks, stop, or independent time-and-sales evidence.",
+      "entry_time": "00:34:42-00:39:05",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250304-P38766-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Presenter said March 7 598 calls from the prior day would be held through an evening speech rather than sold at approximately 40-50 cents. Research interpretation: Overnight-hold commentary, not a completed trade result; it conflicts with a same-day-risk-limited interpretation.",
+      "entry_time": "00:44:10-00:45:23",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250304-P38766-T06",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Co-host described a very extended downside trend, missed a put trade by trying to anticipate a support bounce, and said adaptation to failed support should have been quicker. Research interpretation: Candidate post-hoc decision-gate observation; it needs replay with a fixed definition of support failure and timing.",
+      "entry_time": "00:56:05-01:00:28",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Presenter identified a downside condition around the 579 area, stated an intent to buy ten March 7 579 puts after a one-minute candle turned red, then reported a 5.94 fill and a 6.30 limit target. Research interpretation: Conditional downside-continuation entry and a stated target; no independently measured trigger or fill."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "A downside entry defined by a failed support retest followed by a bearish"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "A fixed, pre-declared exit target may reduce exposure time during trend days,"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "A rule that stops initiating downside trades after a pre-defined extension"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Separating short-duration intraday trades from overnight recovery holds may"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250304-P38766-C01",
+    "DTS-20250304-P38766-C02",
+    "DTS-20250304-P38766-C03",
+    "DTS-20250304-P38766-C04",
+    "DTS-20250304-P38766-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

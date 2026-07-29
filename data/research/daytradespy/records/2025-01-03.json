@@ -1,0 +1,202 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 37950,
+    "title": "Trading Room Video Recording \u2013 January 3, 2025",
+    "publication_date": "2025-01-03",
+    "post_publication_date": "2025-01-03",
+    "source_url": "https://daytradespy.com/37950/trading-room-video-recording-january-3-2025/",
+    "duration_seconds": 4361,
+    "reviewed_at": "2026-07-24T17:43:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-03_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The room marked `587` as the relevant resistance reference and defined the OMG framework as the first five-minute candle close outside the stated support/resistance boundary. Near a round strike, the presenter used the strike itself as the practical upside reference."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The presenter explicitly withheld a downside thesis when a break lacked room below the nearby pivot. The decision rule was not simply \u201cclose under pivot\u201d; the move also needed sufficient space to develop after support at the nearby lower reference was assessed."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "For a bullish continuation or repair, the stated sequence was pullback, a test of the 10- or 20-period EMA, and a renewed move upward. This made the moving-average interaction a confirmation/re-entry condition, not an automatic trade trigger."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250103-P37950-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The room marked `587` as the relevant resistance reference and defined the OMG framework as the first five-minute candle close outside the stated support/resistance boundary. Near a round strike, the presenter used the strike itself as the practical upside reference.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250103-P37950-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The presenter explicitly withheld a downside thesis when a break lacked room below the nearby pivot. The decision rule was not simply \u201cclose under pivot\u201d; the move also needed sufficient space to develop after support at the nearby lower reference was assessed.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250103-P37950-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "For a bullish continuation or repair, the stated sequence was pullback, a test of the 10- or 20-period EMA, and a renewed move upward. This made the moving-average interaction a confirmation/re-entry condition, not an automatic trade trigger.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250103-P37950-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The room marked `587` as the relevant resistance reference and defined the OMG framework as the first five-minute candle close outside the stated support/resistance boundary. Near a round strike, the presenter used the strike itself as the practical upside reference.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250103-P37950-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "For a bullish continuation or repair, the stated sequence was pullback, a test of the 10- or 20-period EMA, and a renewed move upward. This made the moving-average interaction a confirmation/re-entry condition, not an automatic trade trigger.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 2,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The room marked `587` as the relevant resistance reference and defined the OMG framework as the first five-minute candle close outside the stated support/resistance boundary. Near a round strike, the presenter used the strike itself as the practical upside reference."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `OPENING_RANGE_CLOSE_THROUGH` with resistance, nearby pivot, and available-room fields. Distinguish a five-minute close outside the boundary from a close that immediately meets structural friction."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `EMA_RETEST_REENTRY` only after an actual pullback, test of the 10/20 EMA region, and resumption; do not treat a moving-average cross alone as a direction rule."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Capture `DAILY_TARGET_BREACH` as a behavioral state. Compare incremental trade quality after a daily target is reached with the session\u2019s preceding trades and matched control sessions."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "For short-dated option scalps, record strike, expiry, entry quote, target, stop, support proximity, and OCO order state. The source\u2019s `4.45` to `4.55` target versus `3.45` stop plan is a concrete example to test, not an adopted risk template."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250103-P37950-C01",
+    "DTS-20250103-P37950-C02",
+    "DTS-20250103-P37950-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

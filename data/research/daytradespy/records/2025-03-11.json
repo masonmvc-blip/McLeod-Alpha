@@ -1,0 +1,273 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38845,
+    "title": "Trading Room Video Recording \u2013 March 11, 2025",
+    "publication_date": "2025-03-11",
+    "post_publication_date": "2025-03-11",
+    "source_url": "https://daytradespy.com/38845/trading-room-video-recording-march-11-2025/",
+    "duration_seconds": 4275,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-11_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "PARTIAL_AUTHORIZED_BROWSER_TRANSCRIPT",
+      "completeness_pct": 99,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1559,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:11:04",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as PARTIAL_AUTHORIZED_BROWSER_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "PARTIAL_AUTHORIZED_TRANSCRIPT",
+    "tier": "C",
+    "trade_details_captured_pct": 80,
+    "transcript_completeness_pct": 99,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:05:32",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Room said it was holding prior-day calls and would not dump them yet. Research interpretation: Open-position commentary only; no outcome."
+    },
+    {
+      "timestamp": "00:13:42-00:15:48",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Room selected 559 puts, reported a 7.47 fill at 09:36, and set a 7.92 sale target. Research interpretation: Source-reported put entry and target; captioned size/order wording is garbled."
+    },
+    {
+      "timestamp": "00:40:57-00:43:24",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source described the puts at 7.22, then entry 7.47, a 7.95 intermediate hit, an 8.04 fill response, and 7.6%. Research interpretation: Reported sequence with multiple unreconciled sale values."
+    },
+    {
+      "timestamp": "00:16:56-00:18:18",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source held six Mar. 21 570 calls from 9.90, quoted near 3.40-3.43. Research interpretation: Open call position; no exit or realized result."
+    },
+    {
+      "timestamp": "01:08:22-01:09:42",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source separately described a pick from 6.45 to 6.83 and an unspecified speaker still in calls. Research interpretation: Do not link to any earlier trade."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250311-P38845-C01",
+      "timestamp": "00:05:32",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Room said it was holding prior-day calls and would not dump them yet. Research interpretation: Open-position commentary only; no outcome.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250311-P38845-C02",
+      "timestamp": "00:13:42-00:15:48",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Room selected 559 puts, reported a 7.47 fill at 09:36, and set a 7.92 sale target. Research interpretation: Source-reported put entry and target; captioned size/order wording is garbled.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250311-P38845-C03",
+      "timestamp": "00:40:57-00:43:24",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source described the puts at 7.22, then entry 7.47, a 7.95 intermediate hit, an 8.04 fill response, and 7.6%. Research interpretation: Reported sequence with multiple unreconciled sale values.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250311-P38845-C04",
+      "timestamp": "00:16:56-00:18:18",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source held six Mar. 21 570 calls from 9.90, quoted near 3.40-3.43. Research interpretation: Open call position; no exit or realized result.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250311-P38845-C05",
+      "timestamp": "01:08:22-01:09:42",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source separately described a pick from 6.45 to 6.83 and an unspecified speaker still in calls. Research interpretation: Do not link to any earlier trade.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250311-P38845-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Room said it was holding prior-day calls and would not dump them yet. Research interpretation: Open-position commentary only; no outcome.",
+      "entry_time": "00:05:32",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250311-P38845-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Room selected 559 puts, reported a 7.47 fill at 09:36, and set a 7.92 sale target. Research interpretation: Source-reported put entry and target; captioned size/order wording is garbled.",
+      "entry_time": "00:13:42-00:15:48",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250311-P38845-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source described the puts at 7.22, then entry 7.47, a 7.95 intermediate hit, an 8.04 fill response, and 7.6%. Research interpretation: Reported sequence with multiple unreconciled sale values.",
+      "entry_time": "00:40:57-00:43:24",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250311-P38845-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source held six Mar. 21 570 calls from 9.90, quoted near 3.40-3.43. Research interpretation: Open call position; no exit or realized result.",
+      "entry_time": "00:16:56-00:18:18",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250311-P38845-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source separately described a pick from 6.45 to 6.83 and an unspecified speaker still in calls. Research interpretation: Do not link to any earlier trade.",
+      "entry_time": "01:08:22-01:09:42",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 5,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Room said it was holding prior-day calls and would not dump them yet. Research interpretation: Open-position commentary only; no outcome."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether defined downside-extension areas improve put-entry or exit timing"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test whether taking a modest pre-defined gain near a stated extension reduces"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Separate time-to-expiry rationale from chart-pattern rationale before assessing"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250311-P38845-C01",
+    "DTS-20250311-P38845-C02",
+    "DTS-20250311-P38845-C03",
+    "DTS-20250311-P38845-C04",
+    "DTS-20250311-P38845-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

@@ -1,0 +1,212 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38232,
+    "title": "Trading Room Video Recording \u2013 January 23, 2025",
+    "publication_date": "2025-01-23",
+    "post_publication_date": "2025-01-23",
+    "source_url": "https://daytradespy.com/38232/trading-room-video-recording-january-23-2025/",
+    "duration_seconds": 4256,
+    "reviewed_at": "2026-07-24T18:42:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-01-23_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 100,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The presenter described a prior tight-range trade that did not reach its 6% target, reversed, and was cut at an approximate 25% loss. The source gave no verifiable contract, timestamp, fill, or market-data record for that outcome."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The session identified `606` calls as the pick of the day and indicated that the pick was distributed at the beginning of the session. The recording does not establish the entry, exit, target hit, or P&L for that pick."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Near the end, the source stated that both active trades had next-Friday expiry, suggested a 40% stop to anyone insisting on an exit, and accepted the possibility of continuing to hold into the next day. This combines a percentage stop reference with discretionary multi-session holding."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250123-P38232-C01",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The presenter described a prior tight-range trade that did not reach its 6% target, reversed, and was cut at an approximate 25% loss. The source gave no verifiable contract, timestamp, fill, or market-data record for that outcome.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250123-P38232-C02",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "The session identified `606` calls as the pick of the day and indicated that the pick was distributed at the beginning of the session. The recording does not establish the entry, exit, target hit, or P&L for that pick.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250123-P38232-C03",
+      "timestamp": "UNKNOWN",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Near the end, the source stated that both active trades had next-Friday expiry, suggested a 40% stop to anyone insisting on an exit, and accepted the possibility of continuing to hold into the next day. This combines a percentage stop reference with discretionary multi-session holding.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250123-P38232-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The presenter described a prior tight-range trade that did not reach its 6% target, reversed, and was cut at an approximate 25% loss. The source gave no verifiable contract, timestamp, fill, or market-data record for that outcome.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250123-P38232-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "The session identified `606` calls as the pick of the day and indicated that the pick was distributed at the beginning of the session. The recording does not establish the entry, exit, target hit, or P&L for that pick.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250123-P38232-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Near the end, the source stated that both active trades had next-Friday expiry, suggested a 40% stop to anyone insisting on an exit, and accepted the possibility of continuing to hold into the next day. This combines a percentage stop reference with discretionary multi-session holding.",
+      "entry_time": "UNKNOWN",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 3,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The presenter described a prior tight-range trade that did not reach its 6% target, reversed, and was cut at an approximate 25% loss. The source gave no verifiable contract, timestamp, fill, or market-data record for that outcome."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `RANGE_WIDTH_AFTER_FAILURE`: compare tight and widened opening ranges while controlling for volatility, breakout distance, and adverse excursion."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test `EMA_ALIGNMENT_AND_RUNWAY` as separate admission fields. A range close, moving-average alignment, resistance clearance, and distance to the next obstacle should each be observable."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Treat `SIX_PERCENT_TARGET_WITH_TWENTY_FIVE_PERCENT_LOSS` as a risk-asymmetry research case, not proof of a general loss rate. The source report requires independent execution reconstruction."
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Separate `STOP_REFERENCE` from `NEXT_DAY_HOLD`. A 40% stop suggestion and willingness to let next-Friday options sit are different and potentially conflicting management paths."
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250123-P38232-C01",
+    "DTS-20250123-P38232-C02",
+    "DTS-20250123-P38232-C03"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 3,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

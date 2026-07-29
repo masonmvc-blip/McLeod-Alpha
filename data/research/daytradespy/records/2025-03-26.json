@@ -1,0 +1,100 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 39074,
+    "title": "Trading Room Video Recording \u2013 March 26, 2025",
+    "publication_date": "2025-03-26",
+    "post_publication_date": "2025-03-26",
+    "source_url": "https://daytradespy.com/39074/trading-room-video-recording-march-26-2025/",
+    "duration_seconds": 0,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-26_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "PENDING_AUTHORIZED_ACCESS",
+      "completeness_pct": 0,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": false
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 0,
+      "first_timestamp": "UNKNOWN",
+      "last_timestamp": "UNKNOWN",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as PENDING_AUTHORIZED_ACCESS. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "SOURCE_ACCESS_BLOCKED",
+    "tier": "E",
+    "trade_details_captured_pct": 0,
+    "transcript_completeness_pct": 0,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "The authorized source could not be reviewed in this session. No Vimeo player, signed captions, transcript, visual evidence, trade ledger, or market data was available. This Tier E record documents the acquisition block without creating unsupported trade, setup, or outcome claims."
+    }
+  ],
+  "claims": [],
+  "reported_trades": [],
+  "ledger_reconciliation": {
+    "source_reported_trades": 0,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "The authorized source could not be reviewed in this session. No Vimeo player, signed captions, transcript, visual evidence, trade ledger, or market data was available. This Tier E record documents the acquisition block without creating unsupported trade, setup, or outcome claims."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "EVIDENCE_COMPLETION",
+      "detail": "Retain the report as research-only until independent replay evidence is available."
+    }
+  ],
+  "hypothesis_references": [],
+  "expected_value_tracking": {
+    "confidence": "NONE",
+    "evidence_count": 0,
+    "current_lifecycle_stage": "OBSERVATION_ONLY",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}

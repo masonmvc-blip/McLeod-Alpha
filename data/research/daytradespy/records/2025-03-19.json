@@ -1,0 +1,288 @@
+{
+  "schema_version": "daytradespy-record.v2",
+  "recording": {
+    "analysis_protocol_version": "2026-07-22.1",
+    "post_id": 38963,
+    "title": "Trading Room Video Recording \u2013 March 19, 2025",
+    "publication_date": "2025-03-19",
+    "post_publication_date": "2025-03-19",
+    "source_url": "https://daytradespy.com/38963/trading-room-video-recording-march-19-2025/",
+    "duration_seconds": 4524,
+    "reviewed_at": "2026-07-27T00:00:00+00:00",
+    "reviewer_version": "report-backed-machine-record-backfill.v1",
+    "report_path": "docs/research/2025-03-19_daytradespy_trading_room_research.md",
+    "transcript": {
+      "availability": "AUTHORIZED_BROWSER_FULL_TRANSCRIPT",
+      "completeness_pct": 100,
+      "path": "",
+      "speaker_attribution_available": false,
+      "timestamps_preserved": true
+    },
+    "transcript_probe": {
+      "source": "EXISTING_SOURCE_DERIVED_REPORT_AND_REGISTRY_BACKFILL",
+      "cue_count": 1464,
+      "first_timestamp": "00:00:00",
+      "last_timestamp": "01:15:23",
+      "raw_transcript_persisted": false,
+      "coverage_note": "Machine record backfilled from the existing substantive report and registry evidence; transcript availability retained as AUTHORIZED_BROWSER_FULL_TRANSCRIPT. No new source facts were inferred."
+    },
+    "visual_review": {
+      "status": "UNAVAILABLE_EVIDENCE",
+      "coverage_pct": 0,
+      "chart_references": []
+    }
+  },
+  "evidence_quality": {
+    "ledger_reconciliation_pct": 0,
+    "option_excursion_data_pct": 0,
+    "overall_grade": "TRANSCRIPT_COMPLETE_VISUAL_UNAVAILABLE",
+    "tier": "C",
+    "trade_details_captured_pct": 80,
+    "transcript_completeness_pct": 100,
+    "underlying_market_data_pct": 0
+  },
+  "timeline": [
+    {
+      "timestamp": "00:06:02-00:06:13",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source required first five-minute close outside a referenced OMG range plus one-minute directional pressure before seeking 6%. Research interpretation: Candidate multi-timeframe gate; chart definitions unavailable."
+    },
+    {
+      "timestamp": "00:08:37-00:11:31",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source planned $6,000/13 Mar. 21 563 calls, waited for a one-minute bounce, reported 4.46 fill, and placed 4.70 target. Research interpretation: Source-reported entry and working target."
+    },
+    {
+      "timestamp": "00:26:11-00:27:37",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source reported 13 calls sold from 4.46 to 4.75 after 16 minutes. Research interpretation: Reported completed call scalp; dollar P/L caption is ambiguous."
+    },
+    {
+      "timestamp": "00:28:05-00:28:29",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source reported March 28 563 calls at 7.34 with 7.78 target. Research interpretation: Separate entry/target, no exit reported."
+    },
+    {
+      "timestamp": "00:38:28-00:48:54",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source separately described March 28 565-call pick at 6.03 with 6.39 target/alert, then another 565-call fill at 6.73 with 7.11 target and 7.02 exit. Research interpretation: Distinct claims; timing, size, and linkage are unresolved."
+    },
+    {
+      "timestamp": "00:48:13-01:06:48",
+      "classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "claim": "Source cited repeated resistance, one-minute MACD crossover, and avoiding holds through Powell/FOMC repositioning. Research interpretation: Candidate exit/no-trade observations, not validated rules."
+    }
+  ],
+  "claims": [
+    {
+      "id": "DTS-20250319-P38963-C01",
+      "timestamp": "00:06:02-00:06:13",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source required first five-minute close outside a referenced OMG range plus one-minute directional pressure before seeking 6%. Research interpretation: Candidate multi-timeframe gate; chart definitions unavailable.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250319-P38963-C02",
+      "timestamp": "00:08:37-00:11:31",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source planned $6,000/13 Mar. 21 563 calls, waited for a one-minute bounce, reported 4.46 fill, and placed 4.70 target. Research interpretation: Source-reported entry and working target.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250319-P38963-C03",
+      "timestamp": "00:26:11-00:27:37",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source reported 13 calls sold from 4.46 to 4.75 after 16 minutes. Research interpretation: Reported completed call scalp; dollar P/L caption is ambiguous.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250319-P38963-C04",
+      "timestamp": "00:28:05-00:28:29",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source reported March 28 563 calls at 7.34 with 7.78 target. Research interpretation: Separate entry/target, no exit reported.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    },
+    {
+      "id": "DTS-20250319-P38963-C05",
+      "timestamp": "00:38:28-00:48:54",
+      "label": "REPORT_BACKED_OBSERVATION",
+      "fact_classification": "REPORT_DERIVED_SOURCE_SUMMARY",
+      "status": "SOURCE_SUPPORTED_BY_EXISTING_REPORT",
+      "claim": "Source separately described March 28 565-call pick at 6.03 with 6.39 target/alert, then another 565-call fill at 6.73 with 7.11 target and 7.02 exit. Research interpretation: Distinct claims; timing, size, and linkage are unresolved.",
+      "forward_outcomes": {
+        "1m": "UNKNOWN",
+        "3m": "UNKNOWN",
+        "5m": "UNKNOWN",
+        "10m": "UNKNOWN",
+        "15m": "UNKNOWN",
+        "remainder_session": "UNKNOWN"
+      },
+      "disconfirming_evidence_required": "Original transcript timestamps, visual review, executable option path, and ledger."
+    }
+  ],
+  "reported_trades": [
+    {
+      "source_trade_id": "DTS-20250319-P38963-T01",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source required first five-minute close outside a referenced OMG range plus one-minute directional pressure before seeking 6%. Research interpretation: Candidate multi-timeframe gate; chart definitions unavailable.",
+      "entry_time": "00:06:02-00:06:13",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250319-P38963-T02",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source planned $6,000/13 Mar. 21 563 calls, waited for a one-minute bounce, reported 4.46 fill, and placed 4.70 target. Research interpretation: Source-reported entry and working target.",
+      "entry_time": "00:08:37-00:11:31",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250319-P38963-T03",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source reported 13 calls sold from 4.46 to 4.75 after 16 minutes. Research interpretation: Reported completed call scalp; dollar P/L caption is ambiguous.",
+      "entry_time": "00:26:11-00:27:37",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250319-P38963-T04",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source reported March 28 563 calls at 7.34 with 7.78 target. Research interpretation: Separate entry/target, no exit reported.",
+      "entry_time": "00:28:05-00:28:29",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250319-P38963-T05",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source separately described March 28 565-call pick at 6.03 with 6.39 target/alert, then another 565-call fill at 6.73 with 7.11 target and 7.02 exit. Research interpretation: Distinct claims; timing, size, and linkage are unresolved.",
+      "entry_time": "00:38:28-00:48:54",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    },
+    {
+      "source_trade_id": "DTS-20250319-P38963-T06",
+      "type": "REPORT_DERIVED_TRADE_OBSERVATION",
+      "setup": "Source cited repeated resistance, one-minute MACD crossover, and avoiding holds through Powell/FOMC repositioning. Research interpretation: Candidate exit/no-trade observations, not validated rules.",
+      "entry_time": "00:48:13-01:06:48",
+      "entry_premium": null,
+      "exit_time": null,
+      "exit_premium": null,
+      "stop_or_invalidation": "Retain the report text; normalized lifecycle fields unavailable."
+    }
+  ],
+  "ledger_reconciliation": {
+    "source_reported_trades": 6,
+    "mcleod_alpha_trades": "UNAVAILABLE_EVIDENCE",
+    "confirmed_matches": [],
+    "possible_matches": [],
+    "conflicts": [
+      "Backfill preserves report language without inventing normalized lifecycle fields."
+    ],
+    "unavailable_evidence": [
+      "Independent ledger",
+      "Visual chart review",
+      "Executable underlying and option paths",
+      "Greeks, MFE, MAE, slippage, and complete fees"
+    ]
+  },
+  "market_state_timeline": [
+    {
+      "timestamp": "UNKNOWN",
+      "market_direction": "UNKNOWN",
+      "trend_strength": "UNKNOWN",
+      "volatility": "UNKNOWN",
+      "vwap_state": "UNKNOWN",
+      "room_to_target": "UNKNOWN",
+      "evidence": "Source required first five-minute close outside a referenced OMG range plus one-minute directional pressure before seeking 6%. Research interpretation: Candidate multi-timeframe gate; chart definitions unavailable."
+    }
+  ],
+  "counterfactuals": [
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test a defined first-five-minute breakout plus one-minute pressure gate"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Test resistance-proximate exits and moving-average bounce conditions using"
+    },
+    {
+      "timestamp": "UNKNOWN",
+      "type": "REPORT_DERIVED_REPLAY_HYPOTHESIS",
+      "detail": "Treat major scheduled-event avoidance as a regime label, not an autonomous"
+    }
+  ],
+  "hypothesis_references": [
+    "DTS-20250319-P38963-C01",
+    "DTS-20250319-P38963-C02",
+    "DTS-20250319-P38963-C03",
+    "DTS-20250319-P38963-C04",
+    "DTS-20250319-P38963-C05"
+  ],
+  "expected_value_tracking": {
+    "confidence": "LOW",
+    "evidence_count": 5,
+    "current_lifecycle_stage": "SOURCE_DERIVED_HYPOTHESES",
+    "replay_improvement": "PENDING"
+  },
+  "instrumentation_gaps": [
+    "Independent ledger",
+    "Visual chart review",
+    "Executable underlying and option paths",
+    "Greeks, MFE, MAE, slippage, and complete fees"
+  ],
+  "final_governance_decision": "RESEARCH_ONLY_NO_LIVE_BEHAVIOR_CHANGE"
+}
