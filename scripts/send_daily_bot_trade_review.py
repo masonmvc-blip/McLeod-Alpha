@@ -186,6 +186,20 @@ def _review_paths(trading_date: str) -> tuple[Path, Path]:
 
 
 def _subject(trading_date: str) -> str:
+    attribution = _load_json(
+        ATTRIBUTION_DIR / f"daily_loss_attribution_{trading_date}.json"
+    )
+    reconciliation = attribution.get("reconciliation", {})
+    if reconciliation.get("complete") is True:
+        trades = int(reconciliation.get("broker_trades_today") or 0)
+        pnl = float(reconciliation.get("broker_pnl_dollars") or 0.0)
+        return (
+            f"McLeod Alpha Daily Bot Review — {trading_date} | "
+            f"{trades} trades | ${pnl:,.2f}"
+        )
+    if reconciliation:
+        return f"McLeod Alpha Daily Bot Review — {trading_date} | DATA GAP"
+
     learning = _load_json(REPORT_DIR / f"daily_trade_learning_{trading_date}.json")
     overall = learning.get("summary", {}).get("broker_backed", {})
     trades = int(overall.get("trades") or 0)
@@ -369,15 +383,15 @@ def send_review(
 ) -> Path:
     _load_dotenv()
     md_path, html_path = _review_paths(trading_date)
-    if not md_path.exists():
-        generated_review = REPORT_DIR / f"daily_trade_learning_{trading_date}.md"
-        if not generated_review.exists():
-            raise FileNotFoundError(f"Review artifact not found: {md_path}")
+    generated_review = REPORT_DIR / f"daily_trade_learning_{trading_date}.md"
+    if generated_review.exists():
         LEARNING_DIR.mkdir(parents=True, exist_ok=True)
         md_path.write_text(
             generated_review.read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+    elif not md_path.exists():
+        raise FileNotFoundError(f"Review artifact not found: {md_path}")
 
     markdown = _merge_shadow_studies(
         md_path.read_text(encoding="utf-8"),

@@ -108,6 +108,65 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
     assert json.loads(reconciled_events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
+def test_broker_reconciliation_quarantines_proven_duplicate_and_preserves_features(tmp_path):
+    memory = Memory(db_path=tmp_path / "memory.sqlite")
+    duplicate = {
+        **_broker_trade("canceled-limit", "shared-exit"),
+        "entry_time": "2026-07-20T10:00:01-04:00",
+        "feature_payload": '{"checklist": {"passed": 7, "total": 5}}',
+        "entry_diagnostic_snapshot": '{"phase": "ESTABLISHED"}',
+    }
+    broker = {
+        **_broker_trade("actual-market-fill", "shared-exit"),
+        "entry_time": "2026-07-20T10:00:04-04:00",
+        "pnl": 18.67,
+        "pnl_source": "broker_cash",
+    }
+    memory.record_trade(**duplicate)
+
+    assert memory.reconcile_broker_trades([broker]) == 1
+
+    completed = memory.load_completed_trades_for_date("2026-07-20")
+    assert len(completed) == 1
+    assert completed[0]["broker_entry_order_id"] == "actual-market-fill"
+    assert completed[0]["pnl"] == 18.67
+    assert completed[0]["feature_payload"] == duplicate["feature_payload"]
+
+    with sqlite3.connect(memory.db_path) as connection:
+        connection.row_factory = sqlite3.Row
+        trade_rows = connection.execute(
+            "SELECT * FROM trade_log ORDER BY id"
+        ).fetchall()
+        quarantined = connection.execute(
+            "SELECT * FROM trade_log_quarantine"
+        ).fetchall()
+        supersessions = connection.execute(
+            "SELECT * FROM canonical_trade_supersessions"
+        ).fetchall()
+        audit_events = connection.execute(
+            """
+            SELECT * FROM memory_events
+            WHERE event_type = 'broker_duplicate_quarantined'
+            """
+        ).fetchall()
+
+    assert len(trade_rows) == 1
+    assert trade_rows[0]["broker_entry_order_id"] == "actual-market-fill"
+    assert trade_rows[0]["feature_payload"] == duplicate["feature_payload"]
+    assert len(quarantined) == 1
+    assert len(supersessions) == 1
+    assert len(audit_events) == 1
+
+    metrics = memory.load_trade_reconciliation_metrics(
+        "2026-07-20",
+        [broker],
+    )
+    assert metrics["healthy"] is True
+    assert metrics["broker_trades_today"] == 1
+    assert metrics["canonical_completed_trades"] == 1
+    assert metrics["pnl_variance_dollars"] == 0.0
+
+
 def test_legacy_backfill_does_not_overwrite_broker_cash_trade(tmp_path):
     memory = Memory(db_path=tmp_path / "memory.sqlite")
     broker_cash_trade = {**_broker_trade(), "pnl": 18.67, "pnl_source": "broker_cash"}

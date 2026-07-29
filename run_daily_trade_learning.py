@@ -567,6 +567,13 @@ def run_daily_learning(target_date: str | None = None) -> int:
     with sqlite3.connect(str(DB_PATH)) as con:
         con.row_factory = sqlite3.Row
         trading_date = _resolve_target_date(con, target_date)
+
+    # Broker truth and duplicate auditing must finish before any daily rows,
+    # statistics, learning conclusions, or email artifacts are produced.
+    reconciliation = fetch_reconciliation_health(trading_date)
+
+    with sqlite3.connect(str(DB_PATH)) as con:
+        con.row_factory = sqlite3.Row
         rows = _load_day_rows(con, trading_date)
 
     summary = _summarize_rows(rows)
@@ -582,7 +589,7 @@ def run_daily_learning(target_date: str | None = None) -> int:
     loss_attribution = build_loss_attribution(
         load_loss_attribution_rows(DB_PATH, trading_date),
         trading_date=trading_date,
-        reconciliation=fetch_reconciliation_health(trading_date),
+        reconciliation=reconciliation,
     )
     loss_json, loss_md = write_loss_attribution_report(loss_attribution, LOSS_ATTRIBUTION_DIR)
     (

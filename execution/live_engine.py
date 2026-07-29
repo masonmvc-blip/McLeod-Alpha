@@ -3171,6 +3171,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
                 )
                 metrics["market_fallback_wait_ms"] = _elapsed_ms(fallback_wait_start_ms)
                 if filled:
+                    order_id = market_order_id
                     metrics["filled_via"] = "market_fallback"
 
         if not filled:

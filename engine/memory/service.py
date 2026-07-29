@@ -126,6 +126,24 @@ class Memory:
                     UNIQUE (canonical_trade_id, payload_sha256)
                 )
             """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS canonical_trade_supersessions (
+                    superseded_trade_id TEXT PRIMARY KEY,
+                    authoritative_trade_id TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    evidence TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL
+                )
+            """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS trade_log_quarantine (
+                    original_trade_log_id INTEGER PRIMARY KEY,
+                    authoritative_trade_id TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    recorded_at TEXT NOT NULL
+                )
+            """)
             legacy_canonical_rows = connection.execute(
                 """
                 SELECT canonical_trade_id, source, created_at, payload
@@ -325,7 +343,10 @@ class Memory:
                 FROM canonical_completed_trades AS trade
                 JOIN canonical_completed_trade_versions AS version
                     ON version.canonical_trade_id = trade.canonical_trade_id
+                LEFT JOIN canonical_trade_supersessions AS supersession
+                    ON supersession.superseded_trade_id = trade.canonical_trade_id
                 WHERE trade.trade_date BETWEEN ? AND ?
+                  AND supersession.superseded_trade_id IS NULL
                 ORDER BY trade.entry_time ASC, trade.canonical_trade_id ASC, version.canonical_version ASC
                 """,
                 (str(start_date), end_date),
@@ -468,6 +489,7 @@ class Memory:
     def reconcile_broker_trades(self, broker_rows, source="broker_reconciliation"):
         """Idempotently persist broker-paired trades and emit one event per inserted row."""
         self.initialize_live_trade_store()
+        broker_rows = list(broker_rows or ())
         inserted_trades = []
         columns = (
             "entry_time", "exit_time", "direction", "entry_price", "exit_price", "pnl",
@@ -476,7 +498,7 @@ class Memory:
             "broker_exit_order_id", "feature_payload", "entry_diagnostic_snapshot",
             "exit_diagnostic_snapshot",
         )
-        for broker_row in broker_rows or ():
+        for broker_row in broker_rows:
             trade = dict(broker_row or {})
             entry_order_id = str(trade.get("broker_entry_order_id") or "")
             exit_order_id = str(trade.get("broker_exit_order_id") or "")
@@ -486,7 +508,7 @@ class Memory:
             with sqlite3.connect(self.db_path) as connection:
                 exists = connection.execute(
                     """
-                    SELECT 1 FROM trade_log
+                    SELECT id FROM trade_log
                     WHERE COALESCE(broker_entry_order_id, '') = ?
                       AND COALESCE(broker_exit_order_id, '') = ?
                     LIMIT 1
@@ -494,6 +516,26 @@ class Memory:
                     (entry_order_id, exit_order_id),
                 ).fetchone()
             if exists is not None:
+                # Keep the local projection aligned with authoritative broker
+                # cash P&L before any daily summary reads trade_log.
+                with sqlite3.connect(self.db_path) as connection:
+                    connection.execute(
+                        """
+                        UPDATE trade_log
+                        SET option_entry = ?, option_exit = ?,
+                            option_quantity = ?, pnl = ?,
+                            option_pnl_dollars = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            trade.get("option_entry"),
+                            trade.get("option_exit"),
+                            trade.get("option_quantity"),
+                            trade.get("pnl"),
+                            trade.get("pnl"),
+                            exists[0],
+                        ),
+                    )
                 continue
             with sqlite3.connect(self.db_path) as connection:
                 payload = {
@@ -533,7 +575,255 @@ class Memory:
                 {"schema_version": "broker-trade-reconciliation.v1", "trade": trade},
                 correlation_id,
             ))
+        self.audit_broker_duplicate_trades(broker_rows, source=source)
         return len(inserted_trades)
+
+    def audit_broker_duplicate_trades(self, broker_rows, source="broker_reconciliation"):
+        """Quarantine proven duplicate projections while retaining an audit trail."""
+        self.initialize_live_trade_store()
+        broker_rows = [dict(row or {}) for row in broker_rows or ()]
+        broker_by_id = {
+            self._canonical_trade_id(row): row
+            for row in broker_rows
+            if str(row.get("broker_entry_order_id") or "")
+            and str(row.get("broker_exit_order_id") or "")
+        }
+        if not broker_by_id:
+            return 0
+
+        def _number(value):
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        def _near(left, right, tolerance=0.02):
+            a, b = _number(left), _number(right)
+            return a is not None and b is not None and abs(a - b) <= tolerance
+
+        def _seconds_apart(left, right):
+            try:
+                a = datetime.fromisoformat(str(left).replace("Z", "+00:00"))
+                b = datetime.fromisoformat(str(right).replace("Z", "+00:00"))
+                if a.tzinfo is None:
+                    a = a.replace(tzinfo=timezone.utc)
+                if b.tzinfo is None:
+                    b = b.replace(tzinfo=timezone.utc)
+                return abs(
+                    (
+                        a.astimezone(timezone.utc)
+                        - b.astimezone(timezone.utc)
+                    ).total_seconds()
+                )
+            except (TypeError, ValueError):
+                return float("inf")
+
+        with sqlite3.connect(self.db_path) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                """
+                SELECT trade.canonical_trade_id, version.payload
+                FROM canonical_completed_trades AS trade
+                JOIN canonical_completed_trade_versions AS version
+                  ON version.canonical_trade_id = trade.canonical_trade_id
+                LEFT JOIN canonical_trade_supersessions AS supersession
+                  ON supersession.superseded_trade_id = trade.canonical_trade_id
+                WHERE supersession.superseded_trade_id IS NULL
+                  AND version.canonical_version = (
+                    SELECT MAX(v2.canonical_version)
+                    FROM canonical_completed_trade_versions AS v2
+                    WHERE v2.canonical_trade_id = trade.canonical_trade_id
+                  )
+                """
+            ).fetchall()
+
+        canonical = {}
+        for row in rows:
+            try:
+                canonical[str(row["canonical_trade_id"])] = json.loads(
+                    row["payload"]
+                )
+            except (TypeError, json.JSONDecodeError):
+                continue
+
+        repaired = 0
+        for extra_id, extra in canonical.items():
+            if extra_id in broker_by_id:
+                continue
+            exit_id = str(extra.get("broker_exit_order_id") or "")
+            entry_id = str(extra.get("broker_entry_order_id") or "")
+            if not exit_id or not entry_id:
+                continue
+
+            matches = []
+            for authoritative_id, broker in broker_by_id.items():
+                if str(broker.get("broker_exit_order_id") or "") != exit_id:
+                    continue
+                if str(broker.get("broker_entry_order_id") or "") == entry_id:
+                    continue
+                if str(broker.get("option_symbol") or "") != str(
+                    extra.get("option_symbol") or ""
+                ):
+                    continue
+                if str(broker.get("direction") or "").upper() != str(
+                    extra.get("direction") or ""
+                ).upper():
+                    continue
+                if int(_number(broker.get("option_quantity")) or 0) != int(
+                    _number(extra.get("option_quantity")) or 0
+                ):
+                    continue
+                if not _near(
+                    broker.get("option_entry"),
+                    extra.get("option_entry"),
+                ):
+                    continue
+                if not _near(
+                    broker.get("option_exit"),
+                    extra.get("option_exit"),
+                ):
+                    continue
+                if _seconds_apart(
+                    broker.get("entry_time"),
+                    extra.get("entry_time"),
+                ) > 120:
+                    continue
+                matches.append((authoritative_id, broker))
+            if len(matches) != 1:
+                continue
+
+            authoritative_id, broker = matches[0]
+            merged = dict(broker)
+            enrichment_fields = (
+                "feature_payload", "entry_diagnostic_snapshot",
+                "exit_diagnostic_snapshot", "momentum_freshness_score",
+                "momentum_phase", "absorption_score",
+                "option_high_since_entry", "option_low_since_entry",
+                "option_high_timestamp", "option_low_timestamp",
+                "spy_price_at_option_high", "spy_price_at_option_low",
+                "mfe_pct", "mae_pct", "exit_efficiency_pct",
+                "peak_capture_pct", "profit_left_on_table_dollars",
+                "minutes_to_peak", "minutes_after_peak_until_exit",
+                "entry_efficiency_pct", "trade_quality_grade",
+            )
+            for field in enrichment_fields:
+                if (
+                    merged.get(field) in (None, "")
+                    and extra.get(field) not in (None, "")
+                ):
+                    merged[field] = extra.get(field)
+            merged["canonical_trade_id"] = authoritative_id
+            merged["pnl_source"] = "broker_cash"
+
+            evidence = {
+                "schema_version": "broker-duplicate-audit.v1",
+                "superseded_trade_id": extra_id,
+                "authoritative_trade_id": authoritative_id,
+                "superseded_entry_order_id": entry_id,
+                "authoritative_entry_order_id": str(
+                    broker.get("broker_entry_order_id") or ""
+                ),
+                "shared_exit_order_id": exit_id,
+                "option_symbol": str(broker.get("option_symbol") or ""),
+                "reason": "nonbroker_entry_identity_shared_authoritative_exit",
+            }
+            recorded_at = datetime.now(timezone.utc).isoformat()
+
+            with sqlite3.connect(self.db_path) as connection:
+                connection.row_factory = sqlite3.Row
+                authoritative_row = connection.execute(
+                    """
+                    SELECT * FROM trade_log
+                    WHERE COALESCE(broker_entry_order_id, '') = ?
+                      AND COALESCE(broker_exit_order_id, '') = ?
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (
+                        str(broker.get("broker_entry_order_id") or ""),
+                        exit_id,
+                    ),
+                ).fetchone()
+                duplicate_rows = connection.execute(
+                    """
+                    SELECT * FROM trade_log
+                    WHERE COALESCE(broker_entry_order_id, '') = ?
+                      AND COALESCE(broker_exit_order_id, '') = ?
+                    """,
+                    (entry_id, exit_id),
+                ).fetchall()
+                if authoritative_row is None or not duplicate_rows:
+                    continue
+
+                authoritative = dict(authoritative_row)
+                updates = {}
+                for field in enrichment_fields:
+                    if (
+                        authoritative.get(field) in (None, "")
+                        and merged.get(field) not in (None, "")
+                    ):
+                        updates[field] = merged.get(field)
+                if updates:
+                    assignments = ", ".join(
+                        f"{field} = ?" for field in updates
+                    )
+                    connection.execute(
+                        f"UPDATE trade_log SET {assignments} WHERE id = ?",
+                        (*updates.values(), authoritative["id"]),
+                    )
+
+                for duplicate in duplicate_rows:
+                    connection.execute(
+                        """
+                        INSERT OR IGNORE INTO trade_log_quarantine (
+                            original_trade_log_id, authoritative_trade_id,
+                            reason, payload, recorded_at
+                        ) VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (
+                            duplicate["id"],
+                            authoritative_id,
+                            evidence["reason"],
+                            json.dumps(
+                                dict(duplicate),
+                                default=str,
+                                sort_keys=True,
+                            ),
+                            recorded_at,
+                        ),
+                    )
+                    connection.execute(
+                        "DELETE FROM trade_log WHERE id = ?",
+                        (duplicate["id"],),
+                    )
+                connection.execute(
+                    """
+                    INSERT OR IGNORE INTO canonical_trade_supersessions (
+                        superseded_trade_id, authoritative_trade_id,
+                        reason, evidence, recorded_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (
+                        extra_id,
+                        authoritative_id,
+                        evidence["reason"],
+                        json.dumps(evidence, sort_keys=True),
+                        recorded_at,
+                    ),
+                )
+
+            self.upsert_completed_trade(
+                merged,
+                source="broker_duplicate_audit",
+            )
+            self.record_event(MemoryEvent(
+                "trade",
+                "broker_duplicate_quarantined",
+                str(source),
+                evidence,
+                exit_id,
+            ))
+            repaired += 1
+        return repaired
 
     def record_event(self, event: MemoryEvent, *, timeout_seconds: float = 5.0) -> MemoryEvent:
         event = event.normalized()
