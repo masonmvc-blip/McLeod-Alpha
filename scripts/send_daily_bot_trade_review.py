@@ -57,6 +57,7 @@ EMAIL_HIDDEN_SECTION_TITLES.update({
     "Historical Context",
     "Fresh Forward Sample",
     "Locked Evidence Gates",
+    "Session Market Trend — Entry Shadow Test",
 })
 EMAIL_SUPPRESSED_HEADINGS = {
     "Missed Opportunities — Shadow Review",
@@ -623,14 +624,20 @@ def markdown_to_email_html(
         <tr><td class="review" style="padding:18px 28px 28px;line-height:1.52;">
           <style>
             .review h1 {{ display:none; }}
-            .review h2 {{ color:#24487f;font-size:20px;margin:22px 0 10px;border-bottom:1px solid #dce5f2;padding-bottom:7px; }}
+            .review h2 {{ color:#173763;font-size:19px;margin:24px 0 11px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:10px 12px;border-radius:8px; }}
             .review h3 {{ color:#172f58;font-size:16px;margin:18px 0 7px; }}
             .review p {{ margin:9px 0;color:#3d4960;font-size:14px; }}
-            .review ul {{ margin:8px 0 18px;padding-left:21px; }}
-            .review li {{ margin:6px 0;color:#3d4960;font-size:14px; }}
+            .review ul {{ margin:8px 0 18px;padding:11px 14px 11px 32px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:9px; }}
+            .review li {{ margin:7px 0;color:#3d4960;font-size:14px; }}
             .review strong {{ color:#172033; }}
             .review code {{ background:#eef3fa;border-radius:5px;padding:2px 5px;font-size:12px; }}
             .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:9px 12px;border-radius:4px; }}
+            .review tbody tr:nth-child(even) td {{ background:#f4f7fb; }}
+            @media only screen and (max-width:600px) {{
+              .review {{ padding-left:16px !important;padding-right:16px !important; }}
+              .review h2 {{ font-size:17px; }}
+              .review p,.review li {{ font-size:13px; }}
+            }}
           </style>
           {summary_card}
           {trades_image}
@@ -709,6 +716,7 @@ def _reconciliation_label(trading_date: str) -> str:
 
 def _email_markdown(markdown: str) -> str:
     """Apply the lean email view without deleting any underlying learning data."""
+    markdown = _compact_operational_sections(markdown)
     lines = markdown.splitlines()
     cleaned: list[str] = []
     skipped_heading_level: int | None = None
@@ -737,6 +745,86 @@ def _email_markdown(markdown: str) -> str:
             continue
         cleaned.append(raw)
     return "\n".join(cleaned).strip() + "\n"
+
+
+def _section_value(section: str, label: str) -> str:
+    match = re.search(
+        rf"(?m)^-\s+{re.escape(label)}:\s*(.+?)\.?\s*$",
+        section,
+    )
+    return match.group(1).rstrip(".") if match else "Not recorded"
+
+
+def _replace_h2_section(markdown: str, title: str, replacement: str) -> str:
+    pattern = re.compile(
+        rf"(?ms)^##\s+{re.escape(title)}\s*$.*?(?=^##\s+|\Z)"
+    )
+    return pattern.sub(replacement.rstrip() + "\n\n", markdown, count=1)
+
+
+def _compact_operational_sections(markdown: str) -> str:
+    """Create concise email-only control summaries from the full worksheets."""
+    startup_title = "Startup Guard — Daily Assessment"
+    startup_match = re.search(
+        rf"(?ms)^##\s+{re.escape(startup_title)}\s*$.*?(?=^##\s+|\Z)",
+        markdown,
+    )
+    if startup_match:
+        section = startup_match.group(0)
+        decision = _section_value(section, "Today’s recommendation").replace("_", " ")
+        startup = f"""## Startup Guard
+
+- **Setting:** {_section_value(section, "Current setting")}.
+- **Decision:** {decision}.
+- **Today:** {_section_value(section, "Qualified candidates blocked today")} candidates blocked; {_section_value(section, "Prompt same-contract opportunities preserved")} prompt follow-ups preserved; {_section_value(section, "Executable outcome coverage")} executable coverage.
+- **Why:** {_section_value(section, "Rationale")}.
+- **Next:** Keep the live guard unchanged unless human review approves a change after {_section_value(section, "Change gate")}."""
+        markdown = _replace_h2_section(markdown, startup_title, startup)
+
+    cooling_title = "Cooling Period — Daily Assessment"
+    cooling_match = re.search(
+        rf"(?ms)^##\s+{re.escape(cooling_title)}\s*$.*?(?=^##\s+|\Z)",
+        markdown,
+    )
+    if cooling_match:
+        section = cooling_match.group(0)
+        decision = _section_value(section, "Today’s recommendation").replace("_", " ")
+        harmful_reentries = _section_value(section, "Harmful uncooled re-entries")
+        cooling = f"""## Cooling Period
+
+- **Setting:** {_section_value(section, "Current behavior")}.
+- **Decision:** {decision}.
+- **Today:** {_section_value(section, "Cooling blocks observed today")} signals blocked; {_section_value(section, "Profitable opportunities blocked").split(';')[0]} profitable opportunities blocked; {harmful_reentries} harmful uncooled re-entry; {_section_value(section, "Executable blocked-signal coverage")} executable coverage.
+- **Why:** {_section_value(section, "Rationale")}.
+- **Next:** Ensure cooling arms reliably after every confirmed exit; do not change its duration unless human review approves a change after {_section_value(section, "Change gate")}."""
+        markdown = _replace_h2_section(markdown, cooling_title, cooling)
+
+    stop_title = "Protective Stop and Ratchet Reliability"
+    stop_match = re.search(
+        rf"(?ms)^##\s+{re.escape(stop_title)}\s*$.*?(?=^##\s+|\Z)",
+        markdown,
+    )
+    if stop_match:
+        section = stop_match.group(0)
+        stop_activity = re.sub(
+            r"^(\*\*\d+\*\*);\s*broker stop submissions:\s*(\*\*\d+\*\*)$",
+            r"\1 trades; \2 broker stop submissions",
+            _section_value(section, "Trades observed"),
+        )
+        stop_reliability = re.sub(
+            r"^(\*\*\d+\*\*);\s*rejected replacements:\s*(\*\*\d+\*\*);\s*identity recoveries:\s*(\*\*\d+\*\*)$",
+            r"\1 ratchet failures; \2 rejected replacements; \3 identity recoveries",
+            _section_value(section, "Ratchet failures"),
+        )
+        stop = f"""## Protective Stops
+
+- **Status:** Repair required before considering another stop-policy change.
+- **Today:** {stop_activity}.
+- **Reliability:** {stop_reliability}.
+- **Trail rule:** The 4% tier remains a 1%-behind-high synthetic trail armed after +4%.
+- **Next:** Eliminate rejected replacements, submission failures, and protection gaps; require at least 95% broker verification before human review of any policy change."""
+        markdown = _replace_h2_section(markdown, stop_title, stop)
+    return markdown
 
 
 def _merge_shadow_studies(markdown: str, trading_date: str) -> str:

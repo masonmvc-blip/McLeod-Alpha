@@ -2,6 +2,7 @@ from pathlib import Path
 
 from scripts import send_daily_bot_trade_review as review_email
 from scripts.send_daily_bot_trade_review import (
+    _compact_operational_sections,
     _email_markdown,
     _normalize_dollar_markdown,
     _reconciliation_is_sendable,
@@ -120,6 +121,66 @@ def test_email_view_hides_requested_sections_without_altering_source_artifact():
     assert "## Exit Reason Breakdown" in cleaned
     assert "Private learning detail" in source
     assert "Still runs locally" in source
+
+
+def test_email_compacts_controls_and_hides_session_market_trend():
+    source = """## Startup Guard — Daily Assessment
+
+- Current setting: block the first **1** otherwise-qualified entry after startup.
+- Today’s recommendation: **KEEP_AT_ONE**.
+- Rationale: The sample remains too small.
+- Qualified candidates blocked today: **5**.
+- Prompt same-contract opportunities preserved: **2**.
+- Executable outcome coverage: **80.0%**.
+- Change gate: at least **20** decisive setups.
+
+## Cooling Period — Daily Assessment
+
+- Current behavior: skip the next **one signal** after every confirmed exit.
+- Today’s recommendation: **KEEP_AT_ONE**.
+- Rationale: One harmful re-entry occurred without cooling.
+- Cooling blocks observed today: **3**.
+- Profitable opportunities blocked: **2**; losses correctly avoided: **1**.
+- Harmful uncooled re-entries: **1** for **-$134.41**.
+- Executable blocked-signal coverage: **100.0%**.
+- Change gate: at least **20** decisive blocks.
+
+## Session Market Trend — Entry Shadow Test
+
+- Hidden research detail.
+
+## Protective Stop and Ratchet Reliability
+
+- Trades observed: **6**; broker stop submissions: **30**.
+- Ratchet failures: **193**; rejected replacements: **8**; identity recoveries: **0**.
+
+| Trade | Status |
+| --- | --- |
+| one | REVIEW_REQUIRED |
+"""
+    cleaned = _email_markdown(source)
+
+    assert "## Startup Guard" in cleaned
+    assert "**Decision:** **KEEP AT ONE**" in cleaned
+    assert "Qualified candidates blocked today" not in cleaned
+    assert "## Cooling Period" in cleaned
+    assert "Ensure cooling arms reliably" in cleaned
+    assert "losses correctly avoided" not in cleaned
+    assert "Session Market Trend" not in cleaned
+    assert "Hidden research detail" not in cleaned
+    assert "## Protective Stops" in cleaned
+    assert "**Status:** Repair required" in cleaned
+    assert "| Trade | Status |" not in cleaned
+    assert "Ratchet failures" not in cleaned
+    assert "193" in cleaned
+
+
+def test_compact_operational_sections_does_not_mutate_full_report_text():
+    source = "## Startup Guard — Daily Assessment\n\n- Current setting: **1**.\n"
+    compacted = _compact_operational_sections(source)
+
+    assert "## Startup Guard — Daily Assessment" in source
+    assert "## Startup Guard\n" in compacted
 
 
 def test_email_currency_normalization_formats_monetary_tables_and_signals():
