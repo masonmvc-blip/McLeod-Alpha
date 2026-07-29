@@ -35,6 +35,8 @@ from reports.missed_opportunities_shadow_report import (
 )
 from reports.startup_guard_review import write_startup_guard_review
 from reports.cooling_period_review import write_cooling_period_review
+from reports.market_trend_shadow_report import write_market_trend_shadow_report
+from reports.stop_execution_review import write_stop_execution_review
 
 
 WORKSPACE = Path(__file__).parent
@@ -625,6 +627,17 @@ def run_daily_learning(target_date: str | None = None) -> int:
         root=WORKSPACE,
         reconciliation_complete=bool(loss_attribution["reconciliation"]["complete"]),
     )
+    (
+        market_trend_shadow,
+        market_trend_shadow_json,
+        market_trend_shadow_csv,
+        market_trend_shadow_md,
+    ) = write_market_trend_shadow_report(trading_date, root=WORKSPACE)
+    (
+        stop_execution_review,
+        stop_execution_json,
+        stop_execution_md,
+    ) = write_stop_execution_review(trading_date, root=WORKSPACE)
     if not loss_attribution["reconciliation"]["complete"]:
         lessons = [{
             "priority": "high",
@@ -665,6 +678,8 @@ def run_daily_learning(target_date: str | None = None) -> int:
         "missed_opportunities_shadow": missed_opportunities_shadow,
         "startup_guard_review": startup_guard_review,
         "cooling_period_review": cooling_period_review,
+        "market_trend_shadow": market_trend_shadow,
+        "stop_execution_review": stop_execution_review,
     }
 
     day_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -682,6 +697,10 @@ def run_daily_learning(target_date: str | None = None) -> int:
         handle.write(startup_guard_md.read_text(encoding="utf-8"))
         handle.write("\n")
         handle.write(cooling_period_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(market_trend_shadow_md.read_text(encoding="utf-8"))
+        handle.write("\n")
+        handle.write(stop_execution_md.read_text(encoding="utf-8"))
     _write_daily_csv(day_csv, rows)
 
     (LEARNING_DIR / "latest_daily_trade_learning.json").write_text(
@@ -735,6 +754,11 @@ def run_daily_learning(target_date: str | None = None) -> int:
     print(f"Wrote: {startup_guard_md}")
     print(f"Wrote: {cooling_period_json}")
     print(f"Wrote: {cooling_period_md}")
+    print(f"Wrote: {market_trend_shadow_json}")
+    print(f"Wrote: {market_trend_shadow_csv}")
+    print(f"Wrote: {market_trend_shadow_md}")
+    print(f"Wrote: {stop_execution_json}")
+    print(f"Wrote: {stop_execution_md}")
     print(f"Scale decision: {scale_decision.get('decision')} | +1 allowed={scale_decision.get('increase_allowed')}")
 
     # model_evaluator currently returns a payload without explicit status;

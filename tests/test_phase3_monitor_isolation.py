@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+import pytest
 
 from engine.brain import Brain
 
@@ -118,6 +119,12 @@ def test_session_market_trend_uses_today_open_and_session_vwap():
     )
 
     assert module._session_market_trend(candles) == "BULL_TREND"
+    snapshot = module._session_market_trend_snapshot(candles)
+    assert snapshot["trend"] == "BULL_TREND"
+    assert snapshot["session_open"] == 100.0
+    assert snapshot["session_close"] == 100.7
+    assert snapshot["session_candle_count"] == 3
+    assert snapshot["close_vs_open_dollars"] == pytest.approx(0.7)
     candles.loc[candles.index[-1], "close"] = 99.8
     assert module._session_market_trend(candles) == "BEAR_TREND"
 

@@ -112,6 +112,18 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
             / "daily_trade_learning"
             / f"missed_opportunities_shadow_{trade_date}.json",
         ),
+        (
+            "Session Market Trend Shadow",
+            reports_dir
+            / "daily_trade_learning"
+            / f"market_trend_shadow_{trade_date}.json",
+        ),
+        (
+            "Protective Stop Reliability",
+            reports_dir
+            / "daily_trade_learning"
+            / f"stop_execution_review_{trade_date}.json",
+        ),
         ("Research Validation", reports_dir / "validation_dashboard.json"),
         ("Daily Research Advisory", reports_dir / f"daily_research_advisory_{trade_date}.json"),
     ]

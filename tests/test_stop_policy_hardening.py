@@ -559,6 +559,110 @@ def test_live_ratchet_does_not_wait_for_recent_stop_health_check(monkeypatch):
     assert submitted["existing_stop_order_id"] == "existing-stop"
     assert pos.protective_stop_order_id == "replacement-stop"
     assert pos.active_stop_reason == "4% Stop"
+    assert live_engine._last_protective_stop_check_epoch == 0.0
+
+
+def test_rejected_replacement_recovers_still_working_prior_stop(monkeypatch):
+    pos = _live_position()
+    pos.option_stop = 6.16
+    pos.protective_stop_price = 6.16
+    pos.protective_stop_order_id = "rejected-replacement"
+    live_engine.current_position = pos
+
+    rejected = Mock()
+    rejected.raise_for_status.return_value = None
+    rejected.json.return_value = {
+        "orderId": "rejected-replacement",
+        "orderType": "STOP",
+        "status": "REJECTED",
+        "stopPrice": 6.16,
+        "orderLegCollection": [{
+            "instruction": "SELL_TO_CLOSE",
+            "instrument": {
+                "assetType": "OPTION",
+                "symbol": pos.option_symbol,
+            },
+        }],
+    }
+    listing = Mock()
+    listing.raise_for_status.return_value = None
+    listing.json.return_value = [{
+        "orderId": "still-working-prior",
+        "orderType": "STOP",
+        "status": "WORKING",
+        "stopPrice": 6.01,
+        "orderLegCollection": [{
+            "instruction": "SELL_TO_CLOSE",
+            "instrument": {
+                "assetType": "OPTION",
+                "symbol": pos.option_symbol,
+            },
+        }],
+    }]
+    client = Mock()
+    client.get_order.return_value = rejected
+    client.get_orders_for_account.return_value = listing
+    monkeypatch.setattr(live_engine, "_schwab_client", client)
+    monkeypatch.setattr(live_engine, "_schwab_account_hash", "account-hash")
+
+    saved = []
+    events = []
+    monkeypatch.setattr(live_engine, "save_position", lambda position: saved.append(position.option_stop))
+    monkeypatch.setattr(
+        live_engine,
+        "record_stop_event",
+        lambda event_type, **payload: events.append((event_type, payload)),
+    )
+
+    assert live_engine._has_active_protective_stop_order(pos.option_symbol) is True
+    assert pos.protective_stop_order_id == "still-working-prior"
+    assert pos.protective_stop_price == pytest.approx(6.01)
+    assert pos.option_stop == pytest.approx(6.01)
+    assert saved == [pytest.approx(6.01)]
+    assert any(event[0] == "protective_stop_identity_recovered" for event in events)
+
+
+def test_four_percent_trail_submits_three_cent_improvement(monkeypatch):
+    pos = _live_position()
+    pos.option_stop = 5.31
+    pos.protective_stop_price = 5.31
+    pos.option_initial_stop = 4.75
+    pos.protective_stop_order_id = "existing-stop"
+    live_engine.current_position = pos
+
+    submitted = {}
+    monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
+    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
+    monkeypatch.setattr(live_engine, "STOP_RATCHET_MIN_IMPROVEMENT_DOLLARS", 0.03)
+    monkeypatch.setattr(live_engine, "STOP_RATCHET_MIN_INTERVAL_SECONDS", 2.0)
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **kwargs: (
+            submitted.update(kwargs) or "replacement-stop",
+            kwargs["stop_price_override"],
+        ),
+    )
+    monkeypatch.setattr(live_engine, "record_stop_event", lambda *_args, **_kwargs: None)
+    live_engine._last_protective_stop_check_epoch = live_engine.time.time()
+    live_engine._last_protective_stop_check_ok = True
+    live_engine._last_protective_stop_submission_epoch = 0.0
+
+    live_engine.manage_trade(
+        current_price=500.0,
+        option_mark=5.40,
+        option_bid=5.40,
+        quote_metadata={
+            "bid": 5.40,
+            "ask": 5.42,
+            "quote_spread_pct": 0.37,
+            "quote_age_seconds": 0.1,
+        },
+    )
+
+    assert submitted["stop_price_override"] == pytest.approx(5.346)
+    assert pos.option_stop == pytest.approx(5.346)
 
 
 def test_live_ratchet_skips_wide_quote_without_weakening_existing_stop(monkeypatch):

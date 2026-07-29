@@ -29,6 +29,8 @@ RESEARCH_SCHEMA_FIELDS = (
     "adx_slope_1",
     "adx_trend",
     "shadow_market_state",
+    "session_market_trend",
+    "session_trend_relationship",
 )
 FEATURE_SCHEMA_HASH = hashlib.sha256(
     json.dumps({"feature_schema": RESEARCH_SCHEMA_VERSION, "fields": RESEARCH_SCHEMA_FIELDS}, sort_keys=True).encode("utf-8")
@@ -38,6 +40,20 @@ _NEGATIVE_REASON_KEYS = {
     "volume_weakening_bullish_move",
     "volume_weakening_bearish_move",
 }
+
+
+def _session_trend_relationship(direction: str, session_market_trend: str) -> str:
+    direction = str(direction or "").upper()
+    trend = str(session_market_trend or "UNKNOWN").upper()
+    expected = "BULL_TREND" if direction == "CALL" else "BEAR_TREND"
+    opposed = "BEAR_TREND" if direction == "CALL" else "BULL_TREND"
+    if trend == expected:
+        return "ALIGNED"
+    if trend == "NEUTRAL":
+        return "NEUTRAL"
+    if trend == opposed:
+        return "OPPOSED"
+    return "UNKNOWN"
 
 
 def _blocker_code(reason: Any) -> str:
@@ -691,6 +707,17 @@ def _build_setup_record(
         score=score,
         entry_threshold=entry_threshold,
     )
+    session_snapshot = feature_payload.get("session_market_trend_snapshot")
+    session_snapshot = session_snapshot if isinstance(session_snapshot, dict) else {}
+    session_market_trend = str(
+        feature_payload.get("session_market_trend")
+        or session_snapshot.get("trend")
+        or "UNKNOWN"
+    ).upper()
+    session_trend_relationship = _session_trend_relationship(
+        direction,
+        session_market_trend,
+    )
 
     record = {
         "event_id": f"{candle_time_et}|{direction}",
@@ -715,6 +742,18 @@ def _build_setup_record(
         "rejected": not bool(entered),
         "rejection_reason": rejection_reason,
         "market_regime": regime,
+        "session_market_trend": session_market_trend,
+        "session_market_trend_snapshot": session_snapshot,
+        "session_trend_relationship": session_trend_relationship,
+        "session_trend_shadow_policies": {
+            "current_baseline_would_admit": True,
+            "aligned_or_neutral_would_admit": (
+                session_trend_relationship in {"ALIGNED", "NEUTRAL"}
+            ),
+            "aligned_only_would_admit": session_trend_relationship == "ALIGNED",
+            "research_only": True,
+            "automatic_live_change_allowed": False,
+        },
         "day_trade_spy_shadow_suite": day_trade_spy_shadow_suite,
     }
 

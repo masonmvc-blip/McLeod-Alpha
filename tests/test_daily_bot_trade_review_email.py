@@ -47,9 +47,13 @@ def test_review_email_script_uses_repo_data_paths():
     assert "missed_opportunities_shadow" in source
     assert "startup_guard_review" in source
     assert "cooling_period_review" in source
+    assert "market_trend_shadow" in source
+    assert "stop_execution_review" in source
     assert "day_trade_spy_shadow" in source
     assert "day_trade_spy_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
     assert "missed_opportunities_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
+    assert "market_trend_shadow" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
+    assert "stop_execution_review" in Path("run_daily_trade_learning.py").read_text(encoding="utf-8")
 
 
 def test_smtp_uses_working_email_credentials(monkeypatch):

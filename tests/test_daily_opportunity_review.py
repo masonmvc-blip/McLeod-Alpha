@@ -79,6 +79,63 @@ def test_logger_timestamps_are_eastern(tmp_path, monkeypatch):
     assert call_row["option_quote_snapshot"]["quote_provenance"] == "cached_live_option_chain"
 
 
+def test_logger_preserves_session_trend_and_policy_relationship(tmp_path, monkeypatch):
+    monkeypatch.setattr("execution.opportunity_logger.OPPORTUNITY_LOG_DIR", tmp_path)
+    frame = _sample_df()
+    session_snapshot = {
+        "trend": "NEUTRAL",
+        "session_open": 600.0,
+        "session_close": 600.5,
+        "session_vwap": 600.5,
+        "close_vs_open_dollars": 0.5,
+        "close_vs_vwap_dollars": 0.0,
+        "session_candle_count": 5,
+        "provenance": "completed_regular_session_candles",
+    }
+
+    log_evaluated_setups(
+        last=frame.iloc[-1],
+        prev=frame.iloc[-2],
+        df=frame,
+        regime="BULL_TREND",
+        call_score=5,
+        call_reasons=["bull_ema_stack"],
+        put_score=1,
+        put_reasons=[],
+        entry_threshold=5,
+        allow_entry=True,
+        in_position=False,
+        in_market_hours=True,
+        entered_call=True,
+        entered_put=False,
+        feature_payload={
+            "session_market_trend": "NEUTRAL",
+            "session_market_trend_snapshot": session_snapshot,
+        },
+        selected_option_call={
+            "symbol": "SPY_260717C00600000",
+            "bid": 4.95,
+            "ask": 5.00,
+        },
+    )
+
+    rows = [
+        json.loads(line)
+        for line in (tmp_path / "opportunity_setups_2026-07-17.jsonl").read_text().splitlines()
+    ]
+    call = next(row for row in rows if row["direction"] == "CALL")
+    assert call["session_market_trend"] == "NEUTRAL"
+    assert call["session_trend_relationship"] == "NEUTRAL"
+    assert call["session_market_trend_snapshot"] == session_snapshot
+    assert call["session_trend_shadow_policies"] == {
+        "current_baseline_would_admit": True,
+        "aligned_or_neutral_would_admit": True,
+        "aligned_only_would_admit": False,
+        "research_only": True,
+        "automatic_live_change_allowed": False,
+    }
+
+
 def test_logger_preserves_blocked_candidate_plan(tmp_path, monkeypatch):
     monkeypatch.setattr("execution.opportunity_logger.OPPORTUNITY_LOG_DIR", tmp_path)
     frame = _sample_df()

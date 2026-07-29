@@ -250,6 +250,9 @@ def _log_shadow_opportunities(
                 directional_payloads[direction] = {}
 
         combined_payload = dict(payload)
+        session_market_trend_snapshot = _session_market_trend_snapshot(completed_candles)
+        combined_payload["session_market_trend"] = session_market_trend_snapshot["trend"]
+        combined_payload["session_market_trend_snapshot"] = session_market_trend_snapshot
         field_map = {
             "trend_stage": "trend_stage",
             "continuation_quality": "continuation_quality",
@@ -1213,16 +1216,26 @@ def score_closed_candle_frame(candles):
     }
 
 
-def _session_market_trend(candles):
-    """Classify the regular-session direction from today's completed candles."""
+def _session_market_trend_snapshot(candles):
+    """Return the completed-candle session trend and its immutable inputs."""
+    unavailable = {
+        "trend": "NEUTRAL",
+        "session_open": None,
+        "session_close": None,
+        "session_vwap": None,
+        "close_vs_open_dollars": None,
+        "close_vs_vwap_dollars": None,
+        "session_candle_count": 0,
+        "provenance": "completed_regular_session_candles",
+    }
     if candles is None or len(candles) < 2:
-        return "NEUTRAL"
+        return unavailable
 
     local = candles.copy()
     local.index = pd.to_datetime(local.index, errors="coerce", utc=True)
     local = local[~local.index.isna()]
     if local.empty or any(column not in local.columns for column in ("open", "high", "low", "close", "volume")):
-        return "NEUTRAL"
+        return unavailable
 
     et_index = local.index.tz_convert(EASTERN_TZ)
     session_date = et_index[-1].date()
@@ -1233,21 +1246,42 @@ def _session_market_trend(candles):
     )
     session = local.loc[session_mask]
     if len(session) < 2:
-        return "NEUTRAL"
+        return {
+            **unavailable,
+            "session_candle_count": int(len(session)),
+        }
 
     typical_price = (session["high"].astype(float) + session["low"].astype(float) + session["close"].astype(float)) / 3.0
     cumulative_volume = session["volume"].astype(float).cumsum()
     if float(cumulative_volume.iloc[-1]) <= 0:
-        return "NEUTRAL"
+        return {
+            **unavailable,
+            "session_candle_count": int(len(session)),
+        }
     session_vwap = float((typical_price * session["volume"].astype(float)).cumsum().iloc[-1] / cumulative_volume.iloc[-1])
     session_open = float(session["open"].iloc[0])
     session_close = float(session["close"].iloc[-1])
 
+    trend = "NEUTRAL"
     if session_close > session_open and session_close > session_vwap:
-        return "BULL_TREND"
-    if session_close < session_open and session_close < session_vwap:
-        return "BEAR_TREND"
-    return "NEUTRAL"
+        trend = "BULL_TREND"
+    elif session_close < session_open and session_close < session_vwap:
+        trend = "BEAR_TREND"
+    return {
+        "trend": trend,
+        "session_open": round(session_open, 6),
+        "session_close": round(session_close, 6),
+        "session_vwap": round(session_vwap, 6),
+        "close_vs_open_dollars": round(session_close - session_open, 6),
+        "close_vs_vwap_dollars": round(session_close - session_vwap, 6),
+        "session_candle_count": int(len(session)),
+        "provenance": "completed_regular_session_candles",
+    }
+
+
+def _session_market_trend(candles):
+    """Classify the regular-session direction from today's completed candles."""
+    return _session_market_trend_snapshot(candles)["trend"]
 
 
 def _directional_spy_run(candles):
@@ -1409,11 +1443,14 @@ def _build_entry_feature_payload(completed_candles, direction, regime, call_scor
         stage,
     )
     lifecycle_v2_shadow = classify_trend_lifecycle_v2(frame, direction)
+    session_market_trend_snapshot = _session_market_trend_snapshot(frame)
 
     return json.dumps({
         "captured_at": datetime.now(EASTERN_TZ).isoformat(),
         "direction": direction,
         "regime": regime,
+        "session_market_trend": session_market_trend_snapshot["trend"],
+        "session_market_trend_snapshot": session_market_trend_snapshot,
         "checklist": {
             "call_score": call_score,
             "put_score": put_score,

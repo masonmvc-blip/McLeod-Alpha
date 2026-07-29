@@ -269,6 +269,24 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             )
         except Exception as exc:
             print(f"Cooling period review warning: {exc}")
+    market_trend_path = REPORT_DIR / f"market_trend_shadow_{trading_date}.md"
+    if not market_trend_path.exists():
+        try:
+            from reports.market_trend_shadow_report import (
+                write_market_trend_shadow_report,
+            )
+
+            write_market_trend_shadow_report(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Market trend shadow report warning: {exc}")
+    stop_execution_path = REPORT_DIR / f"stop_execution_review_{trading_date}.md"
+    if not stop_execution_path.exists():
+        try:
+            from reports.stop_execution_review import write_stop_execution_review
+
+            write_stop_execution_review(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Stop execution review warning: {exc}")
 
     headings = (
         "## Trend Lifecycle V2 Shadow Review",
@@ -277,6 +295,8 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
         "## Missed Opportunities — Shadow Review",
         "## Startup Guard — Daily Assessment",
         "## Cooling Period — Daily Assessment",
+        "## Session Market Trend — Entry Shadow Test",
+        "## Protective Stop and Ratchet Reliability",
     )
     positions = [markdown.find(heading) for heading in headings if heading in markdown]
     if positions:
@@ -290,6 +310,8 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             missed_opportunities_path,
             startup_guard_path,
             cooling_period_path,
+            market_trend_path,
+            stop_execution_path,
         )
         if path.exists()
     ]
