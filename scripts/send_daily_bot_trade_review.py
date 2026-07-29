@@ -214,6 +214,8 @@ def _attachments(trading_date: str, md_path: Path) -> list[Path]:
         REPORT_DIR / f"entry_quality_shadow_{trading_date}.csv",
         REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.json",
         REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.csv",
+        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.json",
+        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.csv",
     ]
     return [path for path in candidates if path.exists()]
 
@@ -247,18 +249,35 @@ def _merge_shadow_studies(markdown: str, trading_date: str) -> str:
             write_day_trade_spy_shadow_report(trading_date, root=ROOT)
         except Exception as exc:
             print(f"Day Trade SPY shadow report warning: {exc}")
+    missed_opportunities_path = (
+        REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.md"
+    )
+    if not missed_opportunities_path.exists():
+        try:
+            from reports.missed_opportunities_shadow_report import (
+                write_missed_opportunities_shadow_report,
+            )
+            write_missed_opportunities_shadow_report(trading_date, root=ROOT)
+        except Exception as exc:
+            print(f"Missed opportunities shadow report warning: {exc}")
 
     headings = (
         "## Trend Lifecycle V2 Shadow Review",
         "## Entry Quality Shadow Studies",
         "## Day Trade SPY Five-Test Shadow Review",
+        "## Missed Opportunities — Shadow Review",
     )
     positions = [markdown.find(heading) for heading in headings if heading in markdown]
     if positions:
         markdown = markdown[:min(positions)].rstrip()
     sections = [
         path.read_text(encoding="utf-8").strip()
-        for path in (lifecycle_path, entry_quality_path, day_trade_spy_path)
+        for path in (
+            lifecycle_path,
+            entry_quality_path,
+            day_trade_spy_path,
+            missed_opportunities_path,
+        )
         if path.exists()
     ]
     if not sections:

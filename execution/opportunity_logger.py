@@ -87,18 +87,14 @@ def _extract_positives_and_penalties(reasons: List[str]) -> tuple[List[str], Lis
 
 
 def _extract_snapshot_metric(feature_payload: Dict[str, Any], direction: str, base_key: str) -> Any:
-    direct = feature_payload.get(base_key)
-    if direct is not None:
-        return direct
-
     suffix = "call" if direction == "CALL" else "put"
     key = f"{base_key}_{suffix}"
     if key in feature_payload:
         return feature_payload.get(key)
 
-    obj = feature_payload.get(key)
-    if isinstance(obj, dict):
-        return obj.get("score")
+    direct = feature_payload.get(base_key)
+    if direct is not None:
+        return direct
 
     return None
 
@@ -423,6 +419,37 @@ def _extract_option_symbol(option_obj: Any) -> str | None:
     return _safe_str(option_obj)
 
 
+def _extract_option_snapshot(option_obj: Any) -> Dict[str, Any] | None:
+    if not isinstance(option_obj, dict):
+        return None
+    snapshot = {
+        "symbol": _extract_option_symbol(option_obj),
+        "bid": _safe_float(option_obj.get("bid")),
+        "ask": _safe_float(option_obj.get("ask")),
+        "mark": _safe_float(option_obj.get("mark")),
+        "last": _safe_float(option_obj.get("last")),
+        "strike": _safe_float(option_obj.get("strike")),
+        "volume": _safe_float(
+            option_obj.get("volume")
+            if option_obj.get("volume") is not None
+            else option_obj.get("totalVolume")
+        ),
+        "open_interest": _safe_float(
+            option_obj.get("open_interest")
+            if option_obj.get("open_interest") is not None
+            else option_obj.get("openInterest")
+        ),
+        "spread": _safe_float(option_obj.get("spread")),
+        "spread_pct": _safe_float(option_obj.get("spread_pct")),
+    }
+    if not snapshot["symbol"]:
+        return None
+    snapshot["entry_executable_price"] = snapshot["ask"]
+    snapshot["future_exit_executable_price_field"] = "bid"
+    snapshot["quote_provenance"] = "cached_live_option_chain"
+    return snapshot
+
+
 def _research_envelope(*, market_state: Dict[str, Any], direction: str, regime: str, score: int, entry_threshold: int, entered: bool, feature_hash: str) -> Dict[str, Any]:
     required_regime = "BULL_TREND" if direction == "CALL" else "BEAR_TREND"
     return {
@@ -501,7 +528,10 @@ def _build_setup_record(
         "candle_time_et": candle_time_et,
         "direction": direction,
         "spy_price": spy_price,
+        "score": int(score),
+        "entry_threshold": int(entry_threshold),
         "option_selected": _extract_option_symbol(selected_option),
+        "option_quote_snapshot": _extract_option_snapshot(selected_option),
         "stage": stage,
         "cq": cq,
         "mas": mas,
@@ -561,6 +591,7 @@ def log_evaluated_setups(
     selected_option_put: Any = None,
     blocked_entry: Dict[str, Any] | None = None,
     day_trade_spy_shadow_suites: Dict[str, Dict[str, Any]] | None = None,
+    option_watch_quotes: List[Dict[str, Any]] | None = None,
 ) -> None:
     payload = feature_payload or {}
     market_state = classify_market_state(df)
@@ -590,6 +621,7 @@ def log_evaluated_setups(
         selected_option=selected_option_call,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("CALL"),
     )
+    call_record["option_watch_quotes"] = list(option_watch_quotes or [])
     call_record["shadow_market_state"] = market_state
     if blocked_entry and blocked_entry.get("direction") == "CALL":
         call_record.update({
@@ -628,6 +660,7 @@ def log_evaluated_setups(
         selected_option=selected_option_put,
         day_trade_spy_shadow_suite=(day_trade_spy_shadow_suites or {}).get("PUT"),
     )
+    put_record["option_watch_quotes"] = list(option_watch_quotes or [])
     put_record["shadow_market_state"] = market_state
     if blocked_entry and blocked_entry.get("direction") == "PUT":
         put_record.update({

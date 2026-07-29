@@ -1,4 +1,5 @@
 from execution.option_selector import (
+    find_option_contract,
     find_option_bid,
     find_option_mark,
     option_selection_block_reason,
@@ -70,6 +71,7 @@ _LAST_HISTORY_FETCH_MINUTE = None
 OPTION_CHAIN_CACHE_REFRESH_SECONDS = max(1.0, float(os.getenv("OPTION_CHAIN_CACHE_REFRESH_SECONDS", "10")))
 _LAST_OPTION_CHAIN_REFRESH_EPOCH = 0.0
 _CACHED_OPTION_CHAIN = None
+_MISSED_OPPORTUNITY_OPTION_WATCHLIST = {}
 LATENCY_METRICS_ENABLED = str(os.getenv("LATENCY_METRICS_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
 LATENCY_METRICS_PATH = Path(os.getenv("LATENCY_METRICS_PATH", "data/reports/latency_cycle_history.jsonl"))
 DECISION_AUDIT_ENABLED = str(os.getenv("DECISION_AUDIT_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
@@ -186,13 +188,88 @@ def _log_shadow_opportunities(
 ):
     """Capture evaluated setups as non-blocking research telemetry."""
     try:
+        if _CACHED_OPTION_CHAIN:
+            underlying_price = float(getattr(last, "close", 0.0) or 0.0)
+            if selected_option_call is None:
+                selected_option_call = select_option_from_chain(
+                    _CACHED_OPTION_CHAIN,
+                    "CALL",
+                    underlying_price,
+                    emit_log=False,
+                )
+            if selected_option_put is None:
+                selected_option_put = select_option_from_chain(
+                    _CACHED_OPTION_CHAIN,
+                    "PUT",
+                    underlying_price,
+                    emit_log=False,
+                )
+        candle_at = pd.to_datetime(getattr(last, "name", None), utc=True, errors="coerce")
+        if pd.isna(candle_at):
+            candle_at = pd.Timestamp.now(tz="UTC")
+        watch_until = candle_at + pd.Timedelta(minutes=16)
+        for option in (selected_option_call, selected_option_put):
+            if isinstance(option, dict) and option.get("symbol"):
+                _MISSED_OPPORTUNITY_OPTION_WATCHLIST[str(option["symbol"])] = watch_until
+        for symbol, expires_at in list(_MISSED_OPPORTUNITY_OPTION_WATCHLIST.items()):
+            if candle_at > expires_at:
+                _MISSED_OPPORTUNITY_OPTION_WATCHLIST.pop(symbol, None)
+        option_watch_quotes = []
+        if _CACHED_OPTION_CHAIN:
+            for symbol in sorted(_MISSED_OPPORTUNITY_OPTION_WATCHLIST):
+                contract = find_option_contract(_CACHED_OPTION_CHAIN, symbol)
+                if isinstance(contract, dict):
+                    option_watch_quotes.append({
+                        "symbol": symbol,
+                        "bid": contract.get("bid"),
+                        "ask": contract.get("ask"),
+                        "mark": contract.get("mark"),
+                        "last": contract.get("last"),
+                        "quote_provenance": "cached_live_option_chain_watchlist",
+                    })
         payload = json.loads(feature_payload) if isinstance(feature_payload, str) else feature_payload
+        payload = payload if isinstance(payload, dict) else {}
+        directional_payloads = {}
+        for direction in ("CALL", "PUT"):
+            if str(payload.get("direction") or "").upper() == direction:
+                directional_payloads[direction] = payload
+                continue
+            try:
+                directional_payloads[direction] = json.loads(
+                    _build_entry_feature_payload(
+                        completed_candles,
+                        direction,
+                        regime,
+                        call_score,
+                        put_score,
+                        call_reasons,
+                        put_reasons,
+                    )
+                )
+            except Exception:
+                directional_payloads[direction] = {}
+
+        combined_payload = dict(payload)
+        field_map = {
+            "trend_stage": "trend_stage",
+            "continuation_quality": "continuation_quality",
+            "momentum_acceleration": "momentum_acceleration",
+            "trend_efficiency_score": "trend_efficiency",
+            "micro_efficiency_score": "momentum_expansion",
+            "confidence": "confidence_score",
+            "absorption_score": "absorption_score",
+        }
+        for direction, direction_payload in directional_payloads.items():
+            suffix = direction.lower()
+            for destination, source in field_map.items():
+                if source in direction_payload:
+                    combined_payload[f"{destination}_{suffix}"] = direction_payload[source]
         suites = {}
         for direction, option in (
             ("CALL", selected_option_call),
             ("PUT", selected_option_put),
         ):
-            direction_payload = payload if str((payload or {}).get("direction") or "").upper() == direction else {}
+            direction_payload = directional_payloads.get(direction) or {}
             captured_suite = (direction_payload or {}).get("day_trade_spy_shadow_suite")
             suites[direction] = (
                 captured_suite
@@ -227,11 +304,12 @@ def _log_shadow_opportunities(
             in_market_hours=True,
             entered_call=entered_call,
             entered_put=entered_put,
-            feature_payload=payload,
+            feature_payload=combined_payload,
             selected_option_call=selected_option_call,
             selected_option_put=selected_option_put,
             blocked_entry=blocked_entry,
             day_trade_spy_shadow_suites=suites,
+            option_watch_quotes=option_watch_quotes,
         )
     except Exception as exc:
         print(f"Shadow opportunity logging error: {exc}")

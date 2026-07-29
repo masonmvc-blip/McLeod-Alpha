@@ -106,6 +106,12 @@ def build_scheduler_health_dashboard(now_ct: datetime | None = None, reports_dir
     ]
     artifacts = [
         ("Opportunity Review", reports_dir / f"daily_opportunity_review_{trade_date}.json"),
+        (
+            "Missed Opportunities Shadow",
+            reports_dir
+            / "daily_trade_learning"
+            / f"missed_opportunities_shadow_{trade_date}.json",
+        ),
         ("Research Validation", reports_dir / "validation_dashboard.json"),
         ("Daily Research Advisory", reports_dir / f"daily_research_advisory_{trade_date}.json"),
     ]

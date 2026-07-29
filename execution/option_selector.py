@@ -25,26 +25,28 @@ def get_closest_strike(strikes, spy_price):
     return min(strikes.keys(), key=lambda strike: abs(float(strike) - spy_price))
 
 
-def select_option_from_chain(data, direction, spy_price):
+def select_option_from_chain(data, direction, spy_price, *, emit_log=True):
     selected = OPTION_SELECTION_BRAIN.select_option_contract(data, direction, spy_price)
     if selected is None:
-        print(
-            "REJECTED: no option passed executable bid-ask/spread liquidity filters "
-            f"(minimum volume: {MIN_OPTION_DAILY_VOLUME}; "
-            f"open-interest fallback: {OPTION_MIN_OPEN_INTEREST})"
-        )
+        if emit_log:
+            print(
+                "REJECTED: no option passed executable bid-ask/spread liquidity filters "
+                f"(minimum volume: {MIN_OPTION_DAILY_VOLUME}; "
+                f"open-interest fallback: {OPTION_MIN_OPEN_INTEREST})"
+            )
         return None
 
-    print(
-        f"SELECTED HIGHEST-VOLUME OPTION: "
-        f"{selected['symbol']} | "
-        f"Volume={selected['volume']} | "
-        f"Open interest={selected['open_interest']} | "
-        f"Bid={selected['bid']:.2f} | "
-        f"Ask={selected['ask']:.2f} | "
-        f"Spread=${selected['spread']:.2f} "
-        f"({selected['spread_pct']:.1f}%)"
-    )
+    if emit_log:
+        print(
+            f"SELECTED HIGHEST-VOLUME OPTION: "
+            f"{selected['symbol']} | "
+            f"Volume={selected['volume']} | "
+            f"Open interest={selected['open_interest']} | "
+            f"Bid={selected['bid']:.2f} | "
+            f"Ask={selected['ask']:.2f} | "
+            f"Spread=${selected['spread']:.2f} "
+            f"({selected['spread_pct']:.1f}%)"
+        )
 
     return selected
 
@@ -105,4 +107,16 @@ def find_option_mark(data, option_symbol):
                     if contract.get("symbol") == option_symbol:
                         return float(contract.get("mark") or contract.get("last") or 0)
 
+    return None
+
+
+def find_option_contract(data, option_symbol):
+    """Return the current raw chain quote for one exact option symbol."""
+    for chain_name in ["callExpDateMap", "putExpDateMap"]:
+        chain = data.get(chain_name, {})
+        for expiration in chain.values():
+            for contracts in expiration.values():
+                for contract in contracts:
+                    if contract.get("symbol") == option_symbol:
+                        return contract
     return None

@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from execution.opportunity_logger import log_evaluated_setups
+from execution.opportunity_logger import _extract_snapshot_metric, log_evaluated_setups
 import reports.daily_opportunity_review as dor
 
 
@@ -74,6 +74,9 @@ def test_logger_timestamps_are_eastern(tmp_path, monkeypatch):
         assert row["research"]["research_engine_would_trade"] is None
         assert row["research"]["shadow_only"] is True
         assert row["research"]["promotion_eligible"] is False
+    call_row = next(row for row in lines if row["direction"] == "CALL")
+    assert call_row["option_quote_snapshot"]["symbol"] == "SPY_260717C00600000"
+    assert call_row["option_quote_snapshot"]["quote_provenance"] == "cached_live_option_chain"
 
 
 def test_logger_preserves_blocked_candidate_plan(tmp_path, monkeypatch):
@@ -94,6 +97,17 @@ def test_logger_preserves_blocked_candidate_plan(tmp_path, monkeypatch):
     assert call_record["blocked_trade"] is True
     assert call_record["block_reason"] == "entry_paused"
     assert call_record["intended_trade"]["option_mark"] == 4.25
+
+
+def test_directional_shadow_metrics_override_direct_candidate_payload():
+    payload = {
+        "trend_stage": {"label": "ESTABLISHED"},
+        "trend_stage_call": {"label": "EARLY_CONTINUATION"},
+        "trend_stage_put": {"label": "INITIATION"},
+    }
+
+    assert _extract_snapshot_metric(payload, "CALL", "trend_stage")["label"] == "EARLY_CONTINUATION"
+    assert _extract_snapshot_metric(payload, "PUT", "trend_stage")["label"] == "INITIATION"
 
 
 def test_executed_and_rejected_included_once(tmp_path, monkeypatch):
