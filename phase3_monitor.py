@@ -47,6 +47,10 @@ SYMBOL = "SPY"
 LIVE_BRAIN = Brain()
 MARKET_POLL_SECONDS = max(1.0, float(os.getenv("MARKET_POLL_SECONDS", "2")))
 CANDLE_POLL_SECONDS = max(0.05, float(os.getenv("CANDLE_POLL_SECONDS", "0.5")))
+OPEN_POSITION_POLL_SECONDS = max(
+    0.5,
+    float(os.getenv("OPEN_POSITION_POLL_SECONDS", "0.75")),
+)
 OFF_HOURS_POLL_SECONDS = max(MARKET_POLL_SECONDS, float(os.getenv("OFF_HOURS_POLL_SECONDS", "60")))
 TOKEN_PATH = "token.json"
 EASTERN_TZ = ZoneInfo("America/New_York")
@@ -744,7 +748,13 @@ def _manage_open_position_priority():
     except Exception as exc:
         print(f"POSITION MANAGEMENT: option quote unavailable: {exc}")
 
-    manual_exit_requested = _process_manual_exit_command(spy_price, option_mark)
+    manual_exit_requested = _process_manual_exit_command(
+        spy_price,
+        option_mark,
+        option_bid,
+        option_last,
+        quote_metadata,
+    )
     if not manual_exit_requested:
         manage_trade(spy_price, option_mark, option_bid, option_last, quote_metadata)
     return True
@@ -1548,7 +1558,13 @@ def _consume_post_exit_cooling_period():
     get_memory().clear_setting("post_exit_cooling", POST_EXIT_COOLING_PATH)
     return True
 
-def _process_manual_exit_command(current_price, option_mark):
+def _process_manual_exit_command(
+    current_price,
+    option_mark,
+    option_bid=None,
+    option_last=None,
+    quote_metadata=None,
+):
     """Consume Cockpit's pending exit command before normal trade management."""
     try:
         command = get_memory().load_setting(CONTROL_COMMAND_PATH, {}) or {}
@@ -1557,7 +1573,18 @@ def _process_manual_exit_command(current_price, option_mark):
 
     if str(command.get("action") or "").upper() != "EXIT_TRADE":
         return False
-    if str(command.get("status") or "").upper() not in {"PENDING", "RETRYING"}:
+    command_status = str(command.get("status") or "").upper()
+    if command_status == "SUBMITTING":
+        try:
+            last_attempt = datetime.fromisoformat(str(command.get("last_attempt_at") or ""))
+            if last_attempt.tzinfo is None:
+                last_attempt = last_attempt.replace(tzinfo=UTC_TZ)
+            if (datetime.now(UTC_TZ) - last_attempt).total_seconds() < 45:
+                return False
+        except (TypeError, ValueError):
+            pass
+        command_status = "RETRYING"
+    if command_status not in {"PENDING", "RETRYING"}:
         return False
     if not getattr(ENGINE_MODULE, "current_position", None):
         get_memory().clear_setting("control_command", CONTROL_COMMAND_PATH)
@@ -1568,13 +1595,23 @@ def _process_manual_exit_command(current_price, option_mark):
     get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
     print("MANUAL EXIT: submitting immediate full-position market close")
 
-    closed = bool(ENGINE_MODULE.close_trade(
-        float(current_price),
-        "MANUAL_EXIT_MARKET",
-        option_mark,
-        execution_mode="market",
-        fallback_to_market=False,
-    ))
+    try:
+        closed = bool(ENGINE_MODULE.close_trade(
+            float(current_price),
+            "MANUAL_EXIT_MARKET",
+            option_mark,
+            execution_mode="market",
+            fallback_to_market=False,
+            option_bid=option_bid,
+            option_last=option_last,
+            quote_metadata=quote_metadata,
+        ))
+    except Exception as exc:
+        command["status"] = "RETRYING"
+        command["last_error"] = f"Exit attempt raised {type(exc).__name__}; retry remains active"
+        get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
+        print(f"MANUAL EXIT ERROR: {exc}")
+        return False
     if closed:
         command["status"] = "COMPLETED"
         command["completed_at"] = datetime.now(UTC_TZ).isoformat()
@@ -1582,7 +1619,7 @@ def _process_manual_exit_command(current_price, option_mark):
         return True
 
     command["status"] = "RETRYING"
-    command["last_error"] = "Exit was not accepted or filled; protective stop remains active"
+    command["last_error"] = "Schwab has not confirmed a full exit yet; retry remains active"
     get_memory().save_setting("control_command", command, CONTROL_COMMAND_PATH)
     return False
 
@@ -1725,6 +1762,11 @@ def open_trade(*args, **kwargs):
         "quote_compute_ms": engine_metrics.get("quote_compute_ms"),
         "submit_order_ms": engine_metrics.get("submit_order_ms"),
         "wait_fill_ms": engine_metrics.get("wait_fill_ms"),
+        "reprice_submit_ms": engine_metrics.get("reprice_submit_ms"),
+        "reprice_wait_ms": engine_metrics.get("reprice_wait_ms"),
+        "initial_limit_price": engine_metrics.get("initial_limit_price"),
+        "final_limit_price": engine_metrics.get("final_limit_price"),
+        "entry_price_cap": engine_metrics.get("entry_price_cap"),
         "market_fallback_submit_ms": engine_metrics.get("market_fallback_submit_ms"),
         "market_fallback_wait_ms": engine_metrics.get("market_fallback_wait_ms"),
         "protective_stop_ms": engine_metrics.get("protective_stop_ms"),
@@ -2060,6 +2102,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "quote_compute_ms": LAST_ENTRY_EXECUTION_METRICS.get("quote_compute_ms"),
             "submit_order_ms": LAST_ENTRY_EXECUTION_METRICS.get("submit_order_ms"),
             "wait_fill_ms": LAST_ENTRY_EXECUTION_METRICS.get("wait_fill_ms"),
+            "reprice_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("reprice_submit_ms"),
+            "reprice_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("reprice_wait_ms"),
+            "initial_limit_price": LAST_ENTRY_EXECUTION_METRICS.get("initial_limit_price"),
+            "final_limit_price": LAST_ENTRY_EXECUTION_METRICS.get("final_limit_price"),
+            "entry_price_cap": LAST_ENTRY_EXECUTION_METRICS.get("entry_price_cap"),
             "market_fallback_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_submit_ms"),
             "market_fallback_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_wait_ms"),
             "protective_stop_ms": LAST_ENTRY_EXECUTION_METRICS.get("protective_stop_ms"),
@@ -2213,6 +2260,11 @@ def maybe_enter_trade(last, prev, regime, completed_candles):
             "quote_compute_ms": LAST_ENTRY_EXECUTION_METRICS.get("quote_compute_ms"),
             "submit_order_ms": LAST_ENTRY_EXECUTION_METRICS.get("submit_order_ms"),
             "wait_fill_ms": LAST_ENTRY_EXECUTION_METRICS.get("wait_fill_ms"),
+            "reprice_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("reprice_submit_ms"),
+            "reprice_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("reprice_wait_ms"),
+            "initial_limit_price": LAST_ENTRY_EXECUTION_METRICS.get("initial_limit_price"),
+            "final_limit_price": LAST_ENTRY_EXECUTION_METRICS.get("final_limit_price"),
+            "entry_price_cap": LAST_ENTRY_EXECUTION_METRICS.get("entry_price_cap"),
             "market_fallback_submit_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_submit_ms"),
             "market_fallback_wait_ms": LAST_ENTRY_EXECUTION_METRICS.get("market_fallback_wait_ms"),
             "protective_stop_ms": LAST_ENTRY_EXECUTION_METRICS.get("protective_stop_ms"),
@@ -2290,6 +2342,16 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
                 position_management_ran = _manage_open_position_priority()
         except Exception as exc:
             print(f"Priority position management error: {exc}")
+        if (
+            position_management_ran
+            and getattr(ENGINE_MODULE, "current_position", None) is not None
+        ):
+            # An open option needs fast quote/stop attention more than another
+            # candle-history refresh. Entry evaluation is impossible while a
+            # position is open, so keep this loop dedicated to execution until
+            # Schwab confirms the position is flat.
+            sleep_fn(OPEN_POSITION_POLL_SECONDS)
+            continue
         try:
             candles_fetch_start_ms = _perf_ms_now()
             df = get_candles()
@@ -2417,6 +2479,8 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             f"entry_quote={float(entry_metrics.get('quote_compute_ms') or 0.0):.2f} "
             f"entry_submit={float(entry_metrics.get('submit_order_ms') or 0.0):.2f} "
             f"entry_wait={float(entry_metrics.get('wait_fill_ms') or 0.0):.2f} "
+            f"entry_reprice_submit={float(entry_metrics.get('reprice_submit_ms') or 0.0):.2f} "
+            f"entry_reprice_wait={float(entry_metrics.get('reprice_wait_ms') or 0.0):.2f} "
             f"entry_fallback_submit={float(entry_metrics.get('market_fallback_submit_ms') or 0.0):.2f} "
             f"entry_fallback_wait={float(entry_metrics.get('market_fallback_wait_ms') or 0.0):.2f} "
             f"entry_stop={float(entry_metrics.get('protective_stop_ms') or 0.0):.2f} "
@@ -2446,6 +2510,11 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             "entry_quote_compute_ms": entry_metrics.get("quote_compute_ms"),
             "entry_submit_order_ms": entry_metrics.get("submit_order_ms"),
             "entry_wait_fill_ms": entry_metrics.get("wait_fill_ms"),
+            "entry_reprice_submit_ms": entry_metrics.get("reprice_submit_ms"),
+            "entry_reprice_wait_ms": entry_metrics.get("reprice_wait_ms"),
+            "entry_initial_limit_price": entry_metrics.get("initial_limit_price"),
+            "entry_final_limit_price": entry_metrics.get("final_limit_price"),
+            "entry_price_cap": entry_metrics.get("entry_price_cap"),
             "entry_market_fallback_submit_ms": entry_metrics.get("market_fallback_submit_ms"),
             "entry_market_fallback_wait_ms": entry_metrics.get("market_fallback_wait_ms"),
             "entry_protective_stop_ms": entry_metrics.get("protective_stop_ms"),
@@ -2495,6 +2564,11 @@ def run_monitor(*, max_cycles=None, runtime_initializer=_initialize_live_runtime
             "entry_quote_compute_ms": entry_metrics.get("quote_compute_ms"),
             "entry_submit_order_ms": entry_metrics.get("submit_order_ms"),
             "entry_wait_fill_ms": entry_metrics.get("wait_fill_ms"),
+            "entry_reprice_submit_ms": entry_metrics.get("reprice_submit_ms"),
+            "entry_reprice_wait_ms": entry_metrics.get("reprice_wait_ms"),
+            "entry_initial_limit_price": entry_metrics.get("initial_limit_price"),
+            "entry_final_limit_price": entry_metrics.get("final_limit_price"),
+            "entry_price_cap": entry_metrics.get("entry_price_cap"),
             "entry_market_fallback_submit_ms": entry_metrics.get("market_fallback_submit_ms"),
             "entry_market_fallback_wait_ms": entry_metrics.get("market_fallback_wait_ms"),
             "entry_protective_stop_ms": entry_metrics.get("protective_stop_ms"),

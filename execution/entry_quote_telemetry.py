@@ -20,6 +20,8 @@ def attach_entry_quote_telemetry(
     submitted_limit_price: Any,
     broker_fill_price: Any,
     filled_via: str | None,
+    initial_limit_price: Any = None,
+    price_cap: Any = None,
 ) -> str:
     """Return an enriched payload; never returns execution instructions."""
     if isinstance(feature_payload, dict):
@@ -46,11 +48,18 @@ def attach_entry_quote_telemetry(
         "quote_as_of": quote_snapshot.get("quote_as_of"),
         "quote_source": quote_snapshot.get("quote_source"),
         "submitted_limit_price": limit_price,
+        "initial_limit_price": _number(initial_limit_price),
+        "price_cap": _number(price_cap),
         "broker_fill_price": fill_price,
         "filled_via": filled_via,
         "slippage_vs_limit_dollars": (
             round(fill_price - limit_price, 6)
             if fill_price is not None and limit_price is not None
+            else None
+        ),
+        "slippage_vs_initial_limit_dollars": (
+            round(fill_price - _number(initial_limit_price), 6)
+            if fill_price is not None and _number(initial_limit_price) is not None
             else None
         ),
         "provenance": "captured_live_pre_submit_quote_and_broker_fill",

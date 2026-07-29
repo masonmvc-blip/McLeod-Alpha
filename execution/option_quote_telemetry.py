@@ -43,6 +43,8 @@ def build_option_management_cycle(
     reason: Any = None,
     event_type: str = "option_management_cycle",
     broker_exit_order_id: Any = None,
+    broker_exit_fill_price: Any = None,
+    protective_stop_trigger: Any = None,
     observed_at: datetime | None = None,
 ) -> dict[str, Any]:
     """Build a research record from facts already observed by the live manager."""
@@ -54,6 +56,13 @@ def build_option_management_cycle(
     low = _positive_number(getattr(position, "option_low_since_entry", None))
     quantity = max(0, int(getattr(position, "quantity", 0) or 0))
     spread_dollars = round(ask_value - bid_value, 6) if bid_value and ask_value and ask_value >= bid_value else None
+    exit_fill_value = _positive_number(broker_exit_fill_price)
+    exit_reference = bid_value
+    execution_shortfall = (
+        round(exit_reference - exit_fill_value, 6)
+        if exit_reference is not None and exit_fill_value is not None
+        else None
+    )
     metadata = quote_metadata or {}
     try:
         feature_payload = json.loads(str(getattr(position, "feature_payload", "") or "{}"))
@@ -71,6 +80,15 @@ def build_option_management_cycle(
         "broker_entry_fill_price": _positive_number(getattr(position, "schwab_fill_price", None)) or entry,
         "broker_entry_fill_timestamp": getattr(position, "schwab_fill_timestamp", "") or None,
         "broker_exit_order_id": str(broker_exit_order_id or "") or None,
+        "broker_exit_fill_price": exit_fill_value,
+        "protective_stop_trigger": _positive_number(protective_stop_trigger),
+        "exit_reference_bid": exit_reference,
+        "exit_execution_shortfall_dollars": execution_shortfall,
+        "exit_execution_shortfall_total_dollars": (
+            round(execution_shortfall * quantity * 100.0, 4)
+            if execution_shortfall is not None
+            else None
+        ),
         "option_entry": entry,
         "spy_price": _positive_number(spy_price),
         "bid": bid_value,

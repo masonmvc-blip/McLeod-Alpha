@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 import json
 import math
+from statistics import median
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -49,6 +50,172 @@ def load_stop_events(
     return events
 
 
+def load_option_cycles(
+    trading_date: str,
+    *,
+    root: Path = ROOT,
+) -> list[dict[str, Any]]:
+    path = (
+        root / "data" / "reports" / "option_quote_telemetry"
+        / f"option_management_cycles_{trading_date}.jsonl"
+    )
+    if not path.exists():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        try:
+            row = json.loads(line)
+        except (ValueError, TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def load_canonical_replay_trades(
+    trading_date: str,
+    *,
+    root: Path = ROOT,
+) -> list[dict[str, Any]]:
+    replay_dir = root / "data" / "spy_bot_reviewer" / "replays"
+    trades = []
+    for path in replay_dir.glob("*.json"):
+        try:
+            trade = json.loads(path.read_text(encoding="utf-8")).get("trade") or {}
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            continue
+        if str(trade.get("entry_time") or "").startswith(trading_date):
+            trades.append(trade)
+    return trades
+
+
+def _normalized_trade_key(value: Any) -> str:
+    text = str(value or "")
+    if ":" not in text:
+        return text
+    symbol, opened = text.split(":", 1)
+    return f"{symbol}:{opened.replace('T', ' ', 1)}"
+
+
+def _execution_quality(cycles: list[dict[str, Any]]) -> dict[str, Any]:
+    ordered = sorted(cycles, key=lambda row: str(row.get("recorded_at") or ""))
+    management = [
+        row for row in ordered
+        if row.get("event_type") == "option_management_cycle"
+    ]
+    exit_events = [
+        row for row in ordered
+        if row.get("event_type") in {"exit_fill", "broker_reconciled_exit_fill"}
+    ]
+    entry_snapshot = next(
+        (
+            row.get("entry_option_quote_snapshot")
+            for row in management
+            if isinstance(row.get("entry_option_quote_snapshot"), dict)
+        ),
+        {},
+    )
+    exit_event = exit_events[-1] if exit_events else {}
+    exit_recorded_at = str(exit_event.get("recorded_at") or "")
+    reference_cycle = next(
+        (
+            row for row in reversed(management)
+            if not exit_recorded_at
+            or str(row.get("recorded_at") or "") <= exit_recorded_at
+        ),
+        {},
+    )
+    reference_bid = (
+        _number(exit_event.get("exit_reference_bid"))
+        or _number(reference_cycle.get("bid"))
+    )
+    exit_fill = _number(exit_event.get("broker_exit_fill_price"))
+    entry_ask = _number(entry_snapshot.get("ask"))
+    entry_fill = _number(entry_snapshot.get("broker_fill_price"))
+    entry_adverse = (
+        max(0.0, entry_fill - entry_ask)
+        if entry_fill is not None and entry_ask is not None
+        else None
+    )
+    exit_shortfall = (
+        max(0.0, reference_bid - exit_fill)
+        if reference_bid is not None and exit_fill is not None
+        else None
+    )
+    quantity = max(
+        [int(_number(row.get("quantity")) or 0) for row in ordered] or [0]
+    )
+    timestamps = []
+    for row in management:
+        try:
+            timestamps.append(datetime.fromisoformat(str(row.get("recorded_at"))))
+        except (TypeError, ValueError):
+            continue
+    gaps = [
+        max(0.0, (later - earlier).total_seconds())
+        for earlier, later in zip(timestamps, timestamps[1:])
+    ]
+    return {
+        "entry_quote_ask": entry_ask,
+        "entry_fill_price": entry_fill,
+        "entry_fill_method": entry_snapshot.get("filled_via"),
+        "entry_initial_limit": _number(
+            entry_snapshot.get("initial_limit_price")
+            if entry_snapshot.get("initial_limit_price") is not None
+            else entry_snapshot.get("submitted_limit_price")
+        ),
+        "entry_final_limit": _number(entry_snapshot.get("submitted_limit_price")),
+        "entry_price_cap": _number(entry_snapshot.get("price_cap")),
+        "entry_adverse_slippage_dollars": (
+            round(entry_adverse, 6) if entry_adverse is not None else None
+        ),
+        "exit_reference_bid": reference_bid,
+        "exit_fill_price": exit_fill,
+        "exit_protective_stop_trigger": _number(
+            exit_event.get("protective_stop_trigger")
+        ),
+        "exit_execution_shortfall_dollars": (
+            round(exit_shortfall, 6) if exit_shortfall is not None else None
+        ),
+        "estimated_round_trip_execution_drag_dollars": (
+            round((entry_adverse + exit_shortfall) * quantity * 100.0, 2)
+            if entry_adverse is not None and exit_shortfall is not None
+            else None
+        ),
+        "management_cycle_median_seconds": (
+            round(median(gaps), 4) if gaps else None
+        ),
+        "management_cycle_max_seconds": round(max(gaps), 4) if gaps else None,
+        "exit_fill_telemetry_present": bool(exit_fill is not None),
+        "exit_fill_provenance": (
+            "captured_live_execution_event" if exit_fill is not None else None
+        ),
+    }
+
+
+def _canonical_trade_for_key(
+    trade_key: str,
+    canonical_trades: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    symbol, _, opened_text = trade_key.partition(":")
+    try:
+        opened = datetime.fromisoformat(opened_text)
+    except (TypeError, ValueError):
+        opened = None
+    matches = []
+    for trade in canonical_trades:
+        if str(trade.get("option_symbol") or "") != symbol:
+            continue
+        try:
+            entry_time = datetime.fromisoformat(str(trade.get("entry_time") or ""))
+            delta = abs((entry_time.replace(tzinfo=None) - opened.replace(tzinfo=None)).total_seconds()) if opened else 0.0
+        except (TypeError, ValueError):
+            delta = 999999.0
+        if delta <= 30.0:
+            matches.append((delta, trade))
+    return min(matches, key=lambda item: item[0])[1] if matches else None
+
+
 def _trade_key(event: dict[str, Any]) -> str | None:
     key = str(event.get("trade_key") or "").strip()
     return key or None
@@ -89,7 +256,11 @@ def _attach_unkeyed_events(
     }
 
 
-def _trade_summary(trade_key: str, events: list[dict[str, Any]]) -> dict[str, Any]:
+def _trade_summary(
+    trade_key: str,
+    events: list[dict[str, Any]],
+    cycles: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     types = Counter(str(event.get("event_type") or "UNKNOWN") for event in events)
     quotes = [
         event for event in events
@@ -223,6 +394,7 @@ def _trade_summary(trade_key: str, events: list[dict[str, Any]]) -> dict[str, An
         "issues": issues,
         "status": "HEALTHY" if not issues else "REVIEW_REQUIRED",
         "event_type_counts": dict(types),
+        "execution_quality": _execution_quality(cycles or []),
     }
 
 
@@ -231,12 +403,54 @@ def build_stop_execution_review(
     *,
     trading_date: str,
     reconciliation: dict[str, Any],
+    option_cycles: list[dict[str, Any]] | None = None,
+    canonical_trades: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     grouped = _attach_unkeyed_events(events)
+    cycles_by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for cycle in option_cycles or []:
+        cycles_by_key[_normalized_trade_key(cycle.get("trade_key"))].append(cycle)
     trades = [
-        _trade_summary(trade_key, rows)
+        _trade_summary(
+            trade_key,
+            rows,
+            cycles_by_key.get(_normalized_trade_key(trade_key), []),
+        )
         for trade_key, rows in sorted(grouped.items())
     ]
+    for trade in trades:
+        execution = trade.get("execution_quality") or {}
+        if execution.get("exit_fill_price") is not None:
+            continue
+        canonical = _canonical_trade_for_key(
+            str(trade.get("trade_key") or ""),
+            canonical_trades or [],
+        )
+        exit_fill = _number((canonical or {}).get("option_exit_price"))
+        reference_bid = _number(execution.get("exit_reference_bid"))
+        quantity = int(_number((canonical or {}).get("option_quantity")) or 0)
+        if exit_fill is None:
+            continue
+        shortfall = (
+            max(0.0, reference_bid - exit_fill)
+            if reference_bid is not None
+            else None
+        )
+        entry_adverse = _number(execution.get("entry_adverse_slippage_dollars"))
+        execution["exit_fill_price"] = exit_fill
+        execution["exit_execution_shortfall_dollars"] = (
+            round(shortfall, 6) if shortfall is not None else None
+        )
+        execution["exit_protective_stop_trigger"] = (
+            trade.get("highest_submitted_stop")
+        )
+        execution["estimated_round_trip_execution_drag_dollars"] = (
+            round(((entry_adverse or 0.0) + shortfall) * quantity * 100.0, 2)
+            if shortfall is not None and quantity > 0
+            else None
+        )
+        execution["exit_fill_telemetry_present"] = True
+        execution["exit_fill_provenance"] = "canonical_broker_replay"
     transitions = sum(trade["broker_stop_submissions"] for trade in trades)
     failures = sum(trade["ratchet_failures"] for trade in trades)
     protective_failures = sum(
@@ -254,6 +468,20 @@ def build_stop_execution_review(
     )
     verification_rate = (
         verified / prospective_submissions if prospective_submissions else None
+    )
+    execution_rows = [
+        trade.get("execution_quality") or {} for trade in trades
+    ]
+    exit_fill_rows = [
+        row for row in execution_rows if row.get("exit_fill_telemetry_present")
+    ]
+    entry_adverse_total = sum(
+        float(row.get("entry_adverse_slippage_dollars") or 0.0)
+        for row in execution_rows
+    )
+    exit_shortfall_total = sum(
+        float(row.get("exit_execution_shortfall_dollars") or 0.0)
+        for row in exit_fill_rows
     )
     checks = {
         "canonical_reconciliation_complete": bool(reconciliation.get("complete")),
@@ -288,6 +516,15 @@ def build_stop_execution_review(
                 round(verification_rate, 4)
                 if verification_rate is not None else None
             ),
+            "exit_fill_telemetry_trades": len(exit_fill_rows),
+            "entry_adverse_slippage_dollars_per_contract": round(
+                entry_adverse_total,
+                4,
+            ),
+            "exit_execution_shortfall_dollars_per_contract": round(
+                exit_shortfall_total,
+                4,
+            ),
         },
         "gate": {
             "checks": checks,
@@ -317,23 +554,33 @@ def render_stop_execution_markdown(payload: dict[str, Any]) -> str:
         f"rejected replacements: **{summary.get('replacement_rejections', 0)}**; "
         f"identity recoveries: **{summary.get('identity_recoveries', 0)}**.",
         "- The 4% tier is a 1%-behind-high synthetic trail armed after +4%; the report distinguishes desired, submitted, and broker-verified stops.",
+        "- Fill quality uses the observed entry ask and the last executable bid before the broker-confirmed exit; positive shortfall is execution drag.",
         "",
-        "| Trade | Quotes | Updates | Submitted | Verified | Highest Bid | Highest Desired Stop | Highest Submitted Stop | Failures | Status |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Trade | Cycle Median | Entry Ask→Fill | Exit Bid→Fill | Exit Shortfall | Highest Desired Stop | Highest Submitted Stop | Failures | Status |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for trade in payload.get("trades") or []:
+        execution = trade.get("execution_quality") or {}
+        cycle_median = execution.get("management_cycle_median_seconds")
+        entry_pair = (
+            f"{money(execution.get('entry_quote_ask'))}→"
+            f"{money(execution.get('entry_fill_price'))}"
+        )
+        exit_pair = (
+            f"{money(execution.get('exit_reference_bid'))}→"
+            f"{money(execution.get('exit_fill_price'))}"
+        )
         lines.append(
-            f"| {trade.get('trade_key')} | {trade.get('quote_observations', 0)} "
-            f"| {trade.get('update_decisions', 0)} "
-            f"| {trade.get('broker_stop_submissions', 0)} "
-            f"| {trade.get('broker_verified_ratchets', 0)} "
-            f"| {money(trade.get('highest_executable_bid'))} "
+            f"| {trade.get('trade_key')} "
+            f"| {f'{float(cycle_median):.2f}s' if cycle_median is not None else 'N/A'} "
+            f"| {entry_pair} | {exit_pair} "
+            f"| {money(execution.get('exit_execution_shortfall_dollars'))} "
             f"| {money(trade.get('highest_desired_stop'))} "
             f"| {money(trade.get('highest_submitted_stop'))} "
             f"| {trade.get('ratchet_failures', 0)} | {trade.get('status')} |"
         )
     if not payload.get("trades"):
-        lines.append("| — | 0 | 0 | 0 | 0 | N/A | N/A | N/A | 0 | No trades |")
+        lines.append("| — | N/A | N/A | N/A | N/A | N/A | N/A | 0 | No trades |")
     lines.extend([
         "",
         f"### Reliability Gate: **{(payload.get('gate') or {}).get('decision')}**",
@@ -365,6 +612,11 @@ def write_stop_execution_review(
         load_stop_events(trading_date, root=root),
         trading_date=trading_date,
         reconciliation=reconciliation,
+        option_cycles=load_option_cycles(trading_date, root=root),
+        canonical_trades=load_canonical_replay_trades(
+            trading_date,
+            root=root,
+        ),
     )
     payload["generated_at"] = datetime.now(EASTERN_TZ).isoformat(timespec="seconds")
     report_dir = root / "reports" / "daily_trade_learning"

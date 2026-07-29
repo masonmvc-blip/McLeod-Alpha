@@ -42,6 +42,8 @@ EXECUTION_AUDIO_PATHS = {
     "profit_exit": Path(__file__).resolve().parents[1] / "static" / "audio" / "trade_kaching.mp3",
     "loss_exit": Path(__file__).resolve().parents[1] / "static" / "audio" / "trade_loss_trumpet.mp3",
 }
+EXECUTION_AUDIO_STATE_PATH = Path(__file__).resolve().parents[1] / "data" / "execution_audio_alerts.json"
+_execution_audio_lock = threading.Lock()
 
 # Global Schwab client and account configuration
 # Set by phase3_monitor.py after client creation
@@ -119,12 +121,55 @@ def _persist_broker_reconciliation_snapshot(spy_positions, spy_orders):
         print(f"WARNING: Could not persist broker reconciliation snapshot: {exc}")
 
 
-def _play_execution_alert(event: str, pnl_dollars: float | None = None) -> None:
-    """Play a local macOS execution alert without delaying order handling."""
-    alert_kind = "entry" if event == "entry" else ("profit_exit" if float(pnl_dollars or 0.0) >= 0 else "loss_exit")
+def _claim_execution_audio_event(event_id: str | None) -> bool:
+    """Atomically suppress retries of the same confirmed broker execution."""
+    if not event_id:
+        return True
+
+    with _execution_audio_lock:
+        try:
+            payload = json.loads(EXECUTION_AUDIO_STATE_PATH.read_text(encoding="utf-8"))
+            played_event_ids = list(payload.get("played_event_ids") or [])
+        except (OSError, ValueError, TypeError):
+            played_event_ids = []
+
+        if event_id in played_event_ids:
+            return False
+
+        played_event_ids.append(event_id)
+        try:
+            EXECUTION_AUDIO_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = EXECUTION_AUDIO_STATE_PATH.with_suffix(".tmp")
+            temp_path.write_text(
+                json.dumps({"played_event_ids": played_event_ids[-200:]}, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            temp_path.replace(EXECUTION_AUDIO_STATE_PATH)
+        except OSError as exc:
+            print(f"WARNING: Could not persist execution audio state: {exc}")
+        return True
+
+
+def _play_execution_alert(
+    event: str,
+    pnl_dollars: float | None = None,
+    *,
+    event_id: str | None = None,
+) -> None:
+    """Play one local macOS alert per confirmed broker execution."""
+    if event == "entry":
+        alert_kind = "entry"
+    elif pnl_dollars is not None and float(pnl_dollars) > 0:
+        alert_kind = "profit_exit"
+    elif pnl_dollars is not None and float(pnl_dollars) < 0:
+        alert_kind = "loss_exit"
+    else:
+        return
     audio_path = EXECUTION_AUDIO_PATHS[alert_kind]
     try:
         if not NATIVE_AUDIO_PLAYER.is_file() or not audio_path.is_file():
+            return
+        if not _claim_execution_audio_event(event_id):
             return
         subprocess.Popen(
             [str(NATIVE_AUDIO_PLAYER), str(audio_path)],
@@ -280,6 +325,11 @@ def set_schwab_client(client, account_number, account_hash):
         "quote_compute_ms": None,
         "submit_order_ms": None,
         "wait_fill_ms": None,
+        "reprice_submit_ms": None,
+        "reprice_wait_ms": None,
+        "initial_limit_price": None,
+        "final_limit_price": None,
+        "entry_price_cap": None,
         "market_fallback_submit_ms": None,
         "market_fallback_wait_ms": None,
         "protective_stop_ms": None,
@@ -852,12 +902,26 @@ ORDER_SUBMISSION_TIMEOUT_SECONDS = 30  # Wait up to 30 seconds for fill
 ORDER_CHECK_INTERVAL_SECONDS = float(os.getenv("ORDER_CHECK_INTERVAL_SECONDS", "0.08"))  # Check fill status every 80ms
 ORDER_QUANTITY = MAX_OPEN_CONTRACTS      # Target the configured maximum per trade
 ENTRY_LIMIT_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_LIMIT_MAX_WAIT_SECONDS", "0.35"))
+ENTRY_REPRICE_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_REPRICE_MAX_WAIT_SECONDS", "0.35"))
+ENTRY_MAX_CHASE_DOLLARS = max(
+    0.01,
+    float(os.getenv("ENTRY_MAX_CHASE_DOLLARS", "0.05")),
+)
+# Market fallback is intentionally opt-in. A market order can consume most of
+# a 6% scalp edge while the quote is moving; the normal fallback is now a
+# refreshed, price-capped marketable limit.
 ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS = float(os.getenv("ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS", "0.35"))
-ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "true")).strip().lower() in {"1", "true", "yes", "on"}
+ENTRY_MARKET_FALLBACK_ENABLED = str(os.getenv("ENTRY_MARKET_FALLBACK_ENABLED", "false")).strip().lower() in {"1", "true", "yes", "on"}
+ENTRY_OPTION_BUYING_POWER_RESERVE_DOLLARS = max(
+    0.0,
+    float(os.getenv("ENTRY_OPTION_BUYING_POWER_RESERVE_DOLLARS", "0")),
+)
 ENTRY_EXPOSURE_PREFLIGHT_MAX_AGE_SECONDS = max(1.0, float(os.getenv("ENTRY_EXPOSURE_PREFLIGHT_MAX_AGE_SECONDS", "5")))
 ENTRY_EXPOSURE_PREFLIGHT_REFRESH_SECONDS = max(0.5, float(os.getenv("ENTRY_EXPOSURE_PREFLIGHT_REFRESH_SECONDS", "1.5")))
 _entry_exposure_preflight = None
 _last_entry_exposure_preflight_epoch = 0.0
+_last_entry_order_status = None
+_last_entry_order_status_description = None
 
 
 def normalize_option_tick(price):
@@ -884,6 +948,65 @@ def normalize_option_tick(price):
         normalized = round(price_float * 20) / 20
     
     return normalized
+
+
+def _max_affordable_option_contracts(
+    available_funds,
+    option_price,
+    requested_quantity=MAX_OPEN_CONTRACTS,
+    reserve_dollars=ENTRY_OPTION_BUYING_POWER_RESERVE_DOLLARS,
+):
+    """Return the largest whole-contract quantity Schwab funds can support."""
+    try:
+        available = max(0.0, float(available_funds))
+        premium = float(option_price)
+        requested = min(MAX_OPEN_CONTRACTS, max(0, int(requested_quantity)))
+        reserve = max(0.0, float(reserve_dollars or 0.0))
+    except (TypeError, ValueError):
+        return 0
+
+    contract_cost = premium * 100.0
+    spendable = max(0.0, available - reserve)
+    if contract_cost <= 0.0 or requested <= 0:
+        return 0
+    return min(requested, int(spendable // contract_cost))
+
+
+def _get_available_option_buying_funds():
+    """Fetch the balance Schwab applies to fully paid long-option purchases."""
+    if not _schwab_client or not _schwab_account_hash:
+        return None
+
+    try:
+        response = _schwab_client.get_account(_schwab_account_hash)
+        response.raise_for_status()
+        account = (response.json() or {}).get("securitiesAccount", {}) or {}
+        current_balances = account.get("currentBalances", {}) or {}
+        for field_name in ("availableFundsNonMarginableTrade", "availableFunds"):
+            value = current_balances.get(field_name)
+            if value is None:
+                continue
+            funds = float(value)
+            if funds >= 0.0:
+                return funds
+    except Exception as exc:
+        print(f"WARNING: Could not verify option buying funds: {exc}")
+    return None
+
+
+def _entry_terminal_block_reason(status, status_description=None):
+    """Map a broker terminal status to an actionable entry block reason."""
+    normalized_status = str(status or "").strip().upper()
+    description = str(status_description or "").strip().lower()
+    if normalized_status == "REJECTED" and (
+        "buying power" in description or "available cash" in description
+    ):
+        return "insufficient_option_buying_power"
+    if normalized_status == "REJECTED":
+        return "entry_order_rejected"
+    if normalized_status in {"CANCELLED", "CANCELED", "EXPIRED"}:
+        return f"entry_order_{normalized_status.lower()}"
+    return None
 
 
 def _extract_execution_price(order):
@@ -984,6 +1107,11 @@ LAST_OPEN_TRADE_METRICS = {
     "quote_compute_ms": None,
     "submit_order_ms": None,
     "wait_fill_ms": None,
+    "reprice_submit_ms": None,
+    "reprice_wait_ms": None,
+    "initial_limit_price": None,
+    "final_limit_price": None,
+    "entry_price_cap": None,
     "market_fallback_submit_ms": None,
     "market_fallback_wait_ms": None,
     "protective_stop_ms": None,
@@ -1432,7 +1560,10 @@ def _sync_position_with_broker(current_price, force: bool = False):
     broker_entry_time = entry_time_hint
 
     # Build candidate SELL_TO_CLOSE fills for this symbol and choose the earliest
-    # unlogged fill that occurs after this position's entry time.
+    # fill that occurs after this position's entry time. A previously logged fill
+    # is still authoritative proof that the broker position is closed; it means
+    # reconciliation should clear stale local state without logging the trade a
+    # second time.
     exit_candidates = []
     for order in orders:
         status = (order.get("status") or "").upper()
@@ -1447,16 +1578,20 @@ def _sync_position_with_broker(current_price, force: bool = False):
             if (leg.get("instruction") or "").upper() != "SELL_TO_CLOSE":
                 continue
             candidate_id = str(order.get("orderId") or "")
-            if _is_exit_order_already_logged(candidate_id):
-                continue
             candidate_time = _order_time(order)
             if candidate_time and entry_time_hint and candidate_time < entry_time_hint:
                 continue
-            exit_candidates.append((candidate_time, order))
+            exit_candidates.append((
+                candidate_time,
+                order,
+                _is_exit_order_already_logged(candidate_id),
+            ))
 
+    matched_exit_already_logged = False
     if exit_candidates:
         exit_candidates.sort(key=lambda item: item[0] or "")
         matched_exit = exit_candidates[0][1]
+        matched_exit_already_logged = bool(exit_candidates[0][2])
         broker_exit_order_id = matched_exit.get("orderId")
         broker_exit_price = _extract_execution_price(matched_exit)
         broker_exit_time = _order_time(matched_exit) or broker_exit_time
@@ -1465,6 +1600,18 @@ def _sync_position_with_broker(current_price, force: bool = False):
             "WARNING: Broker shows no position but no matching post-entry "
             f"SELL_TO_CLOSE fill was found for {symbol}; preserving local state."
         )
+        return
+
+    if matched_exit_already_logged:
+        clear_position()
+        current_position = None
+        _protective_stop_failed = False
+        _protective_stop_failure_reason = None
+        print(
+            "✓ Cleared stale local position from already-logged broker exit "
+            f"{broker_exit_order_id}"
+        )
+        print("✓ Protective stop failure lock cleared after broker reconciliation")
         return
 
     # If broker entry order ID is known, prefer exact BUY_TO_OPEN execution price.
@@ -1525,6 +1672,17 @@ def _sync_position_with_broker(current_price, force: bool = False):
         option_entry=option_entry_price,
         option_exit=option_exit_price,
     )
+    record_option_management_cycle(
+        current_position,
+        spy_price=current_price,
+        mark=option_exit_price,
+        action=TradeAction.EXIT,
+        reason="BROKER_RECONCILED_EXIT",
+        event_type="broker_reconciled_exit_fill",
+        broker_exit_order_id=broker_exit_order_id,
+        broker_exit_fill_price=option_exit_price,
+        protective_stop_trigger=current_position.option_stop,
+    )
 
     try:
         try:
@@ -1576,7 +1734,16 @@ def _sync_position_with_broker(current_price, force: bool = False):
     # the lock that blocks future entries.
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
-    _play_execution_alert("exit", option_pnl_dollars)
+    reconciled_audio_event_id = (
+        f"exit:{broker_exit_order_id}"
+        if broker_exit_order_id
+        else f"exit:{symbol}:{broker_exit_time}"
+    )
+    _play_execution_alert(
+        "exit",
+        option_pnl_dollars,
+        event_id=reconciled_audio_event_id,
+    )
     _arm_post_exit_cooling("BROKER_RECONCILED_EXIT", "broker_reconciliation")
     print("✓ Cleared stale local position after broker reconciliation")
     print("✓ Protective stop failure lock cleared after broker reconciliation")
@@ -1982,10 +2149,10 @@ def _submit_option_order(option_symbol, direction, limit_price, quantity):
         print("ERROR: Schwab client or account hash not configured")
         return None
 
-    if int(quantity) != MAX_OPEN_CONTRACTS:
+    if int(quantity) < 1 or int(quantity) > MAX_OPEN_CONTRACTS:
         print(
-            f"ERROR: Entry quantity {quantity} does not match the configured "
-            f"contract limit {MAX_OPEN_CONTRACTS}"
+            f"ERROR: Entry quantity {quantity} is outside the permitted "
+            f"range of 1-{MAX_OPEN_CONTRACTS} contracts"
         )
         return None
     
@@ -2190,8 +2357,18 @@ def _submit_option_exit_market_order(option_symbol, quantity):
                     order_id = potential
 
         if not order_id:
-            print("WARNING: Exit order submitted but no order ID returned")
-            return None
+            try:
+                response_data = response.json() if response.text else {}
+                order_id = response_data.get("id") or response_data.get("orderId")
+            except Exception:
+                order_id = None
+
+        if not order_id:
+            # A successful HTTP response means Schwab accepted the order even when
+            # its Location header is missing. Return a sentinel so the caller
+            # reconciles the broker position instead of submitting a duplicate.
+            print("WARNING: Exit order accepted but no order ID returned; confirming via broker position")
+            return "submitted-without-id"
 
         print(f"✓ EXIT ORDER SUBMITTED: SELL_TO_CLOSE MARKET {option_symbol} x{quantity} (Order {order_id})")
         _audit_bot_order(order_id, "EXIT_MARKET")
@@ -2199,6 +2376,140 @@ def _submit_option_exit_market_order(option_symbol, quantity):
     except Exception as e:
         print(f"ERROR submitting exit market order: {e}")
         return None
+
+
+_ACTIVE_EXIT_ORDER_STATUSES = {
+    "PENDING_ACTIVATION",
+    "ACCEPTED",
+    "QUEUED",
+    "WORKING",
+    "PENDING_REPLACEMENT",
+    "PARTIALLY_FILLED",
+    "AWAITING_PARENT_ORDER",
+    "AWAITING_CONDITION",
+}
+
+
+def _broker_option_long_quantity(option_symbol, positions):
+    """Return Schwab's long quantity for one exact option symbol."""
+    if positions is None:
+        return None
+
+    total = 0.0
+    for position in positions:
+        instrument = position.get("instrument", {}) or {}
+        if instrument.get("assetType") != "OPTION":
+            continue
+        if str(instrument.get("symbol") or "") != str(option_symbol or ""):
+            continue
+        try:
+            total += float(position.get("longQuantity") or 0.0)
+        except (TypeError, ValueError):
+            continue
+    return max(0, int(total))
+
+
+def _broker_long_spy_option_positions(positions):
+    """Return exact Schwab symbols and quantities for open long SPY options."""
+    by_symbol = {}
+    for position in positions or []:
+        instrument = position.get("instrument", {}) or {}
+        symbol = str(instrument.get("symbol") or "")
+        if instrument.get("assetType") != "OPTION" or not symbol.upper().startswith("SPY"):
+            continue
+        try:
+            quantity = int(float(position.get("longQuantity") or 0.0))
+        except (TypeError, ValueError):
+            continue
+        if quantity > 0:
+            by_symbol[symbol] = by_symbol.get(symbol, 0) + quantity
+    return sorted(by_symbol.items())
+
+
+def _active_sell_to_close_order_ids(option_symbol, orders):
+    """Return active broker orders that reserve contracts needed for a full exit."""
+    order_ids = []
+    for order in orders or []:
+        if str(order.get("status") or "").upper() not in _ACTIVE_EXIT_ORDER_STATUSES:
+            continue
+        matching_leg = any(
+            leg.get("instrument", {}).get("assetType") == "OPTION"
+            and str(leg.get("instrument", {}).get("symbol") or "") == str(option_symbol or "")
+            and str(leg.get("instruction") or "").upper() == "SELL_TO_CLOSE"
+            for leg in order.get("orderLegCollection", []) or []
+        )
+        order_id = str(order.get("orderId") or "")
+        if matching_leg and order_id and order_id not in order_ids:
+            order_ids.append(order_id)
+    return order_ids
+
+
+def _cancel_active_option_exit_orders(option_symbol, orders, known_stop_order_id=None):
+    """Release every active SELL_TO_CLOSE reservation before flattening."""
+    order_ids = _active_sell_to_close_order_ids(option_symbol, orders)
+    known_stop_order_id = str(known_stop_order_id or "")
+    if known_stop_order_id and known_stop_order_id not in order_ids:
+        known_stop = _known_protective_stop_snapshot(known_stop_order_id, option_symbol)
+        terminal_statuses = {"FILLED", "CANCELED", "CANCELLED", "REJECTED", "EXPIRED", "REPLACED"}
+        if (
+            known_stop is None
+            or known_stop.get("active")
+            or str(known_stop.get("status") or "").upper() not in terminal_statuses
+        ):
+            order_ids.append(known_stop_order_id)
+
+    for order_id in order_ids:
+        if not _cancel_protective_stop(order_id):
+            return False
+    return True
+
+
+def _wait_for_exit_fill(order_id, option_symbol, fallback_price, max_wait_seconds):
+    """Confirm a closing order by broker fill status or an authoritative flat position."""
+    if not _schwab_client or not order_id:
+        print("ERROR: Cannot confirm exit without client and accepted order")
+        return False, None
+
+    started_at = time.time()
+    check_interval = max(ORDER_CHECK_INTERVAL_SECONDS, 0.08)
+    can_poll_order = str(order_id) != "submitted-without-id"
+    last_fill_price = None
+
+    while time.time() - started_at < max_wait_seconds:
+        if can_poll_order:
+            try:
+                response = _schwab_client.get_order(order_id, _schwab_account_hash)
+                response.raise_for_status()
+                order = response.json() or {}
+                status = str(order.get("status") or "").upper()
+                print(f"  Exit order status: {status}")
+                if status == "FILLED":
+                    last_fill_price = _extract_execution_price(order)
+                    if last_fill_price is None:
+                        last_fill_price = float(fallback_price or 0.0) or None
+                    return True, last_fill_price
+                if status in {"REJECTED", "CANCELED", "CANCELLED", "EXPIRED"}:
+                    return False, None
+            except Exception as exc:
+                print(f"WARNING: Could not poll exit order {order_id}: {exc}")
+        else:
+            positions, _, _, _ = get_schwab_positions()
+            remaining = _broker_option_long_quantity(option_symbol, positions)
+            if remaining == 0:
+                return True, float(fallback_price or 0.0) or None
+            time.sleep(max(check_interval, 0.25))
+            continue
+
+        time.sleep(check_interval)
+
+    positions, _, _, _ = get_schwab_positions()
+    remaining = _broker_option_long_quantity(option_symbol, positions)
+    if remaining == 0:
+        print(f"✓ Schwab confirms {option_symbol} is flat")
+        return True, last_fill_price or (float(fallback_price or 0.0) or None)
+
+    print(f"✗ Schwab still shows {remaining if remaining is not None else 'unknown'} contracts after exit timeout")
+    return False, None
 
 
 def _submit_option_entry_market_order(option_symbol, quantity):
@@ -2442,6 +2753,10 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
             (False, None) if not filled after timeout
             (False, None) if rejected/cancelled
     """
+    global _last_entry_order_status, _last_entry_order_status_description
+    _last_entry_order_status = None
+    _last_entry_order_status_description = None
+
     if not _schwab_client or not order_id:
         print("ERROR: Cannot check fill without client and order ID")
         return False, None
@@ -2458,6 +2773,10 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
             order_data = resp.json()
             
             status = order_data.get("status", "").upper()
+            _last_entry_order_status = status
+            _last_entry_order_status_description = str(
+                order_data.get("statusDescription") or ""
+            ).strip() or None
             print(f"  Order status: {status}")
             
             if status == "FILLED":
@@ -2477,6 +2796,8 @@ def _wait_for_fill(order_id, option_symbol, limit_price, max_wait_seconds=ORDER_
             
             elif status in ["REJECTED", "CANCELLED", "EXPIRED"]:
                 print(f"✗ ORDER {status}: {option_symbol}")
+                if _last_entry_order_status_description:
+                    print(f"   Broker reason: {_last_entry_order_status_description}")
                 return False, None
             
             elif status == "PENDING_ACTIVATION":
@@ -2581,10 +2902,18 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         "attempted": True,
         "opened": False,
         "block_reason": None,
+        "requested_quantity": None,
+        "selected_quantity": None,
+        "available_option_buying_funds": None,
         "precheck_ms": None,
         "quote_compute_ms": None,
         "submit_order_ms": None,
         "wait_fill_ms": None,
+        "reprice_submit_ms": None,
+        "reprice_wait_ms": None,
+        "initial_limit_price": None,
+        "final_limit_price": None,
+        "entry_price_cap": None,
         "market_fallback_submit_ms": None,
         "market_fallback_wait_ms": None,
         "protective_stop_ms": None,
@@ -2618,6 +2947,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         return _finalize(False, runtime_guard.reason)
 
     quantity = int(quantity)
+    metrics["requested_quantity"] = quantity
 
     # Reuse only a very recent pre-close exposure snapshot; otherwise perform
     # the live broker check before any order submission.
@@ -2646,6 +2976,12 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
 
     quote_compute_start_ms = _perf_ms_now()
     limit_price, quote_levels = _compute_fast_entry_limit_price(option_symbol, option_mark)
+    initial_limit_price = float(limit_price or 0.0)
+    metrics["initial_limit_price"] = initial_limit_price
+    metrics["final_limit_price"] = initial_limit_price
+    metrics["entry_price_cap"] = normalize_option_tick(
+        initial_limit_price + ENTRY_MAX_CHASE_DOLLARS
+    )
     metrics["quote_compute_ms"] = _elapsed_ms(quote_compute_start_ms)
     quote_ok, quote_block_reason = _validate_entry_quote_snapshot(quote_levels)
 
@@ -2666,13 +3002,42 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
             f"spread={quote_levels.get('quote_spread_pct') or '-'}% as_of={quote_levels.get('quote_as_of') or 'unknown'}"
         )
     print(f"Option Mark: {option_mark:.2f} → Entry Limit: {limit_price:.2f}")
-    print(f"Quantity: {quantity}")
+    print(f"Requested Quantity: {quantity}")
 
     if not quote_ok:
         print(f"\n🔒 ENTRY BLOCKED: option quote is not fresh enough to trust")
         print(f"   Reason: {quote_block_reason}")
         print("   No order submitted; bot remains flat")
         return _finalize(False, f"quote_guard:{quote_block_reason}")
+
+    available_option_funds = _get_available_option_buying_funds()
+    metrics["available_option_buying_funds"] = available_option_funds
+    if available_option_funds is None:
+        print("\n🔒 ENTRY BLOCKED: could not verify Schwab option buying funds")
+        print("   No order submitted; bot remains flat")
+        return _finalize(False, "option_buying_power_unavailable")
+
+    affordable_quantity = _max_affordable_option_contracts(
+        available_option_funds,
+        limit_price,
+        requested_quantity=quantity,
+    )
+    if affordable_quantity < 1:
+        print("\n🔒 ENTRY BLOCKED: insufficient funds for one option contract")
+        print(
+            f"   Available for long options: ${available_option_funds:,.2f} | "
+            f"Per-contract cost: ${float(limit_price) * 100.0:,.2f}"
+        )
+        print("   No order submitted; bot remains flat")
+        metrics["selected_quantity"] = 0
+        return _finalize(False, "insufficient_option_buying_power")
+
+    quantity = affordable_quantity
+    metrics["selected_quantity"] = quantity
+    print(
+        f"Option Buying Funds: ${available_option_funds:,.2f} | "
+        f"Affordable Quantity: {quantity}/{metrics['requested_quantity']}"
+    )
 
     # STEP 1: Submit order to Schwab
     print("\n[STEP 1] Submitting order to Schwab...")
@@ -2701,12 +3066,81 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         max_wait_seconds=max(0.2, float(ENTRY_LIMIT_MAX_WAIT_SECONDS or 0.35)),
     )
     metrics["wait_fill_ms"] = _elapsed_ms(wait_start_ms)
+    primary_terminal_reason = _entry_terminal_block_reason(
+        _last_entry_order_status,
+        _last_entry_order_status_description,
+    )
 
     if filled:
         metrics["filled_via"] = "limit"
 
     if not filled:
-        if ENTRY_MARKET_FALLBACK_ENABLED:
+        if primary_terminal_reason:
+            print(
+                "✗ Entry order reached a terminal broker status; "
+                "repricing and market fallback suppressed"
+            )
+        else:
+            refreshed_limit, refreshed_quote = _compute_fast_entry_limit_price(
+                option_symbol,
+                option_mark,
+            )
+            entry_price_cap = float(metrics["entry_price_cap"] or 0.0)
+            refreshed_quote_ok, refreshed_quote_reason = (
+                _validate_entry_quote_snapshot(refreshed_quote)
+            )
+            if (
+                refreshed_quote_ok
+                and float(refreshed_limit or 0.0) > 0
+                and float(refreshed_limit) <= entry_price_cap
+            ):
+                limit_price = float(refreshed_limit)
+                metrics["final_limit_price"] = limit_price
+                print(
+                    "⚠ LIMIT ENTRY MISSED: submitting one refreshed "
+                    f"marketable limit @ ${limit_price:.2f} "
+                    f"(hard cap ${entry_price_cap:.2f})"
+                )
+                reprice_submit_start_ms = _perf_ms_now()
+                repriced_order_id = _submit_option_order(
+                    option_symbol,
+                    direction,
+                    limit_price,
+                    quantity,
+                )
+                metrics["reprice_submit_ms"] = _elapsed_ms(
+                    reprice_submit_start_ms
+                )
+                if repriced_order_id:
+                    _pending_order_id = repriced_order_id
+                    reprice_wait_start_ms = _perf_ms_now()
+                    filled, fill_price = _wait_for_fill(
+                        repriced_order_id,
+                        option_symbol,
+                        limit_price,
+                        max_wait_seconds=max(
+                            0.2,
+                            float(ENTRY_REPRICE_MAX_WAIT_SECONDS or 0.35),
+                        ),
+                    )
+                    metrics["reprice_wait_ms"] = _elapsed_ms(
+                        reprice_wait_start_ms
+                    )
+                    if filled:
+                        order_id = repriced_order_id
+                        metrics["filled_via"] = "repriced_limit"
+            else:
+                reason_text = (
+                    refreshed_quote_reason
+                    if not refreshed_quote_ok
+                    else (
+                        f"refreshed ask ${float(refreshed_limit or 0.0):.2f} "
+                        f"exceeds cap ${entry_price_cap:.2f}"
+                    )
+                )
+                print(f"🔒 ENTRY PRICE CHASE BLOCKED: {reason_text}")
+
+        if not filled and ENTRY_MARKET_FALLBACK_ENABLED:
             print("⚠ LIMIT ENTRY MISSED: attempting market fallback for fast participation...")
             fallback_submit_start_ms = _perf_ms_now()
             market_order_id = _submit_option_entry_market_order(option_symbol, quantity)
@@ -2725,12 +3159,21 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
                     metrics["filled_via"] = "market_fallback"
 
         if not filled:
-            print("✗ FAILED: Entry did not fill after limit + market fallback")
+            fallback_terminal_reason = _entry_terminal_block_reason(
+                _last_entry_order_status,
+                _last_entry_order_status_description,
+            )
+            final_block_reason = (
+                primary_terminal_reason
+                or fallback_terminal_reason
+                or "entry_not_filled_within_price_cap"
+            )
+            print(f"✗ FAILED: Entry not opened ({final_block_reason})")
             print("✓ No position created (kept bot flat)")
             # Clear entry pending lock - next attempt can try again
             _entry_pending = False
             _pending_order_id = None
-            return _finalize(False, "entry_not_filled_after_limit_and_fallback")
+            return _finalize(False, final_block_reason)
 
     if fill_price is None or float(fill_price) <= 0:
         print("✗ FAILED: Filled order missing valid broker execution price")
@@ -2791,6 +3234,8 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         submitted_limit_price=limit_price,
         broker_fill_price=fill_price,
         filled_via=metrics.get("filled_via"),
+        initial_limit_price=metrics.get("initial_limit_price"),
+        price_cap=metrics.get("entry_price_cap"),
     )
 
     current_position = Position(
@@ -2850,7 +3295,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     _entry_pending = False
     _pending_order_id = None
 
-    _play_execution_alert("entry")
+    _play_execution_alert("entry", event_id=f"entry:{order_id}")
 
     send_trade_entry_alert(
         mode="LIVE",
@@ -2876,14 +3321,24 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     return _finalize(True, None)
 
 
-def close_trade(price, reason, option_mark=None, execution_mode="market", limit_price=None, fallback_to_market=True, option_bid=None, option_last=None):
+def close_trade(
+    price,
+    reason,
+    option_mark=None,
+    execution_mode="market",
+    limit_price=None,
+    fallback_to_market=True,
+    option_bid=None,
+    option_last=None,
+    quote_metadata=None,
+):
     """
     Close a live trade on Schwab.
     
     CRITICAL SEQUENCE:
-    1. Submit closing order while the protective stop remains active
-    2. Cancel the broker-held protective stop only after exit submission
-    3. Confirm close on Schwab
+    1. Read the full position quantity from Schwab
+    2. Cancel active SELL_TO_CLOSE orders that reserve those contracts
+    3. Submit the full-position close and confirm Schwab is flat
     4. Clear local position
     5. Log the trade (failure won't prevent closure)
     """
@@ -2893,58 +3348,108 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     if not current_position:
         return False
 
-    retry_in = EXIT_SUBMISSION_RETRY_COOLDOWN_SECONDS - (time.time() - _last_exit_submission_failure_epoch)
+    pre_exit_option_mark = option_mark
+    is_manual_exit = str(reason or "").upper().startswith("MANUAL_EXIT")
+    retry_cooldown = 1.0 if is_manual_exit else EXIT_SUBMISSION_RETRY_COOLDOWN_SECONDS
+    retry_in = retry_cooldown - (time.time() - _last_exit_submission_failure_epoch)
     if retry_in > 0:
-        print(f"EXIT SUBMISSION COOLDOWN: retry available in {retry_in:.0f}s; protective stop remains active")
+        print(f"EXIT SUBMISSION COOLDOWN: retry available in {retry_in:.1f}s; protective stop remains active")
         return False
 
     # Save position data before clearing (for logging and stop cancellation)
     saved_position = current_position
     
-    # Keep the stop live until Schwab accepts the closing order. This prevents a
-    # rejected or rate-limited exit request from ever creating an unprotected position.
     exit_order_id = None
     if saved_position.option_symbol and int(saved_position.quantity or 0) > 0:
+        positions, active_orders, _, broker_error = get_schwab_positions()
+        broker_quantity = _broker_option_long_quantity(saved_position.option_symbol, positions)
+        broker_spy_positions = _broker_long_spy_option_positions(positions)
+        if broker_quantity == 0 and len(broker_spy_positions) == 1:
+            broker_symbol, broker_quantity = broker_spy_positions[0]
+            if broker_symbol != saved_position.option_symbol:
+                print(
+                    "EXIT RECONCILIATION: local contract is stale; "
+                    f"using Schwab position {broker_symbol} x{broker_quantity}"
+                )
+                saved_position.option_symbol = broker_symbol
+        elif broker_quantity == 0 and len(broker_spy_positions) > 1:
+            _last_exit_submission_failure_epoch = time.time()
+            print(
+                "❌ EXIT BLOCKED: Schwab shows multiple SPY option symbols; "
+                "refusing to guess which position belongs to this trade"
+            )
+            return False
+
+        if broker_quantity == 0:
+            print("✓ Schwab already confirms the option position is flat")
+            exit_quantity = 0
+        else:
+            exit_quantity = int(broker_quantity or saved_position.quantity or 0)
+            if broker_quantity is None:
+                print(f"WARNING: Broker quantity unavailable ({broker_error}); using local quantity {exit_quantity}")
+            else:
+                print(f"EXIT RECONCILIATION: Schwab holds {exit_quantity} contract(s); closing all")
+                saved_position.quantity = exit_quantity
+
+        if exit_quantity > 0:
+            print("[STEP 1] Canceling active SELL_TO_CLOSE reservations before full-position exit...")
+            reservations_cleared = _cancel_active_option_exit_orders(
+                saved_position.option_symbol,
+                active_orders,
+                saved_position.protective_stop_order_id,
+            )
+            if not reservations_cleared:
+                _last_exit_submission_failure_epoch = time.time()
+                print("❌ EXIT BLOCKED: could not release an active closing order; retrying without risking over-close")
+                return False
+            saved_position.protective_stop_order_id = ""
+            saved_position.protective_stop_status = "CANCELED_FOR_EXIT"
+            save_position(saved_position)
+
         use_limit_mode = str(execution_mode or "market").lower() == "limit_near_market"
-        if use_limit_mode:
+        if exit_quantity > 0 and use_limit_mode:
             if limit_price is None:
                 limit_price = _compute_fast_exit_limit_price(saved_position.option_symbol, option_mark or saved_position.option_entry)
-            print(f"[STEP 1] Submitting SELL_TO_CLOSE limit exit near market @ ${float(limit_price or 0):.2f}...")
+            print(f"[STEP 2] Submitting SELL_TO_CLOSE limit exit near market @ ${float(limit_price or 0):.2f}...")
             exit_order_id = _submit_option_exit_limit_order(
                 saved_position.option_symbol,
-                int(saved_position.quantity or 0),
+                exit_quantity,
                 float(limit_price or 0.0),
             )
-        else:
-            print(f"[STEP 1] Submitting SELL_TO_CLOSE market exit...")
+        elif exit_quantity > 0:
+            print("[STEP 2] Submitting full-position SELL_TO_CLOSE market exit at the best available price...")
             exit_order_id = _submit_option_exit_market_order(
                 saved_position.option_symbol,
-                int(saved_position.quantity or 0),
+                exit_quantity,
             )
 
-        if not exit_order_id:
+        if exit_quantity > 0 and not exit_order_id:
             if use_limit_mode and fallback_to_market:
                 print("WARNING: Limit exit submission failed, falling back to market exit")
                 exit_order_id = _submit_option_exit_market_order(
                     saved_position.option_symbol,
-                    int(saved_position.quantity or 0),
+                    exit_quantity,
                 )
 
-        if not exit_order_id:
+        if exit_quantity > 0 and not exit_order_id:
             _last_exit_submission_failure_epoch = time.time()
-            print("❌ EXIT SUBMISSION FAILED: protective stop remains active; keeping position open for reconciliation")
+            print("❌ EXIT SUBMISSION FAILED: restoring protection and keeping position open for retry")
+            restored_stop_id, restored_stop_price = _submit_protective_stop(
+                saved_position.option_symbol,
+                float(saved_position.option_entry or 0.0),
+                exit_quantity,
+                stop_price_override=float(saved_position.option_stop or 0.0),
+            )
+            if restored_stop_id:
+                saved_position.protective_stop_order_id = str(restored_stop_id)
+                saved_position.protective_stop_price = float(restored_stop_price or saved_position.option_stop or 0.0)
+                saved_position.protective_stop_status = "PLACED"
+                save_position(saved_position)
             return False
 
         _last_exit_submission_failure_epoch = 0.0
 
-        if saved_position.protective_stop_order_id:
-            print("\n[STEP 2] Canceling broker-held protective stop after exit submission...")
-            if not _cancel_protective_stop(saved_position.protective_stop_order_id):
-                print("WARNING: Exit order is live but protective stop cancellation was not confirmed")
-        else:
-            print("[STEP 2] No protective stop to cancel")
-
-        filled, exit_fill = _wait_for_fill(
+        filled, exit_fill = (True, option_mark) if exit_quantity == 0 else _wait_for_exit_fill(
             exit_order_id,
             saved_position.option_symbol,
             float(limit_price or option_mark or 0.0),
@@ -2953,28 +3458,44 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
         if not filled:
             if use_limit_mode and fallback_to_market:
                 print("WARNING: Limit exit not filled quickly, falling back to market exit")
-                market_exit_id = _submit_option_exit_market_order(
+                refreshed_positions, refreshed_orders, _, _ = get_schwab_positions()
+                remaining_quantity = _broker_option_long_quantity(saved_position.option_symbol, refreshed_positions)
+                remaining_quantity = int(remaining_quantity or 0)
+                if remaining_quantity > 0 and _cancel_active_option_exit_orders(
                     saved_position.option_symbol,
-                    int(saved_position.quantity or 0),
-                )
-                if market_exit_id:
-                    filled, exit_fill = _wait_for_fill(
-                        market_exit_id,
+                    refreshed_orders,
+                ):
+                    market_exit_id = _submit_option_exit_market_order(
                         saved_position.option_symbol,
-                        float(option_mark or 0.0),
-                        max_wait_seconds=ORDER_SUBMISSION_TIMEOUT_SECONDS,
+                        remaining_quantity,
                     )
-                    exit_order_id = market_exit_id if filled else exit_order_id
+                    if market_exit_id:
+                        filled, exit_fill = _wait_for_exit_fill(
+                            market_exit_id,
+                            saved_position.option_symbol,
+                            float(option_mark or 0.0),
+                            max_wait_seconds=ORDER_SUBMISSION_TIMEOUT_SECONDS,
+                        )
+                        exit_order_id = market_exit_id if filled else exit_order_id
 
         if not filled:
             print("❌ EXIT FILL FAILED/TIMEOUT: keeping position open for retry/reconciliation")
-            if saved_position.option_stop and saved_position.option_stop > 0:
-                _submit_protective_stop(
+            remaining_positions, _, _, _ = get_schwab_positions()
+            remaining_quantity = _broker_option_long_quantity(saved_position.option_symbol, remaining_positions)
+            remaining_quantity = int(remaining_quantity or saved_position.quantity or 0)
+            if remaining_quantity > 0 and saved_position.option_stop and saved_position.option_stop > 0:
+                restored_stop_id, restored_stop_price = _submit_protective_stop(
                     saved_position.option_symbol,
                     float(saved_position.option_entry or 0.0),
-                    int(saved_position.quantity or 0),
+                    remaining_quantity,
                     stop_price_override=float(saved_position.option_stop),
                 )
+                if restored_stop_id:
+                    saved_position.quantity = remaining_quantity
+                    saved_position.protective_stop_order_id = str(restored_stop_id)
+                    saved_position.protective_stop_price = float(restored_stop_price or saved_position.option_stop)
+                    saved_position.protective_stop_status = "PLACED"
+                    save_position(saved_position)
             return False
 
         if exit_fill is not None:
@@ -2982,6 +3503,25 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
                 option_mark = float(exit_fill)
             except (TypeError, ValueError):
                 pass
+
+        record_option_management_cycle(
+            saved_position,
+            spy_price=price,
+            bid=option_bid,
+            ask=(quote_metadata or {}).get("ask"),
+            mark=(
+                (quote_metadata or {}).get("mark")
+                or pre_exit_option_mark
+            ),
+            last=option_last,
+            quote_metadata=quote_metadata,
+            action=TradeAction.EXIT,
+            reason=reason,
+            event_type="exit_fill",
+            broker_exit_order_id=exit_order_id,
+            broker_exit_fill_price=option_mark,
+            protective_stop_trigger=saved_position.option_stop,
+        )
     
     if current_position.direction == "CALL":
         pnl = price - current_position.entry_price
@@ -3126,7 +3666,16 @@ def close_trade(price, reason, option_mark=None, execution_mode="market", limit_
     # Clearing position resets alarm lock so new entries can resume while flat.
     _protective_stop_failed = False
     _protective_stop_failure_reason = None
-    _play_execution_alert("exit", option_pnl_dollars)
+    close_audio_event_id = (
+        f"exit:{exit_order_id}"
+        if exit_order_id
+        else f"exit:{saved_position.schwab_order_id}:{exit_timestamp.isoformat()}"
+    )
+    _play_execution_alert(
+        "exit",
+        option_pnl_dollars,
+        event_id=close_audio_event_id,
+    )
     _arm_post_exit_cooling(reason, "live_engine")
     
     # NOW attempt logging (failure won't affect position closure)
@@ -3252,7 +3801,14 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
             action=TradeAction.EXIT,
             reason="END_OF_DAY_EXIT",
         )
-        close_trade(current_price, "END_OF_DAY_EXIT", option_mark)
+        close_trade(
+            current_price,
+            "END_OF_DAY_EXIT",
+            option_mark,
+            option_bid=option_bid,
+            option_last=option_last,
+            quote_metadata=quote_metadata,
+        )
         return
     _sync_position_with_broker(current_price)
     if not in_trade():
@@ -3363,7 +3919,14 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
                 restored=False,
                 restore_count=int(current_position.protective_stop_restore_count or 0),
             )
-            close_trade(current_price, protection_decision.reason, option_mark)
+            close_trade(
+                current_price,
+                protection_decision.reason,
+                option_mark,
+                option_bid=option_bid,
+                option_last=option_last,
+                quote_metadata=quote_metadata,
+            )
             return
         current_position.protective_stop_order_id = str(order_id)
         current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
@@ -3448,7 +4011,14 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
                 quote_metadata=quote_metadata or {},
             )
             current_position.option_stop = previous_option_stop
-            close_trade(current_price, decision.reason, option_mark)
+            close_trade(
+                current_price,
+                decision.reason,
+                option_mark,
+                option_bid=option_bid,
+                option_last=option_last,
+                quote_metadata=quote_metadata,
+            )
             return
         submission_started = time.perf_counter()
         order_id, submitted_stop = _submit_protective_stop(
@@ -3506,7 +4076,14 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         return
 
     if decision.action is TradeAction.EXIT:
-        close_trade(current_price, decision.reason, decision.metadata.get("exit_option_mark"))
+        close_trade(
+            current_price,
+            decision.reason,
+            decision.metadata.get("exit_option_mark") or option_mark,
+            option_bid=option_bid,
+            option_last=option_last,
+            quote_metadata=quote_metadata,
+        )
         return
 
     if decision.metadata.get("state_updates") or extrema_updated or trailing_high_updated:

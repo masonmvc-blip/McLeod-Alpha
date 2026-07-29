@@ -15,8 +15,10 @@ def _isolate_live_position_persistence(monkeypatch):
     monkeypatch.setattr(live_engine, "clear_position", lambda: None)
     monkeypatch.setattr(live_engine, "_audit_bot_order", lambda _order_id, _intent: None)
     live_engine.current_position = None
+    live_engine._last_exit_submission_failure_epoch = 0.0
     yield
     live_engine.current_position = None
+    live_engine._last_exit_submission_failure_epoch = 0.0
 
 
 class _FixedDateTime(datetime):
@@ -92,11 +94,24 @@ def test_live_manager_exits_open_position_at_end_of_day(monkeypatch):
     live_engine.current_position = _live_position()
     close_calls = []
     monkeypatch.setattr(live_engine, "_is_end_of_day_exit_due", lambda: True)
-    monkeypatch.setattr(live_engine, "close_trade", lambda *args: close_calls.append(args))
+    monkeypatch.setattr(
+        live_engine,
+        "close_trade",
+        lambda *args, **kwargs: close_calls.append((args, kwargs)),
+    )
 
     live_engine.manage_trade(current_price=500.0, option_mark=5.0, option_bid=4.99)
 
-    assert close_calls == [(500.0, "END_OF_DAY_EXIT", 5.0)]
+    assert close_calls == [
+        (
+            (500.0, "END_OF_DAY_EXIT", 5.0),
+            {
+                "option_bid": 4.99,
+                "option_last": None,
+                "quote_metadata": None,
+            },
+        )
+    ]
 
 
 def test_protective_stop_limit_keeps_the_intended_loss_floor():
@@ -184,7 +199,16 @@ def test_live_ratchet_defers_without_broker_call_during_rate_limit(monkeypatch):
     live_engine.current_position = pos
 
     monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
-    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(
+        live_engine,
+        "_sync_position_with_broker",
+        lambda _price, force=False: None,
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_has_active_protective_stop_order",
+        lambda _symbol: True,
+    )
     monkeypatch.setattr(live_engine, "_has_active_protective_stop_order", lambda _symbol: True)
     monkeypatch.setattr(
         live_engine,
@@ -260,6 +284,84 @@ def test_restore_reconciles_flat_position_before_stop_submission(monkeypatch):
     assert live_engine.current_position is None
 
 
+def test_reconciliation_clears_flat_position_when_broker_exit_is_already_logged(
+    monkeypatch,
+    tmp_path,
+):
+    import sqlite3
+
+    pos = _live_position()
+    pos.option_symbol = "SPY   260807P00730000"
+    pos.schwab_order_id = "entry-1"
+    pos.schwab_fill_timestamp = "2026-07-29T15:44:04+0000"
+    live_engine.current_position = pos
+    live_engine.set_schwab_client(Mock(), "account-number", "account-hash")
+
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    db_path = data_dir / "mcleod_alpha.db"
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE trade_log (
+                broker_entry_order_id TEXT,
+                broker_exit_order_id TEXT
+            )
+            """
+        )
+        connection.execute(
+            "INSERT INTO trade_log VALUES (?, ?)",
+            ("entry-1", "exit-1"),
+        )
+
+    exit_order = {
+        "orderId": "exit-1",
+        "status": "FILLED",
+        "enteredTime": "2026-07-29T15:47:57+0000",
+        "closeTime": "2026-07-29T15:47:57+0000",
+        "orderLegCollection": [{
+            "instruction": "SELL_TO_CLOSE",
+            "instrument": {
+                "assetType": "OPTION",
+                "symbol": pos.option_symbol,
+            },
+        }],
+        "orderActivityCollection": [{
+            "activityType": "EXECUTION",
+            "executionType": "FILL",
+            "executionLegs": [{"price": 6.27, "quantity": 1}],
+        }],
+    }
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: ([], [exit_order], 200, None),
+    )
+    cleared = []
+    monkeypatch.setattr(live_engine, "clear_position", lambda: cleared.append(True))
+    monkeypatch.setattr(
+        live_engine,
+        "safe_log_trade",
+        lambda **_kwargs: pytest.fail("an already-logged exit must not be logged twice"),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_play_execution_alert",
+        lambda *_args, **_kwargs: pytest.fail("an already-logged exit must not alert twice"),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_arm_post_exit_cooling",
+        lambda *_args: pytest.fail("an already-logged exit must not re-arm cooling"),
+    )
+
+    live_engine._sync_position_with_broker(734.30, force=True)
+
+    assert cleared == [True]
+    assert live_engine.current_position is None
+
+
 def test_initial_protective_stop_skips_account_order_scan(monkeypatch):
     client = Mock()
     response = Mock()
@@ -301,22 +403,169 @@ def test_live_stop_hit_keeps_broker_stop_limit_working(monkeypatch):
     assert close_calls == []
 
 
-def test_failed_exit_submission_keeps_existing_protective_stop(monkeypatch):
+def test_failed_exit_submission_restores_protective_stop_after_releasing_reservation(monkeypatch):
     pos = _live_position()
     pos.protective_stop_order_id = "existing-stop"
     live_engine.current_position = pos
 
     cancelled_orders = []
+    restored_stops = []
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: (
+            [{"instrument": {"assetType": "OPTION", "symbol": "SPY_TEST"}, "longQuantity": 1}],
+            [{
+                "orderId": "existing-stop",
+                "status": "WORKING",
+                "orderLegCollection": [{
+                    "instruction": "SELL_TO_CLOSE",
+                    "instrument": {"assetType": "OPTION", "symbol": "SPY_TEST"},
+                }],
+            }],
+            200,
+            None,
+        ),
+    )
     monkeypatch.setattr(live_engine, "_submit_option_exit_market_order", lambda *_args: None)
-    monkeypatch.setattr(live_engine, "_cancel_protective_stop", lambda order_id: cancelled_orders.append(order_id))
+    monkeypatch.setattr(
+        live_engine,
+        "_cancel_protective_stop",
+        lambda order_id: cancelled_orders.append(order_id) or True,
+    )
     monkeypatch.setattr(
         live_engine,
         "_submit_protective_stop",
-        lambda *_args, **_kwargs: pytest.fail("must not replace a stop that was never canceled"),
+        lambda *args, **kwargs: restored_stops.append((args, kwargs)) or ("restored-stop", 4.75),
     )
 
     assert live_engine.close_trade(500.0, "MANUAL_EXIT") is False
-    assert cancelled_orders == []
+    assert cancelled_orders == ["existing-stop"]
+    assert restored_stops == [
+        (("SPY_TEST", 5.0, 1), {"stop_price_override": 4.75})
+    ]
+
+
+def test_manual_exit_uses_full_broker_quantity_and_cancels_stop_before_market(monkeypatch):
+    import execution.strategy_research as strategy_research
+    import execution.trade_ledger_outbox as trade_ledger_outbox
+
+    pos = _live_position()
+    pos.quantity = 1
+    pos.protective_stop_order_id = "existing-stop"
+    live_engine.current_position = pos
+    actions = []
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: (
+            [{"instrument": {"assetType": "OPTION", "symbol": "SPY_TEST"}, "longQuantity": 3}],
+            [{
+                "orderId": "existing-stop",
+                "status": "WORKING",
+                "orderLegCollection": [{
+                    "instruction": "SELL_TO_CLOSE",
+                    "instrument": {"assetType": "OPTION", "symbol": "SPY_TEST"},
+                }],
+            }],
+            200,
+            None,
+        ),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_cancel_protective_stop",
+        lambda order_id: actions.append(("cancel", order_id)) or True,
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_option_exit_market_order",
+        lambda symbol, quantity: actions.append(("market", symbol, quantity)) or "exit-1",
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_wait_for_exit_fill",
+        lambda *_args, **_kwargs: (True, 5.25),
+    )
+    monkeypatch.setattr(live_engine, "record_trade", lambda *_args: None)
+    monkeypatch.setattr(live_engine, "record_option_management_cycle", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(live_engine, "exit_quality_metrics", lambda **_kwargs: {})
+    monkeypatch.setattr(live_engine, "_play_execution_alert", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(live_engine, "_arm_post_exit_cooling", lambda *_args: None)
+    monkeypatch.setattr(live_engine, "log_trade_diagnostic_event", lambda **_kwargs: None)
+    monkeypatch.setattr(live_engine, "safe_log_trade", lambda **_kwargs: None)
+    monkeypatch.setattr(live_engine, "send_trade_exit_alert", lambda **_kwargs: None)
+    monkeypatch.setattr(trade_ledger_outbox, "queue_completed_trade", lambda _trade: None)
+    monkeypatch.setattr(strategy_research, "analyze_completed_trade", lambda _trade: None)
+
+    assert live_engine.close_trade(500.0, "MANUAL_EXIT_MARKET", option_mark=5.20) is True
+    assert actions == [
+        ("cancel", "existing-stop"),
+        ("market", "SPY_TEST", 3),
+    ]
+
+
+def test_manual_exit_adopts_the_single_live_schwab_spy_contract_when_local_symbol_is_stale(monkeypatch):
+    pos = _live_position()
+    pos.option_symbol = "SPY STALE"
+    pos.protective_stop_order_id = ""
+    live_engine.current_position = pos
+    submitted = []
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: (
+            [{"instrument": {"assetType": "OPTION", "symbol": "SPY LIVE"}, "longQuantity": 2}],
+            [],
+            200,
+            None,
+        ),
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_option_exit_market_order",
+        lambda symbol, quantity: submitted.append((symbol, quantity)) or None,
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: (None, None),
+    )
+
+    assert live_engine.close_trade(500.0, "MANUAL_EXIT_MARKET", option_mark=5.20) is False
+    assert submitted == [("SPY LIVE", 2)]
+    assert live_engine.current_position.option_symbol == "SPY LIVE"
+    assert live_engine.current_position.quantity == 2
+
+
+def test_exit_fill_timeout_does_not_treat_remaining_position_as_success(monkeypatch):
+    client = Mock()
+    order_response = Mock()
+    order_response.raise_for_status.return_value = None
+    order_response.json.return_value = {"status": "WORKING"}
+    client.get_order.return_value = order_response
+    live_engine.set_schwab_client(client, "account-number", "account-hash")
+    monkeypatch.setattr(live_engine, "ORDER_CHECK_INTERVAL_SECONDS", 0.001)
+    monkeypatch.setattr(
+        live_engine,
+        "get_schwab_positions",
+        lambda: (
+            [{"instrument": {"assetType": "OPTION", "symbol": "SPY_TEST"}, "longQuantity": 1}],
+            [],
+            200,
+            None,
+        ),
+    )
+
+    filled, fill_price = live_engine._wait_for_exit_fill(
+        "exit-1",
+        "SPY_TEST",
+        5.20,
+        max_wait_seconds=0.001,
+    )
+
+    assert filled is False
+    assert fill_price is None
 
 
 def test_exit_submission_cooldown_keeps_existing_protective_stop(monkeypatch):
@@ -461,7 +710,7 @@ def test_live_close_when_protective_restore_fails(monkeypatch):
     monkeypatch.setattr(
         live_engine,
         "close_trade",
-        lambda _price, reason, _option_mark=None: close_calls.setdefault("reason", reason),
+        lambda _price, reason, _option_mark=None, **_kwargs: close_calls.setdefault("reason", reason),
     )
 
     live_engine._last_protective_stop_check_epoch = 0.0
@@ -488,7 +737,7 @@ def test_live_preserves_existing_stop_when_ratcheted_stop_sync_fails(monkeypatch
     monkeypatch.setattr(
         live_engine,
         "close_trade",
-        lambda _price, reason, _option_mark=None: close_calls.setdefault("reason", reason),
+        lambda _price, reason, _option_mark=None, **_kwargs: close_calls.setdefault("reason", reason),
     )
 
     live_engine._last_protective_stop_check_epoch = 0.0
@@ -738,7 +987,7 @@ def test_live_exits_when_price_crosses_deferred_high_water_stop(monkeypatch):
     monkeypatch.setattr(
         live_engine,
         "close_trade",
-        lambda _price, reason, option_mark=None: close_calls.update(reason=reason, mark=option_mark),
+        lambda _price, reason, option_mark=None, **_kwargs: close_calls.update(reason=reason, mark=option_mark),
     )
     live_engine._last_protective_stop_check_epoch = live_engine.time.time()
     live_engine._last_protective_stop_check_ok = True
@@ -762,12 +1011,29 @@ def test_live_does_not_close_at_former_twenty_minute_maximum_hold(monkeypatch):
 
     close_calls = {}
     monkeypatch.setattr(live_engine, "datetime", _FixedDateTime)
-    monkeypatch.setattr(live_engine, "_sync_position_with_broker", lambda _price: None)
+    monkeypatch.setattr(
+        live_engine,
+        "_sync_position_with_broker",
+        lambda _price, force=False: None,
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_has_active_protective_stop_order",
+        lambda _symbol: True,
+    )
+    monkeypatch.setattr(
+        live_engine,
+        "_submit_protective_stop",
+        lambda *_args, **_kwargs: ("replacement-stop", 5.148),
+    )
+    monkeypatch.setattr(live_engine, "save_position", lambda _position: None)
     monkeypatch.setattr(
         live_engine,
         "close_trade",
-        lambda _price, reason, _option_mark=None: close_calls.setdefault("reason", reason),
+        lambda _price, reason, _option_mark=None, **_kwargs: close_calls.setdefault("reason", reason),
     )
+    live_engine._last_protective_stop_check_epoch = 0.0
+    live_engine._last_protective_stop_check_ok = True
 
     live_engine.manage_trade(current_price=500.0, option_mark=5.20, option_bid=5.20)
 

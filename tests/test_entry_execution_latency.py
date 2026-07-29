@@ -1,9 +1,11 @@
 import execution.live_engine as live_engine
 
 
-def test_entry_limit_wait_defaults_to_subsecond_market_fallback():
+def test_entry_limit_wait_defaults_to_price_capped_repricing():
     assert live_engine.ENTRY_LIMIT_MAX_WAIT_SECONDS == 0.35
-    assert live_engine.ENTRY_MARKET_FALLBACK_MAX_WAIT_SECONDS == 0.35
+    assert live_engine.ENTRY_REPRICE_MAX_WAIT_SECONDS == 0.35
+    assert live_engine.ENTRY_MAX_CHASE_DOLLARS == 0.05
+    assert live_engine.ENTRY_MARKET_FALLBACK_ENABLED is False
 
 
 def test_fresh_preclose_exposure_is_reused_for_entry(monkeypatch):

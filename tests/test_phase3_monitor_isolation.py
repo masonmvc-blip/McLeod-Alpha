@@ -48,9 +48,46 @@ def test_pending_cockpit_exit_uses_immediate_market_exit(monkeypatch):
 
     assert module._process_manual_exit_command(750.0, 5.25) is True
     assert close_calls == [
-        ((750.0, "MANUAL_EXIT_MARKET", 5.25), {"execution_mode": "market", "fallback_to_market": False})
+        (
+            (750.0, "MANUAL_EXIT_MARKET", 5.25),
+            {
+                "execution_mode": "market",
+                "fallback_to_market": False,
+                "option_bid": None,
+                "option_last": None,
+                "quote_metadata": None,
+            },
+        )
     ]
     assert memory.command["status"] == "COMPLETED"
+
+
+def test_pending_cockpit_exit_keeps_retrying_after_engine_exception(monkeypatch):
+    module = importlib.import_module("phase3_monitor")
+
+    class Memory:
+        command = {"action": "EXIT_TRADE", "status": "PENDING"}
+
+        def load_setting(self, *_args):
+            return dict(self.command)
+
+        def save_setting(self, _name, value, *_args):
+            self.command = dict(value)
+
+    memory = Memory()
+    monkeypatch.setattr(module, "get_memory", lambda: memory)
+    monkeypatch.setattr(
+        module,
+        "ENGINE_MODULE",
+        type("Engine", (), {
+            "current_position": object(),
+            "close_trade": staticmethod(lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("broker unavailable"))),
+        }),
+    )
+
+    assert module._process_manual_exit_command(750.0, 5.25) is False
+    assert memory.command["status"] == "RETRYING"
+    assert "retry remains active" in memory.command["last_error"]
 
 
 def test_post_exit_cooling_blocks_one_qualifying_entry(monkeypatch):
