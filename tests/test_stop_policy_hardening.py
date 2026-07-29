@@ -8,6 +8,17 @@ from backtesting.stop_policy_simulator import SimulatedPosition, simulate_trade_
 import execution.live_engine as live_engine
 
 
+@pytest.fixture(autouse=True)
+def _isolate_live_position_persistence(monkeypatch):
+    """Keep stop-policy unit tests from mutating production runtime artifacts."""
+    monkeypatch.setattr(live_engine, "save_position", lambda _position: None)
+    monkeypatch.setattr(live_engine, "clear_position", lambda: None)
+    monkeypatch.setattr(live_engine, "_audit_bot_order", lambda _order_id, _intent: None)
+    live_engine.current_position = None
+    yield
+    live_engine.current_position = None
+
+
 class _FixedDateTime(datetime):
     @classmethod
     def now(cls, tz=None):

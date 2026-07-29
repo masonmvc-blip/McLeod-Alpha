@@ -98,9 +98,14 @@ def test_memory_reconciles_broker_trade_once_and_records_correlated_event(tmp_pa
             "SELECT event_type, source, correlation_id, payload FROM memory_events WHERE category = 'trade'"
         ).fetchall()
     assert rows == [("entry-1", "exit-1")]
-    assert len(events) == 1
-    assert events[0][:3] == ("broker_trade_reconciled", "broker_reconciliation", "broker-trade:entry-1:exit-1")
-    assert json.loads(events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
+    reconciled_events = [event for event in events if event[0] == "broker_trade_reconciled"]
+    assert len(reconciled_events) == 1
+    assert reconciled_events[0][:3] == (
+        "broker_trade_reconciled",
+        "broker_reconciliation",
+        "broker-trade:entry-1:exit-1",
+    )
+    assert json.loads(reconciled_events[0][3])["schema_version"] == "broker-trade-reconciliation.v1"
 
 
 def test_legacy_backfill_does_not_overwrite_broker_cash_trade(tmp_path):
@@ -349,7 +354,7 @@ def test_indicator_performance_summary_ranks_by_win_rate_before_win_count():
     assert [row["indicator"] for row in summary] == ["perfect_single", "two_wins", "one_win_many_trades"]
 
 
-def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_path):
+def test_today_trades_endpoint_reconciles_broker_trade_once(monkeypatch, tmp_path):
     database_path = tmp_path / "data" / "mcleod_alpha.db"
     memory = Memory(db_path=database_path)
     today = datetime.now(cockpit.EASTERN_TZ).date().isoformat()
@@ -370,6 +375,7 @@ def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_pat
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
     monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
@@ -388,8 +394,9 @@ def test_today_trades_endpoint_does_not_mutate_trade_ledger(monkeypatch, tmp_pat
 
     assert response.status_code == 200
     assert response.get_json()["trades"]
-    assert before_count == after_count == 1
-    assert broker_rows == 0
+    assert before_count == 1
+    assert after_count == 2
+    assert broker_rows == 1
 
 
 def test_today_trades_uses_broker_net_status_total_including_commissions(monkeypatch, tmp_path):
@@ -413,6 +420,7 @@ def test_today_trades_uses_broker_net_status_total_including_commissions(monkeyp
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [])
     monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: -644.55)
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
@@ -448,6 +456,7 @@ def test_today_trades_never_falls_back_to_a_previous_calendar_day(monkeypatch, t
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [])
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
     monkeypatch.setattr(cockpit, "_load_latest_schwab_transaction_export", lambda: (None, None))
@@ -495,6 +504,7 @@ def test_today_trades_preserves_entry_diagnostics_for_broker_canonical_rows(monk
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
     monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
@@ -537,6 +547,7 @@ def test_today_trades_preserves_local_manual_exit_label_for_broker_rows(monkeypa
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("broker-entry", "broker-exit")])
     monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
@@ -564,6 +575,7 @@ def test_today_trades_preserves_manual_exit_entry_state_fields(monkeypatch, tmp_
     )
 
     monkeypatch.setattr(cockpit, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(cockpit, "get_memory", lambda: memory)
     monkeypatch.setattr(cockpit, "_broker_transaction_trades_for_date", lambda _: [_broker_trade("manual-entry", "manual-exit")])
     monkeypatch.setattr(cockpit, "_schwab_transaction_day_net_pnl", lambda _: None)
     monkeypatch.setattr(cockpit, "_broker_verified_trade_signatures", lambda _: None)
