@@ -84,6 +84,7 @@ def test_day_trade_spy_review_exposes_all_five_catalog_rules(monkeypatch):
         assert title in review
     assert "11/50" in review
     assert "COLLECT MORE DATA" in review
+    assert "These are the five video-derived rules" not in review
 
 
 def test_bot_cockpit_failures_combines_structured_daily_sources(monkeypatch):
@@ -409,12 +410,12 @@ def test_today_trades_appears_before_summary_without_tracker():
     assert "Measurements Starting Or Continuing" not in summary_html
     assert "1. What We Learned" in summary_html
     assert "2. Changes We Need To Make" in summary_html
-    assert "padding:0 6px 6px" in rendered
-    assert "padding:0 16px 10px" in rendered
+    assert "padding:0 4px 4px" in rendered
+    assert "padding:0 12px 7px" in rendered
     assert "<img" not in rendered
     assert "table-layout:auto" in rendered
     assert 'width="11.111%"' not in rendered
-    assert "padding:4px 4px" in rendered
+    assert "padding:3px 3px" in rendered
     assert "display:none;max-height:0" not in rendered
     assert "Evidence is diagnostic" not in rendered
 
@@ -483,7 +484,7 @@ def test_subject_uses_reconciled_broker_result(monkeypatch):
             "pending_outbox_entries": 0,
         },
     )
-    assert _subject("2026-07-29") == "You Made $664.25 Today Over 6 Trades"
+    assert _subject("2026-07-29") == "Made $664.25 Today On 6 Trades"
 
 
 def test_reconciliation_gate_requires_exact_parity_and_empty_outbox():
