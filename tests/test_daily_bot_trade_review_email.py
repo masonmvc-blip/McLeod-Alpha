@@ -2,7 +2,6 @@ from pathlib import Path
 
 from scripts import send_daily_bot_trade_review as review_email
 from scripts.send_daily_bot_trade_review import (
-    _all_time_trade_tracker,
     _compact_missed_opportunity_sections,
     _compact_operational_sections,
     _email_markdown,
@@ -171,11 +170,11 @@ def test_email_compacts_controls_and_hides_session_market_trend():
 """
     cleaned = _email_markdown(source)
 
-    assert "## Startup Guard" in cleaned
-    assert "**Decision:** **KEEP AT ONE**" in cleaned
+    assert "## Startup Guard — All Time" in cleaned
+    assert "**Decision:** Keep at one" in cleaned
     assert "Qualified candidates blocked today" not in cleaned
-    assert "## Cooling Period" in cleaned
-    assert "Ensure cooling arms reliably" in cleaned
+    assert "## Cooling Period — All Time" in cleaned
+    assert "ensure it arms after every confirmed exit" in cleaned
     assert "losses correctly avoided" not in cleaned
     assert "Session Market Trend" not in cleaned
     assert "Hidden research detail" not in cleaned
@@ -191,10 +190,10 @@ def test_compact_operational_sections_does_not_mutate_full_report_text():
     compacted = _compact_operational_sections(source)
 
     assert "## Startup Guard — Daily Assessment" in source
-    assert "## Startup Guard\n" in compacted
+    assert "## Startup Guard — All Time\n" in compacted
 
 
-def test_missed_opportunities_uses_matching_h2_headers_and_combined_name(
+def test_missed_opportunities_uses_separate_all_time_h2_headers(
     monkeypatch,
 ):
     monkeypatch.setattr(
@@ -208,14 +207,15 @@ def test_missed_opportunities_uses_matching_h2_headers_and_combined_name(
                 "option_evidence_coverage": 0.75,
             },
             "missed_opportunities": [{"classification": "MISSED_PROFITABLE_OPPORTUNITY"}],
-            "today_pattern_summary": [{
+            "rolling_canonical_episodes": 2,
+            "pattern_summary": [{
                 "direction": "PUT",
                 "phase": "INITIATION",
                 "rejection_reason": "Regime mismatch",
                 "missed_profitable": 1,
                 "canonical_episodes": 2,
             }],
-            "today_blocker_summary": [{
+            "blocker_summary": [{
                 "blocker_code": "REGIME_MATCH",
                 "canonical_episodes": 2,
                 "sole_blocker_episodes": 1,
@@ -242,7 +242,11 @@ def test_missed_opportunities_uses_matching_h2_headers_and_combined_name(
     compacted = _compact_missed_opportunity_sections(source, "2026-07-29")
 
     assert "## Daily Scorecard" in compacted
-    assert "## Missed Opportunities & Block Usefulness" in compacted
+    assert "## Missed Opportunities — All Time" in compacted
+    assert "## Block Usefulness — All Time" in compacted
+    assert compacted.index("## Missed Opportunities — All Time") < compacted.index(
+        "## Block Usefulness — All Time"
+    )
     assert "### Canonical Missed Opportunities" not in compacted
     assert "### Blocker Usefulness" not in compacted
 
@@ -260,7 +264,7 @@ def test_email_currency_normalization_formats_monetary_tables_and_signals():
     assert "outperformed CALL by $207.73" in normalized
 
 
-def test_today_trades_and_tracker_appear_before_summary_and_details():
+def test_today_trades_appears_before_summary_without_tracker():
     rendered = markdown_to_email_html(
         "## Direction Breakdown — All Time\n\nDetails",
         "2026-07-29",
@@ -284,19 +288,11 @@ def test_today_trades_and_tracker_appear_before_summary_and_details():
             "exit_reason": "4% Stop",
             "positive": True,
         }],
-        tracker={
-            "trades": 82,
-            "win_rate": 34 / 82,
-            "pnl_dollars": -2684.77,
-            "average_pnl_dollars": -32.74,
-            "trading_days": 10,
-            "through_date": "2026-07-29",
-        },
     )
 
     assert rendered.index(">Summary<") < rendered.index(">Direction Breakdown — All Time<")
-    assert rendered.index(">Today's Trades<") < rendered.index(">SPY Trade Tracker<")
-    assert rendered.index(">SPY Trade Tracker<") < rendered.index(">Summary<")
+    assert rendered.index(">Today's Trades<") < rendered.index(">Summary<")
+    assert "SPY Trade Tracker" not in rendered
     summary_html = rendered[
         rendered.index(">Summary<"):rendered.index(">Direction Breakdown — All Time<")
     ]
@@ -306,15 +302,12 @@ def test_today_trades_and_tracker_appear_before_summary_and_details():
     assert "Measurements Starting Or Continuing" not in summary_html
     assert "1. What We Learned" in summary_html
     assert "2. Changes We Need To Make" in summary_html
-    assert "padding:0 10px 18px" in rendered
-    assert "padding:0 28px 28px" in rendered
+    assert "padding:0 8px 10px" in rendered
+    assert "padding:0 20px 16px" in rendered
     assert "<img" not in rendered
     assert "table-layout:auto" in rendered
     assert 'width="11.111%"' not in rendered
-    assert "padding:8px 7px" in rendered
-    assert "padding:9px 7px" in rendered
-    assert "82" in rendered
-    assert "-$2,684.77" in rendered
+    assert "padding:6px 5px" in rendered
     assert "display:none;max-height:0" not in rendered
     assert "Evidence is diagnostic" not in rendered
 
@@ -383,29 +376,7 @@ def test_subject_uses_reconciled_broker_result(monkeypatch):
             "pending_outbox_entries": 0,
         },
     )
-    assert _subject("2026-07-29") == "You Made Today $664.25 Over 6 Trades"
-
-
-def test_spy_trade_tracker_uses_all_canonical_history_through_report_date(
-    monkeypatch,
-):
-    monkeypatch.setattr(
-        review_email,
-        "_all_time_study_trades",
-        lambda _date: [
-            {"trade_date": "2026-07-28", "pnl_dollars": -50.0},
-            {"trade_date": "2026-07-29", "pnl_dollars": 100.0},
-        ],
-    )
-
-    tracker = _all_time_trade_tracker("2026-07-29")
-
-    assert tracker["trades"] == 2
-    assert tracker["wins"] == 1
-    assert tracker["win_rate"] == 0.5
-    assert tracker["pnl_dollars"] == 50.0
-    assert tracker["average_pnl_dollars"] == 25.0
-    assert tracker["trading_days"] == 2
+    assert _subject("2026-07-29") == "You Made $664.25 Today Over 6 Trades"
 
 
 def test_reconciliation_gate_requires_exact_parity_and_empty_outbox():

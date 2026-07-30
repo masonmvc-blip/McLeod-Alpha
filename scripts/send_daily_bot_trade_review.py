@@ -231,61 +231,27 @@ def _summary_text(summary: dict[str, Any]) -> str:
 
 def _summary_html(summary: dict[str, Any]) -> str:
     lessons = "".join(
-        "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
+        "<li style=\"margin:4px 0;color:#34445f;font-size:13px;\">"
         f"<strong>{_inline(str(row.get('title') or 'Learning'))}:</strong> "
         f"{_inline(_normalize_dollar_markdown(str(row.get('signal') or '')))}.</li>"
         for row in summary["lessons"]
     )
     changes = "".join(
-        "<li style=\"margin:7px 0;color:#34445f;font-size:13px;\">"
+        "<li style=\"margin:4px 0;color:#34445f;font-size:13px;\">"
         f"{_inline(row)}</li>"
         for row in summary["changes"]
     )
     return f"""
-<div style="border:1px solid #d7e2f0;border-radius:14px;overflow:hidden;background:#f9fbfe;margin:0 0 14px;">
-  <div style="padding:12px 18px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
-  <div style="padding:12px 18px 14px;">
+<div style="border:1px solid #d7e2f0;border-radius:12px;overflow:hidden;background:#f9fbfe;margin:0 0 10px;">
+  <div style="padding:8px 12px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
+  <div style="padding:8px 12px 9px;">
     <div style="font-size:14px;font-weight:750;color:#173763;">1. What We Learned</div>
-    <ul style="margin:4px 0 12px;padding-left:19px;">{lessons}</ul>
+    <ul style="margin:2px 0 8px;padding-left:18px;">{lessons}</ul>
     <div style="font-size:14px;font-weight:750;color:#173763;">2. Changes We Need To Make</div>
-    <ul style="margin:4px 0 0;padding-left:19px;">{changes}</ul>
+    <ul style="margin:2px 0 0;padding-left:18px;">{changes}</ul>
   </div>
 </div>
 """
-
-
-def _spy_trade_tracker_html(tracker: dict[str, Any]) -> str:
-    """Render the canonical all-time SPY scorecard as compact Outlook-safe KPIs."""
-    cells = (
-        ("All-Time Trades", f"{int(tracker.get('trades') or 0):,}"),
-        ("Win Rate", f"{float(tracker.get('win_rate') or 0.0):.1%}"),
-        ("Net P&L", _currency(tracker.get("pnl_dollars") or 0.0)),
-        ("Average / Trade", _currency(tracker.get("average_pnl_dollars") or 0.0)),
-    )
-    rendered = "".join(
-        "<td width=\"25%\" align=\"center\" style=\"padding:11px 5px;"
-        "border-right:1px solid #dce5f2;\">"
-        f"<div style=\"font-size:10px;letter-spacing:.35px;text-transform:uppercase;"
-        f"color:#617087;\">{html.escape(label)}</div>"
-        f"<div style=\"margin-top:4px;font-size:18px;font-weight:750;color:#173763;\">"
-        f"{html.escape(value)}</div></td>"
-        for label, value in cells
-    )
-    through = html.escape(str(tracker.get("through_date") or ""))
-    days = int(tracker.get("trading_days") or 0)
-    return (
-        "<div style=\"margin:0 0 14px;border:1px solid #d7e2f0;"
-        "border-radius:12px;overflow:hidden;background:#f9fbfe;\">"
-        "<div style=\"padding:10px 14px;background:#eaf1fb;color:#173763;"
-        "font-size:17px;font-weight:750;text-align:center;\">SPY Trade Tracker</div>"
-        "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" "
-        "style=\"width:100%;border-collapse:collapse;\"><tr>"
-        f"{rendered}</tr></table>"
-        f"<div style=\"padding:7px 12px;text-align:center;color:#64748b;"
-        f"font-size:11px;\">Canonical broker-backed history through {through} "
-        f"across {days} trading day{'s' if days != 1 else ''}; refreshed daily.</div>"
-        "</div>"
-    )
 
 
 def _strike_from_symbol(symbol: Any) -> str:
@@ -488,7 +454,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
         ("Exit", "exit_reason"),
     )
     head = "".join(
-        "<th style=\"padding:8px 7px;"
+        "<th style=\"padding:6px 5px;"
         "text-align:center;vertical-align:middle;background:#edf3fb;"
         "border-bottom:2px solid #cbd8ea;font-size:10px;letter-spacing:.25px;"
         f"text-transform:uppercase;color:#52657f;white-space:nowrap;\">{html.escape(label)}</th>"
@@ -504,7 +470,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
                 else "#334155"
             )
             cells.append(
-                "<td style=\"padding:9px 7px;"
+                "<td style=\"padding:6px 5px;"
                 "text-align:center;vertical-align:middle;"
                 f"border-bottom:1px solid #e6ebf2;font-size:11px;color:{color};"
                 "font-weight:500;white-space:nowrap;\">"
@@ -518,9 +484,9 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
             "color:#64748b;font-size:12px;\">No completed trades</td></tr>"
         )
     return (
-        "<div style=\"margin:0 0 14px;border:1px solid #d7e2f0;"
+        "<div style=\"margin:0 0 10px;border:1px solid #d7e2f0;"
         "border-radius:12px;overflow:hidden;\">"
-        "<div style=\"padding:12px 14px;background:#173763;color:#ffffff;"
+        "<div style=\"padding:9px 10px;background:#173763;color:#ffffff;"
         "font-size:17px;font-weight:750;text-align:center;\">Today's Trades</div>"
         "<div style=\"overflow-x:auto;\">"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
@@ -563,7 +529,6 @@ def markdown_to_email_html(
     *,
     summary: dict[str, Any] | None = None,
     trades: list[dict[str, str]] | None = None,
-    tracker: dict[str, Any] | None = None,
 ) -> str:
     """Render the review's constrained Markdown into email-safe HTML."""
     blocks: list[str] = []
@@ -595,20 +560,20 @@ def markdown_to_email_html(
                 ])
                 index += 1
             head = "".join(
-                f"<th style=\"padding:8px 9px;text-align:left;border-bottom:2px solid #cbd8ea;"
+                f"<th style=\"padding:6px 7px;text-align:left;border-bottom:2px solid #cbd8ea;"
                 f"font-size:12px;color:#24487f;\">{_inline(cell)}</th>"
                 for cell in headers
             )
             body = "".join(
                 "<tr>" + "".join(
-                    f"<td style=\"padding:8px 9px;border-bottom:1px solid #e5ebf4;"
+                    f"<td style=\"padding:6px 7px;border-bottom:1px solid #e5ebf4;"
                     f"font-size:12px;color:#3d4960;\">{_inline(cell)}</td>"
                     for cell in row
                 ) + "</tr>"
                 for row in rows
             )
             blocks.append(
-                "<div style=\"overflow-x:auto;margin:12px 0 20px;\">"
+                "<div style=\"overflow-x:auto;margin:8px 0 12px;\">"
                 "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
                 "style=\"width:100%;border-collapse:collapse;background:#f9fbfe;"
                 "border:1px solid #dce5f2;border-radius:8px;\">"
@@ -643,7 +608,6 @@ def markdown_to_email_html(
     content = "\n".join(blocks)
     summary_card = _summary_html(summary) if summary else ""
     trades_table = _today_trades_email_html(trades) if trades is not None else ""
-    tracker_card = _spy_trade_tracker_html(tracker) if tracker else ""
     return f"""<!doctype html>
 <html>
 <head>
@@ -653,19 +617,19 @@ def markdown_to_email_html(
 </head>
 <body style="margin:0!important;padding:0!important;background:#f3f6fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0;padding:0;background:#f3f6fb;border-collapse:collapse;">
-    <tr><td align="center" style="margin:0;padding:0 10px 18px;">
+    <tr><td align="center" style="margin:0;padding:0 8px 10px;">
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(31,49,82,.10);">
-        <tr><td class="review" style="margin:0;padding:0 28px 28px;line-height:1.52;">
+        <tr><td class="review" style="margin:0;padding:0 20px 16px;line-height:1.42;">
           <style>
             .review h1 {{ display:none; }}
-            .review h2 {{ color:#173763;font-size:19px;margin:24px 0 11px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:10px 12px;border-radius:8px; }}
-            .review h3 {{ color:#172f58;font-size:16px;margin:18px 0 7px; }}
-            .review p {{ margin:9px 0;color:#3d4960;font-size:14px; }}
-            .review ul {{ margin:8px 0 18px;padding:11px 14px 11px 32px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:9px; }}
-            .review li {{ margin:7px 0;color:#3d4960;font-size:14px; }}
+            .review h2 {{ color:#173763;font-size:18px;margin:14px 0 7px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:7px 9px;border-radius:8px; }}
+            .review h3 {{ color:#172f58;font-size:16px;margin:10px 0 5px; }}
+            .review p {{ margin:5px 0;color:#3d4960;font-size:14px; }}
+            .review ul {{ margin:5px 0 10px;padding:8px 10px 8px 27px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:9px; }}
+            .review li {{ margin:4px 0;color:#3d4960;font-size:14px; }}
             .review strong {{ color:#172033; }}
             .review code {{ background:#eef3fa;border-radius:5px;padding:2px 5px;font-size:12px; }}
-            .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:9px 12px;border-radius:4px; }}
+            .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:6px 9px;border-radius:4px; }}
             .review tbody tr:nth-child(even) td {{ background:#f4f7fb; }}
             @media only screen and (max-width:600px) {{
               .review {{ padding-left:16px !important;padding-right:16px !important; }}
@@ -674,7 +638,6 @@ def markdown_to_email_html(
             }}
           </style>
           {trades_table}
-          {tracker_card}
           {summary_card}
           {content}
         </td></tr>
@@ -729,9 +692,9 @@ def _subject(trading_date: str) -> str:
     trades = int(reconciliation["broker_trades_today"])
     pnl = float(reconciliation["broker_pnl_dollars"])
     if pnl > 0:
-        subject = f"You Made Today ${abs(pnl):,.2f} Over {trades} Trades"
+        subject = f"You Made ${abs(pnl):,.2f} Today Over {trades} Trades"
     elif pnl < 0:
-        subject = f"You Lost Today ${abs(pnl):,.2f} Over {trades} Trades"
+        subject = f"You Lost ${abs(pnl):,.2f} Today Over {trades} Trades"
     else:
         subject = f"You Broke Even Today Over {trades} Trades"
     return subject.title()
@@ -776,7 +739,20 @@ def _email_markdown(markdown: str, *, trading_date: str | None = None) -> str:
         if re.match(r"^(Date|Generated):\s*", line, flags=re.IGNORECASE):
             continue
         cleaned.append(raw)
-    return "\n".join(cleaned).strip() + "\n"
+    result = "\n".join(cleaned).strip() + "\n"
+    return _reorder_h2_sections(
+        result,
+        [
+            "Daily Scorecard",
+            "Protective Stops",
+            "Direction Breakdown — All Time",
+            "McLeod Alpha SPY Indicator Results — All Time",
+            "Missed Opportunities — All Time",
+            "Block Usefulness — All Time",
+            "Startup Guard — All Time",
+            "Cooling Period — All Time",
+        ],
+    )
 
 
 def _section_value(section: str, label: str) -> str:
@@ -807,26 +783,6 @@ def _all_time_study_trades(trading_date: str) -> list[dict[str, Any]]:
     ]
 
 
-def _all_time_trade_tracker(trading_date: str) -> dict[str, Any]:
-    trades = _all_time_study_trades(trading_date)
-    pnl = sum(float(row.get("pnl_dollars") or 0.0) for row in trades)
-    wins = sum(float(row.get("pnl_dollars") or 0.0) > 0 for row in trades)
-    return {
-        "through_date": trading_date,
-        "trades": len(trades),
-        "wins": wins,
-        "losses": len(trades) - wins,
-        "win_rate": wins / len(trades) if trades else 0.0,
-        "pnl_dollars": round(pnl, 2),
-        "average_pnl_dollars": round(pnl / len(trades), 2) if trades else 0.0,
-        "trading_days": len({
-            str(row.get("trade_date") or "")
-            for row in trades
-            if row.get("trade_date")
-        }),
-    }
-
-
 def _all_time_direction_breakdown(trading_date: str) -> str | None:
     trades = _all_time_study_trades(trading_date)
     rows = []
@@ -851,7 +807,7 @@ def _all_time_direction_breakdown(trading_date: str) -> str | None:
 
 
 def _indicator_usefulness_summary(trading_date: str) -> str | None:
-    """Summarize accumulated canonical indicator evidence through this date."""
+    """Summarize accumulated McLeod Alpha SPY day-trading indicator evidence."""
     trades = _all_time_study_trades(trading_date)
     if not trades:
         return None
@@ -889,14 +845,65 @@ def _indicator_usefulness_summary(trading_date: str) -> str | None:
     helpful = max(comparable, key=lambda row: float(row["average_delta"]))
     caution = min(comparable, key=lambda row: float(row["average_delta"]))
     covered = sum(bool(row.get("indicator_labels")) for row in trades)
+    entry_quality = _load_json(
+        REPORT_DIR / f"entry_quality_shadow_{trading_date}.json"
+    )
+    scores = (
+        entry_quality.get("checklist_score_study", {})
+        .get("historical", {})
+        .get("overall", {})
+    )
+    score_parts = []
+    for score in ("5", "6", "7"):
+        row = scores.get(score) or {}
+        count = int(row.get("trades") or 0)
+        if count:
+            score_parts.append(
+                f"{score}/5: {float(row.get('win_rate') or 0.0):.1%} wins and "
+                f"{_currency(row.get('average_pnl_dollars') or 0.0)} average "
+                f"across {count} trades"
+            )
+    call_seven = (
+        entry_quality.get("checklist_score_study", {})
+        .get("historical", {})
+        .get("by_direction_and_phase", {})
+        .get("CALL", {})
+        .get("all_phases", {})
+        .get("7", {})
+    )
+    put_seven = (
+        entry_quality.get("checklist_score_study", {})
+        .get("historical", {})
+        .get("by_direction_and_phase", {})
+        .get("PUT", {})
+        .get("all_phases", {})
+        .get("7", {})
+    )
 
     def label(row: dict[str, Any]) -> str:
         return str(row.get("indicator") or "Unknown").replace("_", " ").title()
 
-    return f"""## Indicator Usefulness — All Time
+    checklist_line = (
+        "- **Checklist results:** " + "; ".join(score_parts) + "."
+        if score_parts else ""
+    )
+    confounding_line = ""
+    if call_seven and put_seven:
+        confounding_line = (
+            "- **Important contrary evidence:** 7/5 CALLs averaged "
+            f"**{_currency(call_seven.get('average_pnl_dollars') or 0.0)}** across "
+            f"**{int(call_seven.get('trades') or 0)} trades**, while 7/5 PUTs averaged "
+            f"**{_currency(put_seven.get('average_pnl_dollars') or 0.0)}** across "
+            f"**{int(put_seven.get('trades') or 0)} trades**. Direction and phase "
+            "are confounding the raw score comparison."
+        )
+
+    return f"""## McLeod Alpha SPY Indicator Results — All Time
 
 - **Most promising:** {label(helpful)} on {helpful.get('direction')} trades is **{int(helpful.get('wins') or 0)}W/{int(helpful.get('losses') or 0)}L** across **{int(helpful.get('trades') or 0)} trades**, averaging **{_currency(helpful.get('average_return') or 0.0)}** versus **{_currency(helpful.get('absent_average_return') or 0.0)}** when absent.
 - **Strongest caution:** {label(caution)} on {caution.get('direction')} trades is **{int(caution.get('wins') or 0)}W/{int(caution.get('losses') or 0)}L** across **{int(caution.get('trades') or 0)} trades**, averaging **{_currency(caution.get('average_return') or 0.0)}** versus **{_currency(caution.get('absent_average_return') or 0.0)}** when absent.
+{checklist_line}
+{confounding_line}
 - **History and decision:** Indicator labels cover **{covered}/{len(trades)}** canonical broker-backed trades through **{trading_date}**. These are all-time directional comparisons refreshed after every session; correlated indicators and small absent cohorts remain contrary evidence, so weights stay unchanged until governed samples support human review."""
 
 
@@ -919,22 +926,17 @@ def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> st
         REPORT_DIR / f"missed_opportunities_shadow_{trading_date}.json"
     )
     summary = payload.get("summary") or {}
-    missed = [
-        row for row in (payload.get("missed_opportunities") or [])
-        if isinstance(row, dict)
-    ]
     patterns = [
-        row for row in (payload.get("today_pattern_summary") or [])
+        row for row in (payload.get("pattern_summary") or [])
         if isinstance(row, dict)
     ]
     blockers = [
-        row for row in (payload.get("today_blocker_summary") or [])
+        row for row in (payload.get("blocker_summary") or [])
         if isinstance(row, dict)
     ]
-    if missed:
-        missed_count = int(summary.get("canonical_missed_opportunities") or len(missed))
-        unseen = int(summary.get("unseen_market_moves") or 0)
-        near = int(summary.get("near_miss_opportunities") or 0)
+    if patterns:
+        missed_count = sum(int(row.get("missed_profitable") or 0) for row in patterns)
+        episodes = int(payload.get("rolling_canonical_episodes") or 0)
         coverage = float(summary.get("option_evidence_coverage") or 0.0)
         top_pattern = max(
             patterns,
@@ -951,11 +953,11 @@ def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> st
             f"{int(top_pattern.get('missed_profitable') or 0)} misses in "
             f"{int(top_pattern.get('canonical_episodes') or 0)} canonical episodes."
         )
-        canonical_summary = f"""### Canonical Missed Opportunities
+        canonical_summary = f"""## Missed Opportunities — All Time
 
-- **What we missed:** **{missed_count}** executable +6%-before-stop opportunities: **{unseen}** were moves the live setup did not recognize and **{near}** were near-miss rejections.
+- **What we missed:** **{missed_count}** profitable misses across **{episodes}** decisive canonical rejected-candidate episodes accumulated through **{trading_date}**.
 - **Where it concentrated:** {pattern_text}
-- **What we learned:** Improve earlier move recognition and candidate coverage before weakening gates. Executable evidence coverage was **{coverage:.1%}**, below the governed 80% threshold, and the leading blocker patterns produced mixed outcomes."""
+- **What we learned:** Improve earlier move recognition and evidence coverage before weakening gates. The latest session’s executable evidence coverage was **{coverage:.1%}**, below the governed 80% threshold, and the leading all-time blocker patterns produced mixed outcomes."""
         markdown = _replace_h3_section(
             markdown,
             "Canonical Missed Opportunities",
@@ -976,7 +978,7 @@ def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> st
             key=lambda row: int(row.get("canonical_episodes") or 0),
             default={},
         )
-        blocker_summary = f"""### Blocker Usefulness
+        blocker_summary = f"""## Block Usefulness — All Time
 
 - **Most measurable blocker:** {primary.get('blocker_code', 'Unknown')} was the sole blocker in **{int(primary.get('sole_blocker_episodes') or 0)}** episodes; it missed **{int(primary.get('missed_profitable') or 0)}** profitable moves and protected against **{int(primary.get('losses_avoided') or 0)}** losing moves.
 - **Overlap warning:** {overlap.get('blocker_code', 'Overlapping gates')} appeared in **{int(overlap.get('canonical_episodes') or 0)}** episodes but was the sole blocker only **{int(overlap.get('sole_blocker_episodes') or 0)}** time(s), so it cannot receive causal credit.
@@ -991,32 +993,49 @@ def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> st
         "## Daily Scorecard",
         1,
     )
-    canonical_match = re.search(
-        r"(?ms)^###\s+Canonical Missed Opportunities\s*$.*?"
-        r"(?=^###\s+|^##\s+|\Z)",
-        markdown,
-    )
-    blocker_match = re.search(
-        r"(?ms)^###\s+Blocker Usefulness\s*$.*?"
-        r"(?=^###\s+|^##\s+|\Z)",
-        markdown,
-    )
-    matched = [match for match in (canonical_match, blocker_match) if match]
-    if matched:
-        combined_parts = [
-            re.sub(r"^###\s+.+?\n+", "", match.group(0).strip())
-            for match in matched
-        ]
-        insert_at = min(match.start() for match in matched)
-        for match in sorted(matched, key=lambda item: item.start(), reverse=True):
-            markdown = markdown[:match.start()] + markdown[match.end():]
-        combined = (
-            "## Missed Opportunities & Block Usefulness\n\n"
-            + "\n\n".join(part for part in combined_parts if part)
-            + "\n\n"
-        )
-        markdown = markdown[:insert_at] + combined + markdown[insert_at:]
     return markdown
+
+
+def _daily_report_history(prefix: str, trading_date: str) -> list[dict[str, Any]]:
+    payloads = []
+    for path in sorted(REPORT_DIR.glob(f"{prefix}_*.json")):
+        report_date = path.stem.removeprefix(f"{prefix}_")
+        if report_date <= trading_date:
+            payload = _load_json(path)
+            if payload:
+                payloads.append(payload)
+    return payloads
+
+
+def _all_time_control_summary(prefix: str, trading_date: str) -> dict[str, Any]:
+    payloads = _daily_report_history(prefix, trading_date)
+    totals: dict[str, float] = {}
+    for payload in payloads:
+        for key, value in (payload.get("summary") or {}).items():
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                totals[key] = totals.get(key, 0.0) + float(value)
+    return {
+        "payloads": payloads,
+        "totals": totals,
+        "latest": payloads[-1] if payloads else {},
+    }
+
+
+def _reorder_h2_sections(markdown: str, ordered_titles: list[str]) -> str:
+    matches = list(re.finditer(r"(?m)^##\s+(.+?)\s*$", markdown))
+    if not matches:
+        return markdown
+    prefix = markdown[:matches[0].start()].strip()
+    sections: list[tuple[str, str]] = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
+        sections.append((match.group(1).strip(), markdown[match.start():end].strip()))
+    by_title = {title: section for title, section in sections}
+    arranged = [by_title[title] for title in ordered_titles if title in by_title]
+    arranged.extend(
+        section for title, section in sections if title not in ordered_titles
+    )
+    return "\n\n".join(([prefix] if prefix else []) + arranged).strip() + "\n"
 
 
 def _compact_operational_sections(
@@ -1048,15 +1067,17 @@ def _compact_operational_sections(
         markdown,
     )
     if startup_match:
-        section = startup_match.group(0)
-        decision = _section_value(section, "Today’s recommendation").replace("_", " ")
-        startup = f"""## Startup Guard
+        history = _all_time_control_summary("startup_guard_review", trading_date or "")
+        totals = history["totals"]
+        latest = history["latest"]
+        blocked = int(totals.get("blocked_candidates", 0))
+        decisive = int(totals.get("decisive_option_outcomes", 0))
+        coverage = decisive / blocked if blocked else 0.0
+        startup = f"""## Startup Guard — All Time
 
-- **Setting:** {_section_value(section, "Current setting")}.
-- **Decision:** {decision}.
-- **Today:** {_section_value(section, "Qualified candidates blocked today")} candidates blocked; {_section_value(section, "Prompt same-contract opportunities preserved")} prompt follow-ups preserved; {_section_value(section, "Executable outcome coverage")} executable coverage.
-- **Why:** {_section_value(section, "Rationale")}.
-- **Next:** Keep the live guard unchanged unless human review approves a change after {_section_value(section, "Change gate")}."""
+- **Setting:** Block the first **{int(latest.get('current_setting') or 1)}** otherwise-qualified signal after startup.
+- **Evidence:** **{blocked}** candidates blocked across **{len(history['payloads'])}** daily reviews; **{decisive}** had decisive executable outcomes ({coverage:.1%} coverage), with **{int(totals.get('profitable_candidates_blocked', 0))}** profitable moves blocked and **{int(totals.get('opportunities_preserved_by_prompt_followup', 0))}** opportunities preserved by prompt follow-ups.
+- **Decision:** Keep at one. The all-time decisive sample remains below the **20-episode** change gate; any change requires at least 80% executable coverage and human review."""
         markdown = _replace_h2_section(markdown, startup_title, startup)
 
     cooling_title = "Cooling Period — Daily Assessment"
@@ -1065,16 +1086,16 @@ def _compact_operational_sections(
         markdown,
     )
     if cooling_match:
-        section = cooling_match.group(0)
-        decision = _section_value(section, "Today’s recommendation").replace("_", " ")
-        harmful_reentries = _section_value(section, "Harmful uncooled re-entries")
-        cooling = f"""## Cooling Period
+        history = _all_time_control_summary("cooling_period_review", trading_date or "")
+        totals = history["totals"]
+        blocked = int(totals.get("cooling_blocks", 0))
+        decisive = int(totals.get("decisive_option_outcomes", 0))
+        coverage = decisive / blocked if blocked else 0.0
+        cooling = f"""## Cooling Period — All Time
 
-- **Setting:** {_section_value(section, "Current behavior")}.
-- **Decision:** {decision}.
-- **Today:** {_section_value(section, "Cooling blocks observed today")} signals blocked; {_section_value(section, "Profitable opportunities blocked").split(';')[0]} profitable opportunities blocked; {harmful_reentries} harmful uncooled re-entry; {_section_value(section, "Executable blocked-signal coverage")} executable coverage.
-- **Why:** {_section_value(section, "Rationale")}.
-- **Next:** Ensure cooling arms reliably after every confirmed exit; do not change its duration unless human review approves a change after {_section_value(section, "Change gate")}."""
+- **Setting:** Skip the next **one otherwise-qualified signal** after every confirmed exit.
+- **Evidence:** **{blocked}** cooling blocks across **{len(history['payloads'])}** daily reviews; **{decisive}** had decisive executable outcomes ({coverage:.1%} coverage), including **{int(totals.get('profitable_opportunities_blocked', 0))}** profitable moves blocked and **{int(totals.get('harmful_uncooled_reentries', 0))}** harmful uncooled same-contract re-entry worth **{_currency(totals.get('harmful_uncooled_reentry_pnl', 0.0))}**.
+- **Decision:** Keep one signal and ensure it arms after every confirmed exit. An arming failure is not evidence that the duration is too short; changing duration still requires 20 decisive blocks, 80% coverage, and human review."""
         markdown = _replace_h2_section(markdown, cooling_title, cooling)
 
     stop_title = "Protective Stop and Ratchet Reliability"
@@ -1322,13 +1343,11 @@ def send_review(
             )
 
     trade_rows = _snapshot_trade_rows(trading_date)
-    tracker = _all_time_trade_tracker(trading_date)
     preview_html = markdown_to_email_html(
         email_markdown,
         trading_date,
         summary=email_summary,
         trades=trade_rows,
-        tracker=tracker,
     )
     html_path.write_text(preview_html, encoding="utf-8")
     if dry_run:
@@ -1339,14 +1358,12 @@ def send_review(
         trading_date,
         summary=email_summary,
         trades=trade_rows,
-        tracker=tracker,
     )
 
     state = _load_json(STATE_PATH)
     digest = hashlib.sha256(
         email_markdown.encode("utf-8")
         + json.dumps(trade_rows, sort_keys=True).encode("utf-8")
-        + json.dumps(tracker, sort_keys=True).encode("utf-8")
     ).hexdigest()
     if (
         not force
