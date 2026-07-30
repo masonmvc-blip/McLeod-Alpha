@@ -23,10 +23,11 @@ from urllib.request import urlopen
 from xml.sax.saxutils import escape as xml_escape
 from zoneinfo import ZoneInfo
 
-
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from reports.stop_execution_review import FORWARD_VALIDATION_START_DATE
+
 LEARNING_DIR = ROOT / "data" / "learning"
 REPORT_DIR = ROOT / "reports" / "daily_trade_learning"
 ATTRIBUTION_DIR = ROOT / "reports" / "daily_loss_attribution"
@@ -997,6 +998,7 @@ def _runtime_failure_counts(trading_date: str) -> dict[str, int]:
         "Runtime Parity Mismatch": "parity_state='mismatch'",
     }
     counts = {label: 0 for label in categories}
+    last_seen: dict[str, datetime] = {}
     try:
         lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
@@ -1009,14 +1011,27 @@ def _runtime_failure_counts(trading_date: str) -> dict[str, int]:
             continue
         if observed.tzinfo is None:
             observed = observed.replace(tzinfo=EASTERN_TZ)
-        if observed.astimezone(EASTERN_TZ).date().isoformat() != trading_date:
+        observed_et = observed.astimezone(EASTERN_TZ)
+        if observed_et.date().isoformat() != trading_date:
+            continue
+        # The daily trade review is about operational reliability during the
+        # live session. Planned/off-hours maintenance belongs in deployment
+        # logs, not in the trading-day failure count.
+        if not (9, 30) <= (observed_et.hour, observed_et.minute) <= (16, 0):
             continue
         text = " ".join(
             str(row.get(key) or "") for key in ("event_type", "message", "details")
         ).lower()
         for label, needle in categories.items():
             if needle in text:
-                counts[label] += 1
+                previous = last_seen.get(label)
+                # Correlate repeated monitor alerts into one operational
+                # incident. The monitor runs every minute, and historical
+                # entry-block text used to churn its signature even while the
+                # underlying fault remained unchanged.
+                if previous is None or (observed_et - previous).total_seconds() > 1800:
+                    counts[label] += 1
+                last_seen[label] = observed_et
     return counts
 
 
@@ -1187,6 +1202,7 @@ def _all_time_control_summary(prefix: str, trading_date: str) -> dict[str, Any]:
 
 def _execution_reliability_summary(trading_date: str) -> str:
     reports = _daily_report_history("stop_execution_review", trading_date)
+    forward_start = FORWARD_VALIDATION_START_DATE
     trades = [
         trade
         for report in reports
@@ -1218,9 +1234,58 @@ def _execution_reliability_summary(trading_date: str) -> str:
             "ratchet_failures",
             "protective_submission_failures",
             "replacement_rejections",
+            "rate_limit_failures",
             "protective_stop_missing_decisions",
         )
     }
+    forward_reports = [
+        report
+        for report in reports
+        if str(report.get("trading_date") or "") >= forward_start
+    ]
+    forward_trades = sum(
+        int((report.get("forward_validation") or {}).get("trades_observed") or 0)
+        for report in forward_reports
+    )
+    forward_submissions = sum(
+        int(
+            (report.get("forward_validation") or {}).get(
+                "ratchet_transitions_submitted"
+            )
+            or 0
+        )
+        for report in forward_reports
+    )
+    forward_verified = sum(
+        int(
+            (report.get("forward_validation") or {}).get(
+                "broker_verified_ratchets"
+            )
+            or 0
+        )
+        for report in forward_reports
+    )
+    forward_failures = sum(
+        int((report.get("forward_validation") or {}).get("critical_failures") or 0)
+        for report in forward_reports
+    )
+    forward_rate = (
+        forward_verified / forward_submissions if forward_submissions else None
+    )
+    forward_ready = forward_trades >= 20 or forward_submissions >= 50
+    forward_passing = (
+        forward_ready
+        and forward_rate is not None
+        and forward_rate >= 0.95
+        and forward_failures == 0
+    )
+    forward_status = (
+        "VALIDATED"
+        if forward_passing
+        else "REPAIR REQUIRED"
+        if forward_failures
+        else "COLLECTING FORWARD EVIDENCE"
+    )
 
     def average(values: list[float]) -> str:
         return _currency(sum(values) / len(values)) if values else "N/A"
@@ -1241,6 +1306,7 @@ def _execution_reliability_summary(trading_date: str) -> str:
 - **Execution:** Average adverse entry slippage **{average(entry_slippage)}** per contract; average exit shortfall **{average(exit_shortfall)}** per contract; estimated covered round-trip drag **{_currency(estimated_drag)}**.
 - **Speed:** Management-cycle performance was **{cycle_text}**.
 - **Recurring defects:** **{totals['ratchet_failures']}** ratchet failures, **{totals['protective_submission_failures']}** failed protective submissions, **{totals['replacement_rejections']}** rejected replacements, and **{totals['protective_stop_missing_decisions']}** missing-protection decisions.
+- **Post-repair stop validation (since {forward_start}):** **{forward_trades}/20 trades**, **{forward_submissions}/50 ratchet transitions**, **{forward_verified} broker verified** ({f'{forward_rate:.1%}' if forward_rate is not None else 'N/A'}), and **{forward_failures} critical failures**. Status: **{forward_status}**. Validation requires 20 trades or 50 transitions, at least 95% broker verification, and zero rejected replacements, protection gaps, ratchet/submission failures, or broker rate-limit failures.
 - **Repair status:** **{status}**."""
 
 

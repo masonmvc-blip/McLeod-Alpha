@@ -27,6 +27,14 @@ STATUS_URL = os.getenv("COCKPIT_HEALTH_URL", "http://127.0.0.1:5001").rstrip("/"
 STATE_PATH = ROOT / "data" / "live_runtime_health_state.json"
 EVENT_PATH = ROOT / "data" / "reports" / "runtime_events.jsonl"
 LATENCY_PATH = ROOT / "data" / "reports" / "latency_cycle_history.jsonl"
+EXPECTED_LAST_ERROR_PREFIXES = (
+    "ENTRY BLOCKED:",
+    "STARTUP GUARD:",
+    "COOLING PERIOD",
+    "MARKET CLOSED",
+    "NO ENTRY:",
+    "ENTRY PAUSED:",
+)
 
 
 def _is_entry_window() -> bool:
@@ -63,6 +71,16 @@ def _latest_candle_issue() -> str | None:
     except Exception as exc:
         return f"candle telemetry unavailable: {type(exc).__name__}"
     return None
+
+
+def _actionable_last_error(value: object) -> str | None:
+    """Return only operational faults; admission outcomes are normal telemetry."""
+    message = str(value or "").strip()
+    if not message:
+        return None
+    if message.upper().startswith(EXPECTED_LAST_ERROR_PREFIXES):
+        return None
+    return message
 
 
 def _record(issues: list[str]) -> None:
@@ -109,8 +127,9 @@ def main() -> int:
             actual = status.get(key)
             if actual != value:
                 issues.append(f"{key}={actual!r}, expected {value!r}")
-        if status.get("last_error"):
-            issues.append(f"last_error={status['last_error']}")
+        last_error = _actionable_last_error(status.get("last_error"))
+        if last_error:
+            issues.append(f"last_error={last_error}")
         # Before the opening bell, the latest completed candle is necessarily
         # from the prior session. Enforce candle freshness only while entries
         # can actually be submitted.

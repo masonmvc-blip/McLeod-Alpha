@@ -100,3 +100,48 @@ def test_stop_review_tracks_pending_submission_and_broker_verification():
     assert payload["summary"]["prospective_ratchet_submissions"] == 1
     assert payload["summary"]["broker_verified_ratchets"] == 1
     assert payload["summary"]["broker_verification_rate"] == 1.0
+    assert payload["forward_validation"]["eligible"] is False
+    assert payload["forward_validation"]["status"] == "PRE_VALIDATION_BASELINE"
+
+
+def test_forward_stop_validation_tracks_verified_transition():
+    trade_key = "SPY_TEST:2026-07-30T14:42:07-04:00"
+    events = [
+        {
+            "recorded_at": "2026-07-30T14:42:07-04:00",
+            "event_type": "option_quote_observed",
+            "trade_key": trade_key,
+            "option_symbol": "SPY_TEST",
+            "bid": 8.35,
+        },
+        {
+            "recorded_at": "2026-07-30T14:42:08-04:00",
+            "event_type": "stop_ratchet_submission_accepted_pending_verification",
+            "trade_key": trade_key,
+            "option_symbol": "SPY_TEST",
+            "desired_stop": 8.27,
+            "submitted_stop": 8.27,
+        },
+        {
+            "recorded_at": "2026-07-30T14:42:10-04:00",
+            "event_type": "stop_ratchet_broker_verified",
+            "trade_key": trade_key,
+            "option_symbol": "SPY_TEST",
+            "broker_confirmed_stop": 8.27,
+        },
+    ]
+
+    payload = build_stop_execution_review(
+        events,
+        trading_date="2026-07-30",
+        reconciliation={"complete": True},
+    )
+
+    validation = payload["forward_validation"]
+    assert validation["eligible"] is True
+    assert validation["trades_observed"] == 1
+    assert validation["ratchet_transitions_submitted"] == 1
+    assert validation["broker_verified_ratchets"] == 1
+    assert validation["broker_verification_rate"] == 1.0
+    assert validation["critical_failures"] == 0
+    assert validation["status"] == "PASSING_SO_FAR"

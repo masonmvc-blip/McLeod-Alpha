@@ -134,6 +134,7 @@ def test_execution_reliability_box_uses_all_available_review_history(monkeypatch
                     "ratchet_failures": 2,
                     "protective_submission_failures": 1,
                     "replacement_rejections": 0,
+                    "rate_limit_failures": 0,
                     "protective_stop_missing_decisions": 1,
                 },
                 "trades": [
@@ -168,6 +169,9 @@ def test_execution_reliability_box_uses_all_available_review_history(monkeypatch
     assert "$150.00" in review
     assert "1.25s median" in review
     assert "OPEN — REPAIR REQUIRED" in review
+    assert "Post-repair stop validation (since 2026-07-30)" in review
+    assert "0/20 trades" in review
+    assert "0/50 ratchet transitions" in review
 
 
 def test_markdown_to_email_html_renders_review_sections():

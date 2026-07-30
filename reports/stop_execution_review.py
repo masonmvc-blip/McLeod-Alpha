@@ -18,6 +18,8 @@ SCHEMA_VERSION = "stop-execution-review.v1"
 MINIMUM_TRADES = 20
 MINIMUM_TRANSITIONS = 50
 MAX_ACCEPTANCE_LATENCY_SECONDS = 3.0
+FORWARD_VALIDATION_START_DATE = "2026-07-30"
+MINIMUM_BROKER_VERIFICATION_RATE = 0.95
 
 
 def _number(value: Any) -> float | None:
@@ -457,6 +459,7 @@ def build_stop_execution_review(
         trade["protective_submission_failures"] for trade in trades
     )
     rejected = sum(trade["replacement_rejections"] for trade in trades)
+    rate_limit_failures = sum(trade["rate_limit_failures"] for trade in trades)
     recoveries = sum(trade["identity_recoveries"] for trade in trades)
     missing = sum(trade["protective_stop_missing_decisions"] for trade in trades)
     verified = sum(trade["broker_verified_ratchets"] for trade in trades)
@@ -489,6 +492,7 @@ def build_stop_execution_review(
             len(trades) >= MINIMUM_TRADES or transitions >= MINIMUM_TRANSITIONS
         ),
         "zero_rejected_replacements": rejected == 0,
+        "zero_broker_rate_limit_failures": rate_limit_failures == 0,
         "zero_ratchet_submission_failures": failures == 0,
         "zero_protective_submission_failures": protective_failures == 0,
         "zero_protection_missing_decisions": missing == 0,
@@ -508,6 +512,7 @@ def build_stop_execution_review(
             "ratchet_failures": failures,
             "protective_submission_failures": protective_failures,
             "replacement_rejections": rejected,
+            "rate_limit_failures": rate_limit_failures,
             "identity_recoveries": recoveries,
             "protective_stop_missing_decisions": missing,
             "prospective_ratchet_submissions": prospective_submissions,
@@ -524,6 +529,55 @@ def build_stop_execution_review(
             "exit_execution_shortfall_dollars_per_contract": round(
                 exit_shortfall_total,
                 4,
+            ),
+        },
+        "forward_validation": {
+            "cohort_start_date": FORWARD_VALIDATION_START_DATE,
+            "eligible": trading_date >= FORWARD_VALIDATION_START_DATE,
+            "trades_observed": (
+                len(trades) if trading_date >= FORWARD_VALIDATION_START_DATE else 0
+            ),
+            "ratchet_transitions_submitted": (
+                prospective_submissions
+                if trading_date >= FORWARD_VALIDATION_START_DATE
+                else 0
+            ),
+            "broker_verified_ratchets": (
+                verified if trading_date >= FORWARD_VALIDATION_START_DATE else 0
+            ),
+            "broker_verification_rate": (
+                round(verification_rate, 4)
+                if trading_date >= FORWARD_VALIDATION_START_DATE
+                and verification_rate is not None
+                else None
+            ),
+            "critical_failures": (
+                failures
+                + protective_failures
+                + rejected
+                + missing
+                + rate_limit_failures
+                if trading_date >= FORWARD_VALIDATION_START_DATE
+                else 0
+            ),
+            "status": (
+                "PRE_VALIDATION_BASELINE"
+                if trading_date < FORWARD_VALIDATION_START_DATE
+                else "PASSING_SO_FAR"
+                if (
+                    prospective_submissions > 0
+                    and verification_rate is not None
+                    and verification_rate >= MINIMUM_BROKER_VERIFICATION_RATE
+                    and failures
+                    + protective_failures
+                    + rejected
+                    + missing
+                    + rate_limit_failures
+                    == 0
+                )
+                else "AWAITING_RATCHET_TRANSITIONS"
+                if prospective_submissions == 0
+                else "REPAIR_REQUIRED"
             ),
         },
         "gate": {
