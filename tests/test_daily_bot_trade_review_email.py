@@ -2,11 +2,14 @@ from pathlib import Path
 
 from scripts import send_daily_bot_trade_review as review_email
 from scripts.send_daily_bot_trade_review import (
+    _all_time_trade_tracker,
+    _compact_missed_opportunity_sections,
     _compact_operational_sections,
     _email_markdown,
     _normalize_dollar_markdown,
     _reconciliation_is_sendable,
     _subject,
+    _today_trades_email_html,
     _today_trades_svg,
     markdown_to_email_html,
 )
@@ -31,7 +34,7 @@ def test_markdown_to_email_html_renders_review_sections():
     assert "<h2>Reconciliation</h2>" in rendered
     assert "<strong>5 trades, +$95.63</strong>" in rendered
     assert "Verify the exact stop" in rendered
-    assert "No live sizing" in rendered
+    assert "Evidence is diagnostic" not in rendered
 
 
 def test_markdown_to_email_html_renders_tables_as_styled_html():
@@ -191,6 +194,59 @@ def test_compact_operational_sections_does_not_mutate_full_report_text():
     assert "## Startup Guard\n" in compacted
 
 
+def test_missed_opportunities_uses_matching_h2_headers_and_combined_name(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        review_email,
+        "_load_json",
+        lambda _path: {
+            "summary": {
+                "canonical_missed_opportunities": 1,
+                "unseen_market_moves": 1,
+                "near_miss_opportunities": 0,
+                "option_evidence_coverage": 0.75,
+            },
+            "missed_opportunities": [{"classification": "MISSED_PROFITABLE_OPPORTUNITY"}],
+            "today_pattern_summary": [{
+                "direction": "PUT",
+                "phase": "INITIATION",
+                "rejection_reason": "Regime mismatch",
+                "missed_profitable": 1,
+                "canonical_episodes": 2,
+            }],
+            "today_blocker_summary": [{
+                "blocker_code": "REGIME_MATCH",
+                "canonical_episodes": 2,
+                "sole_blocker_episodes": 1,
+                "missed_profitable": 1,
+                "losses_avoided": 1,
+            }],
+        },
+    )
+    source = """## Missed Opportunities — Shadow Review
+
+### Daily Scorecard
+
+- Daily facts.
+
+### Canonical Missed Opportunities
+
+- Old detail.
+
+### Blocker Usefulness
+
+- Old blocker detail.
+"""
+
+    compacted = _compact_missed_opportunity_sections(source, "2026-07-29")
+
+    assert "## Daily Scorecard" in compacted
+    assert "## Missed Opportunities & Block Usefulness" in compacted
+    assert "### Canonical Missed Opportunities" not in compacted
+    assert "### Blocker Usefulness" not in compacted
+
+
 def test_email_currency_normalization_formats_monetary_tables_and_signals():
     normalized = _normalize_dollar_markdown(
         "| Exit Reason | Trades | PnL | Win Rate |\n"
@@ -204,7 +260,7 @@ def test_email_currency_normalization_formats_monetary_tables_and_signals():
     assert "outperformed CALL by $207.73" in normalized
 
 
-def test_summary_card_appears_before_detailed_sections():
+def test_today_trades_and_tracker_appear_before_summary_and_details():
     rendered = markdown_to_email_html(
         "## Direction Breakdown — All Time\n\nDetails",
         "2026-07-29",
@@ -228,13 +284,21 @@ def test_summary_card_appears_before_detailed_sections():
             "exit_reason": "4% Stop",
             "positive": True,
         }],
+        tracker={
+            "trades": 82,
+            "win_rate": 34 / 82,
+            "pnl_dollars": -2684.77,
+            "average_pnl_dollars": -32.74,
+            "trading_days": 10,
+            "through_date": "2026-07-29",
+        },
     )
 
     assert rendered.index(">Summary<") < rendered.index(">Direction Breakdown — All Time<")
-    assert rendered.index(">Summary<") < rendered.index(">Today's Trades<")
-    assert rendered.index(">Today's Trades<") < rendered.index(">Direction Breakdown — All Time<")
+    assert rendered.index(">Today's Trades<") < rendered.index(">SPY Trade Tracker<")
+    assert rendered.index(">SPY Trade Tracker<") < rendered.index(">Summary<")
     summary_html = rendered[
-        rendered.index(">Summary<"):rendered.index(">Today's Trades<")
+        rendered.index(">Summary<"):rendered.index(">Direction Breakdown — All Time<")
     ]
     assert "Net P&amp;L" not in summary_html
     assert ">Trades<" not in summary_html
@@ -249,6 +313,10 @@ def test_summary_card_appears_before_detailed_sections():
     assert 'width="11.111%"' not in rendered
     assert "padding:8px 7px" in rendered
     assert "padding:9px 7px" in rendered
+    assert "82" in rendered
+    assert "-$2,684.77" in rendered
+    assert "display:none;max-height:0" not in rendered
+    assert "Evidence is diagnostic" not in rendered
 
 
 def test_today_trades_snapshot_omits_diagnostic_columns():
@@ -282,6 +350,24 @@ def test_today_trades_snapshot_omits_diagnostic_columns():
     assert ">CONF<" not in svg
 
 
+def test_today_trades_option_and_pnl_are_not_bold():
+    rendered = _today_trades_email_html([{
+        "time": "2:42 – 2:46",
+        "option": "740 CALL",
+        "contracts": "8",
+        "entry": "$7.71",
+        "exit": "$8.18",
+        "checklist": "7 / 5",
+        "phase": "Early Continuation",
+        "pnl": "$228.26 · +6.1%",
+        "exit_reason": "4% Stop",
+        "positive": True,
+    }])
+
+    assert rendered.count("font-weight:500;white-space:nowrap") == 9
+    assert "font-weight:700;white-space:nowrap" not in rendered
+
+
 def test_subject_uses_reconciled_broker_result(monkeypatch):
     monkeypatch.setattr(
         review_email,
@@ -298,6 +384,28 @@ def test_subject_uses_reconciled_broker_result(monkeypatch):
         },
     )
     assert _subject("2026-07-29") == "You Made Today $664.25 Over 6 Trades"
+
+
+def test_spy_trade_tracker_uses_all_canonical_history_through_report_date(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        review_email,
+        "_all_time_study_trades",
+        lambda _date: [
+            {"trade_date": "2026-07-28", "pnl_dollars": -50.0},
+            {"trade_date": "2026-07-29", "pnl_dollars": 100.0},
+        ],
+    )
+
+    tracker = _all_time_trade_tracker("2026-07-29")
+
+    assert tracker["trades"] == 2
+    assert tracker["wins"] == 1
+    assert tracker["win_rate"] == 0.5
+    assert tracker["pnl_dollars"] == 50.0
+    assert tracker["average_pnl_dollars"] == 25.0
+    assert tracker["trading_days"] == 2
 
 
 def test_reconciliation_gate_requires_exact_parity_and_empty_outbox():
