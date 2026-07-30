@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import smtplib
+import statistics
 import subprocess
 import sys
 from datetime import datetime
@@ -268,11 +269,11 @@ def _summary_html(summary: dict[str, Any]) -> str:
     )
     return f"""
 <div style="border:1px solid #d7e2f0;border-radius:9px;overflow:hidden;background:#f9fbfe;margin:0 0 4px;">
-  <div style="padding:4px 7px;background:#eaf1fb;color:#173763;font-size:16px;font-weight:750;">Summary</div>
+  <div style="padding:4px 7px;background:#eaf1fb;color:#173763;font-size:14px;font-weight:750;">Summary</div>
   <div style="padding:4px 7px 5px;">
-    <div style="font-size:13px;font-weight:750;color:#173763;">1. What We Learned</div>
+    <div style="font-size:14px;font-weight:750;color:#173763;">What We Learned</div>
     <ul style="margin:0 0 3px;padding-left:16px;">{lessons}</ul>
-    <div style="font-size:13px;font-weight:750;color:#173763;">2. Changes We Need To Make</div>
+    <div style="font-size:14px;font-weight:750;color:#173763;">Changes We Need To Make</div>
     <ul style="margin:1px 0 0;padding-left:17px;">{changes}</ul>
   </div>
 </div>
@@ -481,7 +482,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
     head = "".join(
         "<th style=\"padding:3px 3px;"
         "text-align:center;vertical-align:middle;background:#edf3fb;"
-        "border-bottom:2px solid #cbd8ea;font-size:10px;letter-spacing:.25px;"
+        "border-bottom:2px solid #cbd8ea;font-size:14px;letter-spacing:.25px;"
         f"text-transform:uppercase;color:#52657f;white-space:nowrap;\">{html.escape(label)}</th>"
         for label, _ in columns
     )
@@ -497,7 +498,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
             cells.append(
                 "<td style=\"padding:3px 3px;"
                 "text-align:center;vertical-align:middle;"
-                f"border-bottom:1px solid #e6ebf2;font-size:11px;color:{color};"
+                f"border-bottom:1px solid #e6ebf2;font-size:12px;color:{color};"
                 "font-weight:500;white-space:nowrap;\">"
                 f"{html.escape(str(row.get(key) or '—'))}</td>"
             )
@@ -512,7 +513,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
         "<div style=\"margin:0 0 4px;border:1px solid #d7e2f0;"
         "border-radius:12px;overflow:hidden;\">"
         "<div style=\"padding:4px 6px;background:#173763;color:#ffffff;"
-        "font-size:17px;font-weight:750;text-align:center;\">Today's Trades</div>"
+        "font-size:14px;font-weight:750;text-align:center;\">Today's Trades</div>"
         "<div style=\"overflow-x:auto;\">"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
         "style=\"width:100%;table-layout:auto;border-collapse:collapse;\">"
@@ -586,7 +587,7 @@ def markdown_to_email_html(
                 index += 1
             head = "".join(
                 f"<th style=\"padding:3px 4px;text-align:left;border-bottom:2px solid #cbd8ea;"
-                f"font-size:12px;color:#24487f;\">{_inline(cell)}</th>"
+                f"font-size:14px;color:#24487f;\">{_inline(cell)}</th>"
                 for cell in headers
             )
             body = "".join(
@@ -647,7 +648,7 @@ def markdown_to_email_html(
         <tr><td class="review" style="margin:0;padding:0 12px 7px;line-height:1.27;">
           <style>
             .review h1 {{ display:none; }}
-            .review h2 {{ color:#173763;font-size:16px;margin:6px 0 3px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:3px solid #4f7ec8;padding:4px 6px;border-radius:6px; }}
+            .review h2 {{ color:#173763;font-size:14px;margin:6px 0 3px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:3px solid #4f7ec8;padding:4px 6px;border-radius:6px; }}
             .review h3 {{ color:#172f58;font-size:14px;margin:5px 0 2px; }}
             .review p {{ margin:2px 0;color:#3d4960;font-size:12px; }}
             .review ul {{ margin:2px 0 4px;padding:4px 6px 4px 21px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:6px; }}
@@ -658,8 +659,8 @@ def markdown_to_email_html(
             .review tbody tr:nth-child(even) td {{ background:#f4f7fb; }}
             @media only screen and (max-width:600px) {{
               .review {{ padding-left:16px !important;padding-right:16px !important; }}
-              .review h2 {{ font-size:17px; }}
-              .review p,.review li {{ font-size:13px; }}
+              .review h2,.review h3 {{ font-size:14px; }}
+              .review p,.review li {{ font-size:12px; }}
             }}
           </style>
           {trades_table}
@@ -771,6 +772,7 @@ def _email_markdown(markdown: str, *, trading_date: str | None = None) -> str:
             "Daily Scorecard",
             "Bot & Cockpit Failures — Today",
             "Protective Stops -",
+            "Execution & Reliability — All Time",
             "Direction Breakdown — All Time",
             "Indicator Results — All Time",
             "Day Trade SPY Review — All Time",
@@ -1066,8 +1068,6 @@ def _bot_cockpit_failures_summary(trading_date: str) -> str:
     return (
         "## Bot & Cockpit Failures — Today\n\n"
         + "\n".join(f"- {row}" for row in failures)
-        + "\n\n- **Response:** Fix operational defects immediately, but do not use one day of "
-        "strategy outcomes to alter live admission or sizing."
     )
 
 
@@ -1183,6 +1183,65 @@ def _all_time_control_summary(prefix: str, trading_date: str) -> dict[str, Any]:
         "totals": totals,
         "latest": payloads[-1] if payloads else {},
     }
+
+
+def _execution_reliability_summary(trading_date: str) -> str:
+    reports = _daily_report_history("stop_execution_review", trading_date)
+    trades = [
+        trade
+        for report in reports
+        for trade in (report.get("trades") or [])
+        if isinstance(trade, dict)
+    ]
+    healthy = sum(str(row.get("status") or "") == "HEALTHY" for row in trades)
+    reliability = 100.0 * healthy / len(trades) if trades else 0.0
+    entry_slippage = []
+    exit_shortfall = []
+    cycle_medians = []
+    estimated_drag = 0.0
+    for trade in trades:
+        execution = trade.get("execution_quality") or {}
+        for values, key in (
+            (entry_slippage, "entry_adverse_slippage_dollars"),
+            (exit_shortfall, "exit_execution_shortfall_dollars"),
+            (cycle_medians, "management_cycle_median_seconds"),
+        ):
+            value = execution.get(key)
+            if isinstance(value, (int, float)):
+                values.append(float(value))
+        drag = execution.get("estimated_round_trip_execution_drag_dollars")
+        if isinstance(drag, (int, float)):
+            estimated_drag += float(drag)
+    totals = {
+        key: sum(int((report.get("summary") or {}).get(key) or 0) for report in reports)
+        for key in (
+            "ratchet_failures",
+            "protective_submission_failures",
+            "replacement_rejections",
+            "protective_stop_missing_decisions",
+        )
+    }
+
+    def average(values: list[float]) -> str:
+        return _currency(sum(values) / len(values)) if values else "N/A"
+
+    cycle_text = (
+        f"{statistics.median(cycle_medians):.2f}s median; "
+        f"{max(cycle_medians):.2f}s maximum"
+        if cycle_medians else "N/A"
+    )
+    critical_total = sum(totals.values())
+    status = "HEALTHY" if trades and reliability == 100.0 and critical_total == 0 else (
+        "RECURRING — REPAIR REQUIRED" if len(reports) > 1 and critical_total else
+        "OPEN — REPAIR REQUIRED" if critical_total else "COLLECTING"
+    )
+    return f"""## Execution & Reliability — All Time
+
+- **Reliability:** **{reliability:.1f}%** — {healthy}/{len(trades)} broker-backed trades had no recorded critical protection defect across {len(reports)} reviewed session(s).
+- **Execution:** Average adverse entry slippage **{average(entry_slippage)}** per contract; average exit shortfall **{average(exit_shortfall)}** per contract; estimated covered round-trip drag **{_currency(estimated_drag)}**.
+- **Speed:** Management-cycle performance was **{cycle_text}**.
+- **Recurring defects:** **{totals['ratchet_failures']}** ratchet failures, **{totals['protective_submission_failures']}** failed protective submissions, **{totals['replacement_rejections']}** rejected replacements, and **{totals['protective_stop_missing_decisions']}** missing-protection decisions.
+- **Repair status:** **{status}**."""
 
 
 def _reorder_h2_sections(markdown: str, ordered_titles: list[str]) -> str:
@@ -1316,6 +1375,7 @@ def _compact_operational_sections(
         markdown = _replace_h2_section(markdown, stop_title, stop)
     if trading_date:
         markdown += "\n\n" + _bot_cockpit_failures_summary(trading_date) + "\n"
+        markdown += "\n\n" + _execution_reliability_summary(trading_date) + "\n"
     return markdown
 
 

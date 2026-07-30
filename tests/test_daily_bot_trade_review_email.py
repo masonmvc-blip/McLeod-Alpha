@@ -8,6 +8,7 @@ from scripts.send_daily_bot_trade_review import (
     _compact_operational_sections,
     _day_trade_spy_all_time_summary,
     _email_markdown,
+    _execution_reliability_summary,
     _normalize_dollar_markdown,
     _reconciliation_is_sendable,
     _subject,
@@ -120,6 +121,53 @@ def test_bot_cockpit_failures_combines_structured_daily_sources(monkeypatch):
     assert "cooling failed to arm" in review.lower()
     assert "duplicate canonical trade" in review
     assert "Manual Exit Failure" in review
+    assert "**Response:**" not in review
+
+
+def test_execution_reliability_box_uses_all_available_review_history(monkeypatch):
+    monkeypatch.setattr(
+        review_email,
+        "_daily_report_history",
+        lambda _prefix, _date: [
+            {
+                "summary": {
+                    "ratchet_failures": 2,
+                    "protective_submission_failures": 1,
+                    "replacement_rejections": 0,
+                    "protective_stop_missing_decisions": 1,
+                },
+                "trades": [
+                    {
+                        "status": "HEALTHY",
+                        "execution_quality": {
+                            "entry_adverse_slippage_dollars": 0.0,
+                            "exit_execution_shortfall_dollars": 0.10,
+                            "management_cycle_median_seconds": 1.0,
+                            "estimated_round_trip_execution_drag_dollars": 50.0,
+                        },
+                    },
+                    {
+                        "status": "REVIEW_REQUIRED",
+                        "execution_quality": {
+                            "entry_adverse_slippage_dollars": 0.20,
+                            "exit_execution_shortfall_dollars": 0.30,
+                            "management_cycle_median_seconds": 1.5,
+                            "estimated_round_trip_execution_drag_dollars": 100.0,
+                        },
+                    },
+                ],
+            },
+        ],
+    )
+
+    review = _execution_reliability_summary("2026-07-29")
+
+    assert "## Execution & Reliability — All Time" in review
+    assert "**50.0%**" in review
+    assert "1/2 broker-backed trades" in review
+    assert "$150.00" in review
+    assert "1.25s median" in review
+    assert "OPEN — REPAIR REQUIRED" in review
 
 
 def test_markdown_to_email_html_renders_review_sections():
@@ -408,8 +456,10 @@ def test_today_trades_appears_before_summary_without_tracker():
     assert ">Trades<" not in summary_html
     assert "Win Rate" not in summary_html
     assert "Measurements Starting Or Continuing" not in summary_html
-    assert "1. What We Learned" in summary_html
-    assert "2. Changes We Need To Make" in summary_html
+    assert "What We Learned" in summary_html
+    assert "Changes We Need To Make" in summary_html
+    assert "1. What We Learned" not in summary_html
+    assert "2. Changes We Need To Make" not in summary_html
     assert "padding:0 4px 4px" in rendered
     assert "padding:0 12px 7px" in rendered
     assert "<img" not in rendered
