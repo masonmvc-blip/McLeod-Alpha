@@ -286,10 +286,10 @@ class TestPositionSafety(unittest.TestCase):
 
 
 class TestEntryQuantityGuard(unittest.TestCase):
-    """TEST 5: Every entry submission path requires exactly five contracts."""
+    """TEST 5: Entry submissions permit affordable lots up to the live cap."""
 
     @patch('execution.live_engine._schwab_client')
-    def test_direct_submission_rejects_non_five_quantity(self, mock_client):
+    def test_direct_submission_rejects_quantity_above_live_cap(self, mock_client):
         live_engine._schwab_account_hash = "HASH123"
         live_engine._submission_rejected = False
 
@@ -297,12 +297,12 @@ class TestEntryQuantityGuard(unittest.TestCase):
             "SPY 260724C00756000",
             "CALL",
             5.41,
-            3,
+            live_engine.MAX_OPEN_CONTRACTS + 1,
         )
 
         self.assertIsNone(order_id)
         mock_client.place_order.assert_not_called()
-        print("✓ TEST 5.1: Non-five direct submission blocked before Schwab")
+        print("✓ TEST 5.1: Quantity above live cap blocked before Schwab")
 
 
 class TestBuilderStructure(unittest.TestCase):

@@ -100,7 +100,10 @@ def _sms_status() -> tuple[bool, str]:
     transport = os.getenv("TRADE_ALERT_TRANSPORT", "email_sms").strip().lower()
     gateway_ok = bool(os.getenv("TRADE_ALERT_TO_GATEWAY", "").strip())
     email_sms_ok = transport == "email_sms" and gateway_ok and _email_ok()
-    outlook_sms_ok = transport == "outlook_sms" and gateway_ok
+    # Outlook AppleScript support varies by Outlook build. Require the
+    # authenticated SMTP fail-safe as part of readiness so a configured but
+    # unsupported Outlook app cannot silently drop emergency alerts.
+    outlook_sms_ok = transport == "outlook_sms" and gateway_ok and _email_ok()
     twilio_ok = transport == "twilio" and all(
         os.getenv(key, "").strip()
         for key in (
@@ -111,7 +114,12 @@ def _sms_status() -> tuple[bool, str]:
         )
     )
     if email_sms_ok or outlook_sms_ok or twilio_ok:
-        return True, f"enabled {transport} transport configured"
+        detail = (
+            "enabled outlook_sms transport with authenticated SMTP fallback configured"
+            if outlook_sms_ok
+            else f"enabled {transport} transport configured"
+        )
+        return True, detail
     return False, f"enabled {transport} transport configuration incomplete"
 
 

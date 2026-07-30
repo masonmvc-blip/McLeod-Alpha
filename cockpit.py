@@ -6762,8 +6762,8 @@ HTML_DASHBOARD = """
         
         .trades-actions {
             display: grid;
-            grid-template-columns: repeat(4, minmax(150px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
             align-items: stretch;
             margin-bottom: 14px;
         }
@@ -6827,16 +6827,16 @@ HTML_DASHBOARD = """
             background: #007bff;
             color: white;
         }
-        #exitTradeBtn {
+        #tradeActionBtn.exit-trade {
             background: #dc3545;
             touch-action: manipulation;
         }
-        #exitTradeBtn:hover:not(:disabled) {
+        #tradeActionBtn.exit-trade:hover:not(:disabled) {
             background: #c82333;
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
         }
-        #entryPauseBtn.entries-paused {
+        #tradeActionBtn.entries-paused {
             background: #dc3545;
             color: #fff;
             box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.22);
@@ -7606,8 +7606,7 @@ HTML_DASHBOARD = """
         <div class="trades-actions">
             <button class="bot-toggle stopped" id="botToggleBtn" onclick="toggleBot()">▶ Start Bot</button>
             <div class="trade-summary-card neutral" id="todayPnlCard"><h4>Today's P&L</h4><div class="trade-summary-value" id="todayPnl">Loading...</div></div>
-            <button class="btn-info" id="exitTradeBtn" onclick="exitTrade()" disabled>⏏ Exit Trade</button>
-            <button class="btn-primary" id="entryPauseBtn" onclick="toggleEntryPause()" disabled>⏸ Pause Entries</button>
+            <button class="btn-primary" id="tradeActionBtn" data-action="entry-pause" onclick="handleTradeAction()" disabled>⏸ Pause Entries</button>
         </div>
 
         <div class="entry-pause-dialog" id="entryPauseDialog" role="dialog" aria-modal="true" aria-labelledby="entryPauseDialogTitle" hidden>
@@ -7653,8 +7652,6 @@ HTML_DASHBOARD = """
         let lastExecutionQualityRefreshMs = 0;
         let lastIndicatorPerformanceRefreshMs = 0;
         let lastIndicatorTradeSignature = null;
-        let completedTradeSignatures = null;
-        let tradeAudioPrimed = false;
         const LOGS_REFRESH_INTERVAL_MS = 500;
         const TRADES_REFRESH_INTERVAL_MS = 10000;
         const EXECUTION_QUALITY_REFRESH_INTERVAL_MS = 10000;
@@ -7667,8 +7664,6 @@ HTML_DASHBOARD = """
         let isPollingLeader = false;
         let pollLeaderHeartbeatInterval = null;
         let marketBellClockInterval = null;
-        let previousHasOpenPosition = null;
-        let previousOpenTradePnlDollars = null;
         let activeBellPlaybackCount = 0;
         let lastBellBroadcastId = 0;
         let bellBroadcastPrimed = false;
@@ -7682,8 +7677,6 @@ HTML_DASHBOARD = """
 
         const MARKET_BELL_AUDIO_PATH = '/static/audio/nyse_bell.mp3';
         const MARKET_BELL_MAX_DURATION_MS = 5000;
-        const TRADE_KACHING_AUDIO_PATH = '/static/audio/trade_kaching.mp3';
-        const TRADE_LOSS_TRUMPET_AUDIO_PATH = '/static/audio/trade_loss_trumpet.mp3';
 
         function isDashboardVisible() {
             return !document.hidden;
@@ -8142,46 +8135,6 @@ HTML_DASHBOARD = """
             }
         }
 
-        function playCashRegisterNoise() {
-            try {
-                const sound = new Audio(TRADE_KACHING_AUDIO_PATH);
-                sound.preload = 'auto';
-                sound.play().catch(() => {});
-            } catch (_) {
-                // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
-            }
-        }
-
-        function playLossTrumpet() {
-            try {
-                const sound = new Audio(TRADE_LOSS_TRUMPET_AUDIO_PATH);
-                sound.preload = 'auto';
-                sound.play().catch(() => {});
-            } catch (_) {
-                // Ignore audio failures (browser autoplay policy, unavailable context, etc.)
-            }
-        }
-
-        function primeTradeAudio() {
-            if (tradeAudioPrimed) {
-                return;
-            }
-            tradeAudioPrimed = true;
-            [TRADE_KACHING_AUDIO_PATH, TRADE_LOSS_TRUMPET_AUDIO_PATH].forEach((path) => {
-                try {
-                    const sound = new Audio(path);
-                    sound.muted = true;
-                    sound.play().then(() => {
-                        sound.pause();
-                        sound.currentTime = 0;
-                    }).catch(() => {});
-                } catch (_) {}
-            });
-        }
-
-        document.addEventListener('pointerdown', primeTradeAudio, { once: true, capture: true });
-        document.addEventListener('keydown', primeTradeAudio, { once: true, capture: true });
-
         function formatTimeAMPM(dateValue) {
             const d = new Date(dateValue);
             if (Number.isNaN(d.getTime())) return '-';
@@ -8305,8 +8258,18 @@ HTML_DASHBOARD = """
             btn.innerHTML = '▶ Start Bot';
         }
 
+        function handleTradeAction() {
+            const btn = document.getElementById('tradeActionBtn');
+            if (btn.disabled) return;
+            if (btn.dataset.action === 'exit') {
+                exitTrade();
+            } else {
+                toggleEntryPause();
+            }
+        }
+
         async function exitTrade() {
-            const btn = document.getElementById('exitTradeBtn');
+            const btn = document.getElementById('tradeActionBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Exiting...';
 
@@ -8334,6 +8297,12 @@ HTML_DASHBOARD = """
                 try {
                     const res = await fetch('/api/position-status', { cache: 'no-store' });
                     const data = await res.json();
+                    const btn = document.getElementById('tradeActionBtn');
+                    if (data.exit_status === 'RETRYING') {
+                        btn.innerHTML = '<span class="spinner"></span> Retrying exit...';
+                    } else {
+                        btn.innerHTML = '<span class="spinner"></span> Exiting...';
+                    }
                     if (data.has_open_position === false) {
                         clearInterval(exitStatusPollTimer);
                         exitStatusPollTimer = null;
@@ -8345,9 +8314,11 @@ HTML_DASHBOARD = """
                 } catch (_) {
                     // The normal status polling remains available if this quick check fails.
                 }
-                if (attempts >= 180) {
+                if (attempts >= 240) {
                     clearInterval(exitStatusPollTimer);
                     exitStatusPollTimer = null;
+                    showMessage('Schwab has not confirmed the exit after 60 seconds. The bot will keep retrying; check the open position before relying on the exit.', 'error');
+                    await refreshStatus(true);
                 }
             };
             checkForCompletion();
@@ -8355,7 +8326,7 @@ HTML_DASHBOARD = """
         }
 
         async function toggleEntryPause() {
-            const btn = document.getElementById('entryPauseBtn');
+            const btn = document.getElementById('tradeActionBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Updating...';
 
@@ -8464,14 +8435,18 @@ HTML_DASHBOARD = """
                 botToggleBtn.className = `bot-toggle ${botRunning ? 'running' : 'stopped'}`;
                 botToggleBtn.innerHTML = botRunning ? '⏹ Stop Bot' : '▶ Start Bot';
 
-                const entryPauseButton = document.getElementById('exitTradeBtn');
-                const canControlEntries = !!(status.bot_running && status.mode === 'LIVE TRADING');
-                entryPauseButton.disabled = !canControlEntries;
-                entryPauseButton.innerHTML = '⏏ Exit Trade';
-                const entryPauseControl = document.getElementById('entryPauseBtn');
-                entryPauseControl.disabled = !canControlEntries;
-                entryPauseControl.classList.toggle('entries-paused', !!status.entry_paused);
-                entryPauseControl.innerHTML = status.entry_paused ? '⚠ ENTRIES PAUSED - RESUME' : '⏸ Pause Entries';
+                const tradeActionButton = document.getElementById('tradeActionBtn');
+                const canControlTrades = !!(status.bot_running && status.mode === 'LIVE TRADING');
+                const tradeActionIsExit = !!status.has_open_position;
+                const exitInProgress = !!exitStatusPollTimer;
+                tradeActionButton.disabled = !canControlTrades || exitInProgress;
+                tradeActionButton.dataset.action = tradeActionIsExit ? 'exit' : 'entry-pause';
+                tradeActionButton.className = `btn-primary${tradeActionIsExit ? ' exit-trade' : (status.entry_paused ? ' entries-paused' : '')}`;
+                if (!exitInProgress) {
+                    tradeActionButton.innerHTML = tradeActionIsExit
+                        ? '⏏ Exit Trade'
+                        : (status.entry_paused ? '⚠ ENTRIES PAUSED - RESUME' : '⏸ Pause Entries');
+                }
                 
                 // Schwab is ready only for reconciled live trading.
                 const modeText = String(status.mode || '').toUpperCase();
@@ -8688,22 +8663,6 @@ HTML_DASHBOARD = """
                     statusGrid.classList.toggle('position-focus-active', hasOpenPosition);
                     statusGrid.classList.toggle('position-flat', !hasOpenPosition);
                 }
-                if (previousHasOpenPosition !== null && previousHasOpenPosition !== hasOpenPosition) {
-                    if (hasOpenPosition) {
-                        playCashRegisterNoise();
-                    } else if (Number(previousOpenTradePnlDollars) > 0) {
-                        playCashRegisterNoise();
-                    } else if (Number(previousOpenTradePnlDollars) < 0) {
-                        playLossTrumpet();
-                    }
-                }
-                if (hasOpenPosition && Number.isFinite(Number(status.current_trade_pnl_dollars))) {
-                    previousOpenTradePnlDollars = Number(status.current_trade_pnl_dollars);
-                } else if (!hasOpenPosition) {
-                    previousOpenTradePnlDollars = null;
-                }
-                previousHasOpenPosition = hasOpenPosition;
-
                 // Week-to-date realized P&L
                 const wtdEl = document.getElementById('wtdPnl');
                 const wtdCardEl = document.getElementById('wtdPnlCard');
@@ -9340,32 +9299,6 @@ HTML_DASHBOARD = """
                 }
 
                 const tradingDate = formatTradingDate(data.trading_date);
-                const currentTradeSignatures = new Set((data.trades || []).map((trade) => [
-                    trade.entry_time,
-                    trade.exit_time,
-                    trade.direction,
-                    trade.exit_reason,
-                    trade.pnl,
-                ].join('|')));
-                if (completedTradeSignatures !== null) {
-                    (data.trades || []).forEach((trade) => {
-                        const signature = [
-                            trade.entry_time,
-                            trade.exit_time,
-                            trade.direction,
-                            trade.exit_reason,
-                            trade.pnl,
-                        ].join('|');
-                        if (!completedTradeSignatures.has(signature)) {
-                            if (Number(trade.pnl) > 0) {
-                                playCashRegisterNoise();
-                            } else if (Number(trade.pnl) < 0) {
-                                playLossTrumpet();
-                            }
-                        }
-                    });
-                }
-                completedTradeSignatures = currentTradeSignatures;
                 if (data.is_fallback_day) {
                     heading.textContent = `📊 Most Recent Trading Day - ${tradingDate} 📊`;
                 } else {

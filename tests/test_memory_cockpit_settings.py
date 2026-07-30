@@ -151,6 +151,19 @@ def test_cockpit_watches_for_confirmed_exit_completion():
     assert "updateTodaysTrades();" in source
 
 
+def test_cockpit_uses_one_position_aware_trade_action_button():
+    source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
+
+    assert source.count('id="tradeActionBtn"') == 1
+    assert 'id="exitTradeBtn"' not in source
+    assert 'id="entryPauseBtn"' not in source
+    assert "tradeActionButton.dataset.action = tradeActionIsExit ? 'exit' : 'entry-pause'" in source
+    assert "const tradeActionIsExit = !!status.has_open_position" in source
+    assert "function handleTradeAction()" in source
+    assert ".trades-actions {" in source
+    assert "grid-template-columns: repeat(3, minmax(0, 1fr));" in source
+
+
 def test_explicit_go_live_clears_operator_stop_marker():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 

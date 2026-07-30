@@ -527,9 +527,9 @@ def test_trade_entry_uses_distinct_rising_two_note_chime():
 def test_indicator_performance_centers_canonical_present_absent_columns():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert source.count("<span>Present (Canonical)</span>") == 2
-    assert source.count("<span>Absent, Same Direction</span>") == 2
-    assert source.count("<span>Research Guidance</span>") == 2
+    assert source.count("<span>Present (Canonical)</span>") == 1
+    assert source.count("<span>Absent, Same Direction</span>") == 1
+    assert source.count("<span>Research Guidance</span>") == 1
     assert "absent_win_rate_pct" in source
     assert "automatic_live_change_allowed" in source
     assert 'return amount < 0 ? `(${formatted})` : formatted;' in source
@@ -537,7 +537,8 @@ def test_indicator_performance_centers_canonical_present_absent_columns():
     assert "text-align: center;" in source
 
 
-def test_cash_register_plays_when_a_trade_opens():
+def test_dashboard_does_not_duplicate_native_execution_audio():
     source = (cockpit.PROJECT_ROOT / "cockpit.py").read_text(encoding="utf-8")
 
-    assert "if (hasOpenPosition) {\n                        playCashRegisterNoise();" in source
+    assert "playCashRegisterNoise" not in source
+    assert "playLossTrumpet" not in source

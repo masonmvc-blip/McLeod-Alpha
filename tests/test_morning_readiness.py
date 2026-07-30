@@ -156,5 +156,21 @@ def test_readiness_accepts_enabled_outlook_sms(tmp_path, monkeypatch):
     monkeypatch.setenv("ENABLE_TRADE_SMS_ALERTS", "true")
     monkeypatch.setenv("TRADE_ALERT_TRANSPORT", "outlook_sms")
     monkeypatch.setenv("TRADE_ALERT_TO_GATEWAY", "123@example.test")
+    monkeypatch.setattr(readiness, "_email_ok", lambda: True)
 
-    assert readiness._sms_status() == (True, "enabled outlook_sms transport configured")
+    assert readiness._sms_status() == (
+        True,
+        "enabled outlook_sms transport with authenticated SMTP fallback configured",
+    )
+
+
+def test_readiness_rejects_outlook_sms_without_fallback(monkeypatch):
+    monkeypatch.setenv("ENABLE_TRADE_SMS_ALERTS", "true")
+    monkeypatch.setenv("TRADE_ALERT_TRANSPORT", "outlook_sms")
+    monkeypatch.setenv("TRADE_ALERT_TO_GATEWAY", "123@example.test")
+    monkeypatch.setattr(readiness, "_email_ok", lambda: False)
+
+    assert readiness._sms_status() == (
+        False,
+        "enabled outlook_sms transport configuration incomplete",
+    )

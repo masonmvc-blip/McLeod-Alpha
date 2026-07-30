@@ -7,9 +7,10 @@ AGENT_ID="com.mcleod.alpha.nyse-clock-bell"
 PLIST_PATH="$HOME/Library/LaunchAgents/$AGENT_ID.plist"
 LOG_PATH="$ROOT_DIR/logs/nyse_clock_bell_launchd.log"
 RUNNER_PATH="$ROOT_DIR/scripts/play_nyse_clock_bell.sh"
+SCHEDULER_PATH="$ROOT_DIR/scripts/nyse_clock_bell_scheduler.py"
 
 mkdir -p "$HOME/Library/LaunchAgents" "$ROOT_DIR/logs"
-chmod 755 "$RUNNER_PATH"
+chmod 755 "$RUNNER_PATH" "$SCHEDULER_PATH"
 
 cat > "$PLIST_PATH" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -21,23 +22,18 @@ cat > "$PLIST_PATH" <<PLIST
 
     <key>ProgramArguments</key>
     <array>
-      <string>/bin/zsh</string>
-      <string>$RUNNER_PATH</string>
+      <string>/usr/bin/python3</string>
+      <string>$SCHEDULER_PATH</string>
     </array>
 
-    <key>StartCalendarInterval</key>
-    <array>
-      <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-      <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-      <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-      <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-      <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-      <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
-      <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
-      <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
-      <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
-      <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
-    </array>
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ProcessType</key>
+    <string>Interactive</string>
 
     <key>WorkingDirectory</key>
     <string>$ROOT_DIR</string>
@@ -60,6 +56,6 @@ if [[ "${1:-}" == "--test" ]]; then
 fi
 
 print -r -- "Installed LaunchAgent: $AGENT_ID"
-print -r -- "Schedule: Monday-Friday 08:30 and 15:00 local computer time (Central Time)"
+print -r -- "Schedule: Monday-Friday 08:30 and 15:00, watched directly from the Mac clock"
 print -r -- "Opening bell: 08:30 CT / 09:30 ET"
 print -r -- "Closing bell: 15:00 CT / 16:00 ET"

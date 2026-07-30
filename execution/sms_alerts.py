@@ -1,8 +1,8 @@
-"""Trade alerts for entry/exit with free email-to-SMS and optional Twilio.
+"""Trade alerts through Outlook, authenticated SMTP fallback, or Twilio.
 
 Environment variables:
 - ENABLE_TRADE_SMS_ALERTS=true|false
-- TRADE_ALERT_TRANSPORT=email_sms|twilio|auto (default: email_sms)
+- TRADE_ALERT_TRANSPORT=outlook_sms|email_sms|twilio|auto (default: email_sms)
 
 Free email-to-SMS transport:
 - SMTP_HOST=smtp.gmail.com
@@ -82,11 +82,23 @@ def _transport() -> str:
 
 
 def _email_cfg() -> Optional[dict]:
-    host = os.getenv("SMTP_HOST", "").strip()
+    user = (
+        os.getenv("SMTP_USERNAME", "").strip()
+        or os.getenv("EMAIL_ADDRESS", "").strip()
+    )
+    host = os.getenv("SMTP_HOST", "").strip() or (
+        "smtp.gmail.com" if user.lower().endswith("@gmail.com") else ""
+    )
     port_raw = os.getenv("SMTP_PORT", "587").strip()
-    user = os.getenv("SMTP_USERNAME", "").strip()
-    password = os.getenv("SMTP_PASSWORD", "").strip()
-    from_addr = os.getenv("SMTP_FROM", "").strip() or user
+    password = (
+        os.getenv("SMTP_PASSWORD", "").strip()
+        or os.getenv("EMAIL_APP_PASSWORD", "").replace(" ", "").strip()
+    )
+    from_addr = (
+        os.getenv("SMTP_FROM", "").strip()
+        or os.getenv("EMAIL_ADDRESS", "").strip()
+        or user
+    )
     to_addr = os.getenv("TRADE_ALERT_TO_GATEWAY", "").strip()
 
     if not host or not user or not password or not from_addr or not to_addr:
@@ -223,7 +235,13 @@ def _send_sms(body: str) -> bool:
     if transport == "outlook_sms":
         if _send_via_outlook_sms(body):
             return True
-        print("SMS alert skipped: Outlook transport not configured or failed")
+        # New Outlook for Mac can reject otherwise-valid AppleScript message
+        # construction. Authenticated SMTP is the fail-safe transport and does
+        # not invoke Apple Mail.
+        if _send_via_email_sms(body):
+            print("Outlook app unavailable; alert sent via authenticated SMTP fallback")
+            return True
+        print("SMS alert skipped: Outlook and authenticated SMTP fallback failed")
         return False
 
     if transport == "email_sms":

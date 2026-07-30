@@ -21,7 +21,6 @@ cat > "$PLIST_PATH" <<PLIST
 
     <key>ProgramArguments</key>
     <array>
-      <string>/bin/zsh</string>
       <string>$RUNNER_PATH</string>
     </array>
 
