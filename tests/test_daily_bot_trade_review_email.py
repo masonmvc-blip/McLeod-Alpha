@@ -2,8 +2,11 @@ from pathlib import Path
 
 from scripts import send_daily_bot_trade_review as review_email
 from scripts.send_daily_bot_trade_review import (
+    _bot_cockpit_failures_summary,
+    _build_email_summary,
     _compact_missed_opportunity_sections,
     _compact_operational_sections,
+    _day_trade_spy_all_time_summary,
     _email_markdown,
     _normalize_dollar_markdown,
     _reconciliation_is_sendable,
@@ -12,6 +15,110 @@ from scripts.send_daily_bot_trade_review import (
     _today_trades_svg,
     markdown_to_email_html,
 )
+
+
+def test_summary_uses_only_all_time_evidence_and_20_50_gate(monkeypatch):
+    monkeypatch.setattr(
+        review_email,
+        "_all_time_study_trades",
+        lambda _date: [
+            {"pnl_dollars": 100.0},
+            {"pnl_dollars": -25.0},
+        ],
+    )
+    monkeypatch.setattr(
+        review_email,
+        "_load_json",
+        lambda path: (
+            {"rolling": {"valid_sample_size": 11}}
+            if "day_trade_spy_shadow" in str(path)
+            else {"telemetry_quality": {"rolling_complete": 1}}
+        ),
+    )
+
+    summary = _build_email_summary("2026-07-29")
+
+    text = str(summary)
+    assert "2 canonical broker-backed trades" in text
+    assert "11/50 valid all-time trades" in text
+    assert "20 comparable trades" in text
+    assert "prefer 50" in text
+    assert "today" not in text.lower()
+
+
+def test_day_trade_spy_review_exposes_all_five_catalog_rules(monkeypatch):
+    groups = {
+        "ADMIT": {"trades": 2, "wins": 1, "pnl_dollars": 10.0},
+    }
+    monkeypatch.setattr(
+        review_email,
+        "_load_json",
+        lambda _path: {
+            "rolling": {
+                "valid_sample_size": 11,
+                "known_first_passage": 10,
+                "session_phase_counts": {"OPENING": 3, "MIDDAY": 4},
+                "test_summary": {
+                    key: groups for key in (
+                        "accepted_break",
+                        "structural_room_execution",
+                        "opening_vs_later_entry",
+                        "congestion_reentry",
+                        "premise_reset_no_repair",
+                    )
+                },
+            },
+        },
+    )
+
+    review = _day_trade_spy_all_time_summary("2026-07-29")
+
+    assert "## Day Trade SPY Review — All Time" in review
+    for title in (
+        "Accepted Break",
+        "Structural Room & Execution",
+        "Opening vs. Later Entry",
+        "Congestion & Re-entry",
+        "Premise Reset / No Repair",
+    ):
+        assert title in review
+    assert "11/50" in review
+    assert "COLLECT MORE DATA" in review
+
+
+def test_bot_cockpit_failures_combines_structured_daily_sources(monkeypatch):
+    def fake_load(path):
+        name = str(path)
+        if "stop_execution_review" in name:
+            return {"summary": {
+                "ratchet_failures": 2,
+                "protective_submission_failures": 1,
+                "replacement_rejections": 1,
+                "protective_stop_missing_decisions": 3,
+                "entry_adverse_slippage_dollars_per_contract": 0.05,
+                "exit_execution_shortfall_dollars_per_contract": 0.10,
+            }}
+        if "cooling_period_review" in name:
+            return {"summary": {
+                "harmful_uncooled_reentries": 1,
+                "harmful_uncooled_reentry_pnl": -50.0,
+            }}
+        return {"today_trades": [{"source": "broker_duplicate_audit"}]}
+
+    monkeypatch.setattr(review_email, "_load_json", fake_load)
+    monkeypatch.setattr(
+        review_email,
+        "_runtime_failure_counts",
+        lambda _date: {"Manual Exit Failure": 1},
+    )
+
+    review = _bot_cockpit_failures_summary("2026-07-29")
+
+    assert "## Bot & Cockpit Failures — Today" in review
+    assert "2 ratchet failures" in review
+    assert "cooling failed to arm" in review.lower()
+    assert "duplicate canonical trade" in review
+    assert "Manual Exit Failure" in review
 
 
 def test_markdown_to_email_html_renders_review_sections():
@@ -105,7 +212,7 @@ def test_email_view_hides_requested_sections_without_altering_source_artifact():
     assert "Model Learning Jobs" not in cleaned
     assert "Trend Lifecycle V2" not in cleaned
     assert "Entry Quality Shadow Studies" not in cleaned
-    assert "Day Trade SPY Five-Test Shadow Review" not in cleaned
+    assert "Day Trade SPY Five-Test Shadow Review" in cleaned
     assert "Indicator Weight Shadow Comparisons" not in cleaned
     assert "Historical Context" not in cleaned
     assert "Fresh Forward Sample" not in cleaned
@@ -302,12 +409,12 @@ def test_today_trades_appears_before_summary_without_tracker():
     assert "Measurements Starting Or Continuing" not in summary_html
     assert "1. What We Learned" in summary_html
     assert "2. Changes We Need To Make" in summary_html
-    assert "padding:0 8px 10px" in rendered
-    assert "padding:0 20px 16px" in rendered
+    assert "padding:0 6px 6px" in rendered
+    assert "padding:0 16px 10px" in rendered
     assert "<img" not in rendered
     assert "table-layout:auto" in rendered
     assert 'width="11.111%"' not in rendered
-    assert "padding:6px 5px" in rendered
+    assert "padding:4px 4px" in rendered
     assert "display:none;max-height:0" not in rendered
     assert "Evidence is diagnostic" not in rendered
 

@@ -45,7 +45,6 @@ EMAIL_HIDDEN_SECTIONS = {
     "## Entry Quality Shadow Studies",
     "## Volume — Daily Shadow Test",
     "## Option Selection — Spread-Aware Shadow Ranking",
-    "## Day Trade SPY Five-Test Shadow Review",
     "### Indicator Weight Shadow Comparisons",
     "### Weighted Checklist Score Study",
     "### Alternative Checklist Policies",
@@ -193,25 +192,51 @@ def _normalize_dollar_markdown(markdown: str) -> str:
 
 
 def _build_email_summary(trading_date: str) -> dict[str, Any]:
-    learning = _load_json(REPORT_DIR / f"daily_trade_learning_{trading_date}.json")
+    trades = _all_time_study_trades(trading_date)
+    wins = sum(float(row.get("pnl_dollars") or 0.0) > 0 for row in trades)
+    pnl = sum(float(row.get("pnl_dollars") or 0.0) for row in trades)
+    shadow = _load_json(
+        REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.json"
+    )
+    rolling = shadow.get("rolling") or {}
+    shadow_sample = int(rolling.get("valid_sample_size") or 0)
+    entry_quality = _load_json(
+        REPORT_DIR / f"entry_quality_shadow_{trading_date}.json"
+    )
+    telemetry = entry_quality.get("telemetry_quality") or {}
+    complete = int(telemetry.get("rolling_complete") or 0)
     lessons = [
-        row for row in (learning.get("actionable_lessons") or [])
-        if isinstance(row, dict)
+        {
+            "title": "All-Time Performance",
+            "signal": (
+                f"{wins} wins in {len(trades)} canonical broker-backed trades "
+                f"({wins / len(trades):.1%}) with {_currency(pnl)} net P&L"
+                if trades else "No canonical broker-backed trade history is available"
+            ),
+        },
+        {
+            "title": "Five-Rule Research",
+            "signal": (
+                f"the Day Trade SPY suite has {shadow_sample}/50 valid all-time "
+                "trades; it is not yet actionable"
+            ),
+        },
+        {
+            "title": "Evidence Quality",
+            "signal": (
+                f"Phase/CQ/MAS/ABS/CONF are complete on {complete}/{len(trades)} "
+                "all-time trades; incomplete historical telemetry limits conclusions"
+            ),
+        },
     ]
-    scale = learning.get("scale_decision") or {}
     changes = [
-        str(row.get("action") or "").strip()
-        for row in lessons
-        if str(row.get("action") or "").strip()
+        "Make no strategy or indicator-weight change from a single day.",
+        "Treat 20 comparable trades as the earliest directional read and prefer 50 before action.",
+        "Continue automatic shadow collection until reconciliation, coverage, representation, and human-review gates pass.",
     ]
-    scale_action = str(scale.get("rationale") or "").strip()
-    if scale_action and scale_action not in changes:
-        changes.append(scale_action)
     return {
-        "lessons": lessons[:3],
-        "changes": changes[:3] or [
-            "Keep live settings unchanged until the governed evidence gates are satisfied."
-        ],
+        "lessons": lessons,
+        "changes": changes,
     }
 
 
@@ -231,24 +256,24 @@ def _summary_text(summary: dict[str, Any]) -> str:
 
 def _summary_html(summary: dict[str, Any]) -> str:
     lessons = "".join(
-        "<li style=\"margin:4px 0;color:#34445f;font-size:13px;\">"
+        "<li style=\"margin:2px 0;color:#34445f;font-size:13px;\">"
         f"<strong>{_inline(str(row.get('title') or 'Learning'))}:</strong> "
         f"{_inline(_normalize_dollar_markdown(str(row.get('signal') or '')))}.</li>"
         for row in summary["lessons"]
     )
     changes = "".join(
-        "<li style=\"margin:4px 0;color:#34445f;font-size:13px;\">"
+        "<li style=\"margin:2px 0;color:#34445f;font-size:13px;\">"
         f"{_inline(row)}</li>"
         for row in summary["changes"]
     )
     return f"""
-<div style="border:1px solid #d7e2f0;border-radius:12px;overflow:hidden;background:#f9fbfe;margin:0 0 10px;">
-  <div style="padding:8px 12px;background:#eaf1fb;color:#173763;font-size:18px;font-weight:750;">Summary</div>
-  <div style="padding:8px 12px 9px;">
+<div style="border:1px solid #d7e2f0;border-radius:10px;overflow:hidden;background:#f9fbfe;margin:0 0 6px;">
+  <div style="padding:6px 9px;background:#eaf1fb;color:#173763;font-size:17px;font-weight:750;">Summary</div>
+  <div style="padding:6px 9px 7px;">
     <div style="font-size:14px;font-weight:750;color:#173763;">1. What We Learned</div>
-    <ul style="margin:2px 0 8px;padding-left:18px;">{lessons}</ul>
+    <ul style="margin:1px 0 5px;padding-left:17px;">{lessons}</ul>
     <div style="font-size:14px;font-weight:750;color:#173763;">2. Changes We Need To Make</div>
-    <ul style="margin:2px 0 0;padding-left:18px;">{changes}</ul>
+    <ul style="margin:1px 0 0;padding-left:17px;">{changes}</ul>
   </div>
 </div>
 """
@@ -454,7 +479,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
         ("Exit", "exit_reason"),
     )
     head = "".join(
-        "<th style=\"padding:6px 5px;"
+        "<th style=\"padding:4px 4px;"
         "text-align:center;vertical-align:middle;background:#edf3fb;"
         "border-bottom:2px solid #cbd8ea;font-size:10px;letter-spacing:.25px;"
         f"text-transform:uppercase;color:#52657f;white-space:nowrap;\">{html.escape(label)}</th>"
@@ -470,7 +495,7 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
                 else "#334155"
             )
             cells.append(
-                "<td style=\"padding:6px 5px;"
+                "<td style=\"padding:4px 4px;"
                 "text-align:center;vertical-align:middle;"
                 f"border-bottom:1px solid #e6ebf2;font-size:11px;color:{color};"
                 "font-weight:500;white-space:nowrap;\">"
@@ -484,9 +509,9 @@ def _today_trades_email_html(rows: list[dict[str, str]]) -> str:
             "color:#64748b;font-size:12px;\">No completed trades</td></tr>"
         )
     return (
-        "<div style=\"margin:0 0 10px;border:1px solid #d7e2f0;"
+        "<div style=\"margin:0 0 6px;border:1px solid #d7e2f0;"
         "border-radius:12px;overflow:hidden;\">"
-        "<div style=\"padding:9px 10px;background:#173763;color:#ffffff;"
+        "<div style=\"padding:6px 8px;background:#173763;color:#ffffff;"
         "font-size:17px;font-weight:750;text-align:center;\">Today's Trades</div>"
         "<div style=\"overflow-x:auto;\">"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
@@ -560,20 +585,20 @@ def markdown_to_email_html(
                 ])
                 index += 1
             head = "".join(
-                f"<th style=\"padding:6px 7px;text-align:left;border-bottom:2px solid #cbd8ea;"
+                f"<th style=\"padding:4px 5px;text-align:left;border-bottom:2px solid #cbd8ea;"
                 f"font-size:12px;color:#24487f;\">{_inline(cell)}</th>"
                 for cell in headers
             )
             body = "".join(
                 "<tr>" + "".join(
-                    f"<td style=\"padding:6px 7px;border-bottom:1px solid #e5ebf4;"
+                    f"<td style=\"padding:4px 5px;border-bottom:1px solid #e5ebf4;"
                     f"font-size:12px;color:#3d4960;\">{_inline(cell)}</td>"
                     for cell in row
                 ) + "</tr>"
                 for row in rows
             )
             blocks.append(
-                "<div style=\"overflow-x:auto;margin:8px 0 12px;\">"
+                "<div style=\"overflow-x:auto;margin:5px 0 8px;\">"
                 "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" "
                 "style=\"width:100%;border-collapse:collapse;background:#f9fbfe;"
                 "border:1px solid #dce5f2;border-radius:8px;\">"
@@ -617,19 +642,19 @@ def markdown_to_email_html(
 </head>
 <body style="margin:0!important;padding:0!important;background:#f3f6fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0;padding:0;background:#f3f6fb;border-collapse:collapse;">
-    <tr><td align="center" style="margin:0;padding:0 8px 10px;">
+    <tr><td align="center" style="margin:0;padding:0 6px 6px;">
       <table role="presentation" width="720" cellspacing="0" cellpadding="0" style="width:100%;max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(31,49,82,.10);">
-        <tr><td class="review" style="margin:0;padding:0 20px 16px;line-height:1.42;">
+        <tr><td class="review" style="margin:0;padding:0 16px 10px;line-height:1.34;">
           <style>
             .review h1 {{ display:none; }}
-            .review h2 {{ color:#173763;font-size:18px;margin:14px 0 7px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:7px 9px;border-radius:8px; }}
-            .review h3 {{ color:#172f58;font-size:16px;margin:10px 0 5px; }}
-            .review p {{ margin:5px 0;color:#3d4960;font-size:14px; }}
-            .review ul {{ margin:5px 0 10px;padding:8px 10px 8px 27px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:9px; }}
-            .review li {{ margin:4px 0;color:#3d4960;font-size:14px; }}
+            .review h2 {{ color:#173763;font-size:17px;margin:9px 0 4px;background:linear-gradient(90deg,#edf4ff,#f8fbff);border-left:4px solid #4f7ec8;padding:5px 7px;border-radius:7px; }}
+            .review h3 {{ color:#172f58;font-size:15px;margin:7px 0 3px; }}
+            .review p {{ margin:3px 0;color:#3d4960;font-size:13px; }}
+            .review ul {{ margin:3px 0 6px;padding:5px 8px 5px 24px;background:#fbfcff;border:1px solid #e4ebf5;border-radius:7px; }}
+            .review li {{ margin:2px 0;color:#3d4960;font-size:13px; }}
             .review strong {{ color:#172033; }}
             .review code {{ background:#eef3fa;border-radius:5px;padding:2px 5px;font-size:12px; }}
-            .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:6px 9px;border-radius:4px; }}
+            .review .step {{ background:#f5f8fc;border-left:3px solid #4f7ec8;padding:4px 7px;border-radius:4px; }}
             .review tbody tr:nth-child(even) td {{ background:#f4f7fb; }}
             @media only screen and (max-width:600px) {{
               .review {{ padding-left:16px !important;padding-right:16px !important; }}
@@ -744,9 +769,11 @@ def _email_markdown(markdown: str, *, trading_date: str | None = None) -> str:
         result,
         [
             "Daily Scorecard",
-            "Protective Stops",
+            "Bot & Cockpit Failures — Today",
+            "Protective Stops -",
             "Direction Breakdown — All Time",
-            "McLeod Alpha SPY Indicator Results — All Time",
+            "Indicator Results — All Time",
+            "Day Trade SPY Review — All Time",
             "Missed Opportunities — All Time",
             "Block Usefulness — All Time",
             "Startup Guard — All Time",
@@ -898,13 +925,152 @@ def _indicator_usefulness_summary(trading_date: str) -> str | None:
             "are confounding the raw score comparison."
         )
 
-    return f"""## McLeod Alpha SPY Indicator Results — All Time
+    return f"""## Indicator Results — All Time
 
 - **Most promising:** {label(helpful)} on {helpful.get('direction')} trades is **{int(helpful.get('wins') or 0)}W/{int(helpful.get('losses') or 0)}L** across **{int(helpful.get('trades') or 0)} trades**, averaging **{_currency(helpful.get('average_return') or 0.0)}** versus **{_currency(helpful.get('absent_average_return') or 0.0)}** when absent.
 - **Strongest caution:** {label(caution)} on {caution.get('direction')} trades is **{int(caution.get('wins') or 0)}W/{int(caution.get('losses') or 0)}L** across **{int(caution.get('trades') or 0)} trades**, averaging **{_currency(caution.get('average_return') or 0.0)}** versus **{_currency(caution.get('absent_average_return') or 0.0)}** when absent.
 {checklist_line}
 {confounding_line}
-- **History and decision:** Indicator labels cover **{covered}/{len(trades)}** canonical broker-backed trades through **{trading_date}**. These are all-time directional comparisons refreshed after every session; correlated indicators and small absent cohorts remain contrary evidence, so weights stay unchanged until governed samples support human review."""
+- **History and decision:** Indicator labels cover **{covered}/{len(trades)}** canonical broker-backed trades through **{trading_date}**. No comparison is actionable below 20 comparable trades, and 50 is preferred before a live change. Correlated indicators, direction, phase, and small absent cohorts remain contrary evidence, so weights stay unchanged pending human review."""
+
+
+def _day_trade_spy_all_time_summary(trading_date: str) -> str | None:
+    payload = _load_json(
+        REPORT_DIR / f"day_trade_spy_shadow_{trading_date}.json"
+    )
+    rolling = payload.get("rolling") or {}
+    summaries = rolling.get("test_summary") or {}
+    if not summaries:
+        return None
+    labels = {
+        "accepted_break": "Accepted Break",
+        "structural_room_execution": "Structural Room & Execution",
+        "opening_vs_later_entry": "Opening vs. Later Entry",
+        "congestion_reentry": "Congestion & Re-entry",
+        "premise_reset_no_repair": "Premise Reset / No Repair",
+    }
+    rows = []
+    for key, label in labels.items():
+        groups = summaries.get(key) or {}
+        parts = []
+        for verdict in ("ADMIT", "REJECT", "DELAY", "TRACK"):
+            result = groups.get(verdict) or {}
+            count = int(result.get("trades") or 0)
+            if not count:
+                continue
+            wins = int(result.get("wins") or 0)
+            parts.append(
+                f"{verdict.title()} {wins}/{count} wins, "
+                f"{_currency(result.get('pnl_dollars') or 0.0)}"
+            )
+        rows.append(f"| {label} | {'; '.join(parts) or 'No valid outcomes yet'} |")
+    sample = int(rolling.get("valid_sample_size") or 0)
+    first_passage = int(rolling.get("known_first_passage") or 0)
+    coverage = first_passage / sample if sample else 0.0
+    phases = rolling.get("session_phase_counts") or {}
+    phase_text = ", ".join(
+        f"{str(name).replace('_', ' ').title()} {int(count)}"
+        for name, count in phases.items()
+    ) or "none"
+    return f"""## Day Trade SPY Review — All Time
+
+These are the five video-derived rules from the Day Trade SPY Catalog, tested in shadow mode against McLeod Alpha’s broker-backed trades.
+
+| Rule | All-Time Result |
+| --- | --- |
+{chr(10).join(rows)}
+
+- **Evidence:** **{sample}/50** valid trades; **{coverage:.1%}** first-passage coverage; phases: {phase_text}.
+- **Decision gate:** Below 20 trades is observation only. Twenty permits an early directional read; **50 valid trades is preferred before any actionable recommendation**, with at least 10 per observed phase, exact reconciliation, at least 80% first-passage coverage, and human review.
+- **Current decision:** **COLLECT MORE DATA**. The five rules remain research-only and cannot change entries, exits, sizing, stops, targets, or order behavior automatically."""
+
+
+def _runtime_failure_counts(trading_date: str) -> dict[str, int]:
+    path = ROOT / "data" / "reports" / "runtime_events.jsonl"
+    categories = {
+        "Manual Exit Failure": "manual exit error",
+        "Protective Stop Submission Failure": "protective stop submission failed",
+        "Cockpit Unavailable": "cockpit unavailable",
+        "Cockpit Port Failure": "cockpit port not listening",
+        "Bot Restart Failure": "bot restart api request failed",
+        "Restart Budget Exhausted": "restart budget exhausted",
+        "Runtime Parity Mismatch": "parity_state='mismatch'",
+    }
+    counts = {label: 0 for label in categories}
+    try:
+        lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return counts
+    for line in lines:
+        try:
+            row = json.loads(line)
+            observed = datetime.fromisoformat(str(row.get("ts") or ""))
+        except (ValueError, TypeError):
+            continue
+        if observed.tzinfo is None:
+            observed = observed.replace(tzinfo=EASTERN_TZ)
+        if observed.astimezone(EASTERN_TZ).date().isoformat() != trading_date:
+            continue
+        text = " ".join(
+            str(row.get(key) or "") for key in ("event_type", "message", "details")
+        ).lower()
+        for label, needle in categories.items():
+            if needle in text:
+                counts[label] += 1
+    return counts
+
+
+def _bot_cockpit_failures_summary(trading_date: str) -> str:
+    stop = _load_json(
+        REPORT_DIR / f"stop_execution_review_{trading_date}.json"
+    ).get("summary") or {}
+    cooling = _load_json(
+        REPORT_DIR / f"cooling_period_review_{trading_date}.json"
+    ).get("summary") or {}
+    entry_quality = _load_json(
+        REPORT_DIR / f"entry_quality_shadow_{trading_date}.json"
+    )
+    runtime = _runtime_failure_counts(trading_date)
+    failures = [
+        f"**Protective-stop handling:** {int(stop.get('ratchet_failures') or 0)} ratchet failures, "
+        f"{int(stop.get('protective_submission_failures') or 0)} protective submissions failed, "
+        f"{int(stop.get('replacement_rejections') or 0)} replacement rejections, and "
+        f"{int(stop.get('protective_stop_missing_decisions') or 0)} missing-protection decisions.",
+    ]
+    harmful = int(cooling.get("harmful_uncooled_reentries") or 0)
+    if harmful:
+        failures.append(
+            f"**Cooling failed to arm:** {harmful} harmful uncooled same-contract re-entry "
+            f"cost {_currency(cooling.get('harmful_uncooled_reentry_pnl') or 0.0)}."
+        )
+    adverse = float(stop.get("entry_adverse_slippage_dollars_per_contract") or 0.0)
+    shortfall = float(stop.get("exit_execution_shortfall_dollars_per_contract") or 0.0)
+    if adverse or shortfall:
+        failures.append(
+            f"**Execution quality:** {_currency(adverse)} adverse entry slippage and "
+            f"{_currency(shortfall)} exit shortfall per contract across covered trades."
+        )
+    audited = sum(
+        str(row.get("source") or "") == "broker_duplicate_audit"
+        for row in (entry_quality.get("today_trades") or [])
+        if isinstance(row, dict)
+    )
+    if audited:
+        failures.append(
+            f"**Trade-log integrity:** {audited} duplicate canonical trade required "
+            "broker-first audit and repair before the email could be released."
+        )
+    for label, count in runtime.items():
+        if count:
+            failures.append(f"**{label}:** {count} recorded occurrence(s).")
+    if not failures:
+        failures.append("**No recorded failures:** Structured daily telemetry found no bot or Cockpit failure.")
+    return (
+        "## Bot & Cockpit Failures — Today\n\n"
+        + "\n".join(f"- {row}" for row in failures)
+        + "\n\n- **Response:** Fix operational defects immediately, but do not use one day of "
+        "strategy outcomes to alter live admission or sizing."
+    )
 
 
 def _replace_h3_section(markdown: str, title: str, replacement: str) -> str:
@@ -982,7 +1148,7 @@ def _compact_missed_opportunity_sections(markdown: str, trading_date: str) -> st
 
 - **Most measurable blocker:** {primary.get('blocker_code', 'Unknown')} was the sole blocker in **{int(primary.get('sole_blocker_episodes') or 0)}** episodes; it missed **{int(primary.get('missed_profitable') or 0)}** profitable moves and protected against **{int(primary.get('losses_avoided') or 0)}** losing moves.
 - **Overlap warning:** {overlap.get('blocker_code', 'Overlapping gates')} appeared in **{int(overlap.get('canonical_episodes') or 0)}** episodes but was the sole blocker only **{int(overlap.get('sole_blocker_episodes') or 0)}** time(s), so it cannot receive causal credit.
-- **Decision:** Keep blocker logic unchanged. Continue collecting executable outcomes until each proposed change has at least 20 canonical episodes and 80% coverage."""
+- **Decision:** Keep blocker logic unchanged. Below 20 comparable episodes is observation only; prefer 50 before action, with at least 80% executable coverage and human review."""
         markdown = _replace_h3_section(
             markdown,
             "Blocker Usefulness",
@@ -1030,10 +1196,17 @@ def _reorder_h2_sections(markdown: str, ordered_titles: list[str]) -> str:
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(markdown)
         sections.append((match.group(1).strip(), markdown[match.start():end].strip()))
-    by_title = {title: section for title, section in sections}
-    arranged = [by_title[title] for title in ordered_titles if title in by_title]
+    selected: set[str] = set()
+    arranged = []
+    for requested in ordered_titles:
+        for title, section in sections:
+            if title == requested or (
+                requested.endswith("-") and title.startswith(requested)
+            ):
+                arranged.append(section)
+                selected.add(title)
     arranged.extend(
-        section for title, section in sections if title not in ordered_titles
+        section for title, section in sections if title not in selected
     )
     return "\n\n".join(([prefix] if prefix else []) + arranged).strip() + "\n"
 
@@ -1060,6 +1233,13 @@ def _compact_operational_sections(
             replacement,
         )
     if trading_date:
+        day_trade_spy = _day_trade_spy_all_time_summary(trading_date)
+        if day_trade_spy:
+            markdown = _replace_h2_section(
+                markdown,
+                "Day Trade SPY Five-Test Shadow Review",
+                day_trade_spy,
+            )
         markdown = _compact_missed_opportunity_sections(markdown, trading_date)
     startup_title = "Startup Guard — Daily Assessment"
     startup_match = re.search(
@@ -1077,7 +1257,7 @@ def _compact_operational_sections(
 
 - **Setting:** Block the first **{int(latest.get('current_setting') or 1)}** otherwise-qualified signal after startup.
 - **Evidence:** **{blocked}** candidates blocked across **{len(history['payloads'])}** daily reviews; **{decisive}** had decisive executable outcomes ({coverage:.1%} coverage), with **{int(totals.get('profitable_candidates_blocked', 0))}** profitable moves blocked and **{int(totals.get('opportunities_preserved_by_prompt_followup', 0))}** opportunities preserved by prompt follow-ups.
-- **Decision:** Keep at one. The all-time decisive sample remains below the **20-episode** change gate; any change requires at least 80% executable coverage and human review."""
+- **Decision:** Keep at one. Below 20 decisive episodes is observation only; prefer 50 before action, with at least 80% executable coverage and human review."""
         markdown = _replace_h2_section(markdown, startup_title, startup)
 
     cooling_title = "Cooling Period — Daily Assessment"
@@ -1095,7 +1275,7 @@ def _compact_operational_sections(
 
 - **Setting:** Skip the next **one otherwise-qualified signal** after every confirmed exit.
 - **Evidence:** **{blocked}** cooling blocks across **{len(history['payloads'])}** daily reviews; **{decisive}** had decisive executable outcomes ({coverage:.1%} coverage), including **{int(totals.get('profitable_opportunities_blocked', 0))}** profitable moves blocked and **{int(totals.get('harmful_uncooled_reentries', 0))}** harmful uncooled same-contract re-entry worth **{_currency(totals.get('harmful_uncooled_reentry_pnl', 0.0))}**.
-- **Decision:** Keep one signal and ensure it arms after every confirmed exit. An arming failure is not evidence that the duration is too short; changing duration still requires 20 decisive blocks, 80% coverage, and human review."""
+- **Decision:** Keep one signal and ensure it arms after every confirmed exit. An arming failure is not evidence that duration is too short. Below 20 decisive blocks is observation only; prefer 50 before action, with 80% coverage and human review."""
         markdown = _replace_h2_section(markdown, cooling_title, cooling)
 
     stop_title = "Protective Stop and Ratchet Reliability"
@@ -1105,6 +1285,19 @@ def _compact_operational_sections(
     )
     if stop_match:
         section = stop_match.group(0)
+        stop_payload = _load_json(
+            REPORT_DIR / f"stop_execution_review_{trading_date}.json"
+        ) if trading_date else {}
+        stop_trades = [
+            row for row in (stop_payload.get("trades") or [])
+            if isinstance(row, dict)
+        ]
+        healthy_trades = sum(
+            str(row.get("status") or "") == "HEALTHY" for row in stop_trades
+        )
+        reliability = (
+            100.0 * healthy_trades / len(stop_trades) if stop_trades else 0.0
+        )
         stop_activity = re.sub(
             r"^(\*\*\d+\*\*);\s*broker stop submissions:\s*(\*\*\d+\*\*)$",
             r"\1 trades; \2 broker stop submissions",
@@ -1115,14 +1308,16 @@ def _compact_operational_sections(
             r"\1 ratchet failures; \2 rejected replacements; \3 identity recoveries",
             _section_value(section, "Ratchet failures"),
         )
-        stop = f"""## Protective Stops
+        stop = f"""## Protective Stops - {reliability:.1f}%
 
 - **Status:** Repair required before considering another stop-policy change.
 - **Today:** {stop_activity}.
-- **Reliability:** {stop_reliability}.
+- **Reliability:** **{healthy_trades}/{len(stop_trades)} trades** had no recorded critical protection defect. {stop_reliability}.
 - **Trail rule:** The 4% tier remains a 1%-behind-high synthetic trail armed after +4%.
-- **Next:** Eliminate rejected replacements, submission failures, and protection gaps; require at least 95% broker verification before human review of any policy change."""
+- **Next:** Eliminate rejected replacements, submission failures, and protection gaps. Statistical policy changes require at least 20 broker-confirmed trades, preferably 50, at least 95% broker verification, and human review."""
         markdown = _replace_h2_section(markdown, stop_title, stop)
+    if trading_date:
+        markdown += "\n\n" + _bot_cockpit_failures_summary(trading_date) + "\n"
     return markdown
 
 
