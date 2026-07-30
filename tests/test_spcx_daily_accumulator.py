@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import json
 
 import pytest
 
@@ -118,3 +119,34 @@ def test_force_cannot_be_combined_with_execution(monkeypatch):
     monkeypatch.setattr(accumulator, "_load_env", lambda: None)
     with pytest.raises(RuntimeError, match="prohibited"):
         accumulator.main(["--execute", "--force"])
+
+
+def test_record_serializes_decimal_quote_fields(tmp_path, monkeypatch):
+    ledger = tmp_path / "ledger.jsonl"
+    latest = tmp_path / "latest.json"
+    monkeypatch.setattr(accumulator, "LATEST_PATH", latest)
+
+    accumulator._record(
+        {"event": "dry_run", "quote": {"ask": Decimal("115.57")}},
+        ledger,
+    )
+
+    assert json.loads(ledger.read_text())["quote"]["ask"] == "115.57"
+    assert json.loads(latest.read_text())["quote"]["ask"] == "115.57"
+
+
+def test_installer_uses_live_weekday_open_schedule():
+    installer = (
+        accumulator.PROJECT_ROOT
+        / "scripts"
+        / "install_spcx_daily_accumulator_launchagent.sh"
+    ).read_text(encoding="utf-8")
+
+    schedule = installer.split("<key>StartCalendarInterval</key>", 1)[1].split(
+        "</array>", 1
+    )[0]
+    assert "--execute" in installer
+    assert schedule.count("<key>Weekday</key>") == 5
+    for weekday in range(1, 6):
+        assert f"<key>Weekday</key><integer>{weekday}</integer>" in schedule
+    assert "<key>Weekday</key><integer>6</integer>" not in schedule

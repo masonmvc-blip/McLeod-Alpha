@@ -208,13 +208,21 @@ def _ledger_has_submission_started(session_day: date, ledger_path: Path = LEDGER
 
 
 def _record(event: dict[str, Any], ledger_path: Path = LEDGER_PATH) -> None:
+    def json_default(value: Any) -> str:
+        if isinstance(value, Decimal):
+            return str(value)
+        raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
     payload = dict(event)
     payload.setdefault("recorded_at", _now_et().isoformat())
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     with ledger_path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, sort_keys=True) + "\n")
+        handle.write(json.dumps(payload, sort_keys=True, default=json_default) + "\n")
     LATEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    LATEST_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    LATEST_PATH.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, default=json_default),
+        encoding="utf-8",
+    )
 
 
 def _extract_available_cash(account_payload: dict[str, Any]) -> Decimal:

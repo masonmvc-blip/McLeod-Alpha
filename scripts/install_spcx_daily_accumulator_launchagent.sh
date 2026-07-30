@@ -20,7 +20,7 @@ cat > "$RUNNER_PATH" <<WRAPPER
 #!/usr/bin/env zsh
 set -euo pipefail
 cd '$ROOT_DIR'
-exec '$ROOT_DIR/.venv/bin/python' '$ROOT_DIR/scripts/spcx_daily_accumulator.py'
+exec '$ROOT_DIR/.venv/bin/python' '$ROOT_DIR/scripts/spcx_daily_accumulator.py' --execute
 WRAPPER
 chmod 755 "$RUNNER_PATH"
 
@@ -38,11 +38,11 @@ cat > "$PLIST_PATH" <<PLIST
   </array>
   <key>StartCalendarInterval</key>
   <array>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
-    <dict><key>Weekday</key><integer>6</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
   </array>
   <key>WorkingDirectory</key>
   <string>$ROOT_DIR</string>
@@ -54,5 +54,10 @@ cat > "$PLIST_PATH" <<PLIST
 </plist>
 PLIST
 
-echo "Prepared GitHub-only LaunchAgent at $PLIST_PATH"
-echo "It runs in dry-run mode. Live execution is intentionally not activated."
+launchctl bootout "gui/$(id -u)/$AGENT_ID" >/dev/null 2>&1 || true
+launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
+launchctl enable "gui/$(id -u)/$AGENT_ID"
+
+echo "Installed GitHub-only LaunchAgent at $PLIST_PATH"
+echo "Schedule: Monday-Friday at 08:30 Central on this Mac."
+echo "Live execution still requires SPCX_AUTOMATION_LIVE_ACK=SPCX_ONE_SHARE_DAILY_LIVE."
