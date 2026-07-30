@@ -247,9 +247,84 @@ def test_broker_reconciled_exit_can_arm_standard_post_exit_cooling(monkeypatch):
 
     assert saved["name"] == "post_exit_cooling"
     assert saved["value"]["pending"] is True
+    assert saved["value"]["signals_remaining"] == 1
     assert saved["value"]["exit_reason"] == "BROKER_RECONCILED_EXIT"
     assert saved["value"]["source"] == "broker_reconciliation"
     assert saved["path"] == live_engine.POST_EXIT_COOLING_FILE
+
+
+def test_post_exit_cooling_is_idempotent_for_same_confirmed_exit(monkeypatch):
+    saved = {
+        "pending": True,
+        "signals_remaining": 1,
+        "exit_event_id": "exit:123",
+    }
+    writes = []
+
+    class Memory:
+        def load_setting(self, *_args):
+            return dict(saved)
+
+        def save_setting(self, *_args):
+            writes.append(_args)
+
+    monkeypatch.setattr(live_engine, "get_memory", lambda: Memory())
+
+    live_engine._arm_post_exit_cooling(
+        "MANUAL_EXIT_MARKET",
+        "live_engine",
+        exit_event_id="exit:123",
+    )
+
+    assert writes == []
+
+
+def test_pending_ratchet_becomes_broker_verified(monkeypatch):
+    pos = _live_position()
+    pos.protective_stop_order_id = "ratchet-verified"
+    pos.protective_stop_status = "PENDING_VERIFICATION"
+    pos.protective_stop_verification_kind = "RATCHET"
+    pos.protective_stop_verification_requested_at = datetime.now(
+        live_engine.timezone.utc
+    ).isoformat()
+    live_engine.current_position = pos
+
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = {
+        "orderId": "ratchet-verified",
+        "orderType": "STOP",
+        "status": "WORKING",
+        "stopPrice": 5.31,
+        "orderLegCollection": [{
+            "instruction": "SELL_TO_CLOSE",
+            "instrument": {
+                "assetType": "OPTION",
+                "symbol": pos.option_symbol,
+            },
+        }],
+    }
+    client = Mock()
+    client.get_order.return_value = response
+    monkeypatch.setattr(live_engine, "_schwab_client", client)
+    monkeypatch.setattr(live_engine, "_schwab_account_hash", "account-hash")
+    monkeypatch.setattr(live_engine, "save_position", lambda _position: None)
+    events = []
+    monkeypatch.setattr(
+        live_engine,
+        "record_stop_event",
+        lambda event_type, **payload: events.append((event_type, payload)),
+    )
+
+    assert live_engine._has_active_protective_stop_order(pos.option_symbol) is True
+    assert pos.protective_stop_status == "BROKER_VERIFIED"
+    assert pos.option_stop == pytest.approx(5.31)
+    verified = next(
+        payload for event_type, payload in events
+        if event_type == "stop_ratchet_broker_verified"
+    )
+    assert verified["broker_confirmed_stop"] == pytest.approx(5.31)
+    assert verified["verification_latency_ms"] is not None
 
 
 def test_restore_reconciles_flat_position_before_stop_submission(monkeypatch):
@@ -491,7 +566,11 @@ def test_manual_exit_uses_full_broker_quantity_and_cancels_stop_before_market(mo
     monkeypatch.setattr(live_engine, "record_option_management_cycle", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(live_engine, "exit_quality_metrics", lambda **_kwargs: {})
     monkeypatch.setattr(live_engine, "_play_execution_alert", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(live_engine, "_arm_post_exit_cooling", lambda *_args: None)
+    monkeypatch.setattr(
+        live_engine,
+        "_arm_post_exit_cooling",
+        lambda *_args, **_kwargs: None,
+    )
     monkeypatch.setattr(live_engine, "log_trade_diagnostic_event", lambda **_kwargs: None)
     monkeypatch.setattr(live_engine, "safe_log_trade", lambda **_kwargs: None)
     monkeypatch.setattr(live_engine, "send_trade_exit_alert", lambda **_kwargs: None)

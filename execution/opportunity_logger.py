@@ -739,6 +739,33 @@ def _build_setup_record(
         "mes": mes,
         "confidence": confidence,
         "absorption_score": absorption_score,
+        "entry_quality_telemetry": {
+            "required_metrics": ["stage", "cq", "mas", "abs", "conf"],
+            "captured": {
+                "stage": stage is not None,
+                "cq": cq is not None,
+                "mas": mas is not None,
+                "abs": absorption_score is not None,
+                "conf": confidence is not None,
+            },
+            "missing": [
+                name
+                for name, value in (
+                    ("stage", stage),
+                    ("cq", cq),
+                    ("mas", mas),
+                    ("abs", absorption_score),
+                    ("conf", confidence),
+                )
+                if value is None
+            ],
+            "complete": all(
+                value is not None
+                for value in (stage, cq, mas, absorption_score, confidence)
+            ),
+            "captured_at_entry_evaluation": True,
+            "imputation_allowed": False,
+        },
         "positive_signals": positives,
         "penalties": penalties,
         "entered": bool(entered),

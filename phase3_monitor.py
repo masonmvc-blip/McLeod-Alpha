@@ -1580,9 +1580,12 @@ def _consume_post_exit_cooling_period():
         cooling_state = get_memory().load_setting(POST_EXIT_COOLING_PATH, {}) or {}
     except Exception:
         return False
-    if not bool(cooling_state.get("pending")):
+    remaining = int(cooling_state.get("signals_remaining") or 0)
+    if not bool(cooling_state.get("pending")) and remaining <= 0:
         return False
 
+    # The governed live duration remains exactly one otherwise-qualified
+    # signal.  Clear atomically only when that signal reaches this gate.
     get_memory().clear_setting("post_exit_cooling", POST_EXIT_COOLING_PATH)
     return True
 
@@ -1622,6 +1625,12 @@ def _process_manual_exit_command(
             ENGINE_MODULE._arm_post_exit_cooling(
                 "MANUAL_EXIT_MARKET",
                 "cockpit_kill_switch",
+                exit_event_id=str(
+                    direct_result.get("exit_order_id")
+                    or command.get("command_id")
+                    or command.get("requested_at")
+                    or ""
+                ) or None,
             )
         except Exception:
             pass

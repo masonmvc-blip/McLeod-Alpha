@@ -1,4 +1,8 @@
+import json
+import sqlite3
+
 from reports.entry_quality_shadow_report import (
+    _load_latest_canonical_payloads,
     canonical_indicator_performance,
     evaluate_entry_quality_shadow,
 )
@@ -242,3 +246,42 @@ def test_canonical_indicator_performance_uses_same_direction_absent_comparator()
     assert break_high["absent_average_return"] == -10
     assert break_high["guidance"] == "Shadow increase candidate"
     assert break_high["automatic_live_change_allowed"] is False
+
+
+def test_superseded_duplicate_never_enters_entry_quality_study():
+    connection = sqlite3.connect(":memory:")
+    connection.executescript(
+        """
+        CREATE TABLE canonical_completed_trades (
+            canonical_trade_id TEXT PRIMARY KEY
+        );
+        CREATE TABLE canonical_completed_trade_versions (
+            canonical_trade_id TEXT,
+            canonical_version INTEGER,
+            payload TEXT
+        );
+        CREATE TABLE canonical_trade_supersessions (
+            superseded_trade_id TEXT,
+            surviving_trade_id TEXT
+        );
+        """
+    )
+    connection.executemany(
+        "INSERT INTO canonical_completed_trades VALUES (?)",
+        [("survivor",), ("duplicate",)],
+    )
+    connection.executemany(
+        "INSERT INTO canonical_completed_trade_versions VALUES (?, ?, ?)",
+        [
+            ("survivor", 1, json.dumps({"broker_entry_order_id": "entry-1"})),
+            ("duplicate", 1, json.dumps({"broker_entry_order_id": "entry-duplicate"})),
+        ],
+    )
+    connection.execute(
+        "INSERT INTO canonical_trade_supersessions VALUES (?, ?)",
+        ("duplicate", "survivor"),
+    )
+
+    rows = _load_latest_canonical_payloads(connection)
+
+    assert [row["canonical_trade_id"] for row in rows] == ["survivor"]

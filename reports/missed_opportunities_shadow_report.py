@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 EASTERN_TZ = ZoneInfo("America/New_York")
-SCHEMA_VERSION = "missed-opportunities-shadow.v2"
+SCHEMA_VERSION = "missed-opportunities-shadow.v3"
 FRESH_START_DATE = "2026-07-29"
 FORWARD_WINDOW_MINUTES = 15
 TARGET_RETURN_PCT = 6.0
@@ -430,6 +430,103 @@ def _blocker_summary(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _regime_phase_summary(episodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Measure direction/phase/regime combinations without changing admission."""
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in episodes:
+        grouped[(
+            str(row.get("direction") or "UNKNOWN"),
+            str(row.get("phase") or "UNKNOWN"),
+            str(row.get("market_regime") or "UNKNOWN"),
+        )].append(row)
+
+    rows: list[dict[str, Any]] = []
+    for (direction, phase, regime), members in grouped.items():
+        missed = sum(
+            row.get("classification") == "MISSED_PROFITABLE_OPPORTUNITY"
+            for row in members
+        )
+        protected = sum(
+            row.get("classification") == "LOSS_CORRECTLY_AVOIDED"
+            for row in members
+        )
+        sample = len(members)
+        rows.append({
+            "direction": direction,
+            "phase": phase,
+            "market_regime": regime,
+            "canonical_episodes": sample,
+            "missed_profitable": missed,
+            "losses_avoided": protected,
+            "miss_rate": round(missed / sample, 4) if sample else None,
+            "minimum_sample": MINIMUM_PATTERN_SAMPLE,
+            "research_status": (
+                "ELIGIBLE_FOR_HUMAN_REVIEW"
+                if sample >= MINIMUM_PATTERN_SAMPLE
+                else "COLLECT_MORE_DATA"
+            ),
+            "automatic_live_change_allowed": False,
+        })
+    return sorted(
+        rows,
+        key=lambda row: (
+            -row["missed_profitable"],
+            -row["canonical_episodes"],
+            row["direction"],
+            row["phase"],
+            row["market_regime"],
+        ),
+    )
+
+
+def _unseen_move_metric_study(episodes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compare entry-time metrics for unseen profits versus protected losses."""
+    unseen = [
+        row for row in episodes
+        if row.get("discovery_type") == "UNSEEN_MARKET_MOVE"
+    ]
+    metrics: dict[str, Any] = {}
+    for key in ("checklist_score", "cq", "mas", "abs", "conf"):
+        missed = [
+            float(row[key]) for row in unseen
+            if row.get("classification") == "MISSED_PROFITABLE_OPPORTUNITY"
+            and _number(row.get(key)) is not None
+        ]
+        protected = [
+            float(row[key]) for row in unseen
+            if row.get("classification") == "LOSS_CORRECTLY_AVOIDED"
+            and _number(row.get(key)) is not None
+        ]
+        metrics[key] = {
+            "missed_sample": len(missed),
+            "protected_sample": len(protected),
+            "missed_median": round(median(missed), 4) if missed else None,
+            "protected_median": round(median(protected), 4) if protected else None,
+            "eligible_for_human_review": (
+                len(missed) >= MINIMUM_PATTERN_SAMPLE
+                and len(protected) >= MINIMUM_PATTERN_SAMPLE
+            ),
+        }
+    complete = sum(
+        all(_number(row.get(key)) is not None for key in ("cq", "mas", "abs", "conf"))
+        for row in unseen
+    )
+    return {
+        "canonical_unseen_episodes": len(unseen),
+        "complete_cq_mas_abs_conf": complete,
+        "metric_coverage": round(complete / len(unseen), 4) if unseen else 0.0,
+        "metrics": metrics,
+        "decision": (
+            "ELIGIBLE_FOR_HUMAN_REVIEW"
+            if unseen
+            and complete / len(unseen) >= 0.80
+            and any(row["eligible_for_human_review"] for row in metrics.values())
+            else "COLLECT_MORE_DATA"
+        ),
+        "automatic_live_change_allowed": False,
+    }
+
+
 def build_missed_opportunities_payload(
     events: list[dict[str, Any]],
     *,
@@ -457,6 +554,7 @@ def build_missed_opportunities_payload(
     rolling_episodes = list(historical_episodes or []) + episodes
     rolling_patterns = _pattern_summary(rolling_episodes)
     rolling_blockers = _blocker_summary(rolling_episodes)
+    rolling_regime_phase = _regime_phase_summary(rolling_episodes)
     return {
         "schema_version": SCHEMA_VERSION,
         "trading_date": trading_date,
@@ -506,6 +604,10 @@ def build_missed_opportunities_payload(
         "pattern_summary": rolling_patterns,
         "today_blocker_summary": _blocker_summary(episodes),
         "blocker_summary": rolling_blockers,
+        "regime_phase_shadow": rolling_regime_phase,
+        "unseen_move_recognition_shadow": _unseen_move_metric_study(
+            rolling_episodes
+        ),
         "rolling_canonical_episodes": len(rolling_episodes),
         "evidence_gaps": [
             {

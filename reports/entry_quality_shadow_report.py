@@ -145,9 +145,14 @@ def _load_best_diagnostics(connection: sqlite3.Connection) -> dict[str, dict[str
 def _load_latest_canonical_payloads(connection: sqlite3.Connection) -> list[dict[str, Any]]:
     rows = connection.execute(
         """
-        SELECT canonical_trade_id, canonical_version, payload
-        FROM canonical_completed_trade_versions
-        ORDER BY canonical_trade_id, canonical_version
+        SELECT version.canonical_trade_id, version.canonical_version, version.payload
+        FROM canonical_completed_trade_versions AS version
+        JOIN canonical_completed_trades AS trade
+          ON trade.canonical_trade_id = version.canonical_trade_id
+        LEFT JOIN canonical_trade_supersessions AS supersession
+          ON supersession.superseded_trade_id = version.canonical_trade_id
+        WHERE supersession.superseded_trade_id IS NULL
+        ORDER BY version.canonical_trade_id, version.canonical_version
         """
     ).fetchall()
     selected: dict[str, dict[str, Any]] = {}
@@ -172,6 +177,86 @@ def _load_latest_canonical_payloads(connection: sqlite3.Connection) -> list[dict
     return list(selected.values())
 
 
+def _entered_opportunity_values(
+    *,
+    root: Path,
+    entry_time: str,
+    direction: str,
+    option_symbol: str,
+) -> dict[str, Any]:
+    """Recover immutable entry metrics from the evaluated-candidate record."""
+    try:
+        entered_at = datetime.fromisoformat(str(entry_time).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return {}
+    if entered_at.tzinfo is None:
+        entered_at = entered_at.replace(tzinfo=EASTERN_TZ)
+    entered_at = entered_at.astimezone(EASTERN_TZ)
+    path = (
+        root
+        / "data"
+        / "reports"
+        / "opportunity_logs"
+        / f"opportunity_setups_{entered_at.date().isoformat()}.jsonl"
+    )
+    if not path.exists():
+        return {}
+
+    best: tuple[float, dict[str, Any]] | None = None
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        event = _object(line)
+        if not bool(event.get("entered")):
+            continue
+        if str(event.get("direction") or "").upper() != direction:
+            continue
+        event_symbol = str(event.get("option_selected") or "").strip()
+        if option_symbol and event_symbol and event_symbol != option_symbol:
+            continue
+        try:
+            candle_at = datetime.fromisoformat(
+                str(event.get("candle_time_et") or "").replace("Z", "+00:00")
+            )
+        except (TypeError, ValueError):
+            continue
+        if candle_at.tzinfo is None:
+            candle_at = candle_at.replace(tzinfo=EASTERN_TZ)
+        seconds = (entered_at - candle_at.astimezone(EASTERN_TZ)).total_seconds()
+        if seconds < 0 or seconds > 120:
+            continue
+        if best is None or seconds < best[0]:
+            stage = event.get("stage")
+            phase = (
+                stage.get("label") if isinstance(stage, dict) else stage
+            )
+            best = (seconds, {
+                "phase": str(phase or "").upper() or None,
+                "cq": _number(
+                    (event.get("cq") or {}).get("score")
+                    if isinstance(event.get("cq"), dict)
+                    else event.get("cq")
+                ),
+                "mas": _number(
+                    (event.get("mas") or {}).get("score")
+                    if isinstance(event.get("mas"), dict)
+                    else event.get("mas")
+                ),
+                "abs": _number(
+                    (event.get("absorption_score") or {}).get("score")
+                    if isinstance(event.get("absorption_score"), dict)
+                    else event.get("absorption_score")
+                ),
+                "conf": _number(
+                    (event.get("confidence") or {}).get("score")
+                    if isinstance(event.get("confidence"), dict)
+                    else event.get("confidence")
+                ),
+                "checklist_score": _number(event.get("score")),
+                "indicator_labels": list(event.get("positive_signals") or []),
+                "metric_provenance": "immutable_entered_opportunity_event",
+            })
+    return best[1] if best else {}
+
+
 def load_study_trades(*, root: Path = ROOT) -> tuple[list[dict[str, Any]], dict[str, int]]:
     """Return one economic trade per broker entry order plus coverage facts."""
     db_path = root / "data" / "mcleod_alpha.db"
@@ -193,6 +278,23 @@ def load_study_trades(*, root: Path = ROOT) -> tuple[list[dict[str, Any]], dict[
             continue
         entry_time = str(payload.get("entry_time") or "")
         values = diagnostics.get(entry_order_id, {})
+        recovered_values = _entered_opportunity_values(
+            root=root,
+            entry_time=entry_time,
+            direction=str(payload.get("direction") or "UNKNOWN").upper(),
+            option_symbol=str(payload.get("option_symbol") or "").strip(),
+        )
+        values = {
+            key: (
+                values.get(key)
+                if values.get(key) is not None
+                else recovered_values.get(key)
+            )
+            for key in {
+                *values.keys(),
+                *recovered_values.keys(),
+            }
+        }
         representations.append(
             {
                 "canonical_trade_id": payload.get("canonical_trade_id"),
@@ -854,6 +956,48 @@ def write_entry_quality_shadow_report(
     )
     payload["generated_at"] = datetime.now(EASTERN_TZ).isoformat(timespec="seconds")
     payload["coverage"] = coverage
+    bounded = [
+        trade for trade in trades
+        if str(trade.get("trade_date") or "") <= trading_date
+    ]
+    today = [
+        trade for trade in bounded
+        if str(trade.get("trade_date") or "") == trading_date
+    ]
+    complete_keys = ("phase", "cq", "mas", "abs", "conf")
+    complete_today = sum(
+        all(trade.get(key) is not None for key in complete_keys)
+        for trade in today
+    )
+    complete_all = sum(
+        all(trade.get(key) is not None for key in complete_keys)
+        for trade in bounded
+    )
+    payload["telemetry_quality"] = {
+        "required_metrics": list(complete_keys),
+        "today_trades": len(today),
+        "today_complete": complete_today,
+        "today_coverage": (
+            round(complete_today / len(today), 4) if today else 0.0
+        ),
+        "rolling_trades": len(bounded),
+        "rolling_complete": complete_all,
+        "rolling_coverage": (
+            round(complete_all / len(bounded), 4) if bounded else 0.0
+        ),
+        "missing_today_broker_entry_order_ids": [
+            trade.get("broker_entry_order_id")
+            for trade in today
+            if not all(trade.get(key) is not None for key in complete_keys)
+        ],
+        "coverage_target": 0.95,
+        "status": (
+            "COMPLETE"
+            if today and complete_today == len(today)
+            else "REPAIR_REQUIRED"
+        ),
+        "missing_values_imputed": False,
+    }
 
     report_dir = root / "reports" / "daily_trade_learning"
     report_dir.mkdir(parents=True, exist_ok=True)

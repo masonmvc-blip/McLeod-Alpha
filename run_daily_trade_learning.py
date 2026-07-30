@@ -40,6 +40,7 @@ from reports.startup_guard_review import write_startup_guard_review
 from reports.cooling_period_review import write_cooling_period_review
 from reports.market_trend_shadow_report import write_market_trend_shadow_report
 from reports.stop_execution_review import write_stop_execution_review
+from execution.contract_limits import MAX_OPEN_CONTRACTS
 
 
 WORKSPACE = Path(__file__).parent
@@ -353,12 +354,15 @@ def _build_scale_decision(
     evaluator_result: dict[str, Any],
     optimizer_result: dict[str, Any],
 ) -> dict[str, Any]:
-    """Return next-session size guidance for +1 contract/day scaling.
+    """Return governed next-session size guidance.
 
     Decision meanings:
-    - SCALE_UP: increase by 1 contract is allowed.
+    - SCALE_UP: increase by 1 contract is allowed below the configured ceiling.
     - HOLD: keep the same contract size.
     - SCALE_DOWN: reduce by 1 contract.
+
+    The configured ceiling is a hard risk boundary.  Daily learning may study
+    sizing, but it must never recommend increasing beyond that boundary.
     """
 
     overall = summary.get("overall", {}) or {}
@@ -429,6 +433,14 @@ def _build_scale_decision(
         increase_allowed = False
         contract_step = -1
         rationale = "Severe daily loss threshold breached; reduce risk by 1 contract."
+    elif MAX_OPEN_CONTRACTS >= 8:
+        decision = "HOLD"
+        increase_allowed = False
+        contract_step = 0
+        rationale = (
+            f"Current live size is locked at the configured {MAX_OPEN_CONTRACTS}-contract "
+            "ceiling; keep size unchanged while execution reliability is validated."
+        )
     elif failed:
         decision = "HOLD"
         increase_allowed = False
@@ -447,6 +459,8 @@ def _build_scale_decision(
         "rationale": rationale,
         "checks": checks,
         "failed_checks": [c.get("name") for c in failed],
+        "configured_contract_ceiling": MAX_OPEN_CONTRACTS,
+        "automatic_increase_blocked_at_ceiling": MAX_OPEN_CONTRACTS >= 8,
     }
 
 

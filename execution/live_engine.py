@@ -182,16 +182,35 @@ def _play_execution_alert(
         print(f"WARNING: Could not play local {alert_kind} alert: {exc}")
 
 
-def _arm_post_exit_cooling(exit_reason: str, source: str) -> None:
-    """Skip the next qualifying signal after every confirmed live exit."""
+def _arm_post_exit_cooling(
+    exit_reason: str,
+    source: str,
+    exit_event_id: str | None = None,
+) -> None:
+    """Persist a restart-safe one-signal cooling block after a confirmed exit."""
     try:
-        get_memory().save_setting(
+        memory = get_memory()
+        try:
+            existing = memory.load_setting(POST_EXIT_COOLING_FILE, {}) or {}
+        except Exception:
+            existing = {}
+        normalized_event_id = str(exit_event_id or "").strip() or None
+        if (
+            bool(existing.get("pending"))
+            and normalized_event_id
+            and str(existing.get("exit_event_id") or "") == normalized_event_id
+        ):
+            return
+        memory.save_setting(
             "post_exit_cooling",
             {
+                "schema_version": "post-exit-cooling.v2",
                 "pending": True,
+                "signals_remaining": 1,
                 "exit_reason": str(exit_reason or ""),
                 "exited_at": datetime.now(timezone.utc).isoformat(),
                 "source": str(source or "live_engine"),
+                "exit_event_id": normalized_event_id,
             },
             POST_EXIT_COOLING_FILE,
         )
@@ -1059,6 +1078,8 @@ class Position:
     protective_stop_order_id: str = ""  # Broker-held SELL_TO_CLOSE stop order ID
     protective_stop_price: float = 0.0  # Stop trigger price (initially 4% below fill)
     protective_stop_status: str = ""    # PENDING, PLACED, FAILED, CANCELED
+    protective_stop_verification_requested_at: str = ""
+    protective_stop_verification_kind: str = ""
     protective_stop_restore_count: int = 0  # Number of in-trade restore operations
     option_high_since_entry: float = 0.0
     option_low_since_entry: float = 0.0
@@ -1257,15 +1278,43 @@ def _has_active_protective_stop_order(option_symbol):
                 and str(current_position.protective_stop_status or "").upper()
                 == "PENDING_VERIFICATION"
             ):
-                current_position.protective_stop_status = "PLACED"
+                verification_latency_ms = None
+                requested_at = str(
+                    current_position.protective_stop_verification_requested_at
+                    or ""
+                )
+                if requested_at:
+                    try:
+                        requested = datetime.fromisoformat(requested_at)
+                        if requested.tzinfo is None:
+                            requested = requested.replace(tzinfo=timezone.utc)
+                        verification_latency_ms = round(
+                            (
+                                datetime.now(timezone.utc)
+                                - requested.astimezone(timezone.utc)
+                            ).total_seconds()
+                            * 1000.0,
+                            3,
+                        )
+                    except (TypeError, ValueError):
+                        verification_latency_ms = None
+                current_position.protective_stop_status = "BROKER_VERIFIED"
                 if float(known_stop.get("stop_price") or 0.0) > 0:
                     current_position.option_stop = float(known_stop["stop_price"])
                     current_position.protective_stop_price = float(
                         known_stop["stop_price"]
                     )
                 save_position(current_position)
+                verification_kind = str(
+                    current_position.protective_stop_verification_kind
+                    or "UNKNOWN"
+                ).upper()
                 record_stop_event(
-                    "stop_ratchet_broker_verified",
+                    (
+                        "stop_ratchet_broker_verified"
+                        if verification_kind == "RATCHET"
+                        else "protective_stop_broker_verified"
+                    ),
                     trade_key=(
                         f"{current_position.option_symbol}:"
                         f"{current_position.opened.isoformat()}"
@@ -1274,6 +1323,8 @@ def _has_active_protective_stop_order(option_symbol):
                     broker_order_id=known_order_id,
                     broker_status=known_stop.get("status"),
                     broker_confirmed_stop=known_stop.get("stop_price"),
+                    verification_latency_ms=verification_latency_ms,
+                    verification_kind=verification_kind,
                 )
             return True
         record_stop_event(
@@ -1744,7 +1795,15 @@ def _sync_position_with_broker(current_price, force: bool = False):
         option_pnl_dollars,
         event_id=reconciled_audio_event_id,
     )
-    _arm_post_exit_cooling("BROKER_RECONCILED_EXIT", "broker_reconciliation")
+    _arm_post_exit_cooling(
+        "BROKER_RECONCILED_EXIT",
+        "broker_reconciliation",
+        exit_event_id=(
+            f"broker-exit:{broker_exit_order_id}"
+            if broker_exit_order_id
+            else f"broker-exit:{symbol}:{broker_exit_time}"
+        ),
+    )
     print("✓ Cleared stale local position after broker reconciliation")
     print("✓ Protective stop failure lock cleared after broker reconciliation")
 
@@ -2911,6 +2970,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
     """
     global current_position, _submission_rejected, _entry_pending, _pending_order_id, _max_quantity_exceeded
     global _safe_mode, _safe_mode_reason, _protective_stop_failed, _protective_stop_failure_reason
+    global _last_protective_stop_check_epoch, _last_protective_stop_check_ok
 
     open_trade_start_ms = _perf_ms_now()
     metrics = {
@@ -3242,7 +3302,7 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         protective_stop_id = ""
         protective_stop_price = 0.0
     else:
-        print(f"\n✓ Position protection established")
+        print(f"\n✓ Protective stop submitted; broker verification pending")
 
     feature_payload = attach_entry_quote_telemetry(
         feature_payload,
@@ -3272,7 +3332,17 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         submitted_limit_price=limit_price,
         protective_stop_order_id=protective_stop_id,
         protective_stop_price=protective_stop_price,
-        protective_stop_status="PLACED" if protective_stop_id else "FAILED",
+        protective_stop_status=(
+            "PENDING_VERIFICATION" if protective_stop_id else "FAILED"
+        ),
+        protective_stop_verification_requested_at=(
+            datetime.now(timezone.utc).isoformat()
+            if protective_stop_id
+            else ""
+        ),
+        protective_stop_verification_kind=(
+            "INITIAL" if protective_stop_id else ""
+        ),
         option_high_since_entry=float(fill_price),
         option_low_since_entry=float(fill_price),
         option_trailing_high_bid=float(fill_price),
@@ -3281,6 +3351,9 @@ def open_trade(direction, price, stop, target, quantity, reason, option=None, fe
         spy_price_at_option_high=float(price),
         spy_price_at_option_low=float(price),
     )
+    if protective_stop_id:
+        _last_protective_stop_check_epoch = 0.0
+        _last_protective_stop_check_ok = True
 
     persist_start_ms = _perf_ms_now()
     try:
@@ -3692,7 +3765,11 @@ def close_trade(
         option_pnl_dollars,
         event_id=close_audio_event_id,
     )
-    _arm_post_exit_cooling(reason, "live_engine")
+    _arm_post_exit_cooling(
+        reason,
+        "live_engine",
+        exit_event_id=close_audio_event_id,
+    )
     
     # NOW attempt logging (failure won't affect position closure)
     try:
@@ -3947,6 +4024,10 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         current_position.protective_stop_order_id = str(order_id)
         current_position.protective_stop_price = float(submitted_stop or decision.stop_price or 0.0)
         current_position.protective_stop_status = "PENDING_VERIFICATION"
+        current_position.protective_stop_verification_requested_at = (
+            datetime.now(timezone.utc).isoformat()
+        )
+        current_position.protective_stop_verification_kind = "RESTORE"
         current_position.protective_stop_restore_count = int(current_position.protective_stop_restore_count or 0) + 1
         _last_protective_stop_check_ok = True
         _last_protective_stop_check_epoch = 0.0
@@ -4067,6 +4148,10 @@ def manage_trade(current_price, option_mark=None, option_bid=None, option_last=N
         )
         current_position.protective_stop_price = current_position.option_stop
         current_position.protective_stop_status = "PENDING_VERIFICATION"
+        current_position.protective_stop_verification_requested_at = (
+            datetime.now(timezone.utc).isoformat()
+        )
+        current_position.protective_stop_verification_kind = "RATCHET"
         current_position.active_stop_reason = decision.reason
         _last_protective_stop_submission_epoch = time.time()
         # The replacement endpoint can return a new order ID before Schwab

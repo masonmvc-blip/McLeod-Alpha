@@ -144,8 +144,57 @@ def test_payload_and_markdown_separate_missed_from_protected():
     assert payload["summary"]["canonical_missed_opportunities"] == 1
     assert payload["summary"]["canonical_losses_correctly_avoided"] == 1
     assert payload["automatic_live_change_allowed"] is False
+    assert payload["regime_phase_shadow"]
+    assert (
+        payload["unseen_move_recognition_shadow"]["automatic_live_change_allowed"]
+        is False
+    )
+    assert (
+        payload["unseen_move_recognition_shadow"]["complete_cq_mas_abs_conf"]
+        == 0
+    )
     assert "Canonical Missed Opportunities" in markdown
     assert "Losses Correctly Avoided" in markdown
+
+
+def test_unseen_move_study_preserves_regime_phase_and_metric_coverage():
+    first = _event(
+        0,
+        direction="PUT",
+        symbol="PUT_UNSEEN",
+        bid=1.00,
+        ask=1.00,
+        reason="Regime mismatch (NO_TRADE)",
+        phase="INITIATION",
+    )
+    first["market_regime"] = "NO_TRADE"
+    first["score_distance_to_threshold"] = -3
+    payload = build_missed_opportunities_payload(
+        [
+            first,
+            _event(
+                1,
+                direction="PUT",
+                symbol="PUT_UNSEEN",
+                bid=1.07,
+                ask=1.09,
+                reason="Regime mismatch (NO_TRADE)",
+                phase="INITIATION",
+            ),
+        ],
+        trading_date="2026-07-29",
+        reconciliation={"complete": True},
+    )
+
+    study = payload["unseen_move_recognition_shadow"]
+    cohort = payload["regime_phase_shadow"][0]
+    assert study["canonical_unseen_episodes"] == 1
+    assert study["complete_cq_mas_abs_conf"] == 1
+    assert study["metric_coverage"] == 1.0
+    assert cohort["direction"] == "PUT"
+    assert cohort["phase"] == "INITIATION"
+    assert cohort["market_regime"] == "NO_TRADE"
+    assert cohort["automatic_live_change_allowed"] is False
 
 
 def test_payload_attributes_outcomes_to_all_blockers_without_claiming_causation():
