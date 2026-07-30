@@ -11,13 +11,20 @@ from typing import Any, Dict, List, Tuple
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / "config" / "cockpit.env", override=True)
-EASTERN_NOW = datetime.now().astimezone()
+EASTERN_NOW = datetime.now(ZoneInfo("America/New_York"))
 TODAY = EASTERN_NOW.date().isoformat()
-BASE_URL = os.environ["COCKPIT_PUBLIC_URL"].rstrip("/")
+# Internal validation must not depend on the public Cloudflare Access route.
+# Operators can override this for an isolated test target, but production
+# defaults to the canonical loopback Cockpit.
+BASE_URL = os.getenv(
+    "COCKPIT_VALIDATION_URL",
+    "http://127.0.0.1:5001",
+).rstrip("/")
 REPORT_DIR = Path("data/reports/execution_validation")
 
 
