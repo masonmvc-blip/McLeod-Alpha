@@ -92,12 +92,34 @@ def test_ledger_guard_blocks_repeat_after_submission_started(tmp_path):
     assert accumulator._ledger_has_submission_started(date(2026, 7, 28), ledger)
 
 
+def test_ledger_guard_allows_retry_after_confirmed_nonfill(tmp_path):
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(
+        '\n'.join(
+            [
+                '{"event":"submission_started","session_date":"2026-07-28"}',
+                '{"event":"submitted","session_date":"2026-07-28","order_id":"abc123"}',
+                '{"event":"terminal","session_date":"2026-07-28","order_id":"abc123","status":"CANCELED"}',
+            ]
+        )
+        + '\n',
+        encoding="utf-8",
+    )
+    assert not accumulator._ledger_has_submission_started(date(2026, 7, 28), ledger)
+
+
 def test_opening_window_is_narrow():
     assert accumulator.opening_window_is_valid(
         datetime(2026, 7, 28, 13, 30, tzinfo=timezone.utc)
     )
-    assert not accumulator.opening_window_is_valid(
+    assert accumulator.opening_window_is_valid(
         datetime(2026, 7, 28, 13, 33, tzinfo=timezone.utc)
+    )
+    assert accumulator.opening_window_is_valid(
+        datetime(2026, 7, 28, 13, 35, tzinfo=timezone.utc)
+    )
+    assert not accumulator.opening_window_is_valid(
+        datetime(2026, 7, 28, 13, 36, tzinfo=timezone.utc)
     )
 
 
@@ -115,10 +137,177 @@ def test_execution_price_uses_weighted_fill_price():
     assert accumulator._execution_price(order) == "100.1500"
 
 
+def test_order_status_400_recovers_from_account_collection(monkeypatch):
+    class Response:
+        def __init__(self, payload, status_code=200):
+            self._payload = payload
+            self.status_code = status_code
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"HTTP {self.status_code}")
+
+        def json(self):
+            return self._payload
+
+    class Client:
+        def get_order(self, order_id, account_hash):
+            return Response({}, 400)
+
+        def get_orders_for_account(self, account_hash):
+            return Response([{"orderId": "abc123", "status": "FILLED"}])
+
+    monkeypatch.setattr(accumulator, "CANCEL_AFTER_SECONDS", 1)
+    monkeypatch.setattr(accumulator.time, "sleep", lambda _: None)
+    status, order = accumulator._wait_for_terminal_state(Client(), "acct", "abc123")
+    assert status == "FILLED"
+    assert order["orderId"] == "abc123"
+
+
+def test_order_status_400_does_not_blindly_cancel_when_order_unknown(monkeypatch):
+    class Response:
+        status_code = 400
+
+        def raise_for_status(self):
+            raise RuntimeError("HTTP 400")
+
+        def json(self):
+            return []
+
+    class Client:
+        def get_order(self, order_id, account_hash):
+            return Response()
+
+        def get_orders_for_account(self, account_hash):
+            return Response()
+
+        def cancel_order(self, order_id, account_hash):
+            raise AssertionError("must not blindly cancel an unidentified order")
+
+    monkeypatch.setattr(accumulator, "CANCEL_AFTER_SECONDS", 0)
+    status, order = accumulator._wait_for_terminal_state(Client(), "acct", "abc123")
+    assert status == "STATUS_UNCERTAIN"
+    assert order["orderId"] == "abc123"
+
+
+def test_timeout_confirms_cancellation_for_safe_recovery(monkeypatch):
+    class Response:
+        status_code = 200
+
+        def __init__(self, payload=None):
+            self._payload = payload or {}
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class Client:
+        def __init__(self):
+            self.cancelled = False
+
+        def get_orders_for_account(self, account_hash):
+            status = "CANCELED" if self.cancelled else "WORKING"
+            return Response([{"orderId": "abc123", "status": status}])
+
+        def cancel_order(self, order_id, account_hash):
+            self.cancelled = True
+            return Response()
+
+    monkeypatch.setattr(accumulator, "CANCEL_AFTER_SECONDS", 0)
+    monkeypatch.setattr(accumulator, "CANCEL_CONFIRM_SECONDS", 1)
+    status, order = accumulator._wait_for_terminal_state(Client(), "acct", "abc123")
+    assert status == "CANCELED"
+    assert order["orderId"] == "abc123"
+
+
 def test_force_cannot_be_combined_with_execution(monkeypatch):
     monkeypatch.setattr(accumulator, "_load_env", lambda: None)
     with pytest.raises(RuntimeError, match="prohibited"):
         accumulator.main(["--execute", "--force"])
+
+
+def test_auth_failure_is_recorded_and_returns_immediately(tmp_path, monkeypatch):
+    ledger = tmp_path / "ledger.jsonl"
+    latest = tmp_path / "latest.json"
+    alert = tmp_path / "runtime_alert.json"
+    monkeypatch.setattr(accumulator, "_load_env", lambda: None)
+    monkeypatch.setattr(accumulator, "is_trading_session", lambda _day: True)
+    monkeypatch.setattr(accumulator, "opening_window_is_valid", lambda _now: True)
+    monkeypatch.setattr(accumulator, "_create_client", lambda: (_ for _ in ()).throw(RuntimeError("expired")))
+    monkeypatch.setattr(accumulator, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(accumulator, "LATEST_PATH", latest)
+    from ops import runtime_alerts
+    monkeypatch.setattr(runtime_alerts, "ALERT_PATH", alert)
+
+    assert accumulator.main([]) == 1
+    payload = json.loads(latest.read_text(encoding="utf-8"))
+    assert payload["event"] == "blocked"
+    assert payload["reason"] == "schwab_reauthentication_required"
+    assert json.loads(alert.read_text(encoding="utf-8"))["active"] is True
+
+
+def test_confirmed_nonfill_returns_error_and_sets_alert(tmp_path, monkeypatch):
+    class Response:
+        headers = {"Location": "/orders/abc123"}
+
+        def __init__(self, payload=None):
+            self._payload = payload or {}
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self._payload
+
+    class Client:
+        def get_orders_for_account(self, account_hash):
+            return Response([])
+
+        def get_account(self, account_hash):
+            return Response(
+                {"securitiesAccount": {"currentBalances": {"cashAvailableForTrading": 1000}}}
+            )
+
+        def place_order(self, account_hash, order):
+            return Response()
+
+    ledger = tmp_path / "ledger.jsonl"
+    latest = tmp_path / "latest.json"
+    alert = tmp_path / "runtime_alert.json"
+    monkeypatch.setattr(accumulator, "_load_env", lambda: None)
+    monkeypatch.setattr(accumulator, "is_trading_session", lambda _day: True)
+    monkeypatch.setattr(accumulator, "opening_window_is_valid", lambda _now: True)
+    monkeypatch.setattr(accumulator, "_create_client", Client)
+    monkeypatch.setattr(accumulator, "_get_account_hash", lambda: "acct")
+    monkeypatch.setattr(
+        accumulator,
+        "_fetch_quote",
+        lambda _client: accumulator.QuoteSnapshot(
+            "SPCX", accumulator.EXPECTED_CUSIP, "SpaceX", Decimal("100"), Decimal("99"), "now"
+        ),
+    )
+    monkeypatch.setattr(accumulator, "_build_limit_order", lambda _price: {})
+    monkeypatch.setattr(
+        accumulator,
+        "_wait_for_terminal_state",
+        lambda *_args: ("CANCELED", {"orderId": "abc123", "status": "CANCELED"}),
+    )
+    monkeypatch.setattr(accumulator, "LEDGER_PATH", ledger)
+    monkeypatch.setattr(accumulator, "LATEST_PATH", latest)
+    monkeypatch.setenv("SPCX_AUTOMATION_LIVE_ACK", accumulator.LIVE_ACK_VALUE)
+    monkeypatch.setenv("SCHWAB_ACCOUNT_NUMBER", "00000903")
+    from ops import runtime_alerts
+    monkeypatch.setattr(runtime_alerts, "ALERT_PATH", alert)
+
+    assert accumulator.main(["--execute"]) == 1
+    payload = json.loads(latest.read_text(encoding="utf-8"))
+    assert payload["event"] == "terminal"
+    assert payload["status"] == "CANCELED"
+    alert_payload = json.loads(alert.read_text(encoding="utf-8"))
+    assert alert_payload["active"] is True
+    assert alert_payload["event_type"] == "spcx_daily_accumulator_nonfill"
 
 
 def test_record_serializes_decimal_quote_fields(tmp_path, monkeypatch):
@@ -146,7 +335,9 @@ def test_installer_uses_live_weekday_open_schedule():
         "</array>", 1
     )[0]
     assert "--execute" in installer
-    assert schedule.count("<key>Weekday</key>") == 5
+    assert schedule.count("<key>Weekday</key>") == 10
     for weekday in range(1, 6):
-        assert f"<key>Weekday</key><integer>{weekday}</integer>" in schedule
+        assert schedule.count(f"<key>Weekday</key><integer>{weekday}</integer>") == 2
+    assert schedule.count("<key>Minute</key><integer>30</integer>") == 5
+    assert schedule.count("<key>Minute</key><integer>34</integer>") == 5
     assert "<key>Weekday</key><integer>6</integer>" not in schedule

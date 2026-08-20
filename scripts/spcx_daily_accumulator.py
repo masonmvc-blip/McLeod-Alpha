@@ -28,6 +28,7 @@ EXPECTED_CUSIP = "84615Q103"
 QUANTITY = 1
 CAP_MULTIPLIER = Decimal("1.000")
 CANCEL_AFTER_SECONDS = 120
+CANCEL_CONFIRM_SECONDS = 15
 LIVE_ACK_VALUE = "SPCX_ONE_SHARE_DAILY_LIVE"
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +59,7 @@ ACTIVE_OR_FILLED = {
     "WORKING",
 }
 TERMINAL_FILLED = {"FILLED"}
+TERMINAL_NOT_FILLED = {"CANCELED", "EXPIRED", "REJECTED"}
 
 
 @dataclass(frozen=True)
@@ -99,7 +101,7 @@ def is_trading_session(day: date) -> bool:
 def opening_window_is_valid(now: datetime) -> bool:
     local = now.astimezone(ET)
     minutes = local.hour * 60 + local.minute
-    return 9 * 60 + 30 <= minutes <= 9 * 60 + 32
+    return 9 * 60 + 30 <= minutes <= 9 * 60 + 35
 
 
 def capped_limit_price(ask: Decimal) -> Decimal:
@@ -191,28 +193,40 @@ def duplicate_order_exists(orders: list[dict[str, Any]], session_day: date) -> b
     return False
 
 
-def _ledger_has_submission_started(session_day: date, ledger_path: Path = LEDGER_PATH) -> bool:
+def _ledger_has_submission_started(
+    session_day: date, ledger_path: Path | None = None
+) -> bool:
+    ledger_path = ledger_path or LEDGER_PATH
     if not ledger_path.exists():
         return False
+    unresolved_submission = False
     for line in ledger_path.read_text(encoding="utf-8").splitlines():
         try:
             event = json.loads(line)
         except Exception:
             continue
-        if (
-            event.get("session_date") == session_day.isoformat()
-            and event.get("event") in {"submission_started", "submitted", "filled"}
-        ):
+        if event.get("session_date") != session_day.isoformat():
+            continue
+        event_type = str(event.get("event") or "")
+        status = str(event.get("status") or "").upper()
+        if event_type == "filled":
             return True
-    return False
+        if event_type in {"submission_started", "submitted"}:
+            unresolved_submission = True
+        if event_type == "terminal" and status in TERMINAL_NOT_FILLED:
+            # A confirmed non-fill is safe to retry because the broker-level
+            # duplicate check runs before this ledger guard on every attempt.
+            unresolved_submission = False
+    return unresolved_submission
 
 
-def _record(event: dict[str, Any], ledger_path: Path = LEDGER_PATH) -> None:
+def _record(event: dict[str, Any], ledger_path: Path | None = None) -> None:
     def json_default(value: Any) -> str:
         if isinstance(value, Decimal):
             return str(value)
         raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
+    ledger_path = ledger_path or LEDGER_PATH
     payload = dict(event)
     payload.setdefault("recorded_at", _now_et().isoformat())
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
@@ -269,13 +283,15 @@ def _build_limit_order(limit_price: Decimal) -> Any:
 
 
 def _create_client() -> Any:
-    from schwab.auth import easy_client
+    from schwab.auth import client_from_token_file
 
-    return easy_client(
+    token_path = Path(os.getenv("SCHWAB_TOKEN_PATH", str(PROJECT_ROOT / "token.json"))).expanduser()
+    if not token_path.exists():
+        raise FileNotFoundError("Schwab token file is missing")
+    return client_from_token_file(
+        token_path=str(token_path),
         api_key=os.getenv("SCHWAB_APP_KEY"),
         app_secret=os.getenv("SCHWAB_APP_SECRET"),
-        callback_url=os.getenv("SCHWAB_CALLBACK_URL"),
-        token_path=str(PROJECT_ROOT / "token.json"),
         enforce_enums=False,
     )
 
@@ -311,25 +327,129 @@ def _execution_price(order: dict[str, Any]) -> str | None:
     return str((total_value / total_quantity).quantize(Decimal("0.0001")))
 
 
+def _response_status(response: Any) -> int | None:
+    """Return an HTTP status without requiring a concrete httpx response type."""
+    value = getattr(response, "status_code", None)
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _order_from_account_list(
+    client: Any, account_hash: str, order_id: str
+) -> dict[str, Any] | None:
+    """Recover an order when Schwab's single-order endpoint returns a 400.
+
+    Schwab can reject ``GET /orders/{id}`` for an order that is still visible in
+    the account collection (notably immediately after submission).  The account
+    collection is the authoritative fallback and avoids treating a transient
+    polling failure as a failed or duplicate purchase.
+    """
+    response = client.get_orders_for_account(account_hash)
+    response.raise_for_status()
+    for order in response.json() or []:
+        candidate_id = str(order.get("orderId") or order.get("order_id") or "")
+        if candidate_id == str(order_id):
+            return order
+    return None
+
+
 def _wait_for_terminal_state(
     client: Any, account_hash: str, order_id: str
 ) -> tuple[str, dict[str, Any]]:
     deadline = time.monotonic() + CANCEL_AFTER_SECONDS
     last_order: dict[str, Any] = {}
+    poll_errors: list[str] = []
     while time.monotonic() < deadline:
-        response = client.get_order(order_id, account_hash)
-        response.raise_for_status()
-        last_order = response.json() or {}
+        response = None
+        try:
+            response = client.get_order(order_id, account_hash)
+            response.raise_for_status()
+            last_order = response.json() or {}
+        except Exception as exc:
+            # A 400 from the single-order endpoint is recoverable through the
+            # account-level order collection. Other failures remain fatal.
+            status_code = _response_status(locals().get("response"))
+            if status_code != 400:
+                raise
+            poll_errors.append(f"single_order_400:{exc}")
+            try:
+                recovered = _order_from_account_list(client, account_hash, order_id)
+            except Exception as fallback_exc:
+                poll_errors.append(f"account_order_fallback_error:{fallback_exc}")
+                recovered = None
+            if recovered is not None:
+                last_order = recovered
+            else:
+                last_order = {
+                    "orderId": str(order_id),
+                    "status": "STATUS_UNCERTAIN",
+                    "status_poll_errors": poll_errors[-3:],
+                }
         status = str(last_order.get("status") or "").upper()
         if status in TERMINAL_FILLED:
             return status, last_order
-        if status in {"CANCELED", "EXPIRED", "REJECTED"}:
+        if status in TERMINAL_NOT_FILLED:
             return status, last_order
         time.sleep(5)
 
+    # Before cancelling, recover the latest account-level status. If Schwab
+    # cannot identify the order, preserve uncertainty rather than issuing a
+    # blind cancellation against an order that may already have filled.
+    try:
+        recovered = _order_from_account_list(client, account_hash, order_id)
+    except Exception as exc:
+        poll_errors.append(f"account_order_final_fallback_error:{exc}")
+        recovered = None
+    if recovered is not None:
+        last_order = recovered
+        status = str(last_order.get("status") or "").upper()
+        if status in TERMINAL_FILLED or status in TERMINAL_NOT_FILLED:
+            return status, last_order
+    if not last_order or str(last_order.get("status") or "").upper() == "STATUS_UNCERTAIN":
+        return "STATUS_UNCERTAIN", {
+            "orderId": str(order_id),
+            "status": "STATUS_UNCERTAIN",
+            "status_poll_errors": poll_errors[-5:],
+        }
+
     response = client.cancel_order(order_id, account_hash)
     response.raise_for_status()
-    return "CANCEL_REQUESTED", last_order
+    cancel_deadline = time.monotonic() + CANCEL_CONFIRM_SECONDS
+    while time.monotonic() < cancel_deadline:
+        try:
+            recovered = _order_from_account_list(client, account_hash, order_id)
+        except Exception as exc:
+            poll_errors.append(f"cancel_confirmation_error:{exc}")
+            recovered = None
+        if recovered is not None:
+            last_order = recovered
+            status = str(last_order.get("status") or "").upper()
+            if status in TERMINAL_FILLED or status in TERMINAL_NOT_FILLED:
+                return status, last_order
+        time.sleep(2)
+    return "STATUS_UNCERTAIN", {
+        "orderId": str(order_id),
+        "status": "STATUS_UNCERTAIN",
+        "cancel_requested": True,
+        "status_poll_errors": poll_errors[-5:],
+    }
+
+
+def _set_failure_alert(reason: str, message: str) -> None:
+    from ops.runtime_alerts import set_runtime_alert
+
+    set_runtime_alert(reason, message, severity="critical")
+    print(f"SPCX_BUY: FAIL | {reason} | {message}")
+
+
+def _clear_failure_alerts() -> None:
+    from ops.runtime_alerts import clear_runtime_alert
+
+    clear_runtime_alert("schwab_reauthentication_required")
+    clear_runtime_alert("spcx_daily_accumulator_nonfill")
+    clear_runtime_alert("spcx_daily_accumulator_unresolved")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -354,18 +474,52 @@ def main(argv: list[str] | None = None) -> int:
         _record({"event": "skipped", "reason": "outside_opening_window", "session_date": session_day.isoformat()})
         return 0
 
-    client = _create_client()
+    try:
+        client = _create_client()
+    except Exception as exc:
+        from ops.runtime_alerts import set_runtime_alert
+
+        _record(
+            {
+                "event": "blocked",
+                "reason": "schwab_reauthentication_required",
+                "session_date": session_day.isoformat(),
+                "error_type": type(exc).__name__,
+            }
+        )
+        set_runtime_alert(
+            "schwab_reauthentication_required",
+            "Schwab API authentication expired; SPCX accumulation was blocked",
+            severity="critical",
+        )
+        print(
+            "SPCX_AUTH: FAIL | reauthentication required | "
+            f"{type(exc).__name__}"
+        )
+        return 1
     account_hash = _get_account_hash()
     account_suffix = os.getenv("SCHWAB_ACCOUNT_NUMBER", "")[-4:]
 
     orders_response = client.get_orders_for_account(account_hash)
     orders_response.raise_for_status()
-    if duplicate_order_exists(orders_response.json() or [], session_day):
+    broker_orders = orders_response.json() or []
+    if duplicate_order_exists(broker_orders, session_day):
         _record({"event": "skipped", "reason": "broker_duplicate_guard", "session_date": session_day.isoformat()})
+        if any(
+            str(order.get("status") or "").upper() == "FILLED"
+            and _order_date(order) == session_day
+            and _is_spcx_buy(order)
+            for order in broker_orders
+        ):
+            _clear_failure_alerts()
         return 0
     if _ledger_has_submission_started(session_day):
-        _record({"event": "skipped", "reason": "ledger_duplicate_guard", "session_date": session_day.isoformat()})
-        return 0
+        _record({"event": "blocked", "reason": "unresolved_prior_submission", "session_date": session_day.isoformat()})
+        _set_failure_alert(
+            "spcx_daily_accumulator_unresolved",
+            "Prior SPCX submission is unresolved; recovery was blocked to prevent a duplicate buy",
+        )
+        return 1
 
     quote = _fetch_quote(client)
     limit_price = capped_limit_price(quote.ask)
@@ -383,7 +537,11 @@ def main(argv: list[str] | None = None) -> int:
                 "available": str(cash),
             }
         )
-        return 0
+        _set_failure_alert(
+            "spcx_daily_accumulator_nonfill",
+            "SPCX accumulation was blocked by insufficient non-margin cash",
+        )
+        return 1
 
     plan = OrderPlan(
         session_date=session_day.isoformat(),
@@ -401,12 +559,39 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if os.getenv("SPCX_AUTOMATION_LIVE_ACK", "").strip() != LIVE_ACK_VALUE:
-        raise RuntimeError("live execution guard failed: explicit SPCX acknowledgement is missing")
+        _record(
+            {
+                "event": "blocked",
+                "reason": "live_execution_ack_missing",
+                "session_date": session_day.isoformat(),
+            }
+        )
+        _set_failure_alert(
+            "spcx_daily_accumulator_nonfill",
+            "SPCX live execution acknowledgement is missing",
+        )
+        return 1
 
     _record({"event": "submission_started", "session_date": session_day.isoformat(), "plan": asdict(plan)})
-    response = client.place_order(account_hash, _build_limit_order(limit_price))
-    response.raise_for_status()
-    order_id = _order_id_from_response(response)
+    try:
+        response = client.place_order(account_hash, _build_limit_order(limit_price))
+        response.raise_for_status()
+        order_id = _order_id_from_response(response)
+    except Exception as exc:
+        _record(
+            {
+                "event": "blocked",
+                "reason": "submission_outcome_uncertain",
+                "session_date": session_day.isoformat(),
+                "error_type": type(exc).__name__,
+                "plan": asdict(plan),
+            }
+        )
+        _set_failure_alert(
+            "spcx_daily_accumulator_unresolved",
+            "SPCX submission outcome is uncertain; automatic recovery was blocked to prevent a duplicate buy",
+        )
+        return 1
     _record(
         {
             "event": "submitted",
@@ -416,7 +601,24 @@ def main(argv: list[str] | None = None) -> int:
         }
     )
 
-    status, terminal_order = _wait_for_terminal_state(client, account_hash, order_id)
+    try:
+        status, terminal_order = _wait_for_terminal_state(client, account_hash, order_id)
+    except Exception as exc:
+        _record(
+            {
+                "event": "terminal",
+                "session_date": session_day.isoformat(),
+                "order_id": order_id,
+                "status": "STATUS_UNCERTAIN",
+                "error_type": type(exc).__name__,
+                "plan": asdict(plan),
+            }
+        )
+        _set_failure_alert(
+            "spcx_daily_accumulator_unresolved",
+            f"SPCX order {order_id} status is uncertain; automatic recovery was blocked to prevent a duplicate buy",
+        )
+        return 1
     _record(
         {
             "event": "filled" if status == "FILLED" else "terminal",
@@ -427,7 +629,15 @@ def main(argv: list[str] | None = None) -> int:
             "plan": asdict(plan),
         }
     )
-    return 0
+    if status == "FILLED":
+        _clear_failure_alerts()
+        return 0
+
+    _set_failure_alert(
+        "spcx_daily_accumulator_nonfill" if status in TERMINAL_NOT_FILLED else "spcx_daily_accumulator_unresolved",
+        f"SPCX order {order_id} did not fill; terminal status={status}",
+    )
+    return 1
 
 
 if __name__ == "__main__":

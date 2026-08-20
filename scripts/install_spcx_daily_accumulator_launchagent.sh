@@ -43,6 +43,11 @@ cat > "$PLIST_PATH" <<PLIST
     <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
     <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>30</integer></dict>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>34</integer></dict>
+    <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>34</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>34</integer></dict>
+    <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>34</integer></dict>
+    <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>8</integer><key>Minute</key><integer>34</integer></dict>
   </array>
   <key>WorkingDirectory</key>
   <string>$ROOT_DIR</string>
@@ -59,5 +64,5 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"
 launchctl enable "gui/$(id -u)/$AGENT_ID"
 
 echo "Installed GitHub-only LaunchAgent at $PLIST_PATH"
-echo "Schedule: Monday-Friday at 08:30 Central on this Mac."
+echo "Schedule: Monday-Friday at 08:30 Central, with a duplicate-safe 08:34 recovery check."
 echo "Live execution still requires SPCX_AUTOMATION_LIVE_ACK=SPCX_ONE_SHARE_DAILY_LIVE."
