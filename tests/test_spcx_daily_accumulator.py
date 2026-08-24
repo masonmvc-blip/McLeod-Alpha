@@ -1,12 +1,35 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
+import os
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
 from engine import research_phase1
 from engine.data_sources import sec_source
 from scripts import spcx_daily_accumulator as accumulator
+
+
+def test_direct_script_execution_can_import_operational_helpers(tmp_path):
+    probe = (
+        "import importlib, runpy, sys; "
+        "runpy.run_path(sys.argv[1], run_name='spcx_import_probe'); "
+        "importlib.import_module('ops.runtime_alerts')"
+    )
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    result = subprocess.run(
+        [sys.executable, "-c", probe, str(Path(accumulator.__file__).resolve())],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_capped_limit_price_never_exceeds_live_ask():

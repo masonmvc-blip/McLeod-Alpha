@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
@@ -32,6 +33,10 @@ CANCEL_CONFIRM_SECONDS = 15
 LIVE_ACK_VALUE = "SPCX_ONE_SHARE_DAILY_LIVE"
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    # Direct script execution sets sys.path[0] to scripts/, not the repository
+    # root. Keep shared operational helpers importable under the LaunchAgent.
+    sys.path.insert(0, str(PROJECT_ROOT))
 RUNTIME_ROOT = (
     Path.home()
     / "Library"
