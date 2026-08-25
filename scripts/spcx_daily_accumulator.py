@@ -82,7 +82,12 @@ class OrderPlan:
     session_date: str
     symbol: str
     quantity: int
+    bid: str | None
     ask: str
+    midpoint: str | None
+    spread: str | None
+    spread_bps: str | None
+    quote_time: str
     limit_price: str
     cap_percent: str
     cancel_after_seconds: int
@@ -164,6 +169,27 @@ def parse_quote(payload: dict[str, Any], now: datetime | None = None) -> QuoteSn
         bid=bid,
         quote_time=stamp.isoformat(),
     )
+
+
+def _quote_benchmarks(quote: QuoteSnapshot) -> dict[str, str | None]:
+    bid = quote.bid
+    benchmarks: dict[str, str | None] = {
+        "bid": str(bid) if bid is not None else None,
+        "midpoint": None,
+        "spread": None,
+        "spread_bps": None,
+    }
+    if bid is None or bid <= 0 or bid > quote.ask:
+        return benchmarks
+    spread = quote.ask - bid
+    midpoint = (quote.ask + bid) / Decimal("2")
+    benchmarks["midpoint"] = str(midpoint.quantize(Decimal("0.0001")))
+    benchmarks["spread"] = str(spread.quantize(Decimal("0.0001")))
+    if midpoint > 0:
+        benchmarks["spread_bps"] = str(
+            ((spread / midpoint) * Decimal("10000")).quantize(Decimal("0.01"))
+        )
+    return benchmarks
 
 
 def _order_date(order: dict[str, Any]) -> date | None:
@@ -330,6 +356,65 @@ def _execution_price(order: dict[str, Any]) -> str | None:
     if total_quantity <= 0:
         return None
     return str((total_value / total_quantity).quantize(Decimal("0.0001")))
+
+
+def _execution_time(order: dict[str, Any]) -> str | None:
+    times = [
+        str(leg.get("time"))
+        for activity in order.get("orderActivityCollection") or []
+        for leg in activity.get("executionLegs") or []
+        if leg.get("time")
+    ]
+    return min(times) if times else None
+
+
+def _broker_fill_seconds(order: dict[str, Any], execution_time: str | None) -> str | None:
+    entered_time = order.get("enteredTime")
+    if not entered_time or not execution_time:
+        return None
+    try:
+        entered = datetime.fromisoformat(str(entered_time).replace("Z", "+00:00"))
+        executed = datetime.fromisoformat(str(execution_time).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    seconds = Decimal(str((executed - entered).total_seconds()))
+    if seconds < 0:
+        return None
+    return str(seconds.quantize(Decimal("0.001")))
+
+
+def _execution_quality(plan: OrderPlan, order: dict[str, Any]) -> dict[str, str | None]:
+    execution_price = _execution_price(order)
+    execution_time = _execution_time(order)
+    quality: dict[str, str | None] = {
+        "execution_price": execution_price,
+        "execution_time": execution_time,
+        "broker_fill_seconds": _broker_fill_seconds(order, execution_time),
+        "price_improvement_vs_ask": None,
+        "price_improvement_bps": None,
+        "execution_vs_midpoint": None,
+        "spread_capture_percent": None,
+    }
+    price = _decimal(execution_price)
+    ask = _decimal(plan.ask)
+    midpoint = _decimal(plan.midpoint)
+    spread = _decimal(plan.spread)
+    if price is None or ask is None or ask <= 0:
+        return quality
+    improvement = ask - price
+    quality["price_improvement_vs_ask"] = str(improvement.quantize(Decimal("0.0001")))
+    quality["price_improvement_bps"] = str(
+        ((improvement / ask) * Decimal("10000")).quantize(Decimal("0.01"))
+    )
+    if midpoint is not None:
+        quality["execution_vs_midpoint"] = str(
+            (price - midpoint).quantize(Decimal("0.0001"))
+        )
+    if spread is not None and spread > 0:
+        quality["spread_capture_percent"] = str(
+            ((improvement / spread) * Decimal("100")).quantize(Decimal("0.01"))
+        )
+    return quality
 
 
 def _response_status(response: Any) -> int | None:
@@ -552,7 +637,9 @@ def main(argv: list[str] | None = None) -> int:
         session_date=session_day.isoformat(),
         symbol=SYMBOL,
         quantity=QUANTITY,
+        **_quote_benchmarks(quote),
         ask=str(quote.ask),
+        quote_time=quote.quote_time,
         limit_price=str(limit_price),
         cap_percent="0.00",
         cancel_after_seconds=CANCEL_AFTER_SECONDS,
@@ -624,16 +711,15 @@ def main(argv: list[str] | None = None) -> int:
             f"SPCX order {order_id} status is uncertain; automatic recovery was blocked to prevent a duplicate buy",
         )
         return 1
-    _record(
-        {
-            "event": "filled" if status == "FILLED" else "terminal",
-            "session_date": session_day.isoformat(),
-            "order_id": order_id,
-            "status": status,
-            "execution_price": _execution_price(terminal_order),
-            "plan": asdict(plan),
-        }
-    )
+    terminal_record = {
+        "event": "filled" if status == "FILLED" else "terminal",
+        "session_date": session_day.isoformat(),
+        "order_id": order_id,
+        "status": status,
+        "plan": asdict(plan),
+        **_execution_quality(plan, terminal_order),
+    }
+    _record(terminal_record)
     if status == "FILLED":
         _clear_failure_alerts()
         return 0

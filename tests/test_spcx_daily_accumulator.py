@@ -160,6 +160,64 @@ def test_execution_price_uses_weighted_fill_price():
     assert accumulator._execution_price(order) == "100.1500"
 
 
+def test_quote_benchmarks_record_bid_midpoint_and_spread():
+    quote = accumulator.QuoteSnapshot(
+        "SPCX",
+        accumulator.EXPECTED_CUSIP,
+        "SpaceX",
+        Decimal("134.90"),
+        Decimal("134.70"),
+        "2026-08-25T09:30:07-04:00",
+    )
+    assert accumulator._quote_benchmarks(quote) == {
+        "bid": "134.70",
+        "midpoint": "134.8000",
+        "spread": "0.2000",
+        "spread_bps": "14.84",
+    }
+
+
+def test_execution_quality_records_fill_benchmarks_and_broker_latency():
+    plan = accumulator.OrderPlan(
+        session_date="2026-08-25",
+        symbol="SPCX",
+        quantity=1,
+        bid="134.70",
+        ask="134.90",
+        midpoint="134.8000",
+        spread="0.2000",
+        spread_bps="14.84",
+        quote_time="2026-08-25T09:30:07-04:00",
+        limit_price="134.90",
+        cap_percent="0.00",
+        cancel_after_seconds=120,
+        account_suffix="0903",
+    )
+    order = {
+        "enteredTime": "2026-08-25T13:30:07+0000",
+        "orderActivityCollection": [
+            {
+                "executionLegs": [
+                    {
+                        "time": "2026-08-25T13:30:20+0000",
+                        "price": 134.80,
+                        "quantity": 1,
+                    }
+                ]
+            }
+        ],
+    }
+    assert accumulator._execution_quality(plan, order) == {
+        "execution_price": "134.8000",
+        "execution_time": "2026-08-25T13:30:20+0000",
+        "broker_fill_seconds": "13.000",
+        "price_improvement_vs_ask": "0.1000",
+        "price_improvement_bps": "7.41",
+        "execution_vs_midpoint": "0.0000",
+        "spread_capture_percent": "50.00",
+    }
+
+
 def test_order_status_400_recovers_from_account_collection(monkeypatch):
     class Response:
         def __init__(self, payload, status_code=200):
