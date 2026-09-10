@@ -92,6 +92,9 @@ class OrderPlan:
     cap_percent: str
     cancel_after_seconds: int
     account_suffix: str
+    available_buying_power: str
+    buying_power_source: str
+    margin_buying_enabled: bool
 
 
 def _now_et() -> datetime:
@@ -270,18 +273,47 @@ def _record(event: dict[str, Any], ledger_path: Path | None = None) -> None:
     )
 
 
-def _extract_available_cash(account_payload: dict[str, Any]) -> Decimal:
+def _available_buying_power(
+    account_payload: dict[str, Any], *, allow_margin: bool
+) -> tuple[Decimal, str]:
     account = account_payload.get("securitiesAccount") or account_payload
     balances = account.get("currentBalances") or {}
-    for key in (
+    non_margin_values = [
+        value
+        for key in (
         "cashAvailableForTrading",
         "availableFundsNonMarginableTrade",
         "buyingPowerNonMarginableTrade",
-    ):
-        value = _decimal(balances.get(key))
-        if value is not None and value >= 0:
-            return value
-    raise RuntimeError("cash guard failed: non-margin buying power unavailable")
+        )
+        if (value := _decimal(balances.get(key))) is not None and value >= 0
+    ]
+    non_margin = max(non_margin_values, default=Decimal("0"))
+    if not allow_margin:
+        return non_margin, "non_margin"
+
+    margin_values = [
+        value
+        for key in ("availableFunds", "buyingPower")
+        if (value := _decimal(balances.get(key))) is not None and value >= 0
+    ]
+    margin = max(margin_values, default=Decimal("0"))
+    if margin > non_margin:
+        return margin, "margin"
+    return non_margin, "non_margin"
+
+
+def _extract_available_cash(account_payload: dict[str, Any]) -> Decimal:
+    """Backward-compatible non-margin-only balance helper."""
+    return _available_buying_power(account_payload, allow_margin=False)[0]
+
+
+def _margin_buying_enabled() -> bool:
+    return os.getenv("SPCX_MARGIN_BUYING_ENABLED", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _order_id_from_response(response: Any) -> str:
@@ -616,28 +648,34 @@ def main(argv: list[str] | None = None) -> int:
 
     account_response = client.get_account(account_hash)
     account_response.raise_for_status()
-    cash = _extract_available_cash(account_response.json() or {})
-    if cash < limit_price:
+    margin_buying_enabled = _margin_buying_enabled()
+    available_buying_power, buying_power_source = _available_buying_power(
+        account_response.json() or {}, allow_margin=margin_buying_enabled
+    )
+    if available_buying_power < limit_price:
         _record(
             {
                 "event": "skipped",
-                "reason": "insufficient_non_margin_cash",
+                "reason": "insufficient_buying_power",
                 "session_date": session_day.isoformat(),
                 "required": str(limit_price),
-                "available": str(cash),
+                "available": str(available_buying_power),
+                "buying_power_source": buying_power_source,
+                "margin_buying_enabled": margin_buying_enabled,
             }
         )
         _set_failure_alert(
             "spcx_daily_accumulator_nonfill",
-            "SPCX accumulation was blocked by insufficient non-margin cash",
+            "SPCX accumulation was blocked by insufficient available buying power",
         )
         try:
-            from ops.spcx_email_alerts import send_insufficient_cash_alert_once
+            from ops.spcx_email_alerts import send_insufficient_balance_alert_once
 
-            sent = send_insufficient_cash_alert_once(
+            sent = send_insufficient_balance_alert_once(
                 session_day.isoformat(),
-                available=str(cash),
+                available=str(available_buying_power),
                 required=str(limit_price),
+                margin_enabled=margin_buying_enabled,
             )
             print(f"SPCX_CASH_EMAIL: {'SENT' if sent else 'NOT_SENT_OR_ALREADY_SENT'}")
         except Exception as exc:
@@ -655,6 +693,9 @@ def main(argv: list[str] | None = None) -> int:
         cap_percent="0.00",
         cancel_after_seconds=CANCEL_AFTER_SECONDS,
         account_suffix=account_suffix,
+        available_buying_power=str(available_buying_power),
+        buying_power_source=buying_power_source,
+        margin_buying_enabled=margin_buying_enabled,
     )
 
     if not args.execute:

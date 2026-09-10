@@ -38,6 +38,28 @@ def test_capped_limit_price_never_exceeds_live_ask():
     assert accumulator.capped_limit_price(Decimal("123.456")) == Decimal("123.45")
 
 
+def test_margin_buying_power_is_used_only_when_explicitly_enabled():
+    account = {
+        "securitiesAccount": {
+            "currentBalances": {
+                "cashAvailableForTrading": 0,
+                "availableFundsNonMarginableTrade": 135.65,
+                "buyingPowerNonMarginableTrade": 135.65,
+                "availableFunds": 135.65,
+                "buyingPower": 542.60,
+            }
+        }
+    }
+    assert accumulator._available_buying_power(account, allow_margin=False) == (
+        Decimal("135.65"),
+        "non_margin",
+    )
+    assert accumulator._available_buying_power(account, allow_margin=True) == (
+        Decimal("542.6"),
+        "margin",
+    )
+
+
 def test_parse_quote_requires_spacex_identity():
     payload = {
         "SPCX": {
@@ -192,6 +214,9 @@ def test_execution_quality_records_fill_benchmarks_and_broker_latency():
         cap_percent="0.00",
         cancel_after_seconds=120,
         account_suffix="0903",
+        available_buying_power="1000.00",
+        buying_power_source="non_margin",
+        margin_buying_enabled=False,
     )
     order = {
         "enteredTime": "2026-08-25T13:30:07+0000",

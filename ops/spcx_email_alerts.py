@@ -47,9 +47,9 @@ def _send_outlook(to_email: str, subject: str, body: str) -> bool:
 
     script = f'''
     tell application "Microsoft Outlook"
-        set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}", visible:false}}
+        set newMessage to make new outgoing message with properties {{subject:"{esc(subject)}", content:"{esc(body)}"}}
         tell newMessage
-            make new to recipient at end of to recipients with properties {{address:"{esc(to_email)}"}}
+            make new to recipient at end of to recipients with properties {{email address:{{address:"{esc(to_email)}"}}}}
             send
         end tell
     end tell
@@ -87,10 +87,14 @@ def _send_smtp(to_email: str, subject: str, body: str) -> bool:
     return True
 
 
-def send_insufficient_cash_alert_once(
-    session_date: str, *, available: str, required: str
+def send_insufficient_balance_alert_once(
+    session_date: str,
+    *,
+    available: str,
+    required: str,
+    margin_enabled: bool,
 ) -> bool:
-    """Send one cash-blocked email per session; return True only when sent."""
+    """Send one balance-blocked email per session; return True only when sent."""
     load_dotenv(PROJECT_ROOT / ".env", override=False)
     try:
         state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
@@ -98,7 +102,7 @@ def send_insufficient_cash_alert_once(
         state = {}
     if (
         state.get("session_date") == session_date
-        and state.get("reason") == "insufficient_non_margin_cash"
+        and state.get("reason") == "insufficient_buying_power"
         and state.get("sent") is True
     ):
         return False
@@ -106,13 +110,14 @@ def send_insufficient_cash_alert_once(
     recipient = _recipient()
     if not recipient:
         return False
-    subject = f"SPCX buy blocked: cash needed | {session_date}"
+    subject = f"SPCX morning buy missed: insufficient balance | {session_date}"
     body = (
         "The automated one-share SPCX purchase was not submitted because Schwab "
-        "reported insufficient non-margin buying power.\n\n"
-        f"Available: ${available}\n"
+        "reported insufficient available buying power.\n\n"
+        f"Available buying power: ${available}\n"
         f"Required at the checked ask: ${required}\n\n"
-        "Add settled cash or free non-margin buying power, then review the SPCX bot.\n"
+        f"Margin buying enabled: {'yes' if margin_enabled else 'no'}\n\n"
+        "Add funds or free buying power, then review the SPCX bot.\n"
     )
     try:
         sent = (
@@ -127,7 +132,7 @@ def send_insufficient_cash_alert_once(
         json.dumps(
             {
                 "session_date": session_date,
-                "reason": "insufficient_non_margin_cash",
+                "reason": "insufficient_buying_power",
                 "sent": sent,
             },
             indent=2,
@@ -135,3 +140,15 @@ def send_insufficient_cash_alert_once(
         encoding="utf-8",
     )
     return sent
+
+
+def send_insufficient_cash_alert_once(
+    session_date: str, *, available: str, required: str
+) -> bool:
+    """Compatibility wrapper for callers using the original function name."""
+    return send_insufficient_balance_alert_once(
+        session_date,
+        available=available,
+        required=required,
+        margin_enabled=False,
+    )
