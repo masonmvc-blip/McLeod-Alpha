@@ -631,6 +631,17 @@ def main(argv: list[str] | None = None) -> int:
             "spcx_daily_accumulator_nonfill",
             "SPCX accumulation was blocked by insufficient non-margin cash",
         )
+        try:
+            from ops.spcx_email_alerts import send_insufficient_cash_alert_once
+
+            sent = send_insufficient_cash_alert_once(
+                session_day.isoformat(),
+                available=str(cash),
+                required=str(limit_price),
+            )
+            print(f"SPCX_CASH_EMAIL: {'SENT' if sent else 'NOT_SENT_OR_ALREADY_SENT'}")
+        except Exception as exc:
+            print(f"SPCX_CASH_EMAIL: FAIL | {type(exc).__name__}")
         return 1
 
     plan = OrderPlan(
